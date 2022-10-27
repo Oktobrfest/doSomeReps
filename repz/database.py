@@ -10,7 +10,7 @@ import pyodbc
 # server = 'myserver,port' # to specify an alternate port
 server = 'repdb.cakbh4mjxv9u.us-west-2.rds.amazonaws.com,1433'
 # server = 'repdb.cakbh4mjxv9u.us-west-2.rds.amazonaws.com'
-database = 'rdsadmin'
+database = 'rep'
 # database = 'repdb' 
 username = 'admin' 
 password = 'Rocking9!'

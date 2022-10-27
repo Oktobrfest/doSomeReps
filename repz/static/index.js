@@ -57,9 +57,10 @@ function addShow(data, htl) {
     }
 }
 
-// var form = document.getElementById('new_cat');
-// form.addEventListener('submit', addSubmit);
-
+ var form = document.getElementById('new_cat');
+ if(form){
+form.addEventListener('click', addSubmit);
+ }
 
 // //Collapsible control
 // var coll = document.getElementsByClassName("collapsible");
