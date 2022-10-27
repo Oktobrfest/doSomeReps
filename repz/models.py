@@ -9,9 +9,10 @@ from sqlalchemy.orm import relationship, Mapped
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from setuptools import setup, find_packages
+# I DONNO WDF THIS IS
+# from setuptools import setup, find_packages
 
-setup(name="models", packages=find_packages())
+# setup(name="models", packages=find_packages())
 
 # def get_user(id):
 #     user = users.query.filter_by(id=user_id).first()

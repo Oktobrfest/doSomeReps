@@ -8,24 +8,22 @@ import pyodbc
 # Some other example server values are
 # server = 'localhost\sqlexpress' # for a named instance
 # server = 'myserver,port' # to specify an alternate port
-# server = 'tcp:myserver.database.windows.net' 
-# database = 'mydb' 
-# username = 'myusername' 
-# password = 'mypassword' 
-# # ENCRYPT defaults to yes starting in ODBC Driver 18. It's good to always specify ENCRYPT=yes on the client side to avoid MITM attacks.
-# cnxn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER='+server+';DATABASE='+database+';ENCRYPT=yes;UID='+username+';PWD='+ password)
-# cursor = cnxn.cursor()
+server = 'repdb.cakbh4mjxv9u.us-west-2.rds.amazonaws.com,1433'
+# server = 'repdb.cakbh4mjxv9u.us-west-2.rds.amazonaws.com'
+database = 'rdsadmin'
+# database = 'repdb' 
 username = 'admin' 
 password = 'Rocking9!'
- 
-Server = 'repdb.cakbh4mjxv9u.us-west-2.rds.amazonaws.com,1433'
-Database = 'repdb'
-Driver = 'ODBC Driver 18 for SQL Server'
+# ENCRYPT defaults to yes starting in ODBC Driver 18. It's good to always specify ENCRYPT=yes on the client side to avoid MITM attacks.
+# cnxn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER='+server+';DATABASE='+database+';ENCRYPT=no;UID='+username+';PWD='+ password)
+# cursor = cnxn.cursor()
 
-SQLALCHEMY_DATABASE_URL = f'mssql://{username}:{password}@{Server}/{Database}?driver={Driver}'
+driver = 'ODBC Driver 18 for SQL Server'
 
+SQLALCHEMY_DATABASE_URL = f'mssql://{username}:{password}@{server}/{database}?driver={driver}&encrypt=no'
+# SQLALCHEMY_DATABASE_URL = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER='+server+';DATABASE='+database+';ENCRYPT=no;UID='+username+';PWD='+ password
 
-# SQLALCHEMY_DATABASE_URL = f'mssql://@{Server}/{Database}?driver={Driver}'
+# SQLALCHEMY_DATABASE_URL = f'mssql://@{server}/{database}?driver={driver}'
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}, echo=True, future=True)
