@@ -19,6 +19,9 @@ from sqlalchemy.sql import func
 from flask_login import UserMixin
 import flask_login
 import flask
+from flask_uploads import configure_uploads, IMAGES, UploadSet
+from flask_wtf import FlaskForm
+
 
 from .flask_util_js import FlaskUtilJs
 
@@ -31,6 +34,9 @@ def init_app():
     
     login_manager = LoginManager()
     login_manager.init_app(app)
+    
+    #flask-upload
+    app.config['UPLOAD_FOLDER'] = 'repz/home/static'
     
     
     # lets you reference url_for in .js files
@@ -47,6 +53,8 @@ def init_app():
         app.register_blueprint(home)
         app.register_blueprint(routes)
         app.register_blueprint(auth)
+        
+        #Flask uploads
         
         # print(app.url_map) 
         
