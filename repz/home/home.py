@@ -11,6 +11,9 @@ from ..models import category, question
 import re
 from sqlalchemy.sql import func
 from werkzeug import secure_filename
+from flask_uploads import configure_uploads, IMAGES, UploadSet
+from wtforms import FileField
+from flask_wtf import FlaskForm
 
 
 # Blueprint Configuration
@@ -19,6 +22,9 @@ home = Blueprint(
     template_folder='templates',
     static_folder='static'
 )
+
+class MyForm(FlaskForm):
+    image = FileField('image')
 
 
 @home.route('/', methods=['GET', 'POST'], endpoint='homepage')
@@ -57,10 +63,17 @@ def addcontent():
         category_name = request.form.get('category_name')
         butthole = request.form.get('anus_checkbox_name')
         
-        f = request.files[‘file’]
-        f.save(secure_filename(f.filename))
-        return ‘file uploaded successfully’
+    # form upload shit
+        images = UploadSet('images', IMAGES)
+        configure_uploads(app, images)
+
+    form = MyForm()
+
+    if form.validate_on_submit():
         
+        filename = images.save(form.image.data)
+        return f'Filename: { filename }'
+            #  form upload shit
         
         answer = request.form['answer']
         # validation  

@@ -15,7 +15,7 @@ Add Content
        <input type = “submit”/>
     </form>   
  </body>
- 
+
     <div class="form-group">
         {% include "categories.html" %}
         {% include "new_cat.html" %}
@@ -32,7 +32,14 @@ Add Content
         <textarea class="form-control question_text required" id="question_text" name="question_text"
             placeholder="Enter question here" required></textarea>
         {# upload image for question #}
-        <input type=file name=photo>
+        fucking form bro-
+        <body>
+            <form method="POST"  enctype="multipart/form-data">
+                {{ form.csrf_token }}
+                {{ form.image }}
+                <button type="submit">Upload</button>
+            </form>
+        </body>
 
         {# question Hint #}
         <label for="hint">Hint</label>
