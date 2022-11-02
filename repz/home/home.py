@@ -10,6 +10,7 @@ from ..database import Base, engine, session
 from ..models import category, question
 import re
 from sqlalchemy.sql import func
+from werkzeug import secure_filename
 
 
 # Blueprint Configuration
@@ -52,13 +53,17 @@ def addcontent():
         question_name = request.form.get('question_name')
         question_text = request.form.get('question_text')
         hint = request.form.get('hint')
-        answer = request.form.get('answer')
-        category_name = request.form.get('category_name')
-        butthole = request.form.get('butthole')
         
-        penis_size = request.form.get('penis_size')
-
-        # validation
+        category_name = request.form.get('category_name')
+        butthole = request.form.get('anus_checkbox_name')
+        
+        f = request.files[‘file’]
+        f.save(secure_filename(f.filename))
+        return ‘file uploaded successfully’
+        
+        
+        answer = request.form['answer']
+        # validation  
         if len(question_name) < 1 or len(question_text) < 3 or len(answer) < 1:
             return flash('shits too short bro!', category='failure')
 
@@ -67,13 +72,7 @@ def addcontent():
         if existing_q_name is not None or existing_q_text is not None:
             return flash('question already exists!', category='failure')
         print('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
-        # print(category_name)
-        # print(question_name)
-        # print(question_text)
-        print(penis_size)
-        # print(answer)
-        print(butthole)
-        
+           
         # create new question!
         # new_question = question(question_name=question_name,
         #                         question_text=question_text,

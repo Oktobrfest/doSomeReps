@@ -59,7 +59,7 @@ function addShow(data, htl) {
 
  var form = document.getElementById('new_cat');
  if(form){
-form.addEventListener('click', addSubmit);
+form.addEventListener('submit', addSubmit);
  }
 
 // //Collapsible control
