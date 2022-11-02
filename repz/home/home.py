@@ -1,6 +1,6 @@
 from re import A
 from typing import final
-from flask import Blueprint, render_template, request, jsonify, flash
+from flask import Blueprint, render_template, request, jsonify, flash, Flask
 from flask import current_app as app
 from flask_login import current_user, login_required, logout_user
 
@@ -10,10 +10,10 @@ from ..database import Base, engine, session
 from ..models import category, question
 import re
 from sqlalchemy.sql import func
-from werkzeug import secure_filename
 from flask_uploads import configure_uploads, IMAGES, UploadSet
 from wtforms import FileField
 from flask_wtf import FlaskForm
+from werkzeug.utils import secure_filename
 
 
 # Blueprint Configuration
@@ -25,6 +25,11 @@ home = Blueprint(
 
 class MyForm(FlaskForm):
     image = FileField('image')
+    
+    # form upload shit
+images = UploadSet('images', IMAGES)
+configure_uploads(app, images)
+
 
 
 @home.route('/', methods=['GET', 'POST'], endpoint='homepage')
@@ -41,6 +46,7 @@ def homepage():
 @home.route('/addcontent', methods=['GET', 'POST'], endpoint='addcontent')
 @login_required
 def addcontent():
+    form = MyForm()
     if request.method == 'GET':
         # category_list = get_cat_list()
         category_list = []
@@ -53,6 +59,7 @@ def addcontent():
             description=".",
             user=current_user,
             category_list=category_list,
+            form=form,
             )
 
     if request.method == 'POST':
@@ -63,16 +70,13 @@ def addcontent():
         category_name = request.form.get('category_name')
         butthole = request.form.get('anus_checkbox_name')
         
-    # form upload shit
-        images = UploadSet('images', IMAGES)
-        configure_uploads(app, images)
 
-    form = MyForm()
+    
 
     if form.validate_on_submit():
         
         filename = images.save(form.image.data)
-        return f'Filename: { filename }'
+        # return f'Filename: { filename }'
             #  form upload shit
         
         answer = request.form['answer']

@@ -19,13 +19,16 @@ from sqlalchemy.sql import func
 from flask_login import UserMixin
 import flask_login
 import flask
-
+from werkzeug.utils import secure_filename
 
 
 
 from .flask_util_js import FlaskUtilJs
 
 from sqlalchemy.orm import Query
+
+from flask_uploads import configure_uploads, IMAGES, UploadSet
+
 
 def init_app():
     """Create Flask application."""
@@ -35,8 +38,14 @@ def init_app():
     login_manager = LoginManager()
     login_manager.init_app(app)
     
-    #flask-upload
+    app.config['UPLOADS_DEFAULT_DEST'] = 'repz/home/static'
+                    # url=app.config.get('UPLOADS_DEFAULT_URL'))
     app.config['UPLOAD_FOLDER'] = 'repz/home/static'
+    app.config['UPLOADED_IMAGES_DEST'] = 'repz/home/static'
+        # form upload shit
+  
+   
+
     
     
     # lets you reference url_for in .js files
