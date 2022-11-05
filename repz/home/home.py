@@ -48,9 +48,7 @@ def homepage():
 def addcontent():
     form = MyForm()
     if request.method == 'GET':
-        # category_list = get_cat_list()
         category_list = []
-        # html_category_list = []
         result = session.execute(select(category))
         category_list.extend(cat.category_name for cat in result.scalars())
         return render_template(
@@ -66,20 +64,22 @@ def addcontent():
         question_name = request.form.get('question_name')
         question_text = request.form.get('question_text')
         hint = request.form.get('hint')
+        answer = request.form.get('answer')
         
-        category_name = request.form.get('category_name')
-        butthole = request.form.get('anus_checkbox_name')
-        
+        category_name = request.form.get('category_name')      
 
     
 
     if form.validate_on_submit():
-        
-        filename = images.save(form.image.data)
+        # try: form.image.data
+        # except NameError: some_fallback_operation(  )
+        # else: some_operation(x)
+        if form.image.data:
+            filename = images.save(form.image.data)
         # return f'Filename: { filename }'
             #  form upload shit
         
-        answer = request.form['answer']
+        # answer = request.form['answer']
         # validation  
         if len(question_name) < 1 or len(question_text) < 3 or len(answer) < 1:
             return flash('shits too short bro!', category='failure')

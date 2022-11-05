@@ -6,15 +6,8 @@ Add Content
 {% block content %}
 <h1 align="center">New Question</h1>
 
-<form id="add_question" method="post"></form>>
+<form id="add_question" enctype="multipart/form-data" method="post">
 
-<body>
-    <form action = “http://localhost:5000/uploader” method = “POST” 
-       enctype = “multipart/form-data”>
-       <input type = “file” name = “file” />
-       <input type = “submit”/>
-    </form>   
- </body>
 
     <div class="form-group">
         {% include "categories.html" %}
@@ -33,13 +26,10 @@ Add Content
             placeholder="Enter question here" required></textarea>
         {# upload image for question #}
         fucking form bro-
-        <body>
-            <form method="POST"  enctype="multipart/form-data">
-                {{ form.csrf_token }}
+  {{ form.csrf_token }}
                 {{ form.image }}
-                <button type="submit">Upload</button>
-            </form>
-        </body>
+
+       
 
         {# question Hint #}
         <label for="hint">Hint</label>

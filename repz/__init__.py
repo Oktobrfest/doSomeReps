@@ -21,6 +21,9 @@ import flask_login
 import flask
 from werkzeug.utils import secure_filename
 
+from os import environ
+
+import boto3
 
 
 from .flask_util_js import FlaskUtilJs
@@ -43,8 +46,8 @@ def init_app():
     app.config['UPLOAD_FOLDER'] = 'repz/home/static'
     app.config['UPLOADED_IMAGES_DEST'] = 'repz/home/static'
         # form upload shit
-  
-   
+    app.config['SECRET_KEY'] = Config.SECRET_KEY
+
 
     
     
@@ -64,6 +67,17 @@ def init_app():
         app.register_blueprint(auth)
         
         #Flask uploads
+        #    s3 bucket tests
+        ACCESS_KEY_ID = environ.get("ACCESS_KEY_ID")
+        SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
+        BUCKET = environ.get("BUCKET")
+        
+        client_s3 = boto3.client(
+            's3',
+            aws_access_key_id = ACCESS_KEY_ID,
+            aws_secret_access_key=SECRET_ACCESS_KEY
+        )
+        
         
         # print(app.url_map) 
         
