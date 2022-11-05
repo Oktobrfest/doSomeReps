@@ -17,28 +17,18 @@ Add Content
         <script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
         {{ flask_util_js.js }}
         <script type="text/javascript" src="/static/index.js"></script>
-        <label for="question_name" class="required">Question Name</label>
-        <input type="text" class="form-control required" id="question_name" name="question_name"
-            placeholder="Enter question name" required />
-        {# question text #}
-        <label for="question_text" class="required">Question Text</label>
-        <textarea class="form-control question_text required" id="question_text" name="question_text"
-            placeholder="Enter question here" required></textarea>
-        {# upload image for question #}
-        fucking form bro-
-  {{ form.csrf_token }}
-                {{ form.image }}
 
-       
+        Upload a Question Image:
+        {{ form.csrf_token }}
+        {{ form.image }}
+        {% for field in form %}
+    <tr>
+        <th>{{ field.label }}</th>
+        <td>{{ field }}</td>
+    </tr>
+{% endfor %}
 
-        {# question Hint #}
-        <label for="hint">Hint</label>
-        <textarea class="form-control hint" id="hint" name="hint" placeholder="Enter hint"></textarea>
-        {# question Answer #}
-        <label for="answer" class="required">Answer</label>
-        <textarea class="form-control answer" id="answer" name="answer" placeholder="Enter answer here"
-            required></textarea>
-    </div>
+           </div>
     <button type="submit" class="btn btn-primary" onmouseover="highlight(this)" onmouseout="unhighlight(this)">
         Submit
     </button>
