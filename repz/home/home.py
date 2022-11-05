@@ -11,7 +11,7 @@ from ..models import category, question
 import re
 from sqlalchemy.sql import func
 from flask_uploads import configure_uploads, IMAGES, UploadSet
-from wtforms import FileField, StringField
+from wtforms import FileField, StringField, validators
 from flask_wtf import FlaskForm
 from werkzeug.utils import secure_filename
 
@@ -25,7 +25,7 @@ home = Blueprint(
 
 class MyForm(FlaskForm):
     image = FileField('image')
-    question = StringField(u'Question text', validators=[validators.input_required()])
+    question2 = StringField(u'Question text', validators=[validators.input_required()])
     
     # form upload shit
 images = UploadSet('images', IMAGES)
