@@ -14,7 +14,8 @@ from flask_uploads import configure_uploads, IMAGES, UploadSet
 from wtforms import FileField, StringField, validators
 from flask_wtf import FlaskForm
 from werkzeug.utils import secure_filename
-from s3upload import upload_file
+# from ..s3upload import upload_file
+from ..aws_s3 import *
 
 
 # Blueprint Configuration
@@ -49,10 +50,10 @@ def homepage():
 @login_required
 def addcontent():
     form = MyForm()
-    category_list.extend(cat.category_name for cat in result.scalars())
+    category_list = []
     if request.method == 'GET':
-        category_list = []
         result = session.execute(select(category))
+        category_list.extend(cat.category_name for cat in result.scalars())
         return render_template(
             'addcontent.html',
             title="Add content",
@@ -91,7 +92,8 @@ def addcontent():
             return flash('question already exists!', category='failure')
         if form.image.data:
             filename = images.save(form.image.data)
-            upload_file(form.image.data, )
+            file_name = 'repz/home/static/Clipboard_Image.jpg'
+            upload_file_to_s3(file_name)
            
            
            

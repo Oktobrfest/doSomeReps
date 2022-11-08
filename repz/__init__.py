@@ -71,11 +71,11 @@ def init_app():
         SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
         bucket = environ.get("BUCKET")
         
-        s3_client = boto3.client(
-            Config.BUCKET,
-            aws_access_key_id = Config.ACCESS_KEY_ID,
-            aws_secret_access_key= Config.SECRET_ACCESS_KEY
-        )
+        # s3_client = boto3.client(
+        #     Config.BUCKET,
+        #     aws_access_key_id = Config.ACCESS_KEY_ID,
+        #     aws_secret_access_key= Config.SECRET_ACCESS_KEY
+        # )
         
         
         # print(app.url_map) 
