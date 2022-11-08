@@ -6,11 +6,14 @@ from botocore.exceptions import ClientError
 import os
 
 
-s3 = boto3.client(
-   "s3",
-   aws_access_key_id=Config.ACCESS_KEY_ID,
-   aws_secret_access_key=Config.SECRET_ACCESS_KEY
-)
+# s3 = boto3.client(
+#    "s3",
+#    aws_access_key_id=Config.ACCESS_KEY_ID,
+#    aws_secret_access_key=Config.SECRET_ACCESS_KEY
+# )
+
+client = boto3.client('s3', region_name='us-west-2', aws_access_key_id='AKIAY6TZKBZ4IRKNCAZD', aws_secret_access_key='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')
+
 
 def upload_file_to_s3(file_name, bucket=Config.BUCKET, object_name=None):
     """Upload a file to an S3 bucket
@@ -29,7 +32,9 @@ def upload_file_to_s3(file_name, bucket=Config.BUCKET, object_name=None):
         object_name = os.path.basename(file_name)
 
     # Upload the file
-    s3_client = boto3.client('s3')
+    # s3_client = boto3.client('s3')
+    s3_client = boto3.client('s3', region_name='us-west-2', aws_access_key_id='AKIAY6TZKBZ4IRKNCAZD', aws_secret_access_key='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')
+    
     try:
         response = s3_client.upload_file(file_name, bucket, object_name)
     except ClientError as e:
