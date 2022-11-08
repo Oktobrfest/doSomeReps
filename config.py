@@ -16,9 +16,18 @@ class Config:
     FLASK_ENV = environ.get("FLASK_ENV")
     FLASK_APP = "wsgi.py"
 
-
     # Static Assets
     STATIC_FOLDER = "static"
     TEMPLATES_FOLDER = "templates"
     COMPRESSOR_DEBUG = True
+    
+    #file uploads
+    UPLOADS_DEFAULT_DEST = 'repz/home/static' 
+    UPLOAD_FOLDER = 'repz/home/static'
+    UPLOADED_IMAGES_DEST = 'repz/home/static'
+    
+    #s3
+    ACCESS_KEY_ID = environ.get("ACCESS_KEY_ID")
+    SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
+    BUCKET = environ.get("BUCKET")
 

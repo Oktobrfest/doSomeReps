@@ -14,6 +14,7 @@ from flask_uploads import configure_uploads, IMAGES, UploadSet
 from wtforms import FileField, StringField, validators
 from flask_wtf import FlaskForm
 from werkzeug.utils import secure_filename
+from s3upload import upload_file
 
 
 # Blueprint Configuration
@@ -48,10 +49,10 @@ def homepage():
 @login_required
 def addcontent():
     form = MyForm()
+    category_list.extend(cat.category_name for cat in result.scalars())
     if request.method == 'GET':
         category_list = []
         result = session.execute(select(category))
-        category_list.extend(cat.category_name for cat in result.scalars())
         return render_template(
             'addcontent.html',
             title="Add content",
@@ -75,8 +76,7 @@ def addcontent():
         # try: form.image.data
         # except NameError: some_fallback_operation(  )
         # else: some_operation(x)
-        if form.image.data:
-            filename = images.save(form.image.data)
+       
         # return f'Filename: { filename }'
             #  form upload shit
         
@@ -89,7 +89,11 @@ def addcontent():
         existing_q_text = session.execute(select(question).where(question.question_text == question_text)).first()
         if existing_q_name is not None or existing_q_text is not None:
             return flash('question already exists!', category='failure')
-        print('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
+        if form.image.data:
+            filename = images.save(form.image.data)
+            upload_file(form.image.data, )
+           
+           
            
         # create new question!
         # new_question = question(question_name=question_name,
@@ -108,7 +112,7 @@ def addcontent():
             title="Add content",
             description=".",
             user=current_user,
-            category_list='dildo',
+            category_list=category_list,
             form=form,
         )
         

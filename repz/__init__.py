@@ -41,11 +41,10 @@ def init_app():
     login_manager = LoginManager()
     login_manager.init_app(app)
     
-    app.config['UPLOADS_DEFAULT_DEST'] = 'repz/home/static'
-                    # url=app.config.get('UPLOADS_DEFAULT_URL'))
-    app.config['UPLOAD_FOLDER'] = 'repz/home/static'
-    app.config['UPLOADED_IMAGES_DEST'] = 'repz/home/static'
-        # form upload shit
+    app.config['UPLOADS_DEFAULT_DEST'] = Config.UPLOADS_DEFAULT_DEST
+    app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
+    app.config['UPLOADED_IMAGES_DEST'] = Config.UPLOADED_IMAGES_DEST
+        
     app.config['SECRET_KEY'] = Config.SECRET_KEY
 
 
@@ -70,12 +69,12 @@ def init_app():
         #    s3 bucket tests
         ACCESS_KEY_ID = environ.get("ACCESS_KEY_ID")
         SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
-        BUCKET = environ.get("BUCKET")
+        bucket = environ.get("BUCKET")
         
-        client_s3 = boto3.client(
-            's3',
-            aws_access_key_id = ACCESS_KEY_ID,
-            aws_secret_access_key=SECRET_ACCESS_KEY
+        s3_client = boto3.client(
+            Config.BUCKET,
+            aws_access_key_id = Config.ACCESS_KEY_ID,
+            aws_secret_access_key= Config.SECRET_ACCESS_KEY
         )
         
         
