@@ -2,13 +2,10 @@
 {% block title %}
 Add Content
 {% endblock title %}
-{# {% include 'categories.html' %} #}
 {% block content %}
 <h1 align="center">New Question</h1>
 
 <form id="add_question" enctype="multipart/form-data" method="post">
-
-
     <div class="form-group">
         {% include "categories.html" %}
         {% include "new_cat.html" %}

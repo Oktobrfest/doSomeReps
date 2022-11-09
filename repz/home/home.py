@@ -92,8 +92,9 @@ def addcontent():
             return flash('question already exists!', category='failure')
         if form.image.data:
             filename = images.save(form.image.data)
-            file_name = 'repz/home/static/Clipboard_Image.jpg'
-            upload_file_to_s3(file_name)
+            file_directory = 'repz/home/static/'
+            file_name = file_directory + filename
+            location_string = upload_file_to_s3(file_name)
            
            
            
