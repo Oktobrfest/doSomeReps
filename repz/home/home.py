@@ -26,14 +26,16 @@ home = Blueprint(
 )
 
 class MyForm(FlaskForm):
-    image = FileField('image')
-    question2 = StringField(u'Question text', validators=[validators.input_required()])
+    hint_image = FileField('hint_image')
+    # question2 = StringField(u'Question text', validators=[validators.input_required()])
     
     # form upload shit
 images = UploadSet('images', IMAGES)
 configure_uploads(app, images)
 
-
+def allowed_file(filename):
+    return '.' in filename and \
+        filename.split('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
 
 @home.route('/', methods=['GET', 'POST'], endpoint='homepage')
 @login_required
@@ -71,10 +73,21 @@ def addcontent():
         
         category_name = request.form.get('category_name')      
 
-    
+    #  TEESTING MULTIPLE IMAGE UPLOADS
 
     if form.validate_on_submit():
-        # try: form.image.data
+        if 'AnswerPics[]' in request.AnswerPics:
+            AnswerPics = request.AnswerPics.getlist('AnswerPics[]')
+            answer_pics = []
+            for answer_pic in AnswerPics:
+                if answer_pic and allowed_file(answer_pic.filename):
+                    picname = secure_filename(answer_pic.filename)
+                    answer_pics.append(picname)
+                    answer_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))
+        
+        
+        
+        # try: form.image.data 
         # except NameError: some_fallback_operation(  )
         # else: some_operation(x)
        
@@ -90,8 +103,8 @@ def addcontent():
         existing_q_text = session.execute(select(question).where(question.question_text == question_text)).first()
         if existing_q_name is not None or existing_q_text is not None:
             return flash('question already exists!', category='failure')
-        if form.image.data:
-            filename = images.save(form.image.data)
+        if form.hint_image.data:
+            filename = images.save(form.hint_image.data)
             file_directory = 'repz/home/static/'
             file_name = file_directory + filename
             location_string = upload_file_to_s3(file_name)
@@ -110,6 +123,8 @@ def addcontent():
         # session.add(new_question)
         # session.commit()
         flash('New question created!', category='success')
+        result = session.execute(select(category))
+        category_list.extend(cat.category_name for cat in result.scalars())
         return render_template(
             'addcontent.html',
             title="Add content",

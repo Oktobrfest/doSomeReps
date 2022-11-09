@@ -24,8 +24,9 @@ Add Content
         {# upload image for question #}
         Upload a Question Image:
         {{ form.csrf_token }}
-                {{ form.image }}
-                {{ form.question2 }}
+                {{ form.hint_image }}
+               
+      
        
 
         {# question Hint #}
@@ -35,6 +36,14 @@ Add Content
         <label for="answer" class="required">Answer</label>
         <textarea class="form-control answer" id="answer" name="answer" placeholder="Enter answer here"
             required></textarea>
+          <dl>
+                    <p>
+                        <input type="file" name="AnswerPics[]" multiple="true" autocomplete="off">
+                    </p>
+                </dl>
+
+
+
     </div>
     <button type="submit" class="btn btn-primary" onmouseover="highlight(this)" onmouseout="unhighlight(this)">
         Submit

@@ -31,4 +31,7 @@ class Config:
     SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
     BUCKET = environ.get("BUCKET")
     S3_LOCATION = f"http://{BUCKET}.s3.amazonaws.com/"
+    
+    # These are the allowed file types, edit this part to fit your needs
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'svg'}
 

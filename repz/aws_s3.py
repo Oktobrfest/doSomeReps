@@ -5,10 +5,6 @@ import logging
 from botocore.exceptions import ClientError
 import os
 
-
-# These are the allowed file types, edit this part to fit your needs
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'svg'}
-
 s3_client = boto3.client(
    "s3",
    region_name='us-west-2', 
@@ -36,8 +32,4 @@ def upload_file_to_s3(file_name, bucket=Config.BUCKET, object_name=None):
     # return True
 
     return f"{Config.S3_LOCATION}{file_name}"
-    # return f"{Config.S3_LOCATION}fungul"
     
-def allowed_file(filename):
-    return '.' in filename and \
-        filename.split('.', 1)[1].lower() in ALLOWED_EXTENSIONS
