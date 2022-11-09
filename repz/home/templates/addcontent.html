@@ -24,11 +24,10 @@ Add Content
         {# upload image for question #}
         Upload a Question Image:
         {{ form.csrf_token }}
-                {{ form.hint_image }}
+        {{ form.hint_image }}
                
-      
        
-
+        &NonBreakingSpace;
         {# question Hint #}
         <label for="hint">Hint</label>
         <textarea class="form-control hint" id="hint" name="hint" placeholder="Enter hint"></textarea>

@@ -76,14 +76,7 @@ def addcontent():
     #  TEESTING MULTIPLE IMAGE UPLOADS
 
     if form.validate_on_submit():
-        if 'AnswerPics[]' in request.AnswerPics:
-            AnswerPics = request.AnswerPics.getlist('AnswerPics[]')
-            answer_pics = []
-            for answer_pic in AnswerPics:
-                if answer_pic and allowed_file(answer_pic.filename):
-                    picname = secure_filename(answer_pic.filename)
-                    answer_pics.append(picname)
-                    answer_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))
+       
         
         
         
@@ -103,13 +96,29 @@ def addcontent():
         existing_q_text = session.execute(select(question).where(question.question_text == question_text)).first()
         if existing_q_name is not None or existing_q_text is not None:
             return flash('question already exists!', category='failure')
+        
+        pic_types = { 'AnswerPics[]', 'hint_image' }
+        for pic_type in pic_types:
+            if pic_type in request.files:
+                itworkedman = True
+                itworkedman1 = request.files.getlist(pic_type)
+        
         if form.hint_image.data:
             filename = images.save(form.hint_image.data)
             file_directory = 'repz/home/static/'
             file_name = file_directory + filename
-            location_string = upload_file_to_s3(file_name)
+            
+            ExtraArgs = { "keyyo" : "value_yo" }
+            location_string = upload_file_to_s3(file_name, ExtraArgs)
            
-           
+        if 'AnswerPics[]' in request.files:
+            AnswerPics = request.files.getlist('AnswerPics[]')
+            answer_pics = []
+            for answer_pic in AnswerPics:
+                if answer_pic and allowed_file(answer_pic.filename):
+                    picname = secure_filename(answer_pic.filename)
+                    answer_pics.append(picname)
+                    answer_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))   
            
         # create new question!
         # new_question = question(question_name=question_name,

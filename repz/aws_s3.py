@@ -12,7 +12,7 @@ s3_client = boto3.client(
    aws_secret_access_key=Config.SECRET_ACCESS_KEY
 )
 
-def upload_file_to_s3(file_name, bucket=Config.BUCKET, object_name=None):
+def upload_file_to_s3(file_name, ExtraArgs, bucket=Config.BUCKET, object_name=None):
     """Upload a file to an S3 bucket
 
     :param file_name: File to upload
@@ -25,7 +25,7 @@ def upload_file_to_s3(file_name, bucket=Config.BUCKET, object_name=None):
         object_name = os.path.basename(file_name)
     
     try:
-        response = s3_client.upload_file(file_name, bucket, object_name)
+        response = s3_client.upload_file(file_name, bucket, object_name, ExtraArgs)
     except ClientError as e:
         logging.error(e)
         return False
