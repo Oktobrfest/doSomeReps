@@ -26,7 +26,7 @@ question_categories = Table(
 )
 
 answer_pictures = Table(
-    "association",
+    "answer_pic_association",
     Base.metadata,
     Column("answer_pics", ForeignKey("answer_pics.answer_pic"), primary_key=True),
     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
@@ -107,7 +107,8 @@ class question(Base):
     hint = sa.Column(sa.String(255), primary_key=False, unique=False, nullable=True)
     answer = sa.Column(sa.String(600), primary_key=False, unique=False, nullable=False)
     # created_by = sa.Column(Integer, ForeignKey("users.id"), nullable=True)
-    hint_image = sa.Column(sa.String(1024), nullable=True)
+    hint_image = sa.Column(sa.String(1024), primary_key=False, nullable=True)
+    
     categories = relationship(
         "category", secondary=question_categories, back_populates="questions"
     )

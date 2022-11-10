@@ -94,10 +94,10 @@ def addcontent():
                         # save it to web server
                         picname = secure_filename(pic.filename)
                         pics.append(picname)
-                        filename = pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))
+                        pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))
                         # upload to S3
                         file_directory = 'repz/home/static/'
-                        file_name = file_directory + filename
+                        file_name = file_directory + picname
                         Metadata = { "x-amz-meta-keyyo" : "value_yo" }
                         ExtraArgs = { 'Metadata' : Metadata }
                         location_string = upload_file_to_s3(file_name, ExtraArgs)
