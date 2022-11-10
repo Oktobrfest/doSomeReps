@@ -25,6 +25,13 @@ question_categories = Table(
     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
 )
 
+answer_pictures = Table(
+    "association",
+    Base.metadata,
+    Column("answer_pics", ForeignKey("answer_pics.answer_pic"), primary_key=True),
+    Column("question_id", ForeignKey("question.question_id"), primary_key=True),
+)
+
 
 class users(UserMixin, Base):
     __tablename__ = "users"  # <- must declare name for db table
@@ -67,6 +74,15 @@ class category(Base):
     questions = relationship(
         "question", secondary=question_categories, back_populates="categories"
     )
+    
+class answer_pics(Base):
+    __tablename__ = "answer_pics"
+    answer_pic = sa.Column(
+        sa.String(1024), nullable=False, unique=True, primary_key=True
+    )
+    questions = relationship(
+        "question", secondary=answer_pictures, back_populates="answer_picz"
+    )
 
 
 class level(Base):
@@ -91,11 +107,14 @@ class question(Base):
     hint = sa.Column(sa.String(255), primary_key=False, unique=False, nullable=True)
     answer = sa.Column(sa.String(600), primary_key=False, unique=False, nullable=False)
     # created_by = sa.Column(Integer, ForeignKey("users.id"), nullable=True)
-    
+    hint_image = sa.Column(sa.String(1024), nullable=True)
     categories = relationship(
         "category", secondary=question_categories, back_populates="questions"
     )
-    quizqs = relationship("quizq")
+    answer_picz = relationship(
+        "answer_pics", secondary=answer_pictures, back_populates="questions"
+    )
+    quizqs = relationship("quizq")    
 
 
 class quizq(Base):

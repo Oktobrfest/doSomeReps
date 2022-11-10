@@ -76,19 +76,6 @@ def addcontent():
     #  TEESTING MULTIPLE IMAGE UPLOADS
 
     if form.validate_on_submit():
-       
-        
-        
-        
-        # try: form.image.data 
-        # except NameError: some_fallback_operation(  )
-        # else: some_operation(x)
-       
-        # return f'Filename: { filename }'
-            #  form upload shit
-        
-        # answer = request.form['answer']
-        # validation  
         if len(question_name) < 1 or len(question_text) < 3 or len(answer) < 1:
             return flash('shits too short bro!', category='failure')
 
@@ -97,28 +84,40 @@ def addcontent():
         if existing_q_name is not None or existing_q_text is not None:
             return flash('question already exists!', category='failure')
         
-        pic_types = { 'AnswerPics[]', 'hint_image' }
+        pic_types = { 'AnswerPics', 'hint_image' }
         for pic_type in pic_types:
             if pic_type in request.files:
-                itworkedman = True
-                itworkedman1 = request.files.getlist(pic_type)
+                pictures = request.files.getlist(pic_type)
+                pics = []
+                for pic in pictures:
+                    if pic and allowed_file(pic.filename):
+                        # save it to web server
+                        picname = secure_filename(pic.filename)
+                        pics.append(picname)
+                        filename = pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))
+                        # upload to S3
+                        file_directory = 'repz/home/static/'
+                        file_name = file_directory + filename
+                        Metadata = { "x-amz-meta-keyyo" : "value_yo" }
+                        ExtraArgs = { 'Metadata' : Metadata }
+                        location_string = upload_file_to_s3(file_name, ExtraArgs)
         
-        if form.hint_image.data:
-            filename = images.save(form.hint_image.data)
-            file_directory = 'repz/home/static/'
-            file_name = file_directory + filename
-            
-            ExtraArgs = { "keyyo" : "value_yo" }
-            location_string = upload_file_to_s3(file_name, ExtraArgs)
+        # if form.hint_image.data:
+        #     filename = images.save(form.hint_image.data)
+        #     file_directory = 'repz/home/static/'
+        #     file_name = file_directory + filename
+        #     Metadata = { "x-amz-meta-keyyo" : "value_yo" }
+        #     ExtraArgs = { 'Metadata' : Metadata }
+        #     location_string = upload_file_to_s3(file_name, ExtraArgs)
            
-        if 'AnswerPics[]' in request.files:
-            AnswerPics = request.files.getlist('AnswerPics[]')
-            answer_pics = []
-            for answer_pic in AnswerPics:
-                if answer_pic and allowed_file(answer_pic.filename):
-                    picname = secure_filename(answer_pic.filename)
-                    answer_pics.append(picname)
-                    answer_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))   
+        # if 'AnswerPics[]' in request.files:
+        #     AnswerPics = request.files.getlist('AnswerPics[]')
+        #     answer_pics = []
+        #     for answer_pic in AnswerPics:
+        #         if answer_pic and allowed_file(answer_pic.filename):
+        #             picname = secure_filename(answer_pic.filename)
+        #             answer_pics.append(picname)
+        #             answer_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))   
            
         # create new question!
         # new_question = question(question_name=question_name,
