@@ -7,7 +7,7 @@ from flask_login import current_user, login_required, logout_user
 from sqlalchemy.orm import Query
 from sqlalchemy import select
 from ..database import Base, engine, session
-from ..models import category, question
+from ..models import category, question, answer_pics
 import re
 from sqlalchemy.sql import func
 from flask_uploads import configure_uploads, IMAGES, UploadSet
@@ -83,7 +83,13 @@ def addcontent():
         existing_q_text = session.execute(select(question).where(question.question_text == question_text)).first()
         if existing_q_name is not None or existing_q_text is not None:
             return flash('question already exists!', category='failure')
+        selected_categories = []
+        selected_categories.extend(selected_cat for selected_cat in category_name)
         
+        AnswerPics = []
+        hint_image = ''
+        
+        # gather the pictures
         pic_types = { 'AnswerPics', 'hint_image' }
         for pic_type in pic_types:
             if pic_type in request.files:
@@ -98,38 +104,28 @@ def addcontent():
                         # upload to S3
                         file_directory = 'repz/home/static/'
                         file_name = file_directory + picname
-                        Metadata = { "x-amz-meta-keyyo" : "value_yo" }
+                        Metadata = { "x-amz-meta-question" : question_name }
                         ExtraArgs = { 'Metadata' : Metadata }
                         location_string = upload_file_to_s3(file_name, ExtraArgs)
-        
-        # if form.hint_image.data:
-        #     filename = images.save(form.hint_image.data)
-        #     file_directory = 'repz/home/static/'
-        #     file_name = file_directory + filename
-        #     Metadata = { "x-amz-meta-keyyo" : "value_yo" }
-        #     ExtraArgs = { 'Metadata' : Metadata }
-        #     location_string = upload_file_to_s3(file_name, ExtraArgs)
-           
-        # if 'AnswerPics[]' in request.files:
-        #     AnswerPics = request.files.getlist('AnswerPics[]')
-        #     answer_pics = []
-        #     for answer_pic in AnswerPics:
-        #         if answer_pic and allowed_file(answer_pic.filename):
-        #             picname = secure_filename(answer_pic.filename)
-        #             answer_pics.append(picname)
-        #             answer_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))   
-           
+                        # save location string to DB
+                        if pic_type == 'AnswerPics':
+                            answer_pic_dbstring = answer_pics(
+                                   answer_pic=location_string
+                            )
+                        
+
+            
         # create new question!
-        # new_question = question(question_name=question_name,
-        #                         question_text=question_text,
-        #                         hint=hint,
-        #                         created_on=func.now(),
-        #                         answer=answer,
-        #                         categories=category_name,
-        #                         # created_by= current_user.id,
-        #                         )
-        # session.add(new_question)
-        # session.commit()
+        new_question = question(question_name=question_name,
+                                question_text=question_text,
+                                hint=hint,
+                                created_on=func.now(),
+                                answer=answer,
+                                categories=selected_categories,
+                                # created_by= current_user.id,
+                                )
+        session.add(new_question)
+        session.commit()
         flash('New question created!', category='success')
         result = session.execute(select(category))
         category_list.extend(cat.category_name for cat in result.scalars())
@@ -193,4 +189,3 @@ def clean_for_html(unclean:str) -> str:
 #         category_list.append(cat_name)
 #     category_list = category_list.sort()
 #     return category_list
-
