@@ -130,8 +130,8 @@ def addcontent():
                                 )
         # append categories so it dont glitch
         for cat_name in category_names:
-             # first grab the category act
-            cat = session.execute(select(category).where(category.category_name == cat_name)).first()
+            query = Query([category]).filter(category.category_name == cat_name)
+            cat = query.with_session(session).first()
             new_question.categories.append(cat)
         
         
