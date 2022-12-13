@@ -71,7 +71,7 @@ def addcontent():
         hint = request.form.get('hint')
         answer = request.form.get('answer')
         
-        category_name = request.form.getlist('category_name')      
+        category_names = request.form.getlist('category_name')      
 
     #  TEESTING MULTIPLE IMAGE UPLOADS
 
@@ -85,10 +85,10 @@ def addcontent():
             return flash('question already exists!', category='failure')
         selected_categories = []
         #  if only one category is selected
-        if isinstance(category_name, str):
-            selected_categories.extend(category_name)
-        else:
-            selected_categories.extend(selected_cat for selected_cat in category_name)
+        # if isinstance(category_name, str):
+        #     selected_categories.extend(category_name)
+        # else:
+        #     selected_categories.extend(selected_cat for selected_cat in category_name)
         
         AnswerPics = []
         hint_image = ''
@@ -129,8 +129,10 @@ def addcontent():
                                 # created_by= current_user.id,
                                 )
         # append categories so it dont glitch
-        cat_name = category(category_name=category_name)
-        new_question.categories.append(cat_name)
+        for cat_name in category_names:
+             # first grab the category act
+            cat = session.execute(select(category).where(category.category_name == cat_name)).first()
+            new_question.categories.append(cat)
         
         
         session.add(new_question)
