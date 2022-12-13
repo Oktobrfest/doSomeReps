@@ -12,28 +12,30 @@ Add Content
         <script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
         {{ flask_util_js.js }}
         <script type="text/javascript" src="/static/index.js"></script>
-        <label for="question_name" class="required">Question Name</label>
-        <input type="text" class="form-control required" id="question_name" name="question_name"
-            placeholder="Enter question name" required />
+        <span class="form-group form-inline" style="white-space:nowrap">
+            <label for="question_name" class="required form-label">Question Name</label>
+            <input type="text" class="form-control required" id="question_name" name="question_name"
+                placeholder="Enter question name" required />
+        </span>
         {# question text #}
-        <label for="question_text" class="required">Question Text</label>
+        <label for="question_text" class="required form-label">Question Text</label>
         <textarea class="form-control question_text required" id="question_text" name="question_text"
             placeholder="Enter question here" required></textarea>
         {# upload image for question #}
         <p id="upload_question_image"> Upload a Question Image:
-        {{ form.csrf_token }}
-        {{ form.question_image }}</p>
-       
+            {{ form.csrf_token }}
+            {{ form.question_image }}</p>
+
 
         &NonBreakingSpace;
         {# question Hint #}
-        <section id="hint_area" class="hint-section">
-        <label for="hint">Hint</label>
-        <textarea class="form-control hint" id="hint" name="hint" placeholder="Enter hint"></textarea>
-         <p id="upload_hint_image">Upload a Hint Image:
-        {{ form.hint_image }}
-        </p>
-        </section>
+        <div id="hint_area" class="hint-section">
+            <label for="hint">Hint</label>
+            <textarea class="form-control hint" id="hint" name="hint" placeholder="Enter hint"></textarea>
+            <p id="upload_hint_image">Upload a Hint Image:
+                {{ form.hint_image }}
+            </p>
+        </div>
         {# question Answer #}
         <label for="answer" class="required">Answer</label>
         <textarea class="form-control answer" id="answer" name="answer" placeholder="Enter answer here"

@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 {% block new_cat %}
 <!-- <form id="new_cat" method="post"> -->
-<form id="new_cat">
+    <div class="penis-stew">
+        <form id="new_cat" class="new-cat-creation">
     <label for="add_category_field">Add New Category</label>
     <input type="text" id="add_category_field" name="add_category_field">
     <!-- <button type="button" name="add_category_submit" id="add_category_submit" class="btn btn-success">Add Me!</button> -->
     <input type="submit" name="add_category_submit" id="add_category_submit" class="btn btn-success" value="Add!">
 </form>
+</div>
 <script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
 {{ flask_util_js.js }}
 <script type="text/javascript" src="/static/index.js"></script>
