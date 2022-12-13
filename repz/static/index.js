@@ -33,7 +33,7 @@ function parseJSON(response) {
 }
 
 function addShow(data, htl) {
-    if (data !== ''){
+    if ((data !== '') && (data[0] !== '')){
     // var span = document.getElementById('resTextlt');
     var node=document.createElement("li");
     node.className = 'list-group-item'
@@ -57,10 +57,31 @@ function addShow(data, htl) {
     }
 }
 
+
+// bind only once attempt#1
+//  didnt work : document.onload = runOnce(document);
+document.addEventListener('readystatechange', event => { 
+
+    // When HTML/DOM elements are ready:
+    // if (event.target.readyState === "interactive") {   //does same as:  ..addEventListener("DOMContentLoaded"..
+    //     runOnce(document);
+    // }
+
+    // When window loaded ( external resources are loaded too- `css`,`src`, etc...) 
+     if (event.target.readyState === "complete") {
+        runOnce(document);
+     }
+});
+
+
+function runOnce(document) {
  var form = document.getElementById('new_cat');
  if(form){
-form.addEventListener('submit', addSubmit);
+form.addEventListener('submit', addSubmit, {
+    once: true,
+  });
  }
+};
 
 // //Collapsible control
 // var coll = document.getElementsByClassName("collapsible");
