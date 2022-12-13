@@ -4,12 +4,12 @@ Add Content
 {% endblock title %}
 {% block content %}
 <h1 align="center">New Question</h1>
-  {% include "new_cat.html" %}
+{% include "new_cat.html" %}
 <form id="add_question" enctype="multipart/form-data" method="post">
     <div class="form-group">
         {% include "categories.html" %}
-      
-        <hr/>
+
+        <hr />
         <script src="https://unpkg.com/promise-polyfill@7.1.2/dist/polyfill.min.js"></script>
         <script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
         {{ flask_util_js.js }}
@@ -22,24 +22,28 @@ Add Content
         <textarea class="form-control question_text required" id="question_text" name="question_text"
             placeholder="Enter question here" required></textarea>
         {# upload image for question #}
-        Upload a Question Image:
+        <p id="upload_question_image"> Upload a Question Image:
         {{ form.csrf_token }}
-        {{ form.hint_image }}
-               
+        {{ form.question_image }}</p>
        
+
         &NonBreakingSpace;
         {# question Hint #}
         <label for="hint">Hint</label>
         <textarea class="form-control hint" id="hint" name="hint" placeholder="Enter hint"></textarea>
+         <p id="upload_hint_image">Upload a Hint Image:
+        {{ form.hint_image }}
+        </p>
         {# question Answer #}
         <label for="answer" class="required">Answer</label>
         <textarea class="form-control answer" id="answer" name="answer" placeholder="Enter answer here"
             required></textarea>
-          <dl>
-                    <p>
-                        <input type="file" name="AnswerPics" multiple="true" autocomplete="off">
-                    </p>
-                </dl>
+        <dl>
+            <p>
+                Upload answer images:
+                <input type="file" name="answer_pics" multiple="true" autocomplete="off">
+            </p>
+        </dl>
 
 
 

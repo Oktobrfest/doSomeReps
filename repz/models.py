@@ -25,12 +25,12 @@ question_categories = Table(
     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
 )
 
-answer_pictures = Table(
-    "answer_pic_association",
-    Base.metadata,
-    Column("answer_pics", ForeignKey("answer_pics.answer_pic"), primary_key=True),
-    Column("question_id", ForeignKey("question.question_id"), primary_key=True),
-)
+# answer_pictures = Table(
+#     "answer_pic_association",
+#     Base.metadata,
+#     Column("answer_pics", ForeignKey("answer_pics.answer_pic"), primary_key=True),
+#     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
+# )
 
 
 class users(UserMixin, Base):
@@ -75,14 +75,14 @@ class category(Base):
         "question", secondary=question_categories, back_populates="categories"
     )
     
-class answer_pics(Base):
-    __tablename__ = "answer_pics"
-    answer_pic = sa.Column(
-        sa.String(1024), nullable=False, unique=True, primary_key=True
-    )
-    rel_question_id = relationship(
-        "question", secondary=answer_pictures, back_populates="answer_picz"
-    )
+# class answer_pics(Base):
+#     __tablename__ = "answer_pics"
+#     answer_pic = sa.Column(
+#         sa.String(1024), nullable=False, unique=True, primary_key=True
+#     )
+#     rel_question_id = relationship(
+#         "question", back_populates="answer_picz"
+#     )
 
 
 class level(Base):
@@ -112,11 +112,30 @@ class question(Base):
     categories = relationship(
         "category", secondary=question_categories, back_populates="questions"
     )
-    answer_picz = relationship(
-        "answer_pics", secondary=answer_pictures, back_populates="rel_question_id"
-    )
+    # answer_picz = relationship(
+    #     "answer_pics", back_populates="rel_question_id"
+    # )
     quizqs = relationship("quizq")    
+    
+    pics = relationship("pic", back_populates="parent_question")
 
+
+class pic(Base):
+    __tablename__ = "pic"
+    pic_id = Column(sa.String(600), primary_key=True)
+    question_id = Column(Integer, ForeignKey("question.question_id"))
+    parent_question = relationship("question", back_populates="pics")
+
+
+
+# class answer_pics(Base):
+#     __tablename__ = "answer_pics"
+#     answer_pic = sa.Column(
+#         sa.String(1024), nullable=False, unique=True, primary_key=True
+#     )
+#     rel_question_id = relationship(
+#         "question", back_populates="answer_picz"
+#     )
 
 class quizq(Base):
     __tablename__ = "quizq"

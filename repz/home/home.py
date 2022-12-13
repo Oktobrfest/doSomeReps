@@ -26,7 +26,9 @@ home = Blueprint(
 )
 
 class MyForm(FlaskForm):
+    question_image = FileField('question_image')
     hint_image = FileField('hint_image')
+    
     # question2 = StringField(u'Question text', validators=[validators.input_required()])
     
     # form upload shit
@@ -90,11 +92,12 @@ def addcontent():
         # else:
         #     selected_categories.extend(selected_cat for selected_cat in category_name)
         
-        AnswerPics = []
+        answer_pics = []
         hint_image = ''
+        question_image = ''
         
         # gather the pictures
-        pic_types = { 'AnswerPics', 'hint_image' }
+        pic_types = { 'answer_pics', 'hint_image', 'question_image' }
         for pic_type in pic_types:
             if pic_type in request.files:
                 pictures = request.files.getlist(pic_type)
@@ -108,11 +111,11 @@ def addcontent():
                         # upload to S3
                         file_directory = 'repz/home/static/'
                         file_name = file_directory + picname
-                        Metadata = { "x-amz-meta-question" : question_name }
+                        Metadata = { "x-amz-meta-question" : question_name,  "x-amz-meta-pic_type" : pic_type }
                         ExtraArgs = { 'Metadata' : Metadata }
                         location_string = upload_file_to_s3(file_name, ExtraArgs)
                         # save location string to DB
-                        if pic_type == 'AnswerPics':
+                        if pic_type == 'answer_pics':
                             answer_pic_dbstring = answer_pics(
                                    answer_pic=location_string
                             )
