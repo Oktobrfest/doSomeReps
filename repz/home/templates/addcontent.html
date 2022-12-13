@@ -8,8 +8,6 @@ Add Content
 <form id="add_question" enctype="multipart/form-data" method="post">
     <div class="form-group">
         {% include "categories.html" %}
-
-        <hr />
         <script src="https://unpkg.com/promise-polyfill@7.1.2/dist/polyfill.min.js"></script>
         <script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
         {{ flask_util_js.js }}
@@ -29,18 +27,20 @@ Add Content
 
         &NonBreakingSpace;
         {# question Hint #}
+        <section id="hint_area" class="hint-section">
         <label for="hint">Hint</label>
         <textarea class="form-control hint" id="hint" name="hint" placeholder="Enter hint"></textarea>
          <p id="upload_hint_image">Upload a Hint Image:
         {{ form.hint_image }}
         </p>
+        </section>
         {# question Answer #}
         <label for="answer" class="required">Answer</label>
         <textarea class="form-control answer" id="answer" name="answer" placeholder="Enter answer here"
             required></textarea>
         <dl>
             <p>
-                Upload answer images:
+                Upload Answer Images:
                 <input type="file" name="answer_pics" multiple="true" autocomplete="off">
             </p>
         </dl>

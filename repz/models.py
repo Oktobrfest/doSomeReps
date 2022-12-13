@@ -117,14 +117,17 @@ class question(Base):
     # )
     quizqs = relationship("quizq")    
     
-    pics = relationship("pic", back_populates="parent_question")
+    pics = relationship("q_pic", back_populates="parent_question")
 
 
-class pic(Base):
-    __tablename__ = "pic"
+class q_pic(Base):
+    __tablename__ = "q_pic"
     pic_id = Column(sa.String(600), primary_key=True)
     question_id = Column(Integer, ForeignKey("question.question_id"))
+    pic_type = Column(sa.String(25))
+    
     parent_question = relationship("question", back_populates="pics")
+ 
 
 
 

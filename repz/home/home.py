@@ -7,7 +7,7 @@ from flask_login import current_user, login_required, logout_user
 from sqlalchemy.orm import Query
 from sqlalchemy import select
 from ..database import Base, engine, session
-from ..models import category, question, answer_pics
+from ..models import category, question, q_pic
 import re
 from sqlalchemy.sql import func
 from flask_uploads import configure_uploads, IMAGES, UploadSet
@@ -92,33 +92,7 @@ def addcontent():
         # else:
         #     selected_categories.extend(selected_cat for selected_cat in category_name)
         
-        answer_pics = []
-        hint_image = ''
-        question_image = ''
-        
-        # gather the pictures
-        pic_types = { 'answer_pics', 'hint_image', 'question_image' }
-        for pic_type in pic_types:
-            if pic_type in request.files:
-                pictures = request.files.getlist(pic_type)
-                pics = []
-                for pic in pictures:
-                    if pic and allowed_file(pic.filename):
-                        # save it to web server
-                        picname = secure_filename(pic.filename)
-                        pics.append(picname)
-                        pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))
-                        # upload to S3
-                        file_directory = 'repz/home/static/'
-                        file_name = file_directory + picname
-                        Metadata = { "x-amz-meta-question" : question_name,  "x-amz-meta-pic_type" : pic_type }
-                        ExtraArgs = { 'Metadata' : Metadata }
-                        location_string = upload_file_to_s3(file_name, ExtraArgs)
-                        # save location string to DB
-                        if pic_type == 'answer_pics':
-                            answer_pic_dbstring = answer_pics(
-                                   answer_pic=location_string
-                            )
+     
                         
 
             
@@ -136,7 +110,31 @@ def addcontent():
             query = Query([category]).filter(category.category_name == cat_name)
             cat = query.with_session(session).first()
             new_question.categories.append(cat)
+            
+        # pictures
+        answer_pics = []
+        hint_image = ''
+        question_image = ''
         
+        # gather the pictures
+        pic_types = { 'answer_pics', 'hint_image', 'question_image' }
+        for pic_type in pic_types:
+            if pic_type in request.files:
+                pictures = request.files.getlist(pic_type)
+                for pic in pictures:
+                    if pic and allowed_file(pic.filename):
+                        # save it to web server
+                        picname = secure_filename(pic.filename)
+                        pic.save(os.path.join(app.config['UPLOAD_FOLDER'], picname))
+                        # upload to S3
+                        file_directory = 'repz/home/static/'
+                        file_name = file_directory + picname
+                        Metadata = { "x-amz-meta-question" : question_name,  "x-amz-meta-pic_type" : pic_type }
+                        ExtraArgs = { 'Metadata' : Metadata }
+                        location_string = upload_file_to_s3(file_name, ExtraArgs)
+                        new_question.pics.append(q_pic( pic_id = location_string, 
+                                   pic_type = pic_type ))
+                                                  
         
         session.add(new_question)
         session.commit()

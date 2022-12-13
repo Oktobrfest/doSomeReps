@@ -12,3 +12,11 @@ form > * { padding-right: 1em; }
     color: red;
   }
 
+label[for=answer] {
+  font-size: 2.5em;
+}
+
+#hint_area {
+  background-color: gray;
+}
+
