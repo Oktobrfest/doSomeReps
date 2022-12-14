@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}
+Add Content
+{% endblock title %}
+{% block content %}
+<h1 align="center">Quiz Question</h1>
+
+<div class="q-question-section" id="q-question-section">
+
+    <h1 id="q-question-title" class="q-question-title"> Question title goes here {{ question_title }}</h1>
+
+    <p id="q-question">Question goes here {{ question_text }} </p>
+
+    <div id="q-hint-area" class="q-hint-section">
+        <button id="hint-button" class="btn btn-info" data-toggle="collapse" data-target="#q-hint-reveal">Show
+            Hint</button>
+
+        <div id="q-hint-reveal" class="q-hint-section collapse hide card">
+            {% if hint_img %}
+            <img class="card-img-top" src={{hint_img}}>
+            {% endif %}
+            <h5 class="card-title">Card title</h5>
+            <p id="q-hint-reveal-text" class="card-text q-hint-text">hint words go here</p>
+        </div>
+    </div>
+
+
+</div>
+
+<div id="q-result-section" class="q-result">
+    <h1>Result?</h1>
+    <button id="hint-button" class="btn btn-success" data-toggle="collapse"
+        data-target="#category-section">Correct!</button>
+
+    <button id="hint-button" class="btn btn-danger" data-toggle="collapse"
+        data-target="#category-section">Wrong</button>
+</div>
+
+{% endblock content %}

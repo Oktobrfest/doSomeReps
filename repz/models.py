@@ -175,3 +175,4 @@ class quizq(Base):
 #     __tablename__ = 'circuit_questions'
 #     circuit_id = Column(Integer, ForeignKey('circuit.circuit_id'))
 #     question_id = Column(Integer, ForeignKey('question.question_id'))
+

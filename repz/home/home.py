@@ -201,3 +201,28 @@ def clean_for_html(unclean:str) -> str:
 #         category_list.append(cat_name)
 #     category_list = category_list.sort()
 #     return category_list
+
+
+@home.route("/quiz", methods=["GET"], endpoint='quiz')
+def quiz():
+    
+    # question lookup
+    
+    if request.method == 'GET':
+        return render_template(
+            'quiz.html',
+            title="Quiz",
+            description=".",
+            user=current_user,
+            # category_list=category_list,
+            # form=form,
+            )
+        
+        
+        
+def q_lookup(current_user):
+    # do a query in db to see what question is next
+    question = 'f'
+    
+    
+    
