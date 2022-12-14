@@ -5,17 +5,20 @@ from flask import current_app as app
 from flask_login import current_user, login_required, logout_user
 
 from sqlalchemy.orm import Query
-from sqlalchemy import select
+from sqlalchemy import select, Interval, join
 from ..database import Base, engine, session
-from ..models import category, question, q_pic
+from ..models import category, question, q_pic, quizq, level
 import re
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, exists
+from sqlalchemy.sql.expression import bindparam
 from flask_uploads import configure_uploads, IMAGES, UploadSet
 from wtforms import FileField, StringField, validators
 from flask_wtf import FlaskForm
 from werkzeug.utils import secure_filename
 # from ..s3upload import upload_file
 from ..aws_s3 import *
+from datetime import datetime, timedelta
+import random
 
 
 # Blueprint Configuration
@@ -102,7 +105,7 @@ def addcontent():
                                 hint=hint,
                                 created_on=func.now(),
                                 answer=answer,
-                                # categories=selected_categories,
+                                categories=selected_categories,
                                 # created_by= current_user.id,
                                 )
         # append categories so it dont glitch
@@ -131,8 +134,8 @@ def addcontent():
                         file_name = file_directory + picname
                         Metadata = { "x-amz-meta-question" : question_name,  "x-amz-meta-pic_type" : pic_type }
                         ExtraArgs = { 'Metadata' : Metadata }
-                        location_string = upload_file_to_s3(file_name, ExtraArgs)
-                        new_question.pics.append(q_pic( pic_id = location_string, 
+                        location_string = upload_file_to_s3(file_name, ExtraArgs, object_name=picname)
+                        new_question.pics.append(q_pic( pic_string = location_string, 
                                    pic_type = pic_type ))
                                                   
         
@@ -203,26 +206,128 @@ def clean_for_html(unclean:str) -> str:
 #     return category_list
 
 
-@home.route("/quiz", methods=["GET"], endpoint='quiz')
+@home.route("/quiz", methods=["GET", "POST"], endpoint='quiz')
 def quiz():
     
     # question lookup
     
     if request.method == 'GET':
+        
+   
+        category_list = []
+        result = session.execute(select(category))
+        category_list.extend(cat.category_name for cat in result.scalars())
+             # first just get all the categories (then in v2.0 you'll have category lists saved with a new table.
+        selected_categories = category_list
+        
+        question_q = q_new_questions(current_user, selected_categories)
+        
+        #  get a random question from that list to display
+        current_question = randomizifier(question_q)
+       
+        
         return render_template(
             'quiz.html',
             title="Quiz",
             description=".",
             user=current_user,
-            # category_list=category_list,
+            category_list=category_list,
+            current_question = current_question
             # form=form,
             )
-        
-        
-        
-def q_lookup(current_user):
-    # do a query in db to see what question is next
+              
+
+    
+    
     question = 'f'
     
+def q_new_questions(current_user, selected_categories)-> list:
+    question_q = []
+    current_time = func.now(),
     
+    now = datetime.now()
+
+    two_hours_ago = now - timedelta(hours=2)
+
+# return all users created less then 2 hours ago
+# db.query(User).filter(User.created_on > two_hours_ago).all()
+#     fn = 
+    
+    # questions = select(quizq).join(level).where(    )
+    
+    # didnt work q_query = select(quizq).join(level.level_no)
+    # result = q_query.with_session(session) stmt = select(User).join(Address, User.id == Address.user_id)
+    if True:
+        q_query = select(quizq).exists().join(level, quizq.level_no == level.level_no)
+        
+        result = session.execute(q_query).exists()
+    
+    # didnt work q_query = select(quizq).join(quizq.level_no).join(quizq.question_id)
+    
+    # result = session.execute(q_query)
+        if not result:
+            penis = 1
+        else:
+            for r in result:
+                question_q.append(r)
+    # stmt = select(User).join(User.orders).join(Order.items)
+
+    
+    
+    
+    
+    
+    
+    
+    if len(question_q) < 1:
+        additional_questions = new_q_lookup(current_user, selected_categories)
+        question_q.extend(q for q in additional_questions)
+        
+        
+        
+        # make a list of all the top Level questions due to run then
+    
+    
+    
+    return question_q
+
+
+
+
+            # looks up all questions with an assigned Level ONLY. Sorted Decending (highest level first)
+def new_q_lookup(current_user, selected_categories):
+    subquery = select(question).join(quizq, question.question_id == quizq.question_id)
+    subq = session.execute(subquery)
+    new_q_query = select(question).where(question.question_id not in subq)
+    new_questions = session.execute(new_q_query)
+    
+    new_questions_list = []
+    for new_ques in new_questions:
+        new_questions_list.append(new_ques)
+        new_quizq = quizq(
+            user_id = current_user,
+            level_no = 0,        
+        )
+        penis = new_ques.question_id
+         #'NoneType' object has no attribute 'append' new_quizq.question_id.append(new_ques.question_id)
+        new_quizq.question_id = new_ques.question_id
+    
+    
+    return new_quizq
+
+
+def randomizifier(question_q):
+    if question_q is not None:
+        return random.choice(question_q)
+    else:
+        return None
+    
+
+#lookup all questions that are NOT IN quizqa first, so you can instantiate them as level 0 quizq rows.
+    # for r in result:
+    #     added_questions.append(r)    # for s in subq:
+    #     added_questions.append(s)
+        # loop thru all the questions and make a que list for the user so view can display their titles in sidebar
+    # do a query in db to see what question is next. You need to see what questions the user has created in question table and cross reference created_on column to see if it's been 24hrs since then and to then set that question to Level #1
+    # added_questions = []
     

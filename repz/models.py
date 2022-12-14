@@ -9,29 +9,12 @@ from sqlalchemy.orm import relationship, Mapped
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
-# I DONNO WDF THIS IS
-# from setuptools import setup, find_packages
-
-# setup(name="models", packages=find_packages())
-
-# def get_user(id):
-#     user = users.query.filter_by(id=user_id).first()
-#     return user
-
 question_categories = Table(
     "association",
     Base.metadata,
     Column("category", ForeignKey("category.category_name"), primary_key=True),
     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
 )
-
-# answer_pictures = Table(
-#     "answer_pic_association",
-#     Base.metadata,
-#     Column("answer_pics", ForeignKey("answer_pics.answer_pic"), primary_key=True),
-#     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
-# )
-
 
 class users(UserMixin, Base):
     __tablename__ = "users"  # <- must declare name for db table
@@ -58,13 +41,10 @@ class users(UserMixin, Base):
 
     # def __repr__(self):
     #     return f"User(id={self.id!r}, username={self.username!r}, pass={self.password}, created on={self.created_on}, email={self.email}, last_login={self.last_login})"
-
     # def is_active(self):
     #     return True
-
     # def is_authenticated(self):
     #     return True
-
 
 class category(Base):
     __tablename__ = "category"
@@ -75,16 +55,6 @@ class category(Base):
         "question", secondary=question_categories, back_populates="categories"
     )
     
-# class answer_pics(Base):
-#     __tablename__ = "answer_pics"
-#     answer_pic = sa.Column(
-#         sa.String(1024), nullable=False, unique=True, primary_key=True
-#     )
-#     rel_question_id = relationship(
-#         "question", back_populates="answer_picz"
-#     )
-
-
 class level(Base):
     __tablename__ = "level"
     level_no = sa.Column(
@@ -92,7 +62,6 @@ class level(Base):
     )
     days_hence = sa.Column(sa.Float, nullable=False)
     quizqs = relationship("quizq")
-
 
 class question(Base):
     __tablename__ = "question"
@@ -107,39 +76,25 @@ class question(Base):
     hint = sa.Column(sa.String(255), primary_key=False, unique=False, nullable=True)
     answer = sa.Column(sa.String(600), primary_key=False, unique=False, nullable=False)
     # created_by = sa.Column(Integer, ForeignKey("users.id"), nullable=True)
-    hint_image = sa.Column(sa.String(1024), primary_key=False, nullable=True)
+    # hint_image = sa.Column(sa.String(1024), primary_key=False, nullable=True)
     
     categories = relationship(
         "category", secondary=question_categories, back_populates="questions"
     )
-    # answer_picz = relationship(
-    #     "answer_pics", back_populates="rel_question_id"
-    # )
-    quizqs = relationship("quizq")    
-    
     pics = relationship("q_pic", back_populates="parent_question")
-
-
+    quizqs = relationship("quizq", back_populates="referenced_question")    
+    
 class q_pic(Base):
     __tablename__ = "q_pic"
-    pic_id = Column(sa.String(600), primary_key=True)
+    pic_id = sa.Column(
+        sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
+    )
+    pic_string = Column(sa.String(600))
     question_id = Column(Integer, ForeignKey("question.question_id"))
     pic_type = Column(sa.String(25))
     
     parent_question = relationship("question", back_populates="pics")
  
-
-
-
-# class answer_pics(Base):
-#     __tablename__ = "answer_pics"
-#     answer_pic = sa.Column(
-#         sa.String(1024), nullable=False, unique=True, primary_key=True
-#     )
-#     rel_question_id = relationship(
-#         "question", back_populates="answer_picz"
-#     )
-
 class quizq(Base):
     __tablename__ = "quizq"
     quizq_id = sa.Column(
@@ -148,9 +103,41 @@ class quizq(Base):
     question_id = sa.Column(Integer, ForeignKey("question.question_id"), nullable=False)
     user_id = sa.Column(Integer, ForeignKey("users.id"), nullable=False)
     level_no = sa.Column(Integer, ForeignKey("level.level_no"), nullable=False)
-    answered_on = sa.Column(sa.DateTime, index=False, unique=False, nullable=False)
-    correct = sa.Column(Bool, nullable=False)
-
+    answered_on = sa.Column(sa.DateTime, index=False, unique=False, nullable=True)
+    correct = sa.Column(Bool, nullable=True)
+    
+    referenced_question = relationship("question", back_populates="quizqs")
+    
+    
+    
+    
+    
+    
+    # answer_pictures = Table(
+#     "answer_pic_association",
+#     Base.metadata,
+#     Column("answer_pics", ForeignKey("answer_pics.answer_pic"), primary_key=True),
+#     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
+# )
+    # class answer_pics(Base):
+#     __tablename__ = "answer_pics"
+#     answer_pic = sa.Column(
+#         sa.String(1024), nullable=False, unique=True, primary_key=True
+#     )
+#     rel_question_id = relationship(
+#         "question", back_populates="answer_picz"
+#     )
+    # answer_picz = relationship(
+    #     "answer_pics", back_populates="rel_question_id"
+    # )
+# class answer_pics(Base):
+#     __tablename__ = "answer_pics"
+#     answer_pic = sa.Column(
+#         sa.String(1024), nullable=False, unique=True, primary_key=True
+#     )
+#     rel_question_id = relationship(
+#         "question", back_populates="answer_picz"
+#     )
 
 # class circuit(Base):
 #     __tablename__ = 'circuit'
