@@ -235,12 +235,7 @@ def quiz():
             current_question = current_question
             # form=form,
             )
-              
-
-    
-    
-    question = 'f'
-    
+                  
 def q_new_questions(current_user, selected_categories)-> list:
     question_q = []
     current_time = func.now(),
@@ -257,68 +252,90 @@ def q_new_questions(current_user, selected_categories)-> list:
     
     # didnt work q_query = select(quizq).join(level.level_no)
     # result = q_query.with_session(session) stmt = select(User).join(Address, User.id == Address.user_id)
-    if True:
-        q_query = select(quizq).exists().join(level, quizq.level_no == level.level_no)
+    
+#  worked i think but not with for loop  stmt = select(quizq).exists()
+    
+#     query = Query([stmt])
         
-        result = session.execute(q_query).exists()
+    query = Query([quizq])
+    quiz_questions_exist = query.with_session(session).first()
+    
+    if quiz_questions_exist is not None:
+        q_query = (            
+            select(quizq).where(quizq.level_no == level.level_no)
+        )
+        result = session.execute(q_query)
+    
+        question_q = []
+        if quiz_questions_exist != 'None':
+            for q in quiz_questions_exist:
+                question_q.append(q)
+        
+    
+    # if exists_criteria:
+    #     q_query = select(quizq).join(level, quizq.level_no == level.level_no)
+        
+    #     result = session.execute(q_query).exists()
     
     # didnt work q_query = select(quizq).join(quizq.level_no).join(quizq.question_id)
     
     # result = session.execute(q_query)
-        if not result:
-            penis = 1
-        else:
-            for r in result:
-                question_q.append(r)
+        # if not result:
+        #     penis = 1
+        # else:
+        #     for r in result:
+        #         question_q.append(r)
     # stmt = select(User).join(User.orders).join(Order.items)
-
-    
-    
-    
-    
-    
-    
     
     if len(question_q) < 1:
         additional_questions = new_q_lookup(current_user, selected_categories)
         question_q.extend(q for q in additional_questions)
         
-        
-        
         # make a list of all the top Level questions due to run then
-    
-    
-    
     return question_q
-
-
 
 
             # looks up all questions with an assigned Level ONLY. Sorted Decending (highest level first)
 def new_q_lookup(current_user, selected_categories):
     subquery = select(question).join(quizq, question.question_id == quizq.question_id)
     subq = session.execute(subquery)
-    new_q_query = select(question).where(question.question_id not in subq)
-    new_questions = session.execute(new_q_query)
+    new_q_query = select(question).where(question.question_id not in subq).limit(5)
+    new_questions = session.execute(new_q_query).scalars()
     
-    new_questions_list = []
-    for new_ques in new_questions:
-        new_questions_list.append(new_ques)
+    new_q_quiz_list = []
+    for new_question in new_questions:
         new_quizq = quizq(
             user_id = current_user,
             level_no = 0,        
         )
-        penis = new_ques.question_id
+        penis = new_question.question_id
          #'NoneType' object has no attribute 'append' new_quizq.question_id.append(new_ques.question_id)
-        new_quizq.question_id = new_ques.question_id
-    
-    
-    return new_quizq
+        new_quizq.question_id = new_question.question_id
+        # new_q_quiz_list.append(new_quizq)
+        session.add(new_quizq)
+        
+    session.commit()
+     #grab the list now that it's created
+    new_quiz_q_query = select(quizq).where(quizq.question_id in new_questions)
+    new_q_quiz_scalars = session.execute(new_quiz_q_query).scalars()
+    for new_quiz in new_q_quiz_scalars:
+        new_q_quiz_list.append(new_quiz)
+          
+    return new_q_quiz_list
 
 
 def randomizifier(question_q):
     if question_q is not None:
-        return random.choice(question_q)
+        rand_q = random.choice(question_q)
+        
+        # no worked
+        # quizq_query = select(quizq).where(quizq = rand_q)
+        # random_quizq = session.execute(quizq_query).scalars()  
+        
+        random_quizq = session.execute(rand_q).scalars()  
+         
+       
+        return random_quizq
     else:
         return None
     

@@ -7,9 +7,9 @@ Add Content
 
 <div class="q-question-section" id="q-question-section">
 
-    <h1 id="q-question-title" class="q-question-title"> Question title goes here {{ current_question.question_title }}</h1>
+    <h1 id="q-question-title" class="q-question-title"> Question title goes here {{ current_question['question_title'] }}</h1>
 
-    <p id="q-question">Question goes here {{ current_question.question_text }} </p>
+    <p id="q-question">Question goes here {{ current_question }} </p>
 
     <div id="q-hint-area" class="q-hint-section">
         <button id="hint-button" class="btn btn-info" data-toggle="collapse" data-target="#q-hint-reveal">Show
@@ -35,5 +35,7 @@ Add Content
     <button id="hint-button" class="btn btn-danger" data-toggle="collapse"
         data-target="#category-section">Wrong</button>
 </div>
+
+{{ current_question.question_text }} 
 
 {% endblock content %}
