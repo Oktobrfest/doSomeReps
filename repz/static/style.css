@@ -22,6 +22,8 @@ label[for=answer], label[for=hint] {
 
 #hint_area {
   background-color: #00ffff;
+  border-radius: 25px;
+  padding: 5px;
 }
 
 #hint {
@@ -31,11 +33,9 @@ label[for=answer], label[for=hint] {
   max-width: 650px;
 }
 
-
 #upload_hint_image {
   padding: 1.15em;
 }
-
 
 #question_name {
   width: 80%;
@@ -56,7 +56,7 @@ label[for=answer], label[for=hint] {
   background-color: #ff9933;
   }
 
-  #new_cat {
+#new_cat {
     border: 4px solid #ff9933;
     /* float: right; */
   }
@@ -65,4 +65,18 @@ label[for=answer], label[for=hint] {
   float: right;
  }
 
+.category-title {
+  margin-bottom: 0.5rem;
+  }
 
+.question-form-area {
+  border-radius: 25px;
+  background-color: #66ff66;
+  padding: 1.15em;
+}
+
+.answer-form-area {
+  border-radius: 25px;
+  background-color: #ff99ff;
+  padding: 1.15em;
+}
