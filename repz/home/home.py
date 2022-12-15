@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, jsonify, flash, Flask
 from flask import current_app as app
 from flask_login import current_user, login_required, logout_user
 
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, selectinload, joinedload
 from sqlalchemy import select, Interval, join
 from ..database import Base, engine, session
 from ..models import category, question, q_pic, quizq, level
@@ -19,6 +19,8 @@ from werkzeug.utils import secure_filename
 from ..aws_s3 import *
 from datetime import datetime, timedelta
 import random
+from flask import g
+import copy
 
 
 # Blueprint Configuration
@@ -157,6 +159,7 @@ def addcontent():
 
 
 @home.route("/add", methods=["POST"], endpoint='add')
+@login_required
 def add():
     newCategory = request.form.get("add_category_field", type=str)
     # validation
@@ -207,23 +210,36 @@ def clean_for_html(unclean:str) -> str:
 
 
 @home.route("/quiz", methods=["GET", "POST"], endpoint='quiz')
+@login_required
 def quiz():
+    # Redundant 
+    # user_id_no = current_user.get_id()
+    # UIDa = current_user.id
+    UID1 = g._login_user.id
+    
+    UID = copy.copy(UID1)
     
     # question lookup
     
     if request.method == 'GET':
+    #Uncomment/CHANGE THIS TO POST WHEN READY!
+    #if request.method == 'POST':
+        #selected_cats = request.form.getlist('category_name')
+        selected_cats = ['pooping']
         
-   
-        category_list = []
-        result = session.execute(select(category))
-        category_list.extend(cat.category_name for cat in result.scalars())
-             # first just get all the categories (then in v2.0 you'll have category lists saved with a new table.
-        selected_categories = category_list
-        
-        question_q = q_new_questions(current_user, selected_categories)
+        cats_query = select(category).where(category.category_name in selected_cats)
+        selected_categories = session.execute(cats_query)
+               
+        question_q = que_overdue_questions(UID, selected_categories)
         
         #  get a random question from that list to display
         current_question = randomizifier(question_q)
+        
+        question_scalar = session.execute(select(quizq).where(quizq.quizq_id == current_question.quizq_id)).scalar()
+        
+              #join Level to quizQ
+    # joined_question = select(level).join(quizq, level.level_no == q.level_no)
+    # quizq_with_level = session.execute(joined_question).scalar()
        
         
         return render_template(
@@ -236,7 +252,7 @@ def quiz():
             # form=form,
             )
                   
-def q_new_questions(current_user, selected_categories)-> list:
+def que_overdue_questions(UID, selected_categories):
     question_q = []
     current_time = func.now(),
     
@@ -256,20 +272,68 @@ def q_new_questions(current_user, selected_categories)-> list:
 #  worked i think but not with for loop  stmt = select(quizq).exists()
     
 #     query = Query([stmt])
-        
-    query = Query([quizq])
-    quiz_questions_exist = query.with_session(session).first()
+
+
+    # subq_not_null_quizq = select(quizq).where(quizq.answered_on == None).subquery()
     
-    if quiz_questions_exist is not None:
+    # stmt = select(question).join(subq_not_null_quizq, question.question_id == subq_not_null_quizq.c.question_id)
+        
+    # quest_wCats_qry = select(question).options(selectinload(question.categories)).where(question.categories in selected_categories).subquery()
+        
+    quest_wCats_qry = select(question).options(joinedload(question.categories)).where(question.categories in selected_categories).subquery()   
+        
+    joined_qz_qu_cat = select(quizq).join(quest_wCats_qry, quizq.question_id == quest_wCats_qry.c.question_id)     
+        
+        
+    # final_result = session.execute(joined_qz_qu_cat)    
+        
+        #test the above
+    rp = []
+    for obj in session.execute(joined_qz_qu_cat):
+        print(obj)
+        p = rp.append(r)
+        
+    final_result = session.execute(joined_qz_qu_cat)
+    rwz = []
+    for r in final_result:
+        p = rwz.append(r)
+        qid = r.question.question_id
+                
+        
+    ddd = []
+    quest_wCats_qry = select(question).options(selectinload(question.categories)).where(question.categories in selected_categories)
+    #USELESS- JUST FOR TESTING PURPOSES act
+    # for row in session.execute(quest_wCats_qry):
+    #     for a in row.question.categories:
+    #         dickwed = a.category_name 
+    #         CATNAME_YO = ddd.append(a.category_name)
+            
+    qus_wCats = session.execute(quest_wCats_qry)
+            
+    joined_qz_qu_cat = select(quizq).join(qus_wCats, quizq.question_id == qus_wCats.question.question_id)        
+          
+        # test if there are any in existance
+    query = Query([quizq]).filter(quizq.answered_on == 'NULL')
+    unanswered_quizes = query.with_session(session).all()
+    question_q = []
+    if unanswered_quizes is not None:
+               #join question to quizQ
+        joined_question = select(level).join(quizq, level.level_no == q.level_no)
+        quizq_with_level = session.execute(joined_question).scalar()
+        
+        
+        
+        #USELESS
         q_query = (            
             select(quizq).where(quizq.level_no == level.level_no)
         )
-        result = session.execute(q_query)
-    
-        question_q = []
-        if quiz_questions_exist != 'None':
-            for q in quiz_questions_exist:
-                question_q.append(q)
+        result = session.execute(q_query).scalars()
+        
+        if result != 'None':
+            for q in result:
+                to_que = que_determination(quizq)
+                if to_que:
+                    question_q.append(q)
         
     
     # if exists_criteria:
@@ -288,33 +352,44 @@ def q_new_questions(current_user, selected_categories)-> list:
     # stmt = select(User).join(User.orders).join(Order.items)
     
     if len(question_q) < 1:
-        additional_questions = new_q_lookup(current_user, selected_categories)
+        additional_questions = new_q_lookup(UID, selected_categories)
         question_q.extend(q for q in additional_questions)
         
         # make a list of all the top Level questions due to run then
     return question_q
 
 
+def que_determination(quizq) -> bool:
+
+    # see which questions are actualy due by mathing levels and todays datetime
+    if quizq.level_no == 0:
+        return True
+    # days_henc = quizq_with_level.days_hence
+   # if ((quizq_with_level.days_hence + 
+
+
             # looks up all questions with an assigned Level ONLY. Sorted Decending (highest level first)
-def new_q_lookup(current_user, selected_categories):
+def new_q_lookup(UID, selected_categories):
     subquery = select(question).join(quizq, question.question_id == quizq.question_id)
     subq = session.execute(subquery)
     new_q_query = select(question).where(question.question_id not in subq).limit(5)
     new_questions = session.execute(new_q_query).scalars()
     
+
+    
     new_q_quiz_list = []
     for new_question in new_questions:
         new_quizq = quizq(
-            user_id = current_user,
-            level_no = 0,        
+            user_id = UID,
+            level_no = 1,        
         )
         penis = new_question.question_id
          #'NoneType' object has no attribute 'append' new_quizq.question_id.append(new_ques.question_id)
         new_quizq.question_id = new_question.question_id
         # new_q_quiz_list.append(new_quizq)
         session.add(new_quizq)
-        
-    session.commit()
+        session.commit()
+   
      #grab the list now that it's created
     new_quiz_q_query = select(quizq).where(quizq.question_id in new_questions)
     new_q_quiz_scalars = session.execute(new_quiz_q_query).scalars()
@@ -326,16 +401,19 @@ def new_q_lookup(current_user, selected_categories):
 
 def randomizifier(question_q):
     if question_q is not None:
-        rand_q = random.choice(question_q)
+        if isinstance(question_q, list):
+            rand_q = copy.copy(random.choice(question_q)) #Crashed here. FIX THIS NEXT
+        else:
+            rand_q = copy.copy(question_q)
         
         # no worked
         # quizq_query = select(quizq).where(quizq = rand_q)
         # random_quizq = session.execute(quizq_query).scalars()  
         
-        random_quizq = session.execute(rand_q).scalars()  
+        # random_quizq = session.execute(rand_q).scalars()  
          
        
-        return random_quizq
+        return rand_q
     else:
         return None
     

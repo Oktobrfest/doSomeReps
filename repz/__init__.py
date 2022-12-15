@@ -1,5 +1,5 @@
 """Initialize Flask app."""
-from flask import Flask
+from flask import Flask, g
 import os, sys
 from .database import Base, engine, session
 # dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -71,20 +71,8 @@ def init_app():
         SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
         bucket = environ.get("BUCKET")
         
-        # s3_client = boto3.client(
-        #     Config.BUCKET,
-        #     aws_access_key_id = Config.ACCESS_KEY_ID,
-        #     aws_secret_access_key= Config.SECRET_ACCESS_KEY
-        # )
+        g.user = current_user
         
-        
-        # print(app.url_map) 
-        
-        # @app.route("/login", endpoint='login')
-        # def login():
-        #     return render_template( 'login' )
-        
-        # login_manager.blueprint_login_views = 'views.home'
         @login_manager.user_loader
         def load_user(user_id):
             if user_id == 'None':
@@ -108,6 +96,8 @@ def init_app():
             flash('You must be logged in to view that page.')
             # return render_template(url_for('homo.home1'))
             return flask.redirect(flask.url_for('auth.login', user=current_user))
+        
+
     
     Base.metadata.create_all(engine)
     
