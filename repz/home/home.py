@@ -219,30 +219,81 @@ def quiz():
     
     UID = copy.copy(UID1)
     
-    # question lookup
     
-    if request.method == 'GET':
+    # subq_not_null_quizq = select(quizq).where(quizq.answered_on == None).subquery()
+    
+    null_quizq = select(quizq).join(quest_wCats_qry, quizq.question_id == quest_wCats_qry.c.question_id).where(quizq.answered_on == None).subquery()
+    
+    
+    
+    
+    
+    # question lookup  null_quizq = select(quizq).join(quest_wCats_qry, quizq.question_id == quest_wCats_qry.c.question_id).where(quizq.answered_on == None).subquery()
+    
+    # if request.method == 'GET':
     #Uncomment/CHANGE THIS TO POST WHEN READY!
     #if request.method == 'POST':
         #selected_cats = request.form.getlist('category_name')
-        selected_cats = ['pooping']
+    selected_cats = ['pooping', 'pissing']
         
-        cats_query = select(category).where(category.category_name in selected_cats)
-        selected_categories = session.execute(cats_query)
-               
-        question_q = que_overdue_questions(UID, selected_categories)
+        
+    cats_query = select(category).where(category.category_name.in_(selected_cats))
+    selected_categories = session.execute(cats_query).scalars().all()
+        
+    cat_list_yo = []
+    pp = []
+    pp = (p.category_name for p in selected_categories)
+    dd = []
+    a = []
+    for s in selected_categories:
+        a = cat_list_yo.append(s.category_name)
+        r = dd.append(s.category_name)
+        fff = s.category_name
+    
+    selected_cats = ['pooping', 'pissing']
+    quest_wCats_qry = select(question).options(joinedload(question.categories)).where(question.categories.in_([a])).subquery()       
+        
+        
+ 
+        
+        
+    # final_result = session.execute(joined_qz_qu_cat)    
+        
+        #test the above
+    rp = []
+    for obj in session.execute(joined_qz_qu_cat):
+        print(obj)
+        p = rp.append(r)
+        
+    final_result = session.execute(joined_qz_qu_cat)
+    rwz = []
+    for r in final_result:
+        p = rwz.append(r)
+        qid = r.question.question_id
+                
+        
+    ddd = []
+    quest_wCats_qry = select(question).options(selectinload(question.categories)).where(question.categories in selected_categories)
+        
+        
+        
+        
+        
+      
+            
+    question_q = que_overdue_questions(UID, selected_categories)
         
         #  get a random question from that list to display
-        current_question = randomizifier(question_q)
+    current_question = randomizifier(question_q)
         
-        question_scalar = session.execute(select(quizq).where(quizq.quizq_id == current_question.quizq_id)).scalar()
+    question_scalar = session.execute(select(quizq).where(quizq.quizq_id == current_question.quizq_id)).scalar()
         
               #join Level to quizQ
     # joined_question = select(level).join(quizq, level.level_no == q.level_no)
     # quizq_with_level = session.execute(joined_question).scalar()
        
         
-        return render_template(
+    return render_template(
             'quiz.html',
             title="Quiz",
             description=".",
@@ -279,29 +330,10 @@ def que_overdue_questions(UID, selected_categories):
     # stmt = select(question).join(subq_not_null_quizq, question.question_id == subq_not_null_quizq.c.question_id)
         
     # quest_wCats_qry = select(question).options(selectinload(question.categories)).where(question.categories in selected_categories).subquery()
-        
-    quest_wCats_qry = select(question).options(joinedload(question.categories)).where(question.categories in selected_categories).subquery()   
-        
-    joined_qz_qu_cat = select(quizq).join(quest_wCats_qry, quizq.question_id == quest_wCats_qry.c.question_id)     
-        
-        
-    # final_result = session.execute(joined_qz_qu_cat)    
-        
-        #test the above
-    rp = []
-    for obj in session.execute(joined_qz_qu_cat):
-        print(obj)
-        p = rp.append(r)
-        
-    final_result = session.execute(joined_qz_qu_cat)
-    rwz = []
-    for r in final_result:
-        p = rwz.append(r)
-        qid = r.question.question_id
-                
-        
-    ddd = []
-    quest_wCats_qry = select(question).options(selectinload(question.categories)).where(question.categories in selected_categories)
+        #qlalchemy.exc.InvalidRequestError: Can't compare a collection to an object or collection; use contains() to test for membership. 
+    # quest_wCats_qry = select(question).options(joinedload(question.categories)).where(question.categories in selected_categories).subquery()   
+    
+    
     #USELESS- JUST FOR TESTING PURPOSES act
     # for row in session.execute(quest_wCats_qry):
     #     for a in row.question.categories:
