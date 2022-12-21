@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, jsonify, flash, Flask
 from flask import current_app as app
 from flask_login import current_user, login_required, logout_user
 
-from sqlalchemy.orm import Query, selectinload, joinedload
+from sqlalchemy.orm import Query, selectinload, joinedload, aliased, subqueryload, with_parent
 from sqlalchemy import select, Interval, join
 from ..database import Base, engine, session
 from ..models import category, question, q_pic, quizq, level
@@ -220,11 +220,7 @@ def quiz():
     UID = copy.copy(UID1)
     
     
-    # subq_not_null_quizq = select(quizq).where(quizq.answered_on == None).subquery()
-    
-    null_quizq = select(quizq).join(quest_wCats_qry, quizq.question_id == quest_wCats_qry.c.question_id).where(quizq.answered_on == None).subquery()
-    
-    
+  
     
     
     
@@ -234,28 +230,72 @@ def quiz():
     #Uncomment/CHANGE THIS TO POST WHEN READY!
     #if request.method == 'POST':
         #selected_cats = request.form.getlist('category_name')
-    selected_cats = ['pooping', 'pissing']
+    selected_cats = ['pissing']
         
-        
+        # get selected categories as a sqlalchemy object (not sure if necessary)
     cats_query = select(category).where(category.category_name.in_(selected_cats))
     selected_categories = session.execute(cats_query).scalars().all()
-        
-    cat_list_yo = []
-    pp = []
-    pp = (p.category_name for p in selected_categories)
-    dd = []
-    a = []
+           
+    # pp = (p.category_name for p in selected_categories) # returns weird generator object
+    cat_list = []
     for s in selected_categories:
-        a = cat_list_yo.append(s.category_name)
-        r = dd.append(s.category_name)
-        fff = s.category_name
+        a = cat_list.append(s.category_name)
+        
+        
+    # Artist.query.filter(Artist.albums.any(genre_id=genre.id)).all()
+
+    # Artist.query.join(Artist.albums).filter_by(genre_id=genre.id).all()    
+       
+    sub = select(category).where(category.category_name.in_(selected_cats)).subquery()
     
-    selected_cats = ['pooping', 'pissing']
-    quest_wCats_qry = select(question).options(joinedload(question.categories)).where(question.categories.in_([a])).subquery()       
+    stmt = select(question).where(category.category_name.in_(selected_cats))
+   
+   #worked but didnt look like much ahppened. couldnt find cat names
+    # ee = select(question).options(joinedload(category.category_name))
+    # stmt = select(question).options(joinedload(category))
+    
+    result = session.execute(stmt)
+    result_list = []
+    for r in result.scalars():
+        a = result_list.append(r)
+    
+           
+   
+    
+    
+    # TypeError: Boolean value of this clause is not defined
+    ee = select(question).options(joinedload(sub))
+                            # .joinedload(Item.keywords))
+   
+    # sub.query.join(question_categories).join(category).all()
+   
+   
+    stmt = select(question.question_id).join(sub, question.question_id == sub.c.user_id)
+   
+   
+    #didnt work quest_wCats_qry = select(question).options(subqueryload(sub))
+    
+    
+    quest_wCats_qry = select(question).options(selectinload(question.categories)).where(question.categories in selected_categories)
+ 
+ 
+    # 
+    
+    question_q = que_overdue_questions(UID, cat_list)
+        
+        
+    # NotImplementedError: in_() not yet supported for relationships.  For a simple many-to-one, use in_() against the set of foreign key values.
+    # quest_wCats_qry = select(question).options(joinedload(question.categories)).where(question.categories.in_([a])).subquery()       
         
         
  
-        
+          # subq_not_null_quizq = select(quizq).where(quizq.answered_on == None).subquery()
+    
+    # query(User).options(subqueryload(User.orders))
+    
+    null_quizq = select(quizq).join(quest_wCats_qry, quizq.question_id == quest_wCats_qry.c.question_id).where(quizq.answered_on == None).subquery()
+    
+    
         
     # final_result = session.execute(joined_qz_qu_cat)    
         
@@ -276,13 +316,11 @@ def quiz():
     quest_wCats_qry = select(question).options(selectinload(question.categories)).where(question.categories in selected_categories)
         
         
-        
-        
+
         
       
             
-    question_q = que_overdue_questions(UID, selected_categories)
-        
+   
         #  get a random question from that list to display
     current_question = randomizifier(question_q)
         
@@ -310,6 +348,97 @@ def que_overdue_questions(UID, selected_categories):
     now = datetime.now()
 
     two_hours_ago = now - timedelta(hours=2)
+    
+    
+    # NEED TO GRAB ALL QUIZQ THAT 1. quizq.answered_on (OR correct) = NULL  AND 2. Are in the selected Categories. THAT"S IT!
+    
+#     # TESTING SUBQUERY-LOAD WORKED- BUT IT'S LEGACY SHIT GIVING UP ON IT!
+#     # subquery-load the orders= "CATEGORIES" collection on User="QuESTION"
+#     qry = Query.with_entities(question).options(subqueryload(question.categories))
+    #     result = qry.with_session(session)
+#     ary = []
+#     for r in result:
+#         d = ary.append(r)
+# # subquery-load Order.items and then Item.keywords
+#     qry_b = Query(question).options(subqueryload(question.quizqs).subqueryload(question.categories))
+    #     result_b = qry_b.with_session(session).scalars()
+#     ary_b = []
+#     for rb in result_b:
+#         d = ary.append(rb)
+    
+    
+    # testing 2.0 style where AND .any clauses AND .all() apparently
+   # qlalchemy.exc.InvalidRequestError: Can't compare a collection to an object or collection; use contains() to test for membership.
+    # stmt = select(question.question_id).where(question.categories.any(question.categories == selected_categories))
+
+    #sqlalchemy.exc.ArgumentError: Mapped instance expected for relationship comparison to object.   Classes, queries and other SQL elements are not accepted in this context; for comparison with a subquery, use question.categories.has(**criteria).
+    # same error with the list of cats
+    # stmt = select(question.question_id).where(question.categories.any(question.categories.contains(selected_categories)))
+    
+    #sqlalchemy.exc.InvalidRequestError: 'has()' not implemented for collections.  Use any().
+    # failed on both cat list types
+    # stmt = select(question.question_id).where(question.categories.any(question.categories.has(selected_categories)))
+    
+    #AttributeError: 'list' object has no attribute '_annotate' (failed for both types)
+    # stmt = select(question.question_id).where(question.categories.any(selected_categories))
+    
+    # qlalchemy.exc.ArgumentError: Mapped instance expected for relationship comparison to object.   Classes, queries and other SQL elements are not accepted in this context; for comparison with a subquery, use question.categories.has(**criteria).
+    # query = select(question.question_id).where(question.categories.contains(selected_categories))
+    #      also same error: 
+    #              query = select(question.question_id).where(question.categories.contains(c for c in selected_categories))
+         
+    # query = select(question.question_id).where(question.categories.contains(c for c in selected_categories))     
+    
+    
+    query = session.query(question.question_id).filter(question.categories.contains(['pooping', 'pissing']))
+    
+#     q = aliased(question)
+#     query = select(q).where(
+#     with_parent(q, question.categories.of_type(a2))
+# )
+    
+    
+    
+    
+         
+    result_d = session.execute(query).all()
+    
+    
+    ary_c = []
+    for r in result_d:
+        d = ary_c.append(r)
+
+#     Original code
+#     stmt = select(User.fullname).where(
+# ...     User.addresses.any(Address.email_address == "squirrel@squirrelpower.org")
+# ... )
+# >>> session.execute(stmt).all()
+    
+    
+    
+    p = 'penis'
+# lazily load Order.items, but when Items are loaded,
+# subquery-load the keywords collection
+# query(Order).options(
+#     lazyload(Order.items).subqueryload(Item.keywords))
+
+    
+    # ORIGINAL CODE:    
+    # subquery-load the "orders" collection on "User"
+# query(User).options(subqueryload(User.orders))
+
+# # subquery-load Order.items and then Item.keywords
+# query(Order).options(
+#     subqueryload(Order.items).subqueryload(Item.keywords))
+
+# # lazily load Order.items, but when Items are loaded,
+# # subquery-load the keywords collection
+# query(Order).options(
+#     lazyload(Order.items).subqueryload(Item.keywords))
+    
+    
+    
+    
 
 # return all users created less then 2 hours ago
 # db.query(User).filter(User.created_on > two_hours_ago).all()
