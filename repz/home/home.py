@@ -1,6 +1,6 @@
 from re import A
 from typing import final
-from flask import Blueprint, render_template, request, jsonify, flash, Flask
+from flask import Blueprint, render_template, request, jsonify, flash, Flask, flash, redirect, url_for
 from flask import current_app as app
 from flask_login import current_user, login_required, logout_user
 
@@ -20,7 +20,7 @@ import re
 from sqlalchemy.sql import func, exists
 from sqlalchemy.sql.expression import bindparam
 from flask_uploads import configure_uploads, IMAGES, UploadSet
-from wtforms import FileField, StringField, validators
+from wtforms import FileField, StringField, validators, SubmitField, IntegerField
 from flask_wtf import FlaskForm
 from werkzeug.utils import secure_filename
 
@@ -66,16 +66,19 @@ def homepage():
         description=".",
         user=current_user,
     )
-
+def get_all_categories():
+    category_list = []
+    result = session.execute(select(category))
+    category_list.extend(cat.category_name for cat in result.scalars())
+    return category_list
+        
 
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
 @login_required
 def addcontent():
     form = MyForm()
-    category_list = []
+    category_list = get_all_categories()
     if request.method == "GET":
-        result = session.execute(select(category))
-        category_list.extend(cat.category_name for cat in result.scalars())
         return render_template(
             "addcontent.html",
             title="Add content",
@@ -108,12 +111,7 @@ def addcontent():
         if existing_q_name is not None or existing_q_text is not None:
             return flash("question already exists!", category="failure")
         selected_categories = []
-        #  if only one category is selected
-        # if isinstance(category_name, str):
-        #     selected_categories.extend(category_name)
-        # else:
-        #     selected_categories.extend(selected_cat for selected_cat in category_name)
-
+        
         # create new question!
         new_question = question(
             question_name=question_name,
@@ -163,8 +161,6 @@ def addcontent():
         session.add(new_question)
         session.commit()
         flash("New question created!", category="success")
-        result = session.execute(select(category))
-        category_list.extend(cat.category_name for cat in result.scalars())
         return render_template(
             "addcontent.html",
             title="Add content",
@@ -296,8 +292,8 @@ def quiz():
                 "hint": r.question.hint,
                 "answer": r.question.answer,
                 "level_no": r.quizq.level_no,
-                "categories_REDUNDANT": categories,
-                "catz_DEF_REDUNDANT_AND_LIKELY_NO_WORKS": catz,
+                "categories": categories,
+                "catz_DEF_REDUNDANT": catz,
                 "pics": pics,                
             }
        
@@ -323,24 +319,58 @@ def quiz():
     )
 
 
+class QueAdditionForm(FlaskForm):
+    qty_to_que = IntegerField("qty_to_que")
+    que_more_submit = SubmitField("que_more_submit")
+    
+
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
 @login_required
 def quemore():
+    form = QueAdditionForm()
+    
+    UID = g._login_user.id
+    category_list = get_all_categories()
+    description = 'Que More Questions'
+    
     if request.method == "POST":
-        additional_questions = new_q_lookup(UID, selected_cats)
-        que_list.extend(q for q in additional_questions)
+        
+        
+        if form.validate_on_submit():
+            qty_to_que = form.qty_to_que.data
+            que_more_submit = form.que_more_submit.data
+            category_names = request.form.getlist("category_name")
+            
+            qty_added = new_q_lookup(UID, category_names, qty_to_que)
+              
+            if qty_added < 1:
+                description="No More Questions Left- ADD MORE"
+                flash('No More Questions Left- ADD MORE')
+                return redirect(url_for('add'))
+                
+               
+            
+            msg = 'You added' + qty_added + "more questions to your que!"
+            flash(msg)
+            return redirect(url_for('quiz'))
+           
         
         
     return render_template(
         "quemore.html",
+        title="Que More Questions",
+        description=description,
         user=current_user,
+        form=form,
+        category_list=category_list,
          )
     
-def new_q_lookup(UID, selected_categories):
+def new_q_lookup(UID, selected_categories, qty_to_que):
     subquery = select(question).join(quizq, question.question_id == quizq.question_id)
     subq = session.execute(subquery)
-    new_q_query = select(question).where(question.question_id not in subq).limit(5)
+    new_q_query = select(question).where(question.question_id not in subq).limit(qty_to_que)
     new_questions = session.execute(new_q_query).scalars()
+    
 
     new_q_quiz_list = []
     for new_question in new_questions:
@@ -348,35 +378,28 @@ def new_q_lookup(UID, selected_categories):
             user_id=UID,
             level_no=1,
         )
-        penis = new_question.question_id
-        #'NoneType' object has no attribute 'append' new_quizq.question_id.append(new_ques.question_id)
         new_quizq.question_id = new_question.question_id
-        # new_q_quiz_list.append(new_quizq)
-        session.add(new_quizq)
-        session.commit()
-
-    # grab the list now that it's created
-    new_quiz_q_query = select(quizq).where(quizq.question_id in new_questions)
-    new_q_quiz_scalars = session.execute(new_quiz_q_query).scalars()
-    for new_quiz in new_q_quiz_scalars:
-        new_q_quiz_list.append(new_quiz)
-
-    return new_q_quiz_list
+        new_q_quiz_list.append(new_quizq)
+    qty_added = len(new_q_quiz_list)
+    session.add_all(new_q_quiz_list)
+    session.commit()
+    
+    return qty_added
 
 
-def randomizifier(question_q):
-    if question_q is not None:
-        if isinstance(question_q, list):
-            rand_q = copy.copy(random.choice(question_q))  # Crashed here. FIX THIS NEXT
-        else:
-            rand_q = copy.copy(question_q)
+# def randomizifier(question_q):
+#     if question_q is not None:
+#         if isinstance(question_q, list):
+#             rand_q = copy.copy(random.choice(question_q))  # Crashed here. FIX THIS NEXT
+#         else:
+#             rand_q = copy.copy(question_q)
 
-        # no worked
-        # quizq_query = select(quizq).where(quizq = rand_q)
-        # random_quizq = session.execute(quizq_query).scalars()
+#         # no worked
+#         # quizq_query = select(quizq).where(quizq = rand_q)
+#         # random_quizq = session.execute(quizq_query).scalars()
 
-        # random_quizq = session.execute(rand_q).scalars()
+#         # random_quizq = session.execute(rand_q).scalars()
 
-        return rand_q
-    else:
-        return None
+#         return rand_q
+#     else:
+#         return None

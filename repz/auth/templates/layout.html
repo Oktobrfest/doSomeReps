@@ -28,6 +28,18 @@
     {% block css %}{% endblock %}
 </head>
 
+<div id="msg-area">
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+</div>
+
 <body>
 {% include 'navigation.html' %}
 {% block content %}{% endblock %}
