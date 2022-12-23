@@ -15,11 +15,7 @@ Add Content
     <h1 id="q-question-title" class="q-question-title"> {{ q.question_name }}</h1>
 
     <p id="q-question">Question goes here {{ q.question_text }} </p>
-    question image:
     <div id="q-image" class="q-image-area">
-        a: {{ q.pics['question_image'] }}
-        b: {{ q.pics['question_image'][0] }}
-
         {% for pic in q.pics['question_image'] %}
         {% if pic %}
         <tr>
@@ -35,11 +31,21 @@ Add Content
         <button id="hint-button" class="btn btn-info" data-toggle="collapse" data-target="#q-hint-reveal">Show
             Hint</button>
         <div id="q-hint-reveal" class="q-hint-section collapse hide card">
-            {% if hint_img %}
-            <img class="card-img-top" src={{ q.pics.hint_image }}>
-            {% endif %}
-            <h5 class="card-title">HINT!</h5>
+
+            <h5 class="card-title hint-title">HINT!</h5>
             <p id="q-hint-reveal-text" class="card-text q-hint-text">hint words go here: {{ q.hint }}</p>
+            <div id="hint-image-area" class="hint-image-area">
+                {% for pic in q.pics['hint_image'] %}
+                {% if pic %}
+                <tr>
+                    <td> <img class="card-img-top hint-image" src="{{ pic }}"></td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+
+            </div>
+
+
         </div>
     </div>
     {% endif %}
@@ -50,22 +56,22 @@ Add Content
             Answer</button>
 
         <div id="q-answer-reveal" class="q-answer-section collapse hide card">
-            a: {{ q.pics['answer_pics'] }}
-            b: {{ q.pics['answer_pics'][0] }}
 
-            {% for pic in q.pics['answer_pics'] %}
-            {% if pic %}
-            <tr>
-                {{ pic }}
-                <td> <img class="answer-img" src="{{ pic }}"></td>
-            </tr>
-            {% endif %}
-            {% endfor %}
 
             {# {% if q.pics['answer_pics'][0] %} #}
             {# <!-- {% endif %} --> #}
             <h5 class="card-title">ANSWER:</h5>
             <p id="q-answer-reveal-text" class="card-text q-answer-text"> {{ q.answer }}</p>
+            <div id="answer-image" class="answer-image-area">
+                {% for pic in q.pics['answer_pics'] %}
+                {% if pic %}
+                <tr>
+                    {{ pic }}
+                    <td> <img class="answer-img" src="{{ pic }}"></td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </div>
         </div>
     </div>
 
