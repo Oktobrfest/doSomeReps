@@ -4,8 +4,8 @@ from flask import Blueprint, render_template, request, jsonify, flash, Flask
 from flask import current_app as app
 from flask_login import current_user, login_required, logout_user
 
-from sqlalchemy.orm import Query, selectinload, joinedload, aliased, subqueryload, with_parent
-from sqlalchemy import select, Interval, join
+from sqlalchemy.orm import Query, selectinload, joinedload, aliased, subqueryload, with_parent, contains_eager
+from sqlalchemy import select, Interval, join, intersect
 from ..database import Base, engine, session
 from ..models import category, question, q_pic, quizq, level
 import re
@@ -227,104 +227,113 @@ def quiz():
     # question lookup  null_quizq = select(quizq).join(quest_wCats_qry, quizq.question_id == quest_wCats_qry.c.question_id).where(quizq.answered_on == None).subquery()
     
     # if request.method == 'GET':
+    
     #Uncomment/CHANGE THIS TO POST WHEN READY!
     #if request.method == 'POST':
         #selected_cats = request.form.getlist('category_name')
-    selected_cats = ['pissing']
+    selected_cats = ['pooping']
         
         # get selected categories as a sqlalchemy object (not sure if necessary)
-    cats_query = select(category).where(category.category_name.in_(selected_cats))
-    selected_categories = session.execute(cats_query).scalars().all()
-           
-    # pp = (p.category_name for p in selected_categories) # returns weird generator object
-    cat_list = []
-    for s in selected_categories:
-        a = cat_list.append(s.category_name)
+    # cats_query = select(category).where(category.category_name.in_(selected_cats))
+    # selected_categories = session.execute(cats_query).scalars().all()
         
+    # # pp = (p.category_name for p in selected_categories) # returns weird generator object
+    # cat_list = []
+    # for s in selected_categories:
+    #     a = cat_list.append(s.category_name)
         
-    # Artist.query.filter(Artist.albums.any(genre_id=genre.id)).all()
-
-    # Artist.query.join(Artist.albums).filter_by(genre_id=genre.id).all()    
-       
-    sub = select(category).where(category.category_name.in_(selected_cats)).subquery()
+            
+    null_quizq = select(quizq).where(quizq.answered_on == None).where(quizq.user_id == UID).subquery()
+     
+    quest_wCats_qry = select(question, category, quizq, level.days_hence).join(question.categories).where(category.category_name.in_(selected_cats)).join(null_quizq, question.question_id == null_quizq.c.question_id).join(level, null_quizq.c.level_no == level.level_no)
     
-    stmt = select(question).where(category.category_name.in_(selected_cats))
    
-   #worked but didnt look like much ahppened. couldnt find cat names
-    # ee = select(question).options(joinedload(category.category_name))
-    # stmt = select(question).options(joinedload(category))
     
-    result = session.execute(stmt)
+    result = session.execute(quest_wCats_qry).unique().all()
+   
     result_list = []
-    for r in result.scalars():
-        a = result_list.append(r)
-    
+    que_list = []
+    current_dt = func.now()
+    now = datetime.now()
+    for r in result:
+        # see if it's due to be answered
+        answered_on = r.quizq.answered_on
+        # temp disabled
+        if answered_on == None:
+            addit = True
+        else:
+            days_hence = r.days_hence
+            due_date = answered_on + timedelta(days=days_hence)
+            if now > due_date:
+                addit = True
+            else:
+                 addit = False
+        
+        if addit == True:
+            catz = []
+            pics = []
+            c2 = []
+            # didnt quite work
+            # catz.append(c.category_name for c in r.question.categories)
+            # catz.append(c.category_name for c in r.category)
+            for c in r.question.categories:
+                catz.append(c.category_name)
+                for qu in c.questions:
+                    if qu.question_id == r.question.question_id:
+                        for cc in qu.categories:
+                            c2.append(cc.category_name)       
+                            #c.questions[0].categories[0].category_name
+            # adding array to dict i think?? d = {k:[] for k in ['A', 'B', 'C']}
+            imgz = {k:[] for k in ['answer_pics', 'hint_image', 'question_image']}
+            # imgz = {}    
+            for img in r.question.pics:
+                imgz[img.pic_type].append(img.pic_string)
+                
+                
+                pics.append(img.pic_type)
+                pics[img.pic_type].append(img.pic_string)
+                
+                #for x, y in thisdict.items(): ONE WAY TO DO IT
+                
+                # pics.append(img.pic_type)
+                # pic_typ = img.pic_type
+                # pics.pic_typ.append(img.pic_string)
            
-   
+            q = { 'question_id': r.question.question_id,
+                  'question_name' : r.question.question_name,
+                  'hint' : r.question.hint,
+                  'answer' : r.question.answer,
+                 
+                'level_no' : r.quizq.level_no,
+                'categories' : catz,
+                'pic' : 'do it later'             
+                }          
+            que_list.append(q)
+             
+        result_list.append(r)    
+        
+        # INSTRUCTIONS:
+        #  NEXT: MERGE QUESTION OBJECT WITH: you'll need to grab the q_pics which are linked to Question table.
+        # Need to do another query on quizq to get 2 criteria: 
+        # 1. same user AND 2. answered_on (OR Correct) = NULL
+        # # NEXT: You'll need to grab the LEVEL_NO which are linked to quiz_q table.
+        # FINALLY: You'll need to somehow join or merge the questions_id query with quiz_q query outlined above to present to the user the appropriate quizQ object. OR Just merge them along each step of the way (hard probably). Most likely use sub-queries i guess?
+        # ALTERNATIVELY: You can grab level & q_pics later.
     
+    # for r in result.scalars():# list' object has no attribute 'scalars
+       
     
-    # TypeError: Boolean value of this clause is not defined
-    ee = select(question).options(joinedload(sub))
-                            # .joinedload(Item.keywords))
-   
-    # sub.query.join(question_categories).join(category).all()
-   
-   
-    stmt = select(question.question_id).join(sub, question.question_id == sub.c.user_id)
-   
-   
-    #didnt work quest_wCats_qry = select(question).options(subqueryload(sub))
-    
-    
-    quest_wCats_qry = select(question).options(selectinload(question.categories)).where(question.categories in selected_categories)
- 
- 
-    # 
+    p = 'penis'
+  
     
     question_q = que_overdue_questions(UID, cat_list)
         
-        
-    # NotImplementedError: in_() not yet supported for relationships.  For a simple many-to-one, use in_() against the set of foreign key values.
-    # quest_wCats_qry = select(question).options(joinedload(question.categories)).where(question.categories.in_([a])).subquery()       
-        
-        
- 
-          # subq_not_null_quizq = select(quizq).where(quizq.answered_on == None).subquery()
-    
-    # query(User).options(subqueryload(User.orders))
-    
-    null_quizq = select(quizq).join(quest_wCats_qry, quizq.question_id == quest_wCats_qry.c.question_id).where(quizq.answered_on == None).subquery()
-    
-    
-        
-    # final_result = session.execute(joined_qz_qu_cat)    
-        
-        #test the above
-    rp = []
-    for obj in session.execute(joined_qz_qu_cat):
-        print(obj)
-        p = rp.append(r)
-        
-    final_result = session.execute(joined_qz_qu_cat)
-    rwz = []
-    for r in final_result:
-        p = rwz.append(r)
-        qid = r.question.question_id
-                
-        
-    ddd = []
-    quest_wCats_qry = select(question).options(selectinload(question.categories)).where(question.categories in selected_categories)
-        
-        
-
-        
-      
-            
-   
+     
+     
         #  get a random question from that list to display
-    current_question = randomizifier(question_q)
+    # current_question = randomizifier(question_q)
         
-    question_scalar = session.execute(select(quizq).where(quizq.quizq_id == current_question.quizq_id)).scalar()
+    # question_scalar = session.execute(select(quizq).where(quizq.quizq_id == current_question.quizq_id)).scalar()
         
               #join Level to quizQ
     # joined_question = select(level).join(quizq, level.level_no == q.level_no)
