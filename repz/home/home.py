@@ -1,6 +1,6 @@
 from re import A
 from typing import final
-from flask import Blueprint, render_template, request, jsonify, flash, Flask, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, flash, Flask, flash, redirect, url_for, session as local_session
 from flask import current_app as app
 from flask_login import current_user, login_required, logout_user
 
@@ -229,9 +229,42 @@ def quiz():
     # UIDa = current_user.id
     UID1 = g._login_user.id
     UID = copy.copy(UID1)
-
-    # selected_cats = request.form.getlist('category_name')
-    selected_cats = ["pooping"]
+    category_list = get_all_categories()
+    
+    if request.method == 'GET':
+        selected_categories = get_session('category_names')
+        if selected_categories == 'Not Set':
+            msg = "You need to select some question categories."
+            flash(msg)
+            return render_template(
+                 "quiz.html",
+                    title="Quiz",
+                    description=".",
+                    user=current_user,
+                    category_list=category_list,
+                    q=''
+                    # form=form,
+                )
+          
+    
+    if request.method == "POST":
+        category_names = request.form.getlist("category_name")
+        correct_answer = request.form.get("correct-answer-result-button")
+        incorrect_answer = request.form.get("incorrect_submit")
+        question_id = request.form.get("question-id")
+        start_quiz = request.form.get("start-quiz")
+        
+        set_session('category_names', category_names)
+        
+        if len(category_names) < 1:
+            # FAILED VALIDATION'
+            msg = "You idiot! You didn't select any question categories! Try again."
+            flash(msg)
+    
+    
+    ########### NEXT: You need to add if post/GET logic and query the session to get the users preselected categories. If the user doesn't have a session with preselected categories then he will need to press a button "Start" to get questions qued which requires he selects at least one category. 
+    
+    selected_cats = category_names
 
     null_quizq = (
         select(quizq)
@@ -313,7 +346,7 @@ def quiz():
         title="Quiz",
         description=".",
         user=current_user,
-        category_list=selected_cats,
+        category_list=category_list,
         q=que_list[0]
         # form=form,
     )
@@ -334,8 +367,6 @@ def quemore():
     description = 'Que More Questions'
     
     if request.method == "POST":
-        
-        
         if form.validate_on_submit():
             qty_to_que = form.qty_to_que.data
             que_more_submit = form.que_more_submit.data
@@ -347,15 +378,12 @@ def quemore():
                 description="No More Questions Left- ADD MORE"
                 flash('No More Questions Left- ADD MORE')
                 return redirect(url_for('add'))
-                
-               
             
             msg = 'You added' + qty_added + "more questions to your que!"
             flash(msg)
             return redirect(url_for('quiz'))
            
-        
-        
+                
     return render_template(
         "quemore.html",
         title="Que More Questions",
@@ -385,6 +413,18 @@ def new_q_lookup(UID, selected_categories, qty_to_que):
     session.commit()
     
     return qty_added
+
+
+def set_session(key, value):
+    # Set a value in the session
+    local_session[key] = value
+    
+
+
+def get_session(key):
+    # Get the value from the session
+    value = local_session.get(key, 'Not set')
+    return value
 
 
 # def randomizifier(question_q):

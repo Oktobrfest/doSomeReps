@@ -10,6 +10,7 @@ Add Content
 <h3 id="q-categories">Categories: {{ cat }}
 </h3>
 {% endfor %}
+{% if q %}
 <div class="q-question-section" id="q-question-section">
 
     <h1 id="q-question-title" class="q-question-title"> {{ q.question_name }}</h1>
@@ -79,14 +80,15 @@ Add Content
 </div>
 
 <div id="q-result-section" class="q-result">
-    <h1>Result?</h1>
-    <button id="hint-button" class="btn btn-success" data-toggle="collapse"
-        data-target="#category-section">Correct!</button>
-
-    <button id="hint-button" class="btn btn-danger" data-toggle="collapse"
-        data-target="#category-section">Wrong</button>
+    <form id="answer-result" class="answer-result-submission">
+        <input type="hidden" id="question-id" name="question-id" value={{ q.question_id }}" />
+        <h1>Result?</h1>
+        <input type="submit" name="correct_submit" id="correct-answer-result-button" class="btn btn-success" value="Correct!">
+        <input type="submit" name="incorrect_submit" id="incorrect-answer-result-button" class="btn btn-success" value="Wrong!">
+    </form>
 </div>
 
-
+{% else %}
+<input type="submit" name="start-quiz" id="start-quiz-button" class="btn btn-success" value="Start!">
 
 {% endblock content %}
