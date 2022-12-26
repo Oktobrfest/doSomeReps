@@ -11,14 +11,15 @@ from sqlalchemy.orm import (
     aliased,
     subqueryload,
     with_parent,
-    contains_eager,
-)
-from sqlalchemy import select, Interval, join, intersect
+    contains_eager
+   )
+from sqlalchemy.sql import func, exists, distinct
+from sqlalchemy.sql.expression import bindparam
+from sqlalchemy import select, Interval, join, intersect, update
 from ..database import Base, engine, session
 from ..models import category, question, q_pic, quizq, level
 import re
-from sqlalchemy.sql import func, exists
-from sqlalchemy.sql.expression import bindparam
+
 from flask_uploads import configure_uploads, IMAGES, UploadSet
 from wtforms import FileField, StringField, validators, SubmitField, IntegerField
 from flask_wtf import FlaskForm
@@ -230,10 +231,10 @@ def quiz():
     UID1 = g._login_user.id
     UID = copy.copy(UID1)
     category_list = get_all_categories()
-    
+    time_now = func.now()
     if request.method == 'GET':
         selected_categories = get_session('category_names')
-        if selected_categories == 'Not Set':
+        if selected_categories == 'Not set':
             msg = "You need to select some question categories."
             flash(msg)
             return render_template(
@@ -248,28 +249,93 @@ def quiz():
           
     
     if request.method == "POST":
-        category_names = request.form.getlist("category_name")
-        correct_answer = request.form.get("correct-answer-result-button")
-        incorrect_answer = request.form.get("incorrect_submit")
-        question_id = request.form.get("question-id")
+        selected_categories = request.form.getlist("category_name")
+        incorrect_submit = request.form.get("incorrect_submit")
+        correct_submit = request.form.get("correct_submit")
+        quizq_id = request.form.get("quizq-id")
         start_quiz = request.form.get("start-quiz")
+        # OLD WAY selected_categories = request.get_json()
         
-        set_session('category_names', category_names)
+        # if it's a correct/incorrect answer
+        if ((start_quiz == None) and ((correct_submit == 'Correct!') or (incorrect_submit == 'Wrong!'))):
+            qry = select(quizq).where(quizq.answered_on == None).where(quizq.user_id == UID).where(quizq.quizq_id == quizq_id)
+            current_quiz = session.execute(qry).scalars().all()
+      
+            p = 'pp'
+            #set fields applicable to both possibilities (completed date & by whom)
+            update_stmt = (
+                update(quizq)
+                .where(quizq.quizq_id == current_quiz[0].quizq_id)
+                .values(answered_on = time_now)
+                )
         
-        if len(category_names) < 1:
+            if correct_submit == 'Correct!':
+                # get the max level
+                max_lvl = session.execute(select(func.max(level.level_no))).scalar()
+                if current_quiz[0].level_no < max_lvl:
+                    new_lvl = (current_quiz[0].level_no + 1)
+                else: # None signifies the question is complete and no more levels left
+                    new_lvl = None
+                    
+                update_stmt = update_stmt.values(correct = True)
+            elif incorrect_submit == 'Wrong!':
+                update_stmt = update_stmt.values(correct = False)
+                new_lvl = 1
+                
+            # Execute the update statement
+            updated_quizq = session.execute(update_stmt)
+                        
+            #next create a new quizQ Level for that question
+            if new_lvl != None:
+                new_quizq = quizq(
+                question_id = current_quiz[0].question_id,
+                user_id = UID,
+                level_no = new_lvl       
+                )            
+            #Create new quiz Q
+                session.add(new_quizq)
+                session.commit()
+                
+        if len(selected_categories) < 1:
             # FAILED VALIDATION'
             msg = "You idiot! You didn't select any question categories! Try again."
             flash(msg)
-    
-    
-    ########### NEXT: You need to add if post/GET logic and query the session to get the users preselected categories. If the user doesn't have a session with preselected categories then he will need to press a button "Start" to get questions qued which requires he selects at least one category. 
-    
-    selected_cats = category_names
+            return render_template(
+                 "quiz.html",
+                    title="Quiz",
+                    description=".",
+                    user=current_user,
+                    category_list=category_list,
+                    q=''
+                    # form=form,
+                )
+        else:
+            set_session('category_names', selected_categories)
+            
+             # get new questions
+    # null_quizq = (
+    #     select(quizq)
+    #     .where(quizq.answered_on.is_(None))
+    #     .where(quizq.user_id == UID)
+    #     .subquery()
+    # )
 
+    # quest_wCats_qry = (
+    #     select(question, category, quizq, level.days_hence)
+    #     .join(question.categories)
+    #     .where(category.category_name.in_(selected_cats))
+    #     .join_from(null_quizq, question.question_id == null_quizq.c.question_id)
+    #     .join(level, null_quizq.c.level_no == level.level_no)
+    #     # .group_by(quizq.quizq_id)
+    #     # .having(quizq.answered_on == None)
+    # )
+        
+    selected_cats = selected_categories
+    # get new questions
     null_quizq = (
         select(quizq)
-        .where(quizq.answered_on == None)
         .where(quizq.user_id == UID)
+        .filter(quizq.answered_on.is_(None))
         .subquery()
     )
 
@@ -279,27 +345,57 @@ def quiz():
         .where(category.category_name.in_(selected_cats))
         .join(null_quizq, question.question_id == null_quizq.c.question_id)
         .join(level, null_quizq.c.level_no == level.level_no)
+        .filter(quizq.answered_on.is_(None))
+        # .group_by(quizq.quizq_id)
+        # .having(quizq.answered_on == None)
     )
 
-    result = session.execute(quest_wCats_qry).unique().all()
+    result = session.execute(quest_wCats_qry.distinct()).all()
 
     result_list = []
     que_list = []
-    current_dt = func.now()
     now = datetime.now()
     for r in result:
-        # see if it's due to be answered
-        answered_on = r.quizq.answered_on
-        # temp disabled
-        if answered_on == None:
-            addit = True
-        else:
+        # see if it's due to be answered- (levels 2+)
+        if r.quizq.level_no > 1:
+            # FIRST: You need to find the quiz question that was answered before it and grab that datetime
+            #(find the QuizQ whose question_id is same, user = UID, level = current level - 1, correct = true.
+            # need to select most recent one to counter effects of past act travels up the level ladder
+            previous_level = (r.quizq.level_no - 1)
+            previous_quizq = (
+                select(quizq.answered_on)
+                .where(quizq.user_id == UID)
+                .where(quizq.question_id == r.quizq.question_id)
+                .where(quizq.level_no == previous_level)
+                .where(quizq.correct == True)
+                .order_by(quizq.answered_on.desc())
+            )
+            previous_quizq_date = session.execute(previous_quizq.distinct()).scalars() #.all #.first()
+                         # temp for testing (if you don't do first()!!!)
+            ao = []
+            for p in previous_quizq_date:
+                ao.append(p) 
+           
+                            
+            
+            answered_on = ao[0]
+            
+            # previous_quizq_date.answered_on
+            
+
+            
+            # temp disabled
+            # if answered_on == None:
+            #     addit = True
+            # else:
             days_hence = r.days_hence
             due_date = answered_on + timedelta(days=days_hence)
             if now > due_date:
                 addit = True
             else:
                 addit = False
+        else: 
+            addit = True # if it's level #1
 
         if addit == True:
             catz = []  # duplicate, but prob doesn't add all the categories!
@@ -319,7 +415,7 @@ def quiz():
                 pics[img.pic_type].append(img.pic_string)
 
             q = {
-                "question_id": r.question.question_id,
+                "quizq_id": r.quizq.quizq_id,
                 "question_name": r.question.question_name,
                 "question_text": r.question.question_text,
                 "hint": r.question.hint,
@@ -335,11 +431,7 @@ def quiz():
         result_list.append(r)
 
     if len(que_list) < 1:
-        return render_template(
-        "quemore.html",
-        user=current_user,
-         )
-
+        return redirect(url_for('home.quemore'))
     
     return render_template(
         "quiz.html",
@@ -347,7 +439,8 @@ def quiz():
         description=".",
         user=current_user,
         category_list=category_list,
-        q=que_list[0]
+        q=que_list[0],
+        selected_categories=selected_categories
         # form=form,
     )
 
