@@ -6,18 +6,17 @@ Add Content
 {{ form.hidden_tag() }}
 <h1 align="center">{{ description }}</h1>
 <p class="user-completed-questions-msg">You've completed all the questions currently due!</p>
-<p class="user-que-more-questions-msg">Start answering more questions to expand your training que! Select how many more
-    questions you'd like to add to your que below</p>
+<p class="user-que-more-questions-msg">You have two options: Either wait for the  questions you've already answered to come due again, or to start answering more questions immediately you need to expand your training que! Select how many more questions you'd like to add to your que below</p>
     {% include "categories.html" %}
-<form id="que-more-questions" class="que-more-questions">
-    <div class="form-group m-5">
-        {{ form.qty_to_que.label()}}
-        {{ form.qty_to_que(class="form-control") }}
-    </div>
-    <div class="form-group m-5 button submit btn-lg btn-primary m-5">
-        {{ form.que_more_submit.label()}}
-        {{ form.que_more_submit(class="form-control") }}
+    <div>
+<form id="que-more-questions" class="que-more-questions form-inline">
+     <div class="form-group m-5"> 
+        {{ form.qty_to_que.label("Quantity to Add")}}
+        {{ form.qty_to_que(class="form-control qty-to-que-number-form", value="Quantity to Add:") }}
+
+        {{ form.que_more_submit(class="btn btn-primary font-weight-bold", value="Add More") }}
     </div>
 </form>
+</div>
 {% endblock content %}
 

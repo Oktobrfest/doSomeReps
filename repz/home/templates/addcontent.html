@@ -43,7 +43,7 @@ Add Content
         <div id="answer-section" class="answer-form-area form-group border">
             <label for="answer" class="required">Answer</label>
             <textarea class="form-control answer" id="answer" name="answer" placeholder="Enter answer here"
-               required></textarea>
+                required></textarea>
             <dl>
                 <p>
                     Upload Answer Images:
@@ -55,8 +55,18 @@ Add Content
 
 
     </div>
-    <button type="submit" class="btn btn-primary" onmouseover="highlight(this)" onmouseout="unhighlight(this)">
-        Submit
-    </button>
+
+    <span id="auto-que-checkbox-section" class="form-group form-inline m-5" style="white-space:nowrap">
+        <button type="submit" class="btn btn-primary" onmouseover="highlight(this)" onmouseout="unhighlight(this)">
+            Submit
+        </button>
+
+        <div class="auto-que-checkbox-section border form-inline" id="auto-que-checkbox-section">
+            <input type="checkbox" class="form-group m-5 automatically-que-created-question"
+                name="automatically-que-created-question" id="auto-que-checkbox">
+            <label for="auto-que-checkbox">Add Question to Que</label>
+        </div>
+
+    </span>
 </form>
 {% endblock content %}

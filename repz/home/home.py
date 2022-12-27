@@ -161,6 +161,13 @@ def addcontent():
 
         session.add(new_question)
         session.commit()
+        
+        auto_que = request.form.get("auto-que-checkbox")
+        if auto_que == "Add Question to Que":
+            question_ids = [ new_question.question_id ]
+            new_quizq(question_ids, current_user.id)
+            
+        
         flash("New question created!", category="success")
         return render_template(
             "addcontent.html",
@@ -311,24 +318,6 @@ def quiz():
                 )
         else:
             set_session('category_names', selected_categories)
-            
-             # get new questions
-    # null_quizq = (
-    #     select(quizq)
-    #     .where(quizq.answered_on.is_(None))
-    #     .where(quizq.user_id == UID)
-    #     .subquery()
-    # )
-
-    # quest_wCats_qry = (
-    #     select(question, category, quizq, level.days_hence)
-    #     .join(question.categories)
-    #     .where(category.category_name.in_(selected_cats))
-    #     .join_from(null_quizq, question.question_id == null_quizq.c.question_id)
-    #     .join(level, null_quizq.c.level_no == level.level_no)
-    #     # .group_by(quizq.quizq_id)
-    #     # .having(quizq.answered_on == None)
-    # )
         
     selected_cats = selected_categories
     # get new questions
@@ -358,9 +347,7 @@ def quiz():
     for r in result:
         # see if it's due to be answered- (levels 2+)
         if r.quizq.level_no > 1:
-            # FIRST: You need to find the quiz question that was answered before it and grab that datetime
-            #(find the QuizQ whose question_id is same, user = UID, level = current level - 1, correct = true.
-            # need to select most recent one to counter effects of past act travels up the level ladder
+            # find the quiz question that was answered before it and grab that datetime
             previous_level = (r.quizq.level_no - 1)
             previous_quizq = (
                 select(quizq.answered_on)
@@ -370,24 +357,8 @@ def quiz():
                 .where(quizq.correct == True)
                 .order_by(quizq.answered_on.desc())
             )
-            previous_quizq_date = session.execute(previous_quizq.distinct()).scalars() #.all #.first()
-                         # temp for testing (if you don't do first()!!!)
-            ao = []
-            for p in previous_quizq_date:
-                ao.append(p) 
-           
-                            
-            
-            answered_on = ao[0]
-            
-            # previous_quizq_date.answered_on
-            
-
-            
-            # temp disabled
-            # if answered_on == None:
-            #     addit = True
-            # else:
+            previous_quizq_date = session.execute(previous_quizq.distinct()).scalars().first()
+            answered_on = previous_quizq_date
             days_hence = r.days_hence
             due_date = answered_on + timedelta(days=days_hence)
             if now > due_date:
@@ -400,9 +371,6 @@ def quiz():
         if addit == True:
             catz = []  # duplicate, but prob doesn't add all the categories!
             categories = []
-            # didnt quite work
-            # catz.append(c.category_name for c in r.question.categories)
-            # catz.append(c.category_name for c in r.category)
             for c in r.question.categories:
                 catz.append(c.category_name)
                 for qu in c.questions:
@@ -492,18 +460,24 @@ def new_q_lookup(UID, selected_categories, qty_to_que):
     new_q_query = select(question).where(question.question_id not in subq).limit(qty_to_que)
     new_questions = session.execute(new_q_query).scalars()
     
-
-    new_q_quiz_list = []
+    question_ids = []
     for new_question in new_questions:
-        new_quizq = quizq(
-            user_id=UID,
-            level_no=1,
-        )
-        new_quizq.question_id = new_question.question_id
-        new_q_quiz_list.append(new_quizq)
-    qty_added = len(new_q_quiz_list)
-    session.add_all(new_q_quiz_list)
-    session.commit()
+        question_ids.append(new_question.question_id)
+        
+    qty_added = new_quizq(question_ids, UID)   
+        
+
+    # new_q_quiz_list = []
+    # for new_question in new_questions:
+    #     new_quizq = quizq(
+    #         user_id=UID,
+    #         level_no=1,
+    #     )
+    #     new_quizq.question_id = new_question.question_id
+    #     new_q_quiz_list.append(new_quizq)
+    # qty_added = len(new_q_quiz_list)
+    # session.add_all(new_q_quiz_list)
+    # session.commit()
     
     return qty_added
 
@@ -511,6 +485,21 @@ def new_q_lookup(UID, selected_categories, qty_to_que):
 def set_session(key, value):
     # Set a value in the session
     local_session[key] = value
+    
+def new_quizq(question_ids, UID):
+    new_q_quiz_list = []
+    for question_id in question_ids:
+        new_quizq = quizq(
+            user_id=UID,
+            level_no=1,
+        )
+        new_quizq.question_id = question_id
+        new_q_quiz_list.append(new_quizq)
+   
+    session.add_all(new_q_quiz_list)
+    session.commit()
+    qty_added = len(new_q_quiz_list)
+    return qty_added
     
 
 
