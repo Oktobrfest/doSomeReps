@@ -15,7 +15,7 @@ from sqlalchemy.orm import (
    )
 from sqlalchemy.sql import func, exists, distinct
 from sqlalchemy.sql.expression import bindparam
-from sqlalchemy import select, Interval, join, intersect, update
+from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_
 from ..database import Base, engine, session
 from ..models import category, question, q_pic, quizq, level
 import re
@@ -23,6 +23,8 @@ import re
 from flask_uploads import configure_uploads, IMAGES, UploadSet
 from wtforms import FileField, StringField, validators, SubmitField, IntegerField
 from flask_wtf import FlaskForm
+from wtforms.validators import DataRequired, NumberRange
+
 from werkzeug.utils import secure_filename
 
 # from ..s3upload import upload_file
@@ -162,8 +164,9 @@ def addcontent():
         session.add(new_question)
         session.commit()
         
-        auto_que = request.form.get("auto-que-checkbox")
-        if auto_que == "Add Question to Que":
+        auto_que = request.form.get("automatically-que-created-question")
+ 
+        if auto_que == 'on':
             question_ids = [ new_question.question_id ]
             new_quizq(question_ids, current_user.id)
             
@@ -240,7 +243,7 @@ def quiz():
     category_list = get_all_categories()
     time_now = func.now()
     if request.method == 'GET':
-        selected_categories = get_session('category_names')
+        selected_categories = get_session('quiz_category_names')
         if selected_categories == 'Not set':
             msg = "You need to select some question categories."
             flash(msg)
@@ -317,27 +320,35 @@ def quiz():
                     # form=form,
                 )
         else:
-            set_session('category_names', selected_categories)
+            set_session('quiz_category_names', selected_categories)
         
     selected_cats = selected_categories
+    
     # get new questions
-    null_quizq = (
-        select(quizq)
-        .where(quizq.user_id == UID)
-        .filter(quizq.answered_on.is_(None))
-        .subquery()
-    )
-
+    # null_quizq = (
+    #     select(quizq)
+    #     .where(quizq.user_id == UID)
+    #     .filter(quizq.answered_on.is_(None)).subquery()
+    # )
+    # quest_wCats_qry = (
+    #     select(question, category, quizq, level.days_hence)
+    #     .join(question.categories)
+    #     .where(category.category_name.in_(selected_cats))
+    #     .join(null_quizq, question.question_id == null_quizq.c.question_id)
+    #     .join(level, null_quizq.c.level_no == level.level_no)
+    #     .filter(quizq.answered_on.is_(None))
+    #     # .group_by(quizq.quizq_id)
+    #     # .having(quizq.answered_on == None)
+    # ) # print('quest_wCats_qry query:')
+    # print(quest_wCats_qry.compile().string)
+    
     quest_wCats_qry = (
-        select(question, category, quizq, level.days_hence)
-        .join(question.categories)
-        .where(category.category_name.in_(selected_cats))
-        .join(null_quizq, question.question_id == null_quizq.c.question_id)
-        .join(level, null_quizq.c.level_no == level.level_no)
-        .filter(quizq.answered_on.is_(None))
-        # .group_by(quizq.quizq_id)
-        # .having(quizq.answered_on == None)
-    )
+    select(question, category, quizq, level.days_hence)
+    .join(question.categories)
+    .where(category.category_name.in_(selected_cats))
+    .join(quizq, and_(question.question_id == quizq.question_id, quizq.user_id == UID, quizq.answered_on.is_(None)))
+    .join(level, quizq.level_no == level.level_no)
+)  
 
     result = session.execute(quest_wCats_qry.distinct()).all()
 
@@ -398,23 +409,39 @@ def quiz():
 
         result_list.append(r)
 
+    # if no questions are due to be answered give user the option to add more or select more categories.
     if len(que_list) < 1:
-        return redirect(url_for('home.quemore'))
+        # see if all the categories have been searched through
+        if (len(selected_categories) == len(category_list)):
+            msg = "You've completed all the questions currently due! You have two options: Either wait for the questions you've already answered to come due again, or to start answering more questions immediately you need to expand your training que! Select how many more questions you'd like to add to your que below"
+            
+            flash('No More Questions Left- ADD MORE')
+            flash(msg)
+            return redirect(url_for('home.quemore'))
+        else:
+            flash('No more questions in your selected categories are currently due. Either try to select more categories or que more questions for those categories')
     
+    try:
+        que_list[0]
+    except:
+        q = ''
+    else:
+        q = que_list[0]
+               
     return render_template(
         "quiz.html",
         title="Quiz",
         description=".",
         user=current_user,
         category_list=category_list,
-        q=que_list[0],
+        q=q,
         selected_categories=selected_categories
         # form=form,
     )
 
 
 class QueAdditionForm(FlaskForm):
-    qty_to_que = IntegerField("qty_to_que")
+    qty_to_que = IntegerField("qty_to_que", validators=[DataRequired(), NumberRange(min=0, max=999999)])
     que_more_submit = SubmitField("que_more_submit")
     
 
@@ -427,23 +454,44 @@ def quemore():
     category_list = get_all_categories()
     description = 'Que More Questions'
     
-    if request.method == "POST":
-        if form.validate_on_submit():
-            qty_to_que = form.qty_to_que.data
-            que_more_submit = form.que_more_submit.data
-            category_names = request.form.getlist("category_name")
-            
-            qty_added = new_q_lookup(UID, category_names, qty_to_que)
-              
-            if qty_added < 1:
-                description="No More Questions Left- ADD MORE"
-                flash('No More Questions Left- ADD MORE')
-                return redirect(url_for('add'))
-            
-            msg = 'You added' + qty_added + "more questions to your que!"
+    selected_categories = get_session('que_category_names')
+    
+    if form.validate_on_submit():
+        qty_to_que = form.qty_to_que.data
+        que_more_submit = form.que_more_submit.data
+        selected_categories = request.form.getlist("category_name")
+        
+        #validate that categories have been selected
+        if len(selected_categories) < 1:
+            msg = "You idiot! You didn't select any question categories! Try again."
             flash(msg)
-            return redirect(url_for('quiz'))
-           
+            return render_template(
+                "quemore.html",
+                title="Que More Questions",
+                description=description,
+                user=current_user,
+                form=form,
+                category_list=category_list,
+            )
+        else:
+            set_session('que_category_names', selected_categories)        
+        
+        qty_added = new_q_lookup(UID, selected_categories, qty_to_que)
+            
+            # if all the categories are selected redirect to make more questions otherwise/message telling them to select more categories
+        if qty_added < 1:
+            if (len(selected_categories) == len(category_list)):
+                flash("You already added all the questions into your que. There are no more questions left to add. You need to make more questions if you'd like to expand your que")
+                return redirect(url_for('home.addcontent'))
+            else:
+                flash('No more questions in your selected categories are left to que up. Either try to select more categories or create more questions for your chosen categories')
+                description="Select more categories or create more questions"
+                return redirect(url_for('home.quemore'))
+        # success
+        msg = 'You added ' + str(qty_added) + " more question(s) to your que!"
+        flash(msg)
+        return redirect(url_for('home.quiz'))
+
                 
     return render_template(
         "quemore.html",
@@ -452,32 +500,28 @@ def quemore():
         user=current_user,
         form=form,
         category_list=category_list,
+        selected_categories=selected_categories
          )
     
 def new_q_lookup(UID, selected_categories, qty_to_que):
-    subquery = select(question).join(quizq, question.question_id == quizq.question_id)
-    subq = session.execute(subquery)
-    new_q_query = select(question).where(question.question_id not in subq).limit(qty_to_que)
-    new_questions = session.execute(new_q_query).scalars()
+    subquery = select(question).join(question.categories).where(category.category_name.in_(selected_categories)).join(quizq, question.question_id == quizq.question_id)
+      
+    subq = session.execute(subquery.distinct()).all()
+                                                
     
+    allocatted_question_ids = []
+    for s in subq:
+        allocatted_question_ids.append(s.question.question_id)
+        
+    new_q_query = select(question).where(not_(question.question_id.in_(allocatted_question_ids))).join(question.categories).where(category.category_name.in_(selected_categories)).limit(qty_to_que)
+
+    new_questions = session.execute(new_q_query)
+
     question_ids = []
     for new_question in new_questions:
-        question_ids.append(new_question.question_id)
-        
+        question_ids.append(new_question.question.question_id)
+    
     qty_added = new_quizq(question_ids, UID)   
-        
-
-    # new_q_quiz_list = []
-    # for new_question in new_questions:
-    #     new_quizq = quizq(
-    #         user_id=UID,
-    #         level_no=1,
-    #     )
-    #     new_quizq.question_id = new_question.question_id
-    #     new_q_quiz_list.append(new_quizq)
-    # qty_added = len(new_q_quiz_list)
-    # session.add_all(new_q_quiz_list)
-    # session.commit()
     
     return qty_added
 
