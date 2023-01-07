@@ -15,6 +15,7 @@
             <a class="nav-item nav-link {% if request.path == url_for('home.quiz') %}active{% endif %}" id="quiz" href="/quiz">Take Quiz</a>
             <a class="nav-item nav-link {% if request.path == url_for('home.quemore') %}active{% endif %}" id="quemore" href="/quemore">Que More Questions</a>
             <a class="nav-item nav-link {% if request.path == url_for('home.addcontent') %}active{% endif %}" id="addcontent" href="/addcontent">Add Content</a>
+            <a class="nav-item nav-link {% if request.path == url_for('home.editquestions') %}active{% endif %}" id="editquestions" href="/editquestions">Edit Questions</a>            
             <a class="nav-item nav-link {% if request.path == url_for('auth.logout') %}active{% endif %}" id="logout" href="/logout">Logout {{ user.username }}</a>
                   {% else %} 
             <a class="nav-item nav-link {% if request.path == url_for('auth.login') %}active{% endif %}" id="login" href="/login">Login</a>

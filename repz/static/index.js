@@ -93,9 +93,9 @@ function runOnce(document) {
 //     }
 // };
 
-window.addEventListener('load', () => {
-    bindlistener(document);
-  });
+// window.addEventListener('load', () => {
+//     bindlistener(document);
+//   });
 
 // get quiz page url VIA url_for
 var quiz_page = flask_util.url_for('home.quiz');
@@ -133,4 +133,51 @@ function start_qz(ev) {
     // .then(parseJSON)
     // .then(addShow);
 }
+
+// $(document).ready(function () {
+
+//     $("#sidebar").mCustomScrollbar({
+//          theme: "minimal"
+//     });
+
+//     $('#sidebarCollapse').on('click', function () {
+//         $('#sidebar').toggleClass('active');
+//     });
+
+// });
+
+// $(document).ready(function () {
+
+//     $("#sidebar").mCustomScrollbar({
+//          theme: "minimal"
+//     });
+
+//     $('#sidebarCollapse').on('click', function () {
+//         // open or close navbar
+//         $('#sidebar').toggleClass('active');
+//         // close dropdowns
+//         $('.collapse.in').toggleClass('in');
+//         // and also adjust aria-expanded attributes we use for the open/closed arrows
+//         // in our CSS
+//         $('a[aria-expanded=true]').attr('aria-expanded', 'false');
+//     });
+
+// });
+
+
+// function toggleSidebar() {
+//     var sidebar = document.getElementById("sidebar");
+//     var isCollapsed = sidebar.classList.contains("collapsed");
+//     sidebar.classList.toggle("collapsed", !isCollapsed);
+//   }
+
+//   window.addEventListener('load', function() {
+//     document.getElementById('sidebarCollapse').addEventListener('click', function() {
+//       document.getElementById('sidebar').classList.toggle('active');
+//     });
+//   });
+  
+
+
+
 

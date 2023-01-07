@@ -106,3 +106,56 @@ label[for=answer], label[for=hint] {
 }
 
 
+@media (min-width: 992px) {
+  .navbar-nav {
+    margin-left: 100px;
+  }
+}
+
+
+
+.auto-que-checkbox-section {
+  padding: 10px;
+  margin: 15px;
+  background-color: #6699ff;
+  border-radius: 25px;
+  padding-right: 55px;
+}
+
+.wrapper {
+  display: flex;
+  width: 100%;
+}
+
+#sidebar {
+  width: 450px;
+  height: 100vh;
+  overflow: auto;
+  margin: 10px;
+  margin-top: 0px !important;
+  background: #ccffcc;
+  color: black;
+  transition: all 0.3s;
+  float: left;
+}
+
+#edit-question-content {
+  margin-left: 450px;
+}
+
+@media (max-width: 800px) {
+  #sidebar {
+    position: relative;
+    width: 100%;
+  }
+  #edit-question-content {
+    margin-left: 0;
+  }
+}
+
+.search-filters {
+  background-color: #00ccff;
+}
+
+
+

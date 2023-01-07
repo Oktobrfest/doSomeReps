@@ -39,7 +39,7 @@ import copy
 home = Blueprint("home", __name__, template_folder="templates", static_folder="static")
 
 
-class MyForm(FlaskForm):
+class questionForm(FlaskForm):
     question_image = FileField("question_image")
     hint_image = FileField("hint_image")
 
@@ -79,7 +79,7 @@ def get_all_categories():
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
 @login_required
 def addcontent():
-    form = MyForm()
+    form = questionForm()
     category_list = get_all_categories()
     if request.method == "GET":
         return render_template(
@@ -102,9 +102,10 @@ def addcontent():
     #  TEESTING MULTIPLE IMAGE UPLOADS
 
     if form.validate_on_submit():
+        fail = False
         if len(question_name) < 1 or len(question_text) < 3 or len(answer) < 1:
-            return flash("shits too short bro!", category="failure")
-
+            flash("Question Name is too short bro!", category="failure")
+            fail = True
         existing_q_name = session.execute(
             select(question).where(question.question_name == question_name)
         ).first()
@@ -112,7 +113,12 @@ def addcontent():
             select(question).where(question.question_text == question_text)
         ).first()
         if existing_q_name is not None or existing_q_text is not None:
-            return flash("question already exists!", category="failure")
+           flash("question already exists!", category="failure")
+           fail = True
+        
+        if fail == True:
+            return redirect(url_for('home.addcontent'))
+        
         selected_categories = []
         
         # create new question!
@@ -271,7 +277,6 @@ def quiz():
             qry = select(quizq).where(quizq.answered_on == None).where(quizq.user_id == UID).where(quizq.quizq_id == quizq_id)
             current_quiz = session.execute(qry).scalars().all()
       
-            p = 'pp'
             #set fields applicable to both possibilities (completed date & by whom)
             update_stmt = (
                 update(quizq)
@@ -323,24 +328,6 @@ def quiz():
             set_session('quiz_category_names', selected_categories)
         
     selected_cats = selected_categories
-    
-    # get new questions
-    # null_quizq = (
-    #     select(quizq)
-    #     .where(quizq.user_id == UID)
-    #     .filter(quizq.answered_on.is_(None)).subquery()
-    # )
-    # quest_wCats_qry = (
-    #     select(question, category, quizq, level.days_hence)
-    #     .join(question.categories)
-    #     .where(category.category_name.in_(selected_cats))
-    #     .join(null_quizq, question.question_id == null_quizq.c.question_id)
-    #     .join(level, null_quizq.c.level_no == level.level_no)
-    #     .filter(quizq.answered_on.is_(None))
-    #     # .group_by(quizq.quizq_id)
-    #     # .having(quizq.answered_on == None)
-    # ) # print('quest_wCats_qry query:')
-    # print(quest_wCats_qry.compile().string)
     
     quest_wCats_qry = (
     select(question, category, quizq, level.days_hence)
@@ -400,7 +387,7 @@ def quiz():
                 "hint": r.question.hint,
                 "answer": r.question.answer,
                 "level_no": r.quizq.level_no,
-                "categories": categories,
+                "categories": catz,
                 "catz_DEF_REDUNDANT": catz,
                 "pics": pics,                
             }
@@ -413,9 +400,8 @@ def quiz():
     if len(que_list) < 1:
         # see if all the categories have been searched through
         if (len(selected_categories) == len(category_list)):
-            msg = "You've completed all the questions currently due! You have two options: Either wait for the questions you've already answered to come due again, or to start answering more questions immediately you need to expand your training que! Select how many more questions you'd like to add to your que below"
-            
-            flash('No More Questions Left- ADD MORE')
+            msg = "Congradulations! You've completed all the questions currently due! You have two options: Either wait for the questions you've already answered to come due again, or to start answering more questions immediately you need to expand your training que! For the ladder option, select how many more questions you'd like to add to your que below and click 'Add More'"
+                     
             flash(msg)
             return redirect(url_for('home.quemore'))
         else:
@@ -441,7 +427,7 @@ def quiz():
 
 
 class QueAdditionForm(FlaskForm):
-    qty_to_que = IntegerField("qty_to_que", validators=[DataRequired(), NumberRange(min=0, max=999999)])
+    qty_to_que = IntegerField("qty_to_que", default=1, validators=[DataRequired(), NumberRange(min=0, max=999999)])
     que_more_submit = SubmitField("que_more_submit")
     
 
@@ -553,19 +539,25 @@ def get_session(key):
     return value
 
 
-# def randomizifier(question_q):
-#     if question_q is not None:
-#         if isinstance(question_q, list):
-#             rand_q = copy.copy(random.choice(question_q))  # Crashed here. FIX THIS NEXT
-#         else:
-#             rand_q = copy.copy(question_q)
 
-#         # no worked
-#         # quizq_query = select(quizq).where(quizq = rand_q)
-#         # random_quizq = session.execute(quizq_query).scalars()
+@home.route("/editquestions", methods=["GET", "POST"], endpoint="editquestions")
+@login_required
+def editquestions():
+    
+    form = questionForm()
+    category_list = get_all_categories()
+    selected_categories = get_session('edit_category_names')
+    
+    set_session('edit_category_names', selected_categories)   
 
-#         # random_quizq = session.execute(rand_q).scalars()
+    return render_template(
+        "editquestions.html",
+        title="Que More Questions",
+        user=current_user,
+        category_list=category_list,
+        selected_categories=selected_categories,
+        form = form
+         )
 
-#         return rand_q
-#     else:
-#         return None
+
+

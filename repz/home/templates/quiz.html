@@ -8,10 +8,9 @@ Add Content
 {% if q %}
 <h1 align="center">Quiz Question</h1>
 <h3 id="q-level-number">Level Number: {{ q.level_no }}</h3>
-{% for cat in q.categories %}
-<h3 id="q-categories">Categories: {{ cat }}
+
+<h3 id="q-categories">Categories: {{ q.categories|join(', ') }}
 </h3>
-{% endfor %}
 
 <div class="q-question-section" id="q-question-section">
 
@@ -20,7 +19,7 @@ Add Content
     <div id="question-text-section" class="question-text-section">
     <h3 id="q-categories">Question: </h3>
     <p id="q-question">{{ q.question_text }} </p>
-</div>Natures Backroads, LLC
+</div>
     <div id="q-image" class="q-image-area">
         {% for pic in q.pics['question_image'] %}
         {% if pic %}

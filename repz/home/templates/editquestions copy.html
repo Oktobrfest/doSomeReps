@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}
+Edit Questions
+{% endblock title %}
+{% block content %}
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  {{ flask_util_js.js }}
+  <script type="text/javascript" src="/static/index.js"></script>
+</head>
+
+<body>
+
+  <div class="container-fluid" id="edit-question-page-wrapper">
+    
+    <!-- Sidebar  -->
+    <div  class="col-md-3 col-sm-12" id="sidebar">
+      <div class="sidebar-header">
+        <h3>Bootstrap Sidebar</h3>
+      </div>
+
+      <ul class="list-unstyled components">
+        <p>Search Results</p>
+        <li class="search-results">
+          <ul class="search-results-list-unstyled" id="search-results-list-unstyled">
+            <li>
+              <a href="#">question 1</a>
+            </li>
+            <li>
+              <a href="#">question 2</a>
+            </li>
+            <li>
+              <a href="#">question 3</a>
+            </li>
+          </ul>
+        </li>
+
+      </ul>
+
+    </div>
+
+    <!-- Page Content  -->
+    <div id="edit-question-content">
+
+      <h2>Edit Question</h2>
+
+      <div class="form-group editquestionform-area">
+        {% include "categories.html" %}
+        {% include "editquestionform.html" %}
+
+      </div>
+
+    </div>
+  </div>
+
+
+</body>
+
+</html>
+
+{% endblock content %}
