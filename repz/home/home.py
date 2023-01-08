@@ -34,6 +34,13 @@ import random
 from flask import g
 import copy
 
+import os 
+from flask import send_from_directory     
+
+@app.route('/favicon.ico') 
+def favicon(): 
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 
 # Blueprint Configuration
 home = Blueprint("home", __name__, template_folder="templates", static_folder="static")

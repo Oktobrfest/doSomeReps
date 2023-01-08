@@ -124,45 +124,15 @@ function start_qz(ev) {
     console.log(ev);
 
     fetch(quiz_page, {
-        method: 'POST', 
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json'
-          },
+        },
         body: selected_catz
     })
     // .then(parseJSON)
     // .then(addShow);
 }
-
-// $(document).ready(function () {
-
-//     $("#sidebar").mCustomScrollbar({
-//          theme: "minimal"
-//     });
-
-//     $('#sidebarCollapse').on('click', function () {
-//         $('#sidebar').toggleClass('active');
-//     });
-
-// });
-
-// $(document).ready(function () {
-
-//     $("#sidebar").mCustomScrollbar({
-//          theme: "minimal"
-//     });
-
-//     $('#sidebarCollapse').on('click', function () {
-//         // open or close navbar
-//         $('#sidebar').toggleClass('active');
-//         // close dropdowns
-//         $('.collapse.in').toggleClass('in');
-//         // and also adjust aria-expanded attributes we use for the open/closed arrows
-//         // in our CSS
-//         $('a[aria-expanded=true]').attr('aria-expanded', 'false');
-//     });
-
-// });
 
 
 // function toggleSidebar() {
@@ -176,8 +146,24 @@ function start_qz(ev) {
 //       document.getElementById('sidebar').classList.toggle('active');
 //     });
 //   });
-  
 
 
 
 
+
+window.onload = (event) => {
+    const showHideButton = document.getElementById('collapse-categories-button');
+    if (showHideButton) {
+        showHideButton.onclick = function () { hideShowChange(showHideButton) };
+    };
+}
+
+
+function hideShowChange(button) {
+    if (button.textContent === 'Filters Collapse') {
+        button.textContent = 'Filters Show';
+    } else {
+        button.textContent = 'Filters Collapse';
+    }
+
+}

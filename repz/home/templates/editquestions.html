@@ -18,24 +18,65 @@ Edit Questions
 
   <div id="edit-question-page-wrapper" class="container-fluid">
 
-    <div id="search-filters" class="search-filters col-md-12 col-sm-12">
-      <div class="form-group">
-        <form id="search-filters-form">
-         
+    <div id="search-filters" class="search-filters">
 
+      <h2 class="search-filters-title">Search Filters</h2>
+      <button id="collapse-categories-button" class="btn btn-secondary" data-toggle="collapse"
+        data-target="#category-section">Filters Collapse</button>
+      <div id="category-section" class="collapse show">
+
+        <div class="form-group">
+          <form id="search-filters-form">
+
+            <ul class="form-group inline border">
             <label for="search-terms">Search Terms:</label><br>
             <input type="text" id="search-terms" name="search-terms"><br>
-         
-          
+              Search Within:
+              <ul class="list-group list-group-flush form-group" id="categories">
+               
+                <li class="list-group-item filter-item border">
+                  <label for="title-filter-checkbox" class="checkbox-inline"></label>
+                  <input type="checkbox" value="title-filter-checkbox" id="title-filter-checkbox" name="title-filter-checkbox" class="custom-checkbox"/>
+                  &nbsp Title
+                </li>
 
-        </form>
+                <li class="list-group-item filter-item border">
+                  <label for="question-filter-checkbox" class="checkbox-inline"></label>
+                  <input type="checkbox" value="question-filter-checkbox" id="question-filter-checkbox" name="question-filter-checkbox" class="custom-checkbox"/>
+                  &nbsp Question
+                </li>
+
+                <li class="list-group-item filter-item border">
+                  <label for="hint-filter-checkbox" class="checkbox-inline"></label>
+                  <input type="checkbox" value="hint-filter-checkbox" id="hint-filter-checkbox" name="hint-filter-checkbox" class="custom-checkbox"/>
+                  &nbsp Hint
+                </li>
+
+                <li class="list-group-item filter-item border">
+                  <label for="answer-filter-checkbox" class="checkbox-inline"></label>
+                  <input type="checkbox" value="answer-filter-checkbox" id="answer-filter-checkbox" name="answer-filter-checkbox" class="custom-checkbox"/>
+                  &nbsp Answer
+                </li>
+              </ul>
+            </ul>
+          
+            <ul class="form-group inline border">
+              <label for="category-filter">Category:</label><br>
+              <select id="category-filter" name="category-filter">
+                <option value="all">All</option>
+                <option value="category1">Category 1</option>
+                <option value="category2">Category 2</option>
+                <option value="category3">Category 3</option>
+              </select>
+
+          </form>
+        </div>
       </div>
     </div>
 
 
-
     <!-- Sidebar  -->
-    <div  class="col-md-3 col-sm-12" id="sidebar">
+    <div class="col-md-3 col-sm-12" id="sidebar">
       <div class="sidebar-header">
         <h3>Bootstrap Sidebar</h3>
       </div>
@@ -59,8 +100,11 @@ Edit Questions
     </div>
 
     <!-- Page Content  -->
-    <div id="edit-question-content" class="col-md-9 col-sm-12">
-      <h2>Edit Question</h2>
+    <div id="edit-question-content" class="col-md-8 col-sm-12">
+      <div id="edit-question-header">
+        <h2 class="edit-question-title">Edit Question: </h2>
+      </div>
+
       <div class="form-group editquestionform-area">
         {% include "categories.html" %}
         {% include "editquestionform.html" %}
@@ -69,5 +113,6 @@ Edit Questions
   </div>
 
 </body>
+
 </html>
 {% endblock content %}
