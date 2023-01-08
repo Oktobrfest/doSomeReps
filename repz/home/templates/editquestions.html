@@ -29,45 +29,56 @@ Edit Questions
           <form id="search-filters-form">
 
             <ul class="form-group inline border">
-            <label for="search-terms">Search Terms:</label><br>
-            <input type="text" id="search-terms" name="search-terms"><br>
+              <label for="search-terms">Search Terms:</label><br>
+              <input type="text" id="search-terms" name="search-terms"><br>
               Search Within:
               <ul class="list-group list-group-flush form-group" id="categories">
-               
+
                 <li class="list-group-item filter-item border">
                   <label for="title-filter-checkbox" class="checkbox-inline"></label>
-                  <input type="checkbox" value="title-filter-checkbox" id="title-filter-checkbox" name="title-filter-checkbox" class="custom-checkbox"/>
+                  <input type="checkbox" value="title-filter-checkbox" id="title-filter-checkbox"
+                    name="title-filter-checkbox" class="custom-checkbox" />
                   &nbsp Title
                 </li>
 
                 <li class="list-group-item filter-item border">
                   <label for="question-filter-checkbox" class="checkbox-inline"></label>
-                  <input type="checkbox" value="question-filter-checkbox" id="question-filter-checkbox" name="question-filter-checkbox" class="custom-checkbox"/>
+                  <input type="checkbox" value="question-filter-checkbox" id="question-filter-checkbox"
+                    name="question-filter-checkbox" class="custom-checkbox" />
                   &nbsp Question
                 </li>
 
                 <li class="list-group-item filter-item border">
                   <label for="hint-filter-checkbox" class="checkbox-inline"></label>
-                  <input type="checkbox" value="hint-filter-checkbox" id="hint-filter-checkbox" name="hint-filter-checkbox" class="custom-checkbox"/>
+                  <input type="checkbox" value="hint-filter-checkbox" id="hint-filter-checkbox"
+                    name="hint-filter-checkbox" class="custom-checkbox" />
                   &nbsp Hint
                 </li>
 
                 <li class="list-group-item filter-item border">
                   <label for="answer-filter-checkbox" class="checkbox-inline"></label>
-                  <input type="checkbox" value="answer-filter-checkbox" id="answer-filter-checkbox" name="answer-filter-checkbox" class="custom-checkbox"/>
+                  <input type="checkbox" value="answer-filter-checkbox" id="answer-filter-checkbox"
+                    name="answer-filter-checkbox" class="custom-checkbox" />
                   &nbsp Answer
                 </li>
               </ul>
             </ul>
-          
+
             <ul class="form-group inline border">
-              <label for="category-filter">Category:</label><br>
-              <select id="category-filter" name="category-filter">
-                <option value="all">All</option>
-                <option value="category1">Category 1</option>
-                <option value="category2">Category 2</option>
-                <option value="category3">Category 3</option>
-              </select>
+              <div id="category-section" class="collapse show">
+                <ul class="list-group list-group-flush form-group" id="categories">
+                  {% for category in category_list %}
+                  {% set cat = (category|replace( " ", "_" ))|trim %}
+                  <li class="list-group-item category-item border">
+                    <label for="category_name" class="checkbox-inline"></label>
+                    <input type="checkbox" value={{ category }} id="category_name" name="category_name"
+                      class="custom-checkbox" {% if filter_cat in filter_categories %}checked{% endif %} />
+                    &nbsp {{ category }}
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </ul>
 
           </form>
         </div>
@@ -106,8 +117,10 @@ Edit Questions
       </div>
 
       <div class="form-group editquestionform-area">
+        {% if q %}
         {% include "categories.html" %}
         {% include "editquestionform.html" %}
+        {% endif %}
       </div>
     </div>
   </div>
