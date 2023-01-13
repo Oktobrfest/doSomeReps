@@ -45,7 +45,7 @@ label[for=answer], label[for=hint] {
   width: 80%;
 }
 
-#categories {
+#categories, #search-within-categories {
   display: flex;
   flex-wrap: wrap;
   flex-direction: row;
@@ -175,6 +175,15 @@ margin: 10px;
   margin: 10px;
 }
 
+#title-filter-button-section {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+span {
+  display: inline-block;
+}
 
 
 

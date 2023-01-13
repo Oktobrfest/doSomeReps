@@ -20,9 +20,14 @@ Edit Questions
 
     <div id="search-filters" class="search-filters">
 
-      <h2 class="search-filters-title">Search Filters</h2>
-      <button id="collapse-categories-button" class="btn btn-secondary" data-toggle="collapse"
-        data-target="#category-section">Filters Collapse</button>
+      <div id="title-filter-button-section">
+        <span>
+          <h2 class="search-filters-title">Search Filters</h2>
+        </span>
+        <span> <button id="collapse-categories-button" class="btn btn-secondary" data-toggle="collapse"
+            data-target="#category-section">Hide Filters</button></span>
+      </div>
+
       <div id="category-section" class="collapse show">
 
         <div class="form-group">
@@ -32,7 +37,7 @@ Edit Questions
               <label for="search-terms">Search Terms:</label><br>
               <input type="text" id="search-terms" name="search-terms"><br>
               Search Within:
-              <ul class="list-group list-group-flush form-group" id="categories">
+              <ul class="list-group list-group-flush form-group search-within-categories" id="search-within-categories">
 
                 <li class="list-group-item filter-item border">
                   <label for="title-filter-checkbox" class="checkbox-inline"></label>
@@ -72,7 +77,7 @@ Edit Questions
                   <li class="list-group-item category-item border">
                     <label for="category_name" class="checkbox-inline"></label>
                     <input type="checkbox" value={{ category }} id="category_name" name="category_name"
-                      class="custom-checkbox" {% if filter_cat in filter_categories %}checked{% endif %} />
+                      class="custom-checkbox" {% if category in filter_categories %}checked{% endif %} />
                     &nbsp {{ category }}
                   </li>
                   {% endfor %}
@@ -83,6 +88,11 @@ Edit Questions
           </form>
         </div>
       </div>
+
+      <button id="search-button" class="btn btn-primary">Search</button>
+      
+
+
     </div>
 
 

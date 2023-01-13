@@ -467,15 +467,17 @@ def editquestions():
     UID = copy.copy(UID1)
     form = questionForm()
     category_list = get_all_categories()
-    
+    question_categories = []
     filter_categories = []
+    q = None
     if request.method == "GET":
         filter_categories = get_session('filter_categories')
-        
+        if filter_categories == 'Not set':
+            filter_categories = []
     
 
     
-    question_categories = ''
+   
     
      
 
@@ -486,8 +488,22 @@ def editquestions():
         category_list=category_list,
         selected_categories=question_categories,
         filter_categories=filter_categories,
-        form = form
+        form = form,
+        q=q
          )
+    
+    
+@home.route("/searchq", methods=["POST"], endpoint="searchq")
+@login_required
+def searchq():
+    
+    # get The submitted Json values
+    filter_categories = request.get_json()
+    set_session('filter_categories', filter_categories)  
+    
+    msg = 'suck sess'
+    flash(msg, category="success")
+    return ''   
 
 
 @home.route("/editq", methods=["POST"], endpoint="editq")
@@ -498,7 +514,8 @@ def editq():
     filter_categories = request.get_json()
     set_session('filter_categories', filter_categories)  
     
-    
-    
-    return jsonify(data, htl)
+    msg = 'suck sess'
+    flash(msg, category="success")
+    return ''
+    # return jsonify(data, htl)
 

@@ -150,20 +150,85 @@ function start_qz(ev) {
 
 
 
-
+//  ACTUALLY RUNS JUST ONCE!!! 
 window.onload = (event) => {
     const showHideButton = document.getElementById('collapse-categories-button');
     if (showHideButton) {
         showHideButton.onclick = function () { hideShowChange(showHideButton) };
     };
+
+    // select the search form
+    const filterform = document.getElementById('search-filters-form');
+    // select the search button
+    const searchbutton = document.getElementById('search-button');
+    // process the search
+    if (searchbutton) {
+        searchbutton.onclick = function () { getSearchData(filterform) };
+    };
+
 }
+
+// submit search form data via json to backend
+function getSearchData(filterform) {
+
+    // get categories
+    const search_categories = document.querySelectorAll('#search-filters-form #category-section input[type=checkbox]');
+    console.log(search_categories);
+
+    const selected_search_categories = [];
+    search_categories.forEach(checkbox => {
+        if (checkbox.checked) {
+            selected_search_categories.push(checkbox.value);
+        }
+    });
+    // get search within checkboxes
+    const search_within_checkboxes = document.querySelectorAll('.search-within-categories input[type=checkbox]');
+    console.log(search_within_checkboxes);
+
+    const selected_search_within = [];
+    search_within_checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            selected_search_within.push(checkbox.value);
+        }
+    });
+
+    // get search query
+    const searchq = document.getElementById('search-terms').value;
+
+    // aggregate the forms values
+    const search_values = {
+        'search-terms': searchq,
+        'search-categories': selected_search_categories,
+        'search-within': selected_search_within
+            };
+
+
+    // Convert the JavaScript object to a JSON string
+    const search_criteria = JSON.stringify(search_values);
+    console.log(search_criteria);
+    
+    fetch(searchq, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: search_criteria
+    })
+
+};
+
 
 
 function hideShowChange(button) {
-    if (button.textContent === 'Filters Collapse') {
-        button.textContent = 'Filters Show';
+    if (button.textContent === 'Hide Filters') {
+        button.textContent = 'Show Filters';
     } else {
-        button.textContent = 'Filters Collapse';
+        button.textContent = 'Hide Filters';
     }
-
 }
+
+
+
+
+
+
