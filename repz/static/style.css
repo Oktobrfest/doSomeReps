@@ -185,8 +185,17 @@ span {
   display: inline-block;
 }
 
+.search-result-category-item {
+  padding: 3px;
+  margin: 3px;
+  background-color: #ff9933;
+  border-radius: 15px;
+  padding-right: 9px; 
+  padding-left: 9px;
+}
 
-
-
+#editquestionform-area {
+  display: none;
+}
 
 

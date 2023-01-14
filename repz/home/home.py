@@ -1,7 +1,7 @@
 from re import A
 from typing import final
 from flask import Blueprint, render_template, request, jsonify, flash, Flask, flash, redirect, url_for, session as local_session
-from flask import current_app as app
+from flask import jsonify, current_app as app
 from flask_login import current_user, login_required, logout_user
 
 from sqlalchemy.orm import (
@@ -15,7 +15,7 @@ from sqlalchemy.orm import (
    )
 from sqlalchemy.sql import func, exists, distinct
 from sqlalchemy.sql.expression import bindparam
-from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_
+from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_, or_
 from ..database import Base, engine, session
 from ..models import category, question, q_pic, quizq, level
 import re
@@ -39,6 +39,7 @@ from flask import send_from_directory
 
 from ..homeforms import *
 from ..bluehelpers import *
+
 
 
 @app.route('/favicon.ico') 
@@ -498,24 +499,91 @@ def editquestions():
 def searchq():
     
     # get The submitted Json values
-    filter_categories = request.get_json()
-    set_session('filter_categories', filter_categories)  
+    filters = request.get_json()
+    set_session('filter_categories', filters)  
     
+    filter_cats = filters['search-categories']
+    
+    #query db
+   # list of column names to search
+    column_names = filters['search-within'] 
+    #equest.json['search-within'] #['column1', 'column2', 'column3']
+
+    # the value to search for
+    search_value = filters['search-terms']
+
+    # build the query
+    query = session.query(question, category).options(joinedload(question.categories)).join(question.categories).filter(category.category_name.in_(filter_cats))
+    
+    # query = session.query(question.question_name, question.question_id, category, category.category_name).join(question.categories).filter(category.category_name.in_(filter_cats))
+    for column_name in column_names:
+        query = query.filter(or_(getattr(question, column_name).contains(search_value)))
+
+    # execute the query
+    results = query.all()
+        
+    search_results = []
+    for r in results:
+       catz = []
+       for c in r.question.categories:
+           catz.append(c.category_name)
+
+       q = {
+            'question_name': r.question.question_name,
+            'question_id': r.question.question_id,
+            'categories': catz
+       }
+       search_results.append(q)
+
+    search_response = jsonify(search_results)
     msg = 'suck sess'
     flash(msg, category="success")
-    return ''   
+    return search_response
 
 
+@home.route("/getq", methods=["POST"], endpoint="getq")
+@login_required
+def getq():
+    
+    # get The submitted Json values
+    question_id = request.get_json()
+    
+    qry = select(question).where(question.question_id == question_id)
+    question_obj = session.execute(qry).first()
+    
+    p = 'pp'
+    q = {
+            'question_name': question_obj._data[0].question_name,
+            'question_text': question_obj._data[0].question_text,
+            'hint': question_obj._data[0].hint,
+            'answer': question_obj._data[0].answer,
+            }
+       
+    res_q = jsonify(q)
+    msg = 'suck sess'
+    flash(msg, category="success")
+    return res_q
+    
+    
 @home.route("/editq", methods=["POST"], endpoint="editq")
 @login_required
 def editq():
     
     # get The submitted Json values
-    filter_categories = request.get_json()
-    set_session('filter_categories', filter_categories)  
+    question_id = request.get_json()
     
+    qry = select(question).where(question.question_id == question_id).first()
+    question_obj = session.execute(qry).scalars()
+    
+    q = {
+            'question_name': question_obj.question_name,
+            'question_text': question_obj.question_text,
+            'hint': question_obj.hint,
+            'answer': question_obj.answer,
+            }
+        
+    res_q = jsonify(q)
     msg = 'suck sess'
     flash(msg, category="success")
-    return ''
-    # return jsonify(data, htl)
+    return res_q
 

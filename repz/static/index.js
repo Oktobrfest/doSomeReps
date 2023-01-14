@@ -168,11 +168,13 @@ window.onload = (event) => {
 
 }
 
+var searchq = flask_util.url_for('home.searchq');
+
 // submit search form data via json to backend
 function getSearchData(filterform) {
 
     // get categories
-    const search_categories = document.querySelectorAll('#search-filters-form #category-section input[type=checkbox]');
+    const search_categories = document.querySelectorAll('.search-filter-categories input[type=checkbox]');
     console.log(search_categories);
 
     const selected_search_categories = [];
@@ -193,11 +195,11 @@ function getSearchData(filterform) {
     });
 
     // get search query
-    const searchq = document.getElementById('search-terms').value;
+    const search_val = document.getElementById('search-terms').value;
 
     // aggregate the forms values
     const search_values = {
-        'search-terms': searchq,
+        'search-terms': search_val,
         'search-categories': selected_search_categories,
         'search-within': selected_search_within
             };
@@ -214,10 +216,109 @@ function getSearchData(filterform) {
         },
         body: search_criteria
     })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        // add search results to the sidebar
+        data.forEach(function(item) {
+
+            let li = document.createElement('li');
+            li.className = 'question-result-list-item list-group-item list-group-item-action list-group-item-light'
+    
+            let text = document.createTextNode(item.question_name);
+            // Append the text to <div>
+            li.appendChild(text);
+    
+            let ul = document.createElement('ul');
+            ul.className ="list-inline"
+            ul.setAttribute('data-value', item.question_id);
+            // append categories as a list
+            item.categories.forEach(function(data) {
+
+                let cat_li = document.createElement('li');
+                cat_li.className = 'list-inline-item list-group-item-secondary list-group-item-sm text-center questions-category search-result-category-item'
+                let cat_text = document.createTextNode(data);
+                cat_li.appendChild(cat_text);
+
+                cat_li.setAttribute('data-value', item.question_id);
+
+                ul.appendChild(cat_li);
+
+            });
+
+            li.appendChild(ul);
+
+            var hidden = document.createElement('input');
+            hidden_name = item.question_id;
+            hidden.type = "hidden";
+            hidden.name =  item.question_id;
+            hidden.value = item.question_id;
+            hidden.id = item.question_id;;
+            hidden.setAttribute('data-value', item.question_id);
+            li.setAttribute('data-value', item.question_id);
+
+            li.appendChild(hidden);
+
+            li.addEventListener('click', populateQuestion);
+
+           
+ n = document.getElementById("search-results-list-unstyled").appendChild(li);
+       
+          
+            });
+    })
+    .catch(error => {
+        console.log(error);
+    });
 
 };
 
+var getq = flask_util.url_for('home.getq');
 
+function populateQuestion(event){
+    var question_id = event.target.dataset.value;
+    console.log(question_id);
+
+    fetch(getq, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: question_id
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        // populate edit question area
+        console.log(data);
+        // uncover the hidden area
+        const question_area = document.getElementById("editquestionform-area");
+        question_area.style.display = "block";
+        
+        // populate the forms
+        document.getElementById("question_name").value = data.question_name;
+        
+
+
+
+    })
+    .catch(error => {
+        console.log(error);
+    });
+
+
+
+
+
+}
 
 function hideShowChange(button) {
     if (button.textContent === 'Hide Filters') {

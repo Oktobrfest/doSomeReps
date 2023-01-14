@@ -41,28 +41,28 @@ Edit Questions
 
                 <li class="list-group-item filter-item border">
                   <label for="title-filter-checkbox" class="checkbox-inline"></label>
-                  <input type="checkbox" value="title-filter-checkbox" id="title-filter-checkbox"
+                  <input type="checkbox" value="question_name" id="title-filter-checkbox"
                     name="title-filter-checkbox" class="custom-checkbox" />
                   &nbsp Title
                 </li>
 
                 <li class="list-group-item filter-item border">
                   <label for="question-filter-checkbox" class="checkbox-inline"></label>
-                  <input type="checkbox" value="question-filter-checkbox" id="question-filter-checkbox"
+                  <input type="checkbox" value="question_text" id="question-filter-checkbox"
                     name="question-filter-checkbox" class="custom-checkbox" />
                   &nbsp Question
                 </li>
 
                 <li class="list-group-item filter-item border">
                   <label for="hint-filter-checkbox" class="checkbox-inline"></label>
-                  <input type="checkbox" value="hint-filter-checkbox" id="hint-filter-checkbox"
+                  <input type="checkbox" value="hint" id="hint-filter-checkbox"
                     name="hint-filter-checkbox" class="custom-checkbox" />
                   &nbsp Hint
                 </li>
 
                 <li class="list-group-item filter-item border">
                   <label for="answer-filter-checkbox" class="checkbox-inline"></label>
-                  <input type="checkbox" value="answer-filter-checkbox" id="answer-filter-checkbox"
+                  <input type="checkbox" value="answer" id="answer-filter-checkbox"
                     name="answer-filter-checkbox" class="custom-checkbox" />
                   &nbsp Answer
                 </li>
@@ -71,13 +71,15 @@ Edit Questions
 
             <ul class="form-group inline border">
               <div id="category-section" class="collapse show">
-                <ul class="list-group list-group-flush form-group" id="categories">
+                <ul class="list-group list-group-flush form-group search-filter-categories" id="categories">
                   {% for category in category_list %}
                   {% set cat = (category|replace( " ", "_" ))|trim %}
                   <li class="list-group-item category-item border">
                     <label for="category_name" class="checkbox-inline"></label>
                     <input type="checkbox" value={{ category }} id="category_name" name="category_name"
-                      class="custom-checkbox" {% if category in filter_categories %}checked{% endif %} />
+                      class="custom-checkbox" 
+                      {# {% if category in filter_categories %}checked{% endif %}  #}
+                      />
                     &nbsp {{ category }}
                   </li>
                   {% endfor %}
@@ -91,33 +93,18 @@ Edit Questions
 
       <button id="search-button" class="btn btn-primary">Search</button>
       
-
-
     </div>
 
 
     <!-- Sidebar  -->
     <div class="col-md-3 col-sm-12" id="sidebar">
       <div class="sidebar-header">
-        <h3>Bootstrap Sidebar</h3>
+        <h3>Select a Question</h3>
       </div>
-
-      <ul class="list-unstyled components">
         <p>Search Results</p>
-        <li class="search-results">
-          <ul class="search-results-list-unstyled" id="search-results-list-unstyled">
-            <li>
-              <a href="#">question 1</a>
-            </li>
-            <li>
-              <a href="#">question 2</a>
-            </li>
-            <li>
-              <a href="#">question 3</a>
-            </li>
-          </ul>
-        </li>
-      </ul>
+         <div class="search-results-list-unstyled" id="search-results-list-unstyled">
+            </div>
+ 
     </div>
 
     <!-- Page Content  -->
@@ -126,11 +113,11 @@ Edit Questions
         <h2 class="edit-question-title">Edit Question: </h2>
       </div>
 
-      <div class="form-group editquestionform-area">
-        {% if q %}
+      <div id="editquestionform-area" class="form-group editquestionform-area">
+        
         {% include "categories.html" %}
         {% include "editquestionform.html" %}
-        {% endif %}
+        
       </div>
     </div>
   </div>
@@ -138,4 +125,5 @@ Edit Questions
 </body>
 
 </html>
+{{ flask_util_js.js }}
 {% endblock content %}
