@@ -1,7 +1,7 @@
 from re import A
 from typing import final
 from flask import Blueprint, render_template, request, jsonify, flash, Flask, flash, redirect, url_for, session as local_session
-from flask import jsonify, current_app as app
+from flask import jsonify, make_response, g, current_app as app
 from flask_login import current_user, login_required, logout_user
 
 from sqlalchemy.orm import (
@@ -31,7 +31,6 @@ from werkzeug.utils import secure_filename
 from ..aws_s3 import *
 from datetime import datetime, timedelta
 import random
-from flask import g
 import copy
 
 import os 
@@ -548,21 +547,60 @@ def getq():
     # get The submitted Json values
     question_id = request.get_json()
     
-    qry = select(question).where(question.question_id == question_id)
-    question_obj = session.execute(qry).first()
+    # qry = select(question).where(question.question_id == question_id)
+   
+    # qry = session.query(question).options(joinedload(question.pics)).filter(question.question_id == question_id)
+    # question_obj = qry.first()
+
+    # qry = select([question, q_pic]).select_from(question.join(q_pic, question.question_id == q_pic.question_id)).where(question.question_id == question_id)
+          
+    # question_obj = session.execute(qry).first()
     
-    p = 'pp'
+    qry = session.query(question, q_pic).join(q_pic, question.question_id == q_pic.question_id).filter(question.question_id == question_id)
+    question_obj = qry.all()
+
+    
+    pics_by_type = {
+    "hint": [],
+    "answer": [],
+    "question": []
+    }
+
+    # for obj in question_obj[0]._data[1]:
+    #     pics_by_type[obj.q_pic.pic_type].append(obj.q_pic.pic_string)
+
+    hint_pics = [r.q_pic for r in question_obj if r.q_pic.pic_type == "hint_image"]
+    answer_pics = [r.q_pic for r in question_obj if r.q_pic.pic_type == "answer_pics"]
+    question_pics = [r.q_pic for r in question_obj if r.q_pic.pic_type == "question_image"]
+
+    for pic in hint_pics:
+        p = { 'pic_string': pic.pic_string, 'pic_id': pic.pic_id }
+        pics_by_type["hint"].append(p)
+    for pic in answer_pics:
+        p = { 'pic_string': pic.pic_string, 'pic_id': pic.pic_id }
+        pics_by_type["answer"].append(p)
+    for pic in question_pics:
+        p = { 'pic_string': pic.pic_string, 'pic_id': pic.pic_id }
+        pics_by_type["question"].append(p)
+        
+        
+ 
     q = {
-            'question_name': question_obj._data[0].question_name,
-            'question_text': question_obj._data[0].question_text,
-            'hint': question_obj._data[0].hint,
-            'answer': question_obj._data[0].answer,
+            'question_name': question_obj[0]._data[0].question_name,
+            'question_text': question_obj[0]._data[0].question_text,
+            'hint': question_obj[0]._data[0].hint,
+            'answer': question_obj[0]._data[0].answer,
+            'pics_by_type': pics_by_type,
             }
        
     res_q = jsonify(q)
-    msg = 'suck sess'
+    msg = 'mkay'
     flash(msg, category="success")
-    return res_q
+    
+    response = make_response(res_q)
+    # response.headers['Access-Control-Allow-Origin'] = '*'
+   
+    return response
     
     
 @home.route("/editq", methods=["POST"], endpoint="editq")

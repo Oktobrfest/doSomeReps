@@ -78,7 +78,7 @@ Edit Questions
                     <label for="category_name" class="checkbox-inline"></label>
                     <input type="checkbox" value={{ category }} id="category_name" name="category_name"
                       class="custom-checkbox" 
-                      {# {% if category in filter_categories %}checked{% endif %}  #}
+                     {% if category in filter_categories %}checked{% endif %}  
                       />
                     &nbsp {{ category }}
                   </li>
@@ -110,7 +110,7 @@ Edit Questions
     <!-- Page Content  -->
     <div id="edit-question-content" class="col-md-8 col-sm-12">
       <div id="edit-question-header">
-        <h2 class="edit-question-title">Edit Question: </h2>
+        <h2 class="edit-question-title">Edit Question: <p id="edit-question-title-heading" class="text-normal"></p> </h2>
       </div>
 
       <div id="editquestionform-area" class="form-group editquestionform-area">

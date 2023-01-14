@@ -202,13 +202,13 @@ function getSearchData(filterform) {
         'search-terms': search_val,
         'search-categories': selected_search_categories,
         'search-within': selected_search_within
-            };
+    };
 
 
     // Convert the JavaScript object to a JSON string
     const search_criteria = JSON.stringify(search_values);
     console.log(search_criteria);
-    
+
     fetch(searchq, {
         method: 'POST',
         headers: {
@@ -216,70 +216,70 @@ function getSearchData(filterform) {
         },
         body: search_criteria
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        // add search results to the sidebar
-        data.forEach(function(item) {
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // add search results to the sidebar
+            data.forEach(function (item) {
 
-            let li = document.createElement('li');
-            li.className = 'question-result-list-item list-group-item list-group-item-action list-group-item-light'
-    
-            let text = document.createTextNode(item.question_name);
-            // Append the text to <div>
-            li.appendChild(text);
-    
-            let ul = document.createElement('ul');
-            ul.className ="list-inline"
-            ul.setAttribute('data-value', item.question_id);
-            // append categories as a list
-            item.categories.forEach(function(data) {
+                let li = document.createElement('li');
+                li.className = 'question-result-list-item list-group-item list-group-item-action list-group-item-light'
 
-                let cat_li = document.createElement('li');
-                cat_li.className = 'list-inline-item list-group-item-secondary list-group-item-sm text-center questions-category search-result-category-item'
-                let cat_text = document.createTextNode(data);
-                cat_li.appendChild(cat_text);
+                let text = document.createTextNode(item.question_name);
+                // Append the text to <div>
+                li.appendChild(text);
 
-                cat_li.setAttribute('data-value', item.question_id);
+                let ul = document.createElement('ul');
+                ul.className = "list-inline";
+                ul.setAttribute('data-value', item.question_id);
+                // append categories as a list
+                item.categories.forEach(function (data) {
 
-                ul.appendChild(cat_li);
+                    let cat_li = document.createElement('li');
+                    cat_li.className = 'list-inline-item list-group-item-secondary list-group-item-sm text-center questions-category search-result-category-item'
+                    let cat_text = document.createTextNode(data);
+                    cat_li.appendChild(cat_text);
+
+                    cat_li.setAttribute('data-value', item.question_id);
+
+                    ul.appendChild(cat_li);
+
+                });
+
+                li.appendChild(ul);
+
+                var hidden = document.createElement('input');
+                hidden_name = item.question_id;
+                hidden.type = "hidden";
+                hidden.name = item.question_id;
+                hidden.value = item.question_id;
+                hidden.id = item.question_id;;
+                hidden.setAttribute('data-value', item.question_id);
+                li.setAttribute('data-value', item.question_id);
+
+                li.appendChild(hidden);
+
+                li.addEventListener('click', populateQuestion);
+
+
+                n = document.getElementById("search-results-list-unstyled").appendChild(li);
+
 
             });
-
-            li.appendChild(ul);
-
-            var hidden = document.createElement('input');
-            hidden_name = item.question_id;
-            hidden.type = "hidden";
-            hidden.name =  item.question_id;
-            hidden.value = item.question_id;
-            hidden.id = item.question_id;;
-            hidden.setAttribute('data-value', item.question_id);
-            li.setAttribute('data-value', item.question_id);
-
-            li.appendChild(hidden);
-
-            li.addEventListener('click', populateQuestion);
-
-           
- n = document.getElementById("search-results-list-unstyled").appendChild(li);
-       
-          
-            });
-    })
-    .catch(error => {
-        console.log(error);
-    });
+        })
+        .catch(error => {
+            console.log(error);
+        });
 
 };
 
 var getq = flask_util.url_for('home.getq');
 
-function populateQuestion(event){
+function populateQuestion(event) {
     var question_id = event.target.dataset.value;
     console.log(question_id);
 
@@ -290,35 +290,94 @@ function populateQuestion(event){
         },
         body: question_id
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        // populate edit question area
-        console.log(data);
-        // uncover the hidden area
-        const question_area = document.getElementById("editquestionform-area");
-        question_area.style.display = "block";
-        
-        // populate the forms
-        document.getElementById("question_name").value = data.question_name;
-        
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // populate edit question area
+            console.log(data);
+            // uncover the hidden area
+            const question_area = document.getElementById("editquestionform-area");
+            question_area.style.display = "block";
+
+            // populate the forms
+            document.getElementById("question_name").value = data.question_name;
+            document.getElementById("question_text").value = data.question_text;
+            document.getElementById("hint").value = data.hint;
+            document.getElementById("answer").value = data.answer;
+
+            // Get the element with class "edit-question-title"
+            var title_heading = document.querySelector("#edit-question-title-heading");
+
+            // Append some text to the element
+            title_heading.innerHTML += data.question_name;
+
+            // Handle images
+            // loop through the image strings in the "pics_by_type" object
+            for (let picType in data.pics_by_type) {
+                for (let i = 0; i < data.pics_by_type[picType].length; i++) {
+                    // create an <img> element for each image string
+                    let img = document.createElement("img");
+                    var pic_url = data.pics_by_type[picType][i].pic_string;
+                    img.src = pic_url;
+
+                    img.alt = picType; // add the picType as the alt text
+                    var pic_id = data.pics_by_type[picType][i].pic_id;
+                    img.id = pic_id;
+                    img.baseURI = "https://reppics.s3.us-west-2.amazonaws.com"
+                    // add the image to the right spot
+                    if (picType === "question") {
+                        let imgContainer = createImgContainer(pic_id);
+                        const question_image = document.getElementById("upload_question_image");
+                        imgContainer.appendChild(img);
+
+                        
+                        question_image.appendChild(imgContainer);
+                    }
+
+                }
+            }
+
+            function createImgContainer(pic_id) {
+                let div = document.createElement("div");
+                div.className = "image-container";
+                // make close image button
+                var button = document.createElement('input');
+                button_name = 'pic-' + pic_id + '-close-button';
+                button.type = "button";
+                button.name = button_name;
+                button.value = button_name;
+                button.id = button_name;
+                button.setAttribute('data-value', pic_id);
+                button.className = "image-close-button";
+                button.addEventListener('click', eliminateImage);
+                div.appendChild(button);
+                return div;
+            }
 
 
-
-    })
-    .catch(error => {
-        console.log(error);
-    });
+        })
+        .catch(error => {
+            console.log(error);
+        });
 
 
 
 
 
 }
+
+function eliminateImage(event) {
+    var pic_id = event.target.dataset.value;
+    console.log(pic_id);
+    var pic = document.getElementById(pic_id);
+    pic.remove();
+    var button = document.getElementById('pic-' + pic_id + '-close-button');
+    button.remove();
+};
 
 function hideShowChange(button) {
     if (button.textContent === 'Hide Filters') {
