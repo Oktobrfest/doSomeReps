@@ -172,7 +172,11 @@ var searchq = flask_util.url_for('home.searchq');
 
 // submit search form data via json to backend
 function getSearchData(filterform) {
-
+    // First clear out the old question list results
+    const previous_search_results = document.querySelectorAll('.question-result-list-item');
+    // use remove() to remove each of elements from the DOM
+    previous_search_results.forEach(element => {element.remove()});
+    
     // get categories
     const search_categories = document.querySelectorAll('.search-filter-categories input[type=checkbox]');
     console.log(search_categories);
@@ -297,11 +301,16 @@ function populateQuestion(event) {
             return response.json();
         })
         .then(data => {
-            // populate edit question area
-            console.log(data);
+
             // uncover the hidden area
             const question_area = document.getElementById("editquestionform-area");
             question_area.style.display = "block";
+
+            // clear out the previous forms pictures
+            const close_pic_buttons = document.getElementsByClassName("image-close-button");
+            for (let close_button of close_pic_buttons) {
+                close_button.click();
+            }
 
             // populate the forms
             document.getElementById("question_name").value = data.question_name;
@@ -313,7 +322,7 @@ function populateQuestion(event) {
             var title_heading = document.querySelector("#edit-question-title-heading");
 
             // Append some text to the element
-            title_heading.innerHTML += data.question_name;
+            title_heading.innerHTML = 'Edit Question: ' + data.question_name;
 
             // Handle images
             // loop through the image strings in the "pics_by_type" object
@@ -328,34 +337,16 @@ function populateQuestion(event) {
                     var pic_id = data.pics_by_type[picType][i].pic_id;
                     img.id = pic_id;
                     img.baseURI = "https://reppics.s3.us-west-2.amazonaws.com"
-                    // add the image to the right spot
-                    if (picType === "question") {
-                        let imgContainer = createImgContainer(pic_id);
-                        const question_image = document.getElementById("upload_question_image");
-                        imgContainer.appendChild(img);
 
-                        
-                        question_image.appendChild(imgContainer);
-                    }
+                    let imgContainer = createImgContainer(pic_id);
+                    imgContainer.appendChild(img);
+
+                    // formulate element ID to put img in the right spot
+                    let imgLocationID = "upload-" + picType + "-image";
+                    let question_image = document.getElementById(imgLocationID);
+                    question_image.appendChild(imgContainer);
 
                 }
-            }
-
-            function createImgContainer(pic_id) {
-                let div = document.createElement("div");
-                div.className = "image-container";
-                // make close image button
-                var button = document.createElement('input');
-                button_name = 'pic-' + pic_id + '-close-button';
-                button.type = "button";
-                button.name = button_name;
-                button.value = button_name;
-                button.id = button_name;
-                button.setAttribute('data-value', pic_id);
-                button.className = "image-close-button";
-                button.addEventListener('click', eliminateImage);
-                div.appendChild(button);
-                return div;
             }
 
 
@@ -364,11 +355,25 @@ function populateQuestion(event) {
             console.log(error);
         });
 
-
-
-
-
 }
+
+function createImgContainer(pic_id) {
+    let div = document.createElement("div");
+    div.className = "image-container";
+    // make close image button
+    var button = document.createElement('input');
+    button_name = 'pic-' + pic_id + '-close-button';
+    button.type = "button";
+    button.name = button_name;
+    button.value = 'X';
+    button.id = button_name;
+    button.setAttribute('data-value', pic_id);
+    button.className = "image-close-button";
+    button.addEventListener('click', eliminateImage);
+    div.appendChild(button);
+    return div;
+}
+
 
 function eliminateImage(event) {
     var pic_id = event.target.dataset.value;

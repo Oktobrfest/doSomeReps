@@ -15,7 +15,7 @@ from sqlalchemy.orm import (
    )
 from sqlalchemy.sql import func, exists, distinct
 from sqlalchemy.sql.expression import bindparam
-from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_, or_
+from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_, or_, text
 from ..database import Base, engine, session
 from ..models import category, question, q_pic, quizq, level
 import re
@@ -556,42 +556,70 @@ def getq():
           
     # question_obj = session.execute(qry).first()
     
-    qry = session.query(question, q_pic).join(q_pic, question.question_id == q_pic.question_id).filter(question.question_id == question_id)
-    question_obj = qry.all()
+    # qry = session.query(question, q_pic).join(q_pic, question.question_id == q_pic.question_id).filter(question.question_id == question_id)
+    # question_obj = qry.all()
+    
+        # print(str(qry))
+    # print('query string follows:::::::::::::::::::::::::::')
+    # print(str(qry.statement.compile(compile_kwargs={"literal_binds": True})))
+    
+    question_obj = session.query(question).outerjoin(q_pic, question.question_id == q_pic.question_id).filter(question.question_id == question_id).first()
 
+    # pics_by_type = {
+    # "hint": [],
+    # "answer": [],
+    # "question": []
+    # }
+    
+    # if question_obj.pics:
+    #     hint_pics = [pic for pic in question_obj.pics if pic.pic_type == "hint_image"]
+    #     answer_pics = [pic for pic in question_obj.pics if pic.pic_type == "answer_pics"]
+    #     question_pics = [pic for pic in question_obj.pics if pic.pic_type == "question_image"]
+
+    # for pic in hint_pics:
+    #     p = { 'pic_string': pic.pic_string, 'pic_id': pic.pic_id }
+    #     pics_by_type["hint"].append(p)
+    # for pic in answer_pics:
+    #     p = { 'pic_string': pic.pic_string, 'pic_id': pic.pic_id }
+    #     pics_by_type["answer"].append(p)
+    # for pic in question_pics:
+    #     p = { 'pic_string': pic.pic_string, 'pic_id': pic.pic_id }
+    #     pics_by_type["question"].append(p)
     
     pics_by_type = {
     "hint": [],
     "answer": [],
     "question": []
-    }
+}
+    # if question_obj.pics:
+    #     pic_type_map = {"hint_image": "hint", "answer_pics": "answer", "question_image": "question"}
+    #     for pic in question_obj.pics:
+    #         pic_type = pic_type_map.get(pic.pic_type)
+    #         if pic_type:
+    #             p = { 'pic_string': pic.pic_string, 'pic_id': pic.pic_id }
+    #             pics_by_type[pic_type].append(p)
+    if question_obj.pics:
+        pic_type_map = {"hint_image": "hint", "answer_pics": "answer", "question_image": "question"}
+        for pic_type, type_name in pic_type_map.items():
+            pics = [pic for pic in question_obj.pics if pic.pic_type == pic_type]
+            pics_by_type[type_name] = [{ 'pic_string': pic.pic_string, 'pic_id': pic.pic_id } for pic in pics]
 
-    # for obj in question_obj[0]._data[1]:
-    #     pics_by_type[obj.q_pic.pic_type].append(obj.q_pic.pic_string)
-
-    hint_pics = [r.q_pic for r in question_obj if r.q_pic.pic_type == "hint_image"]
-    answer_pics = [r.q_pic for r in question_obj if r.q_pic.pic_type == "answer_pics"]
-    question_pics = [r.q_pic for r in question_obj if r.q_pic.pic_type == "question_image"]
-
-    for pic in hint_pics:
-        p = { 'pic_string': pic.pic_string, 'pic_id': pic.pic_id }
-        pics_by_type["hint"].append(p)
-    for pic in answer_pics:
-        p = { 'pic_string': pic.pic_string, 'pic_id': pic.pic_id }
-        pics_by_type["answer"].append(p)
-    for pic in question_pics:
-        p = { 'pic_string': pic.pic_string, 'pic_id': pic.pic_id }
-        pics_by_type["question"].append(p)
-        
-        
- 
+            
     q = {
-            'question_name': question_obj[0]._data[0].question_name,
-            'question_text': question_obj[0]._data[0].question_text,
-            'hint': question_obj[0]._data[0].hint,
-            'answer': question_obj[0]._data[0].answer,
+            'question_name': question_obj.question_name,
+            'question_text': question_obj.question_text,
+            'hint': question_obj.hint,
+            'answer': question_obj.answer,
             'pics_by_type': pics_by_type,
-            }
+        }
+
+    
+        # threw error for obj in question_obj[0]._data[1]:
+    #     pics_by_type[obj.q_pic.pic_type].append(obj.q_pic.pic_string)
+      # 'question_name': question_obj[0]._data[0].question_name,
+            # 'question_text': question_obj[0]._data[0].question_text,
+            # 'hint': question_obj[0]._data[0].hint,
+            # 'answer': question_obj[0]._data[0].answer,
        
     res_q = jsonify(q)
     msg = 'mkay'

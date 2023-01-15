@@ -15,7 +15,7 @@
     <textarea class="form-control question_text required" id="question_text" name="question_text"
         placeholder="Enter question here" required></textarea>
     {# upload image for question #}
-    <p id="upload_question_image"> Upload a Question Image:
+    <p id="upload-question-image"> Upload a Question Image:
         {{ form.csrf_token }}
         {{ form.question_image }}</p>
 
@@ -25,7 +25,7 @@
 <div id="hint_area" class="hint-section">
     <label for="hint">Hint</label>
     <textarea class="form-control hint" id="hint" name="hint" placeholder="Enter hint"></textarea>
-    <p id="upload_hint_image">Upload a Hint Image:
+    <p id="upload-hint-image">Upload a Hint Image:
         {{ form.hint_image }}
     </p>
 </div>
@@ -36,7 +36,7 @@
     <textarea class="form-control answer" id="answer" name="answer" placeholder="Enter answer here"
         required></textarea>
     <dl>
-        <p id="answer-pic-area">
+        <p id="upload-hint-image">
             Upload Answer Images:
             <input type="file" name="answer_pics" multiple="true" autocomplete="off">
         </p>

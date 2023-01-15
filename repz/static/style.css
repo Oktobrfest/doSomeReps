@@ -198,21 +198,28 @@ span {
   display: none;
 }
 
-#upload_question_image > img {
-object-fit: cover;
-max-width: 100%;
-max-height: 100%;
-}
-
-#upload_hint_image > img {
+.image-container > img {
   object-fit: cover;
   max-width: 100%;
   max-height: 100%;
   }
 
-  #answer-pic-area > img {
+/*   
+#upload-question-image > img {
+object-fit: cover;
+max-width: 100%;
+max-height: 100%;
+}
+
+#upload-hint-image > img {
+  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  }
+
+  #upload-hint-image > img {
     object-fit: cover;
     max-width: 100%;
     max-height: 100%;
-    }
+    } */
   
