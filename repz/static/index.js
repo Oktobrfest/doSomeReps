@@ -318,11 +318,14 @@ function populateQuestion(event) {
             document.getElementById("hint").value = data.hint;
             document.getElementById("answer").value = data.answer;
 
+            const save_question_button = document.querySelector("#save-question-button");
+            save_question_button.dataset.questionButton = data.question_id;
+
             // Get the element with class "edit-question-title"
             var title_heading = document.querySelector("#edit-question-title-heading");
 
             // Append some text to the element
-            title_heading.innerHTML = 'Edit Question: ' + data.question_name;
+            title_heading.innerHTML = data.question_name;
 
             // Handle images
             // loop through the image strings in the "pics_by_type" object

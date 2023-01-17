@@ -27,7 +27,7 @@ label[for=answer], label[for=hint] {
 #hint_area {
   background-color: #00ffff;
   border-radius: 25px;
-  padding: 5px;
+  padding: 1.15em;
 }
 
 #hint {
@@ -202,24 +202,14 @@ span {
   object-fit: cover;
   max-width: 100%;
   max-height: 100%;
+  padding: 5px;
+  margin: 5px;
   }
 
-/*   
-#upload-question-image > img {
-object-fit: cover;
-max-width: 100%;
-max-height: 100%;
-}
-
-#upload-hint-image > img {
-  object-fit: cover;
-  max-width: 100%;
-  max-height: 100%;
+  .image-close-button {
+    position: absolute;
+    right: 2.7rem;
+    font-size: x-large;
+    font-weight: 800;
   }
 
-  #upload-hint-image > img {
-    object-fit: cover;
-    max-width: 100%;
-    max-height: 100%;
-    } */
-  

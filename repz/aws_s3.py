@@ -31,5 +31,5 @@ def upload_file_to_s3(file_name, ExtraArgs, bucket=Config.BUCKET, object_name=No
         return False
     # return True
 
-    return f"{Config.S3_LOCATION}{file_name}"
+    return f"{Config.S3_LOCATION}{object_name}"
     

@@ -1,4 +1,4 @@
-#!/home/ubuntu/projects/venv/bin/python
+#!/home/ubuntu/projects/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
