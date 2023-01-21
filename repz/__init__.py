@@ -25,7 +25,6 @@ from os import environ
 
 import boto3
 
-
 from .flask_util_js import FlaskUtilJs
 
 from sqlalchemy.orm import Query

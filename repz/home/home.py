@@ -653,3 +653,16 @@ def editq():
     flash(msg, category="success")
     return res_q
 
+
+@home.route("/saveq", methods=["POST"], endpoint="saveq")
+@login_required
+def saveq():
+    question_updated = request.get_json()
+    
+    
+    
+    
+    
+    
+    
+    return ''

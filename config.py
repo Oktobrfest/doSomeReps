@@ -1,9 +1,14 @@
 """Class-based Flask app configuration."""
 from os import environ, path
+
+
+# import sys
+# sys.path.append('/home/ubuntu/projects/venv/lib/python3.10/site-packages/python-dotenv')
+# sys.path.append('/home/ubuntu/projects/venv/lib/python3.10/site-packages/dotenv')
 from dotenv import load_dotenv
-
+# # load_dotenv()
+# from dotenv import load_dotenv
 # load_dotenv()
-
 
 basedir = path.abspath(path.dirname(__file__))
 load_dotenv(path.join(basedir, ".env"))

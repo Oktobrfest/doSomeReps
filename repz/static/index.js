@@ -175,8 +175,8 @@ function getSearchData(filterform) {
     // First clear out the old question list results
     const previous_search_results = document.querySelectorAll('.question-result-list-item');
     // use remove() to remove each of elements from the DOM
-    previous_search_results.forEach(element => {element.remove()});
-    
+    previous_search_results.forEach(element => { element.remove() });
+
     // get categories
     const search_categories = document.querySelectorAll('.search-filter-categories input[type=checkbox]');
     console.log(search_categories);
@@ -306,6 +306,12 @@ function populateQuestion(event) {
             const question_area = document.getElementById("editquestionform-area");
             question_area.style.display = "block";
 
+            // one time only, set the save button event listener
+            const save_question_button = document.querySelector("#save-question-button");
+            save_question_button.addEventListener('click', saveQuestion, {
+                once: true,
+            });
+
             // clear out the previous forms pictures
             const close_pic_buttons = document.getElementsByClassName("image-close-button");
             for (let close_button of close_pic_buttons) {
@@ -318,8 +324,8 @@ function populateQuestion(event) {
             document.getElementById("hint").value = data.hint;
             document.getElementById("answer").value = data.answer;
 
-            const save_question_button = document.querySelector("#save-question-button");
-            save_question_button.dataset.questionButton = data.question_id;
+            // const save_question_button = document.querySelector("#save-question-button");
+            // save_question_button.dataset.questionButton = data.question_id;
 
             // Get the element with class "edit-question-title"
             var title_heading = document.querySelector("#edit-question-title-heading");
@@ -396,7 +402,23 @@ function hideShowChange(button) {
 }
 
 
+var saveq = flask_util.url_for('home.saveq');
 
+function saveQuestion(ev) {
+    ev.preventDefault();
+    console.log(ev);
 
+    q = {};
+    q.question_name = document.getElementById("question_name").value;
+    q.question_text = document.getElementById("question_text").value;
+    q.hint = document.getElementById("hint").value;
+    q.answer = document.getElementById("answer").value;
 
+     // Convert the JavaScript object to a JSON string
+     const updated_question = JSON.stringify(q);
 
+    fetch(saveq, {
+        method: 'POST',
+        body: updated_question
+    })
+}
