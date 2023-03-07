@@ -213,3 +213,6 @@ span {
     font-weight: 800;
   }
 
+#my-message-area {
+  display: none;
+}

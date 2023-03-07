@@ -10,9 +10,6 @@ class questionForm(FlaskForm):
 
     # question2 = StringField(u'Question text', validators=[validators.input_required()])
 
-    # form upload shit
-
-
 images = UploadSet("images", IMAGES)
 configure_uploads(app, images)
 

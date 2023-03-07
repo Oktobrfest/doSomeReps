@@ -15,6 +15,10 @@ Edit Questions
 </head>
 
 <body>
+  <div class="alert alert-success alter-dismissable fade show" id="my-message-area" role="alert">
+    
+   
+  </div>
 
   <div id="edit-question-page-wrapper" class="container-fluid">
 
@@ -32,6 +36,7 @@ Edit Questions
 
         <div class="form-group">
           <form id="search-filters-form">
+            <input type="hidden" id="question-id" name="question-id" value="">
 
             <ul class="form-group inline border">
               <label for="search-terms">Search Terms:</label><br>
@@ -111,6 +116,7 @@ Edit Questions
     <div id="edit-question-content" class="col-md-8 col-sm-12">
       <div id="edit-question-header">
         <h2 class="edit-question-title">Edit Question: <p id="edit-question-title-heading" class="text-normal"></p> </h2>
+        <button id="delete-question-button" class="btn btn-primary">Delete Question</button>
       </div>
 
       <div id="editquestionform-area" class="form-group editquestionform-area">

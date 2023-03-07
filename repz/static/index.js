@@ -154,24 +154,37 @@ function start_qz(ev) {
 window.onload = (event) => {
     const showHideButton = document.getElementById('collapse-categories-button');
     if (showHideButton) {
-        showHideButton.onclick = function () { hideShowChange(showHideButton) };
-    };
+      showHideButton.onclick = function (event) {
+        event.preventDefault();
+        hideShowChange(showHideButton);
+      };
+    }
+    
 
-    // select the search form
+    // exclude other pages from loading this
+    if (window.location.pathname === '/editquestions') {            
+            // select the search form
     const filterform = document.getElementById('search-filters-form');
     // select the search button
     const searchbutton = document.getElementById('search-button');
+    searchbutton.addEventListener('click', clearMsgArea);
     // process the search
     if (searchbutton) {
         searchbutton.onclick = function () { getSearchData(filterform) };
     };
-
+    const save_question_button = document.querySelector("#save-question-button");
+    save_question_button.addEventListener('click', clearMsgArea);
+}
 }
 
 var searchq = flask_util.url_for('home.searchq');
 
 // submit search form data via json to backend
 function getSearchData(filterform) {
+    // clear old question form
+    clearForm();
+    hideQuestionArea();
+
     // First clear out the old question list results
     const previous_search_results = document.querySelectorAll('.question-result-list-item');
     // use remove() to remove each of elements from the DOM
@@ -267,6 +280,7 @@ function getSearchData(filterform) {
 
                 li.appendChild(hidden);
 
+                li.addEventListener('click', clearMsgArea);
                 li.addEventListener('click', populateQuestion);
 
 
@@ -284,6 +298,7 @@ function getSearchData(filterform) {
 var getq = flask_util.url_for('home.getq');
 
 function populateQuestion(event) {
+    clearMsgArea();
     var question_id = event.target.dataset.value;
     console.log(question_id);
 
@@ -306,23 +321,26 @@ function populateQuestion(event) {
             const question_area = document.getElementById("editquestionform-area");
             question_area.style.display = "block";
 
-            // one time only, set the save button event listener
+            // one time only, set the save button event listener and delete button
             const save_question_button = document.querySelector("#save-question-button");
             save_question_button.addEventListener('click', saveQuestion, {
                 once: true,
             });
 
+            const delete_question_button = document.querySelector("#delete-question-button");
+            delete_question_button.addEventListener('click', deleteQuestion, {
+                once: true,
+            });
+
             // clear out the previous forms pictures
-            const close_pic_buttons = document.getElementsByClassName("image-close-button");
-            for (let close_button of close_pic_buttons) {
-                close_button.click();
-            }
+            clearPics();
 
             // populate the forms
             document.getElementById("question_name").value = data.question_name;
             document.getElementById("question_text").value = data.question_text;
             document.getElementById("hint").value = data.hint;
             document.getElementById("answer").value = data.answer;
+            document.getElementById("question-id").value = data.id;
 
             // const save_question_button = document.querySelector("#save-question-button");
             // save_question_button.dataset.questionButton = data.question_id;
@@ -394,10 +412,10 @@ function eliminateImage(event) {
 };
 
 function hideShowChange(button) {
-    if (button.textContent === 'Hide Filters') {
-        button.textContent = 'Show Filters';
-    } else {
+    if (button.textContent === 'Show Filters') {
         button.textContent = 'Hide Filters';
+    } else {
+        button.textContent = 'Show Filters';
     }
 }
 
@@ -405,20 +423,93 @@ function hideShowChange(button) {
 var saveq = flask_util.url_for('home.saveq');
 
 function saveQuestion(ev) {
-    ev.preventDefault();
-    console.log(ev);
-
     q = {};
     q.question_name = document.getElementById("question_name").value;
     q.question_text = document.getElementById("question_text").value;
     q.hint = document.getElementById("hint").value;
     q.answer = document.getElementById("answer").value;
+    q.id = document.getElementById("question-id").value;
 
-     // Convert the JavaScript object to a JSON string
-     const updated_question = JSON.stringify(q);
+    // Convert the JavaScript object to a JSON string
+    const updated_question = JSON.stringify(q);
 
     fetch(saveq, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: updated_question
     })
+    .then(response => response.text())
+    .then(message => {
+        setMsg(message);
+    })
+}
+
+var deleteq = flask_util.url_for('home.deleteq');
+
+function deleteQuestion(ev) {
+    clearMsgArea();
+    // Remove the Question from search list
+    let val = document.getElementById("question-id").value;
+    const element = document.querySelector('[data-value="' + val + '"]');
+    element.remove();
+
+    // destructuring assignment!
+    const va = document.getElementById("question-id");
+    const { value: id } = document.getElementById("question-id");
+    const delete_q = JSON.stringify({ id });
+    clearForm();
+
+    fetch(deleteq, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: delete_q
+    }).then(response => response.text())
+    .then(message => {
+        setMsg(message);
+    }).then(hideQuestionArea());
+}
+
+
+function clearPics() {
+    // clear out the previous forms pictures
+    var picContainers = document.querySelectorAll(".image-container");
+    for (let i = 0; i < picContainers.length; i++) {
+        picContainers[i].remove();
+    }
+}    
+    
+function clearForm() {
+    // clear out the previous forms pictures
+    clearPics();
+
+    // clear out the form values
+    document.getElementById("question_name").value = "";
+    document.getElementById("question_text").value = "";
+    document.getElementById("hint").value = "";
+    document.getElementById("answer").value = "";
+    document.getElementById("question-id").value = "";
+}    
+
+
+function clearMsgArea() {
+        // Clear old messages out
+        let msgArea = document.getElementById("my-message-area");
+        msgArea.innerHTML = "";
+        msgArea.style.display = "none";
+}
+
+function setMsg(message) {
+    let msgArea = document.getElementById("my-message-area");
+    msgArea.innerHTML = message;
+    msgArea.style.display = "block";
+}
+
+function hideQuestionArea() {
+     // hide question area
+     const question_area = document.getElementById("editquestionform-area");
+     question_area.style.display = "none";
 }
