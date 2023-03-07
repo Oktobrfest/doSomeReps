@@ -584,7 +584,6 @@ def searchq():
 @home.route("/getq", methods=["POST"], endpoint="getq")
 @login_required
 def getq():
-
     # get The submitted Json values
     question_id = request.get_json()
 
@@ -622,12 +621,36 @@ def getq():
     # response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
-
 @home.route("/saveq", methods=["POST"], endpoint="saveq")
 @login_required
 def saveq():
     q_updated = request.get_json()
 
+    # loop through the database pics and see if they match the ones in the request
+    q = session.query(question).filter_by(question_id=q_updated["id"]).first()
+    
+        # Check if any existing images need to be deleted
+    
+    for pic in q.pics:
+        if pic.pic_type == "hint_image":
+            if pic.pic_string not in set(q_updated["pics_by_type"]["hint"]):
+               session.delete(pic)
+               wdf = 'dd'
+        elif pic.pic_type == "answer_pics":
+            if pic.pic_string not in set(q_updated["pics_by_type"]["answer"]):
+               session.delete(pic)
+        elif pic.pic_type == "question_image":
+            if pic.pic_string not in set(q_updated["pics_by_type"]["question"]):
+                session.delete(pic)
+    
+        #         delete_stuffa = 'yah'
+        #     if not set([pic.pic_string]).issubset(set(q_updated["pics_by_type"]["question"])):
+        #         delete_stuff.append(pic.pic_string)    
+        #     for i in range(len(q_updated['pics_by_type']['question'])):
+        #         if q_updated['pics_by_type']['question'][i] == pic.pic_string:
+        # # string is found, do something
+        #             pp = 'p'
+                #session.delete(pic)
     # q = session.get(question, delete_q["id"])
     # session.delete(q)
     
@@ -644,7 +667,6 @@ def saveq():
 
     msg = "Question Saved"
     flash(msg, category="success")
-
     return msg
 
 
@@ -652,12 +674,9 @@ def saveq():
 @login_required
 def deleteq():
     delete_q = request.get_json()
-
     q = session.get(question, delete_q["id"])
     session.delete(q)
     session.commit()
-    
     msg = "Question Deleted"
     flash(msg, category="success")
-
     return msg
