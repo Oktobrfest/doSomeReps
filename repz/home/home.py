@@ -60,7 +60,7 @@ from flask import send_from_directory
 
 from ..homeforms import *
 from ..bluehelpers import *
-
+import json
 
 @app.route("/favicon.ico")
 def favicon():
@@ -149,35 +149,8 @@ def addcontent():
             new_question.categories.append(cat)
 
         # pictures
-        answer_pics = []
-        hint_image = ""
-        question_image = ""
-
-        # gather the pictures
-        pic_types = {"answer_pics", "hint_image", "question_image"}
-        for pic_type in pic_types:
-            if pic_type in request.files:
-                pictures = request.files.getlist(pic_type)
-                for pic in pictures:
-                    if pic and allowed_file(pic.filename):
-                        # save it to web server
-                        picname = secure_filename(pic.filename)
-                        pic.save(os.path.join(app.config["UPLOAD_FOLDER"], picname))
-                        # upload to S3
-                        file_directory = "repz/home/static/"
-                        file_name = file_directory + picname
-                        Metadata = {
-                            "x-amz-meta-question": question_name,
-                            "x-amz-meta-pic_type": pic_type,
-                        }
-                        ExtraArgs = {"Metadata": Metadata}
-                        location_string = upload_file_to_s3(
-                            file_name, ExtraArgs, object_name=picname
-                        )
-                        new_question.pics.append(
-                            q_pic(pic_string=location_string, pic_type=pic_type)
-                        )
-
+        save_pictures(new_question, request)
+        
         session.add(new_question)
         session.commit()
 
@@ -614,6 +587,7 @@ def getq():
         "answer": question_obj.answer,
         "id": question_obj.question_id,
         "pics_by_type": pics_by_type,
+        "categories": [c.category_name for c in question_obj.categories],
     }
 
     res_q = jsonify(q)
@@ -624,45 +598,49 @@ def getq():
 @home.route("/saveq", methods=["POST"], endpoint="saveq")
 @login_required
 def saveq():
-    q_updated = request.get_json()
+    # print the form data
+    print(request.form)
 
+    # retrieve the updated question data
+    updated_question_json = request.form['updated_question']
+    
+    # convert the JSON string to a Python object
+    updated_question = json.loads(updated_question_json)
+    
     # loop through the database pics and see if they match the ones in the request
-    q = session.query(question).filter_by(question_id=q_updated["id"]).first()
+    q = session.query(question).filter_by(question_id=updated_question['id']).first()
     
-        # Check if any existing images need to be deleted
-    
+    # Check if any existing images need to be deleted
     for pic in q.pics:
         if pic.pic_type == "hint_image":
-            if pic.pic_string not in set(q_updated["pics_by_type"]["hint"]):
+            if pic.pic_string not in set(updated_question['pics_by_type']['hint']):
                session.delete(pic)
-               wdf = 'dd'
         elif pic.pic_type == "answer_pics":
-            if pic.pic_string not in set(q_updated["pics_by_type"]["answer"]):
+            if pic.pic_string not in set(updated_question["pics_by_type"]["answer"]):
                session.delete(pic)
         elif pic.pic_type == "question_image":
-            if pic.pic_string not in set(q_updated["pics_by_type"]["question"]):
+            if pic.pic_string not in set(updated_question["pics_by_type"]["question"]):
                 session.delete(pic)
     
-        #         delete_stuffa = 'yah'
-        #     if not set([pic.pic_string]).issubset(set(q_updated["pics_by_type"]["question"])):
-        #         delete_stuff.append(pic.pic_string)    
-        #     for i in range(len(q_updated['pics_by_type']['question'])):
-        #         if q_updated['pics_by_type']['question'][i] == pic.pic_string:
-        # # string is found, do something
-        #             pp = 'p'
-                #session.delete(pic)
-    # q = session.get(question, delete_q["id"])
-    # session.delete(q)
+    save_pictures(q, request)
     
-    session.query(question).filter(question.question_id == q_updated['id']).update(
+    session.query(question).filter(question.question_id == updated_question['id']).update(
         {
-            "question_name": q_updated['question_name'],
-            "question_text": q_updated['question_text'],
-            "hint": q_updated['hint'],
-            "answer": q_updated['answer'],
+            "question_name": updated_question['question_name'],
+            "question_text": updated_question['question_text'],
+            "hint": updated_question['hint'],
+            "answer": updated_question['answer'],
         },
         synchronize_session=False,
     )
+    
+    # update question categories
+    selected_cats = session.query(category).filter(category.category_name.in_(updated_question['categories'])).all()
+
+    # update the categories associated with the question
+    q.categories = selected_cats
+
+    # commit the changes to the database
     session.commit()
 
     msg = "Question Saved"
@@ -680,3 +658,29 @@ def deleteq():
     msg = "Question Deleted"
     flash(msg, category="success")
     return msg
+
+
+def save_pictures(question, request):
+    pic_types = {"answer_pics", "hint_image", "question_image"}
+    for pic_type in pic_types:
+        if pic_type in request.files:
+            pictures = request.files.getlist(pic_type)
+            for pic in pictures:
+                if pic and allowed_file(pic.filename):
+                    picname = secure_filename(pic.filename)
+                    pic.save(os.path.join(app.config["UPLOAD_FOLDER"], picname))
+                    file_directory = "repz/home/static/"
+                    file_name = file_directory + picname
+                    Metadata = {
+                        "x-amz-meta-question": question.question_name,
+                        "x-amz-meta-pic_type": pic_type,
+                    }
+                    ExtraArgs = {"Metadata": Metadata}
+                    location_string = upload_file_to_s3(
+                        file_name, ExtraArgs, object_name=picname
+                    )
+                    question.pics.append(
+                        q_pic(pic_string=location_string, pic_type=pic_type)
+                    )
+    session.commit()                
+    return question

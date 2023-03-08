@@ -138,25 +138,25 @@ function start_qz(ev) {
 window.onload = (event) => {
     const showHideButton = document.getElementById('collapse-categories-button');
     if (showHideButton) {
-      showHideButton.onclick = function (event) {
-        event.preventDefault();
-        hideShowChange(showHideButton);
-      };
-    }  
+        showHideButton.onclick = function (event) {
+            event.preventDefault();
+            hideShowChange(showHideButton);
+        };
+    }
     // exclude other pages from loading this
-    if (window.location.pathname === '/editquestions') {            
-            // select the search form
-    const filterform = document.getElementById('search-filters-form');
-    // select the search button
-    const searchbutton = document.getElementById('search-button');
-    searchbutton.addEventListener('click', clearMsgArea);
-    // process the search
-    if (searchbutton) {
-        searchbutton.onclick = function () { getSearchData(filterform) };
-    };
-    const save_question_button = document.querySelector("#save-question-button");
-    save_question_button.addEventListener('click', clearMsgArea);
-}
+    if (window.location.pathname === '/editquestions') {
+        // select the search form
+        const filterform = document.getElementById('search-filters-form');
+        // select the search button
+        const searchbutton = document.getElementById('search-button');
+        searchbutton.addEventListener('click', clearMsgArea);
+        // process the search
+        if (searchbutton) {
+            searchbutton.onclick = function () { getSearchData(filterform) };
+        };
+        const save_question_button = document.querySelector("#save-question-button");
+        save_question_button.addEventListener('click', clearMsgArea);
+    }
 }
 var searchq = flask_util.url_for('home.searchq');
 
@@ -173,7 +173,7 @@ function getSearchData(filterform) {
 
     // get categories
     const search_categories = document.querySelectorAll('.search-filter-categories input[type=checkbox]');
-    
+
     const selected_search_categories = [];
     search_categories.forEach(checkbox => {
         if (checkbox.checked) {
@@ -202,7 +202,7 @@ function getSearchData(filterform) {
 
     // Convert the JavaScript object to a JSON string
     const search_criteria = JSON.stringify(search_values);
-  
+
     fetch(searchq, {
         method: 'POST',
         headers: {
@@ -259,9 +259,10 @@ function getSearchData(filterform) {
 var getq = flask_util.url_for('home.getq');
 
 function populateQuestion(event) {
+    clearForm();
     clearMsgArea();
     var question_id = event.target.dataset.value;
-    
+
     fetch(getq, {
         method: 'POST',
         headers: {
@@ -296,6 +297,13 @@ function populateQuestion(event) {
             document.getElementById("hint").value = data.hint;
             document.getElementById("answer").value = data.answer;
             document.getElementById("question-id").value = data.id;
+            // get list of categories
+            console.log(data['categories']);
+            // loop through the categories and check the checkboxes
+            data['categories'].forEach(function (item) {
+                const checkbox = document.querySelector('#editquestionform-area input[type="checkbox"][value="' + item + '"]');
+                checkbox.checked = true;
+            });
 
             // const save_question_button = document.querySelector("#save-question-button");
             // save_question_button.dataset.questionButton = data.question_id;
@@ -349,40 +357,10 @@ function createImgContainer(pic_id) {
 }
 
 function eliminateImage(event) {
-    var pic_id = event.target.dataset.value;
-    console.log(pic_id);
-    // glitches cuz data-value of other shit is similar as pic_id
-    var pic = document.getElementById(pic_id);
-    // var pic_to_eliminate = document.querySelectorAll('.image-container');
-    
-    // let pict = pic_to_eliminate.getElementById(pic_id);
-
-
-    // var pic_to_eliminate = document.querySelectorAll('.image-container')[0];
-    // var pict = pic_to_eliminate.querySelector('#' + pic_id);
-    // var pic_to_eliminate = document.querySelectorAll('.image-container');
-    // var pict = null;
-    
-    // for (var i = 0; i < pic_to_eliminate.length; i++) {
-    //     pict = pic_to_eliminate[i].querySelector('#' + pic_id);
-    //     if (pict !== null) {
-    //         break;
-    //     }
-    // }
-    
-    // if (pict !== null) {
-    //     pict.remove();
-    // }
-    
-    var pic_to_eliminate = document.querySelector('[data-pic-id="' + pic_id + '"]');
-    
-      
-
-    // pict.remove();
+    let pic_id = event.target.dataset.value;
+    let pic = document.getElementById(pic_id);
+    let pic_to_eliminate = document.querySelector('[data-pic-id="' + pic_id + '"]');
     pic_to_eliminate.remove();
-    // already removed this along with the div. above 
-    // var button = document.getElementById('pic-' + pic_id + '-close-button');
-    // button.remove();
 };
 
 function hideShowChange(button) {
@@ -403,35 +381,61 @@ function saveQuestion(ev) {
     q.answer = document.getElementById("answer").value;
     q.id = document.getElementById("question-id").value;
 
-    // get the question images
-    let pics_by_type = {"hint": [], "answer": [], "question": []};
+    // categories
+    let categories = [];
+    document.querySelectorAll('#editquestionform-area input[type="checkbox"]:checked').forEach(function (checkbox) {
+        categories.push(checkbox.value);
+    });
+    console.log(categories);
+    q.categories = categories;
 
-    document.querySelectorAll('.image-container img').forEach(function(img) {
+    // get the question images
+    let pics_by_type = { "hint": [], "answer": [], "question": [] };
+    // assign the pic categories to the above object
+    document.querySelectorAll('.image-container img').forEach(function (img) {
         let src = img.getAttribute('src');
         let type = img.getAttribute('alt');
         if (pics_by_type.hasOwnProperty(type)) {
             pics_by_type[type].push(src);
         }
     });
-    
-    console.log(pics_by_type);
+    // assign those pics in the question object that goes to server
     q.pics_by_type = pics_by_type;
 
+    // Create a FormData object and append the file(s)
+    const formData = new FormData();
 
-    // Convert the JavaScript object to a JSON string
-    const updated_question = JSON.stringify(q);
+    // get the file input fields and append the files to formData
+    const questionImageFiles = document.querySelector('#upload-question-image input[type="file"]').files;
+    for (let i = 0; i < questionImageFiles.length; i++) {
+        formData.append("question_image", questionImageFiles[i]);
+    }
 
+    const hintImageFiles = document.querySelector('#upload-hint-image input[type="file"]').files;
+    for (let i = 0; i < hintImageFiles.length; i++) {
+        formData.append("hint_image", hintImageFiles[i]);
+    }
+
+    const answerImageFiles = document.querySelector('#upload-answer-image input[type="file"]').files;
+    for (let i = 0; i < answerImageFiles.length; i++) {
+        formData.append("answer_pics", answerImageFiles[i]);
+    }
+
+    // append the question object to formData and convert the JavaScript object to a JSON string
+    formData.append("updated_question", JSON.stringify(q));
+   
     fetch(saveq, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: updated_question
+        body: formData,
+        enctype: 'multipart/form-data'
     })
-    .then(response => response.text())
-    .then(message => {
-        setMsg(message);
-    })
+        .then(response => response.text())
+        .then(function () {
+            location.reload();
+        })
+        .then(message => {
+            setMsg(message);
+        })
 }
 
 var deleteq = flask_util.url_for('home.deleteq');
@@ -456,9 +460,9 @@ function deleteQuestion(ev) {
         },
         body: delete_q
     }).then(response => response.text())
-    .then(message => {
-        setMsg(message);
-    }).then(hideQuestionArea());
+        .then(message => {
+            setMsg(message);
+        }).then(hideQuestionArea());
 }
 
 function clearPics() {
@@ -467,11 +471,18 @@ function clearPics() {
     for (let i = 0; i < picContainers.length; i++) {
         picContainers[i].remove();
     }
-}    
-    
+}
+
 function clearForm() {
     // clear out the previous forms pictures
     clearPics();
+
+    // clear out the categories checkboxes
+    const checkboxes = document.querySelectorAll('#editquestionform-area input[type="checkbox"]');
+    checkboxes.forEach(function (checkbox) {
+      checkbox.checked = false;
+    });
+               // checkbox.checked = true;
 
     // clear out the form values
     document.getElementById("question_name").value = "";
@@ -479,13 +490,21 @@ function clearForm() {
     document.getElementById("hint").value = "";
     document.getElementById("answer").value = "";
     document.getElementById("question-id").value = "";
-}    
+
+    // get the file upload fields
+    var fileFields = document.querySelectorAll('input[type="file"]');
+
+    // reset each file upload field
+    for (var i = 0; i < fileFields.length; i++) {
+        fileFields[i].value = null;
+    }
+}
 
 function clearMsgArea() {
-        // Clear old messages out
-        let msgArea = document.getElementById("my-message-area");
-        msgArea.innerHTML = "";
-        msgArea.style.display = "none";
+    // Clear old messages out
+    let msgArea = document.getElementById("my-message-area");
+    msgArea.innerHTML = "";
+    msgArea.style.display = "none";
 }
 
 function setMsg(message) {
@@ -495,7 +514,7 @@ function setMsg(message) {
 }
 
 function hideQuestionArea() {
-     // hide question area
-     const question_area = document.getElementById("editquestionform-area");
-     question_area.style.display = "none";
+    // hide question area
+    const question_area = document.getElementById("editquestionform-area");
+    question_area.style.display = "none";
 }
