@@ -413,7 +413,6 @@ def quiz():
         # form=form,
     )
 
-
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
 @login_required
 def quemore():
@@ -474,7 +473,6 @@ def quemore():
         category_list=category_list,
         selected_categories=selected_categories,
     )
-
 
 @home.route("/editquestions", methods=["GET", "POST"], endpoint="editquestions")
 @login_required
@@ -614,13 +612,24 @@ def saveq():
     for pic in q.pics:
         if pic.pic_type == "hint_image":
             if pic.pic_string not in set(updated_question['pics_by_type']['hint']):
-               session.delete(pic)
+               delete_pic = delete_s3_object(pic.pic_string)
+               if success:
+                  session.delete(pic)
+               else:
+                  wdf = 'errror yo'               
         elif pic.pic_type == "answer_pics":
             if pic.pic_string not in set(updated_question["pics_by_type"]["answer"]):
                session.delete(pic)
         elif pic.pic_type == "question_image":
             if pic.pic_string not in set(updated_question["pics_by_type"]["question"]):
                 session.delete(pic)
+    
+    def delete_pic(pic):
+        is_delete_success = delete_s3_object(pic.pic_string)
+        if is_delete_success:
+            session.delete(pic)
+        else:
+            flash('Failed to delete picture from S3 Bucket!', category="failure")             
     
     save_pictures(q, request)
     
@@ -647,7 +656,6 @@ def saveq():
     flash(msg, category="success")
     return msg
 
-
 @home.route("/deleteq", methods=["POST"], endpoint="deleteq")
 @login_required
 def deleteq():
@@ -658,7 +666,6 @@ def deleteq():
     msg = "Question Deleted"
     flash(msg, category="success")
     return msg
-
 
 def save_pictures(question, request):
     pic_types = {"answer_pics", "hint_image", "question_image"}
