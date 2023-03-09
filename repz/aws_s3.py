@@ -33,3 +33,16 @@ def upload_file_to_s3(file_name, ExtraArgs, bucket=Config.BUCKET, object_name=No
 
     return f"{Config.S3_LOCATION}{object_name}"
     
+def delete_s3_object(object_name):
+    """Delete an object from an S3 bucket
+
+    :param object_name: S3 object name
+    :return: True if object was deleted, else False
+    """
+
+    try:
+        response = s3_client.delete_object(Bucket=Config.BUCKET, Key=object_name)
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True

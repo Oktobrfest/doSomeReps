@@ -380,13 +380,25 @@ function saveQuestion(ev) {
     q.hint = document.getElementById("hint").value;
     q.answer = document.getElementById("answer").value;
     q.id = document.getElementById("question-id").value;
+    // validation
+    if (q.question_name.length < 3) {
+        alert("Question name must be at least 3 characters long.");
+        return false;
+      }
+      if (q.question_text.length < 8) {
+        alert("Question name must be at least 3 characters long.");
+        return false;
+      }
 
     // categories
     let categories = [];
     document.querySelectorAll('#editquestionform-area input[type="checkbox"]:checked').forEach(function (checkbox) {
         categories.push(checkbox.value);
     });
-    console.log(categories);
+    if (categories.length < 0) {
+        alert("Please select at least one category.");
+        return false;
+    }
     q.categories = categories;
 
     // get the question images
@@ -448,7 +460,6 @@ function deleteQuestion(ev) {
     element.remove();
 
     // destructuring assignment!
-    const va = document.getElementById("question-id");
     const { value: id } = document.getElementById("question-id");
     const delete_q = JSON.stringify({ id });
     clearForm();

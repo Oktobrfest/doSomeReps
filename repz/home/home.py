@@ -612,24 +612,13 @@ def saveq():
     for pic in q.pics:
         if pic.pic_type == "hint_image":
             if pic.pic_string not in set(updated_question['pics_by_type']['hint']):
-               delete_pic = delete_s3_object(pic.pic_string)
-               if success:
-                  session.delete(pic)
-               else:
-                  wdf = 'errror yo'               
+                delete_pic(pic)
         elif pic.pic_type == "answer_pics":
             if pic.pic_string not in set(updated_question["pics_by_type"]["answer"]):
-               session.delete(pic)
+               delete_pic(pic)
         elif pic.pic_type == "question_image":
             if pic.pic_string not in set(updated_question["pics_by_type"]["question"]):
-                session.delete(pic)
-    
-    def delete_pic(pic):
-        is_delete_success = delete_s3_object(pic.pic_string)
-        if is_delete_success:
-            session.delete(pic)
-        else:
-            flash('Failed to delete picture from S3 Bucket!', category="failure")             
+                delete_pic(pic)  
     
     save_pictures(q, request)
     
@@ -661,6 +650,15 @@ def saveq():
 def deleteq():
     delete_q = request.get_json()
     q = session.get(question, delete_q["id"])
+    
+    # gather the q_pics and remove them from s3
+    question = session.query(question).get(delete_q["id"])
+    q_pics = question.pics
+
+    # loop over the q_pics and delete their corresponding objects in S3
+    for pic in q_pics:    
+        delete_pic(pic)
+    
     session.delete(q)
     session.commit()
     msg = "Question Deleted"
@@ -691,3 +689,26 @@ def save_pictures(question, request):
                     )
     session.commit()                
     return question
+
+def delete_pic(pic):
+        file_key = os.path.basename(pic.pic_string)
+        is_delete_success = delete_s3_object(file_key)
+        if is_delete_success:
+            session.delete(pic)
+            # try:
+            #     s3_client.head_object(Bucket=Config.BUCKET, Key=file_key)
+            #     exists = True
+            # except botocore.exceptions.ClientError as e:
+            #     if e.response['Error']['Code'] == "404":
+            #         exists = False
+            #     else:
+            #         raise
+            # print(f"Object exists in bucket: {exists}")
+            # resp = s3_client.list_objects_v2(Bucket=Config.BUCKET, Prefix=file_key)
+            # if 'Contents' in resp:
+            #     for obj in resp['Contents']:
+            #         print(f"Object key: {obj['Key']}")
+            # else:
+            #     print("No objects found in bucket")
+        else:
+            flash('Failed to delete picture from S3 Bucket!', category="failure")     
