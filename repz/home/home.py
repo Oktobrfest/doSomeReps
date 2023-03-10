@@ -649,14 +649,17 @@ def saveq():
 @login_required
 def deleteq():
     delete_q = request.get_json()
-    q = session.get(question, delete_q["id"])
+    q = session.execute(
+            select(question).where(question.question_id == delete_q["id"])
+        ).first()
     
-    # gather the q_pics and remove them from s3
-    question = session.query(question).get(delete_q["id"])
-    q_pics = question.pics
+    q = session.query(question).options(joinedload(question.pics)).filter_by(question_id=delete_q["id"]).first()
 
-    # loop over the q_pics and delete their corresponding objects in S3
-    for pic in q_pics:    
+# gather the q_pics and remove them from s3
+    q_pics = q.pics
+
+# loop over the q_pics and delete their corresponding objects in S3
+    for pic in q_pics:
         delete_pic(pic)
     
     session.delete(q)

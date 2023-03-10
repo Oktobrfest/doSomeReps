@@ -81,8 +81,8 @@ class question(Base):
     categories = relationship(
         "category", secondary=question_categories, back_populates="questions"
     )
-    pics = relationship("q_pic", back_populates="parent_question")
-    quizqs = relationship("quizq", back_populates="referenced_question")    
+    pics = relationship("q_pic", back_populates="parent_question", cascade="all, delete")
+    quizqs = relationship("quizq", back_populates="referenced_question", cascade="all, delete")    
     
 class q_pic(Base):
     __tablename__ = "q_pic"
@@ -90,17 +90,17 @@ class q_pic(Base):
         sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
     )
     pic_string = Column(sa.String(600))
-    question_id = Column(Integer, ForeignKey("question.question_id"))
+    question_id = Column(Integer, ForeignKey("question.question_id", ondelete="CASCADE"))
     pic_type = Column(sa.String(25))
     
-    parent_question = relationship("question", back_populates="pics")
+    parent_question = relationship("question", back_populates="pics", cascade="all, delete")
  
 class quizq(Base):
     __tablename__ = "quizq"
     quizq_id = sa.Column(
         sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
     )
-    question_id = sa.Column(Integer, ForeignKey("question.question_id"), nullable=False)
+    question_id = sa.Column(Integer, ForeignKey("question.question_id", ondelete="CASCADE"), nullable=False)
     user_id = sa.Column(Integer, ForeignKey("users.id"), nullable=False)
     level_no = sa.Column(Integer, ForeignKey("level.level_no"), nullable=False)
     answered_on = sa.Column(sa.DateTime, index=False, unique=False, nullable=True)
