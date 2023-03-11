@@ -39,7 +39,7 @@ from sqlalchemy import (
     text,
 )
 from ..database import Base, engine, session
-from ..models import category, question, q_pic, quizq, level
+from ..models import category, question, q_pic, quizq, level, users
 import re
 
 from flask_uploads import configure_uploads, IMAGES, UploadSet
@@ -375,12 +375,17 @@ def quiz():
             for img in r.question.pics:
                 pics[img.pic_type].append(img.pic_string)
 
+            creator = select(users.username).where(users.user_id == r.question.created_by)  
+        
+            creator_username = session.execute(creator).first()  
+            
             q = {
                 "quizq_id": r.quizq.quizq_id,
                 "question_name": r.question.question_name,
                 "question_text": r.question.question_text,
                 "hint": r.question.hint,
                 "answer": r.question.answer,
+                "created_by": creator_username,
                 "level_no": r.quizq.level_no,
                 "categories": catz,
                 "catz_DEF_REDUNDANT": catz,
