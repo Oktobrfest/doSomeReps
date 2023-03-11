@@ -4,7 +4,7 @@ from .database import Base
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declarative_base
 import sqlalchemy as sa
-from sqlalchemy import Identity, ForeignKey, Table, Column
+from sqlalchemy import Identity, ForeignKey, Table, Column, PrimaryKeyConstraint
 from sqlalchemy.orm import relationship, Mapped
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -108,7 +108,19 @@ class quizq(Base):
     
     referenced_question = relationship("question", back_populates="quizqs")
     
+
+
+class rating(Base):
+    __tablename__ = "rating"
+    user_id = sa.Column(Integer, ForeignKey("users.id"), nullable=False)
+    question_id = sa.Column(Integer, ForeignKey("question.question_id", ondelete="CASCADE"), nullable=False)
+    rating = sa.Column(sa.Integer, nullable=False)
     
+    __table_args__ = (
+        PrimaryKeyConstraint('user_id', 'question_id'),
+        {},
+    )
+
     
     
     

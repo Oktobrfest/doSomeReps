@@ -5,6 +5,7 @@ Add Content
 {% block content %}
 <form id="answer-result" class="answer-result-submission" method="post">
 {% include "categories.html" %}
+{% include "quizfilters.html" %}
 {% if q %}
 <h1 align="center">Quiz Question</h1>
 <h3 id="q-level-number">Level Number: {{ q.level_no }}</h3>
