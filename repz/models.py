@@ -134,10 +134,10 @@ class excluded_question(Base):
 class blocked_user(Base):
     __tablename__ = "blocked_user"
     user_id = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    blocked_user = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    blocked_user = sa.Column(Integer, ForeignKey("users.id"), nullable=False)
     
     __table_args__ = (
-        PrimaryKeyConstraint('user_id', 'excluded_user'),
+        PrimaryKeyConstraint('user_id', 'blocked_user'),
         {},
     )    
     

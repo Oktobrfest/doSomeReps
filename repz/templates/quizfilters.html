@@ -3,9 +3,10 @@
 <div class="container p-3 my-3 border rounded-8 categories-group">
   <div class="panel-group">
     <center><h1 class="category-title">Filters</h1></center>
-    <button id="collapse-filters-button" class="btn btn-secondary" data-toggle="collapse" data-target="#quizfilters-section">Minimize</button>
+    <button id="collapse-button" class="btn btn-secondary" data-toggle="collapse" data-target="#quizfilters-section">Minimize</button>
     <div id="quizfilters-section" class="collapse show">
       <ul class="list-group list-group-flush form-group" id="quizfilters">
+        <h2>Include:</h2>
         <li class="list-group-item category-item border">
           <label for="quizfilter_name" class="checkbox-inline"></label>
           <input type="checkbox" value=personal id="personal" name="personal" class="custom-checkbox"/>
@@ -25,7 +26,7 @@
         </li>
 
         <li class="list-group-item category-item border">
-          <label for="blocked" class="checkbox-inline"></label>
+          <label for="excluded" class="checkbox-inline"></label>
           <input type="checkbox" value=excluded id="excluded" name="excluded" class="custom-checkbox"/>
           &nbsp Excluded Questions
         </li>

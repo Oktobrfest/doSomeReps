@@ -90,6 +90,8 @@ def homepage():
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
 @login_required
 def addcontent():
+    UID1 = g._login_user.id
+    UID = copy.copy(UID1)
     form = questionForm()
     category_list = get_all_categories()
     if request.method == "GET":
@@ -107,7 +109,12 @@ def addcontent():
         question_text = request.form.get("question_text")
         hint = request.form.get("hint")
         answer = request.form.get("answer")
-        privacy = request.form.get("privacy-checkbox")
+        privacy_chkbox = request.form.get("privacy-checkbox")
+        if privacy_chkbox == "on":
+            privacy = True
+        else:
+            privacy = False
+        
 
         category_names = request.form.getlist("category_name")
 
@@ -141,7 +148,7 @@ def addcontent():
             created_on=func.now(),
             answer=answer,
             categories=selected_categories,
-            created_by= current_user.id,
+            created_by=UID,
             privacy=privacy
         )
         # append categories so it dont glitch
@@ -588,6 +595,7 @@ def getq():
         "id": question_obj.question_id,
         "pics_by_type": pics_by_type,
         "categories": [c.category_name for c in question_obj.categories],
+        "privacy": question_obj.privacy,
     }
 
     res_q = jsonify(q)
@@ -624,12 +632,19 @@ def saveq():
     
     save_pictures(q, request)
     
+    privacy = updated_question['privacy']
+    # if privacy == "on":
+    #     privacy = True
+    # else:
+    #     privacy = False
+    
     session.query(question).filter(question.question_id == updated_question['id']).update(
         {
             "question_name": updated_question['question_name'],
             "question_text": updated_question['question_text'],
             "hint": updated_question['hint'],
             "answer": updated_question['answer'],
+            "privacy": privacy,
         },
         synchronize_session=False,
     )

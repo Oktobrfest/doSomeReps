@@ -43,6 +43,22 @@
     </dl>
 </div>
 
+<span id="question-form-checkbox-section" class="form-group form-inline m-4" style="white-space:nowrap">
+    <button type="submit" class="btn btn-primary question-submit-button" onmouseover="highlight(this)" onmouseout="unhighlight(this)">
+        Submit
+    </button>
+    <div class="auto-que-checkbox-section question-option-checkbox border form-inline" id="auto-que-checkbox-section">
+        <input type="checkbox" class="form-group m-3 automatically-que-created-question"
+            name="automatically-que-created-question" id="auto-que-checkbox">
+        <label for="auto-que-checkbox">Add Question to Que</label>
+    </div>
+    <div class="privacy-checkbox-section question-option-checkbox border form-inline" id="privacy-checkbox-section">
+        <input type="checkbox" class="form-group m-3 privacy-checkbox" name="privacy-checkbox"
+            id="privacy-checkbox">
+        <label for="privacy-checkbox">Private only</label>
+    </div>
+</span>
+
 
 {{ flask_util_js.js }}
 <script type="text/javascript" src="/static/index.js"></script>

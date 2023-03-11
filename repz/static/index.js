@@ -136,13 +136,25 @@ function start_qz(ev) {
 
 //  ACTUALLY RUNS JUST ONCE!!! 
 window.onload = (event) => {
-    const showHideButton = document.getElementById('collapse-categories-button');
-    if (showHideButton) {
-        showHideButton.onclick = function (event) {
+
+    // grab ALL the collapse buttons
+    const collapseButtons = document.querySelectorAll('#collapse-button');
+    // loop through them and add the event listener
+    collapseButtons.forEach(function (button) {
+        button.addEventListener('click', function (event) {
             event.preventDefault();
-            hideShowChange(showHideButton);
-        };
-    }
+            hideShowChange(button);
+        });
+    });
+
+
+    // const showHideButton = document.getElementById('collapse-button');
+    // if (showHideButton) {
+    //     showHideButton.onclick = function (event) {
+    //         event.preventDefault();
+    //         hideShowChange(showHideButton);
+    //     };
+    // }
     // exclude other pages from loading this
     if (window.location.pathname === '/editquestions') {
         // select the search form
@@ -297,13 +309,21 @@ function populateQuestion(event) {
             document.getElementById("hint").value = data.hint;
             document.getElementById("answer").value = data.answer;
             document.getElementById("question-id").value = data.id;
+            document.getElementById("privacy-checkbox").checked = data.privacy;
             // get list of categories
-            console.log(data['categories']);
+            // console.log(data['categories']);
             // loop through the categories and check the checkboxes
             data['categories'].forEach(function (item) {
                 const checkbox = document.querySelector('#editquestionform-area input[type="checkbox"][value="' + item + '"]');
                 checkbox.checked = true;
             });
+
+            const submitBtn = document.getElementsByClassName('question-submit-button')[0];
+            const autoQue = document.getElementById('auto-que-checkbox-section');
+    
+            // Set its display property to none
+            submitBtn.style.display = 'none';
+            autoQue.style.display = 'none';
 
             // const save_question_button = document.querySelector("#save-question-button");
             // save_question_button.dataset.questionButton = data.question_id;
@@ -380,13 +400,20 @@ function saveQuestion(ev) {
     q.hint = document.getElementById("hint").value;
     q.answer = document.getElementById("answer").value;
     q.id = document.getElementById("question-id").value;
+    var checkBox = document.getElementById("privacy-checkbox");
+    if (checkBox.checked) {
+    q.privacy = true;
+    } else {
+    q.privacy = false;
+    }
+
     // validation
     if (q.question_name.length < 3) {
         alert("Question name must be at least 3 characters long.");
         return false;
       }
       if (q.question_text.length < 8) {
-        alert("Question name must be at least 3 characters long.");
+        alert("Question text must be at least 8 characters long.");
         return false;
       }
 
@@ -501,6 +528,8 @@ function clearForm() {
     document.getElementById("hint").value = "";
     document.getElementById("answer").value = "";
     document.getElementById("question-id").value = "";
+    document.getElementById("privacy-checkbox").checked = false;
+    document.getElementById("edit-question-title-heading").innerHTML = 'Select a Question';
 
     // get the file upload fields
     var fileFields = document.querySelectorAll('input[type="file"]');
