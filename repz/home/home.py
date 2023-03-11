@@ -107,6 +107,7 @@ def addcontent():
         question_text = request.form.get("question_text")
         hint = request.form.get("hint")
         answer = request.form.get("answer")
+        privacy = request.form.get("privacy-checkbox")
 
         category_names = request.form.getlist("category_name")
 
@@ -140,7 +141,8 @@ def addcontent():
             created_on=func.now(),
             answer=answer,
             categories=selected_categories,
-            # created_by= current_user.id,
+            created_by= current_user.id,
+            privacy=privacy
         )
         # append categories so it dont glitch
         for cat_name in category_names:

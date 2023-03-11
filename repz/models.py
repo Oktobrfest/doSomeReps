@@ -75,8 +75,8 @@ class question(Base):
     )
     hint = sa.Column(sa.String(255), primary_key=False, unique=False, nullable=True)
     answer = sa.Column(sa.String(600), primary_key=False, unique=False, nullable=False)
-    # created_by = sa.Column(Integer, ForeignKey("users.id"), nullable=True)
-    # hint_image = sa.Column(sa.String(1024), primary_key=False, nullable=True)
+    created_by = sa.Column(Integer, ForeignKey("users.id"), nullable=True)
+    privacy = sa.Column(sa.Boolean, server_default='false') 
     
     categories = relationship(
         "category", secondary=question_categories, back_populates="questions"
@@ -121,57 +121,26 @@ class rating(Base):
         {},
     )
 
+class excluded_question(Base):
+    __tablename__ = "excluded_question"
+    user_id = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    question_id = sa.Column(Integer, ForeignKey("question.question_id", ondelete="CASCADE"), nullable=False)
+    
+    __table_args__ = (
+        PrimaryKeyConstraint('user_id', 'question_id'),
+        {},
+    )
+    
+class blocked_user(Base):
+    __tablename__ = "blocked_user"
+    user_id = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    blocked_user = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    __table_args__ = (
+        PrimaryKeyConstraint('user_id', 'excluded_user'),
+        {},
+    )    
     
     
     
-    
-    # answer_pictures = Table(
-#     "answer_pic_association",
-#     Base.metadata,
-#     Column("answer_pics", ForeignKey("answer_pics.answer_pic"), primary_key=True),
-#     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
-# )
-    # class answer_pics(Base):
-#     __tablename__ = "answer_pics"
-#     answer_pic = sa.Column(
-#         sa.String(1024), nullable=False, unique=True, primary_key=True
-#     )
-#     rel_question_id = relationship(
-#         "question", back_populates="answer_picz"
-#     )
-    # answer_picz = relationship(
-    #     "answer_pics", back_populates="rel_question_id"
-    # )
-# class answer_pics(Base):
-#     __tablename__ = "answer_pics"
-#     answer_pic = sa.Column(
-#         sa.String(1024), nullable=False, unique=True, primary_key=True
-#     )
-#     rel_question_id = relationship(
-#         "question", back_populates="answer_picz"
-#     )
-
-# class circuit(Base):
-#     __tablename__ = 'circuit'
-#     circuit_id = sa.Column(sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True )
-#     circuit_name = sa.Column(sa.String(255),nullable=False)
-#     started_on = sa.Column(
-#         sa.DateTime,
-#         index=False,
-#         unique=False,
-#         nullable=True
-#     )
-#     description = sa.Column(
-#         sa.String(255),
-#         primary_key=False,
-#         unique=False,
-#         nullable=True
-#     )
-#     user_id = Column(Integer, ForeignKey('user.id'))
-#     circuit_questions = relationship("circuit_questions", backref="circuit")
-
-# class circuit_questions(Base):
-#     __tablename__ = 'circuit_questions'
-#     circuit_id = Column(Integer, ForeignKey('circuit.circuit_id'))
-#     question_id = Column(Integer, ForeignKey('question.question_id'))
-
+        

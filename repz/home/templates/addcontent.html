@@ -10,23 +10,25 @@ Add Content
         {% include "categories.html" %}
         <script src="https://unpkg.com/promise-polyfill@7.1.2/dist/polyfill.min.js"></script>
         <script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
-      
+
         {% include "editquestionform.html" %}
 
 
     </div>
-
     <span id="auto-que-checkbox-section" class="form-group form-inline m-5" style="white-space:nowrap">
         <button type="submit" class="btn btn-primary" onmouseover="highlight(this)" onmouseout="unhighlight(this)">
             Submit
         </button>
-
         <div class="auto-que-checkbox-section border form-inline" id="auto-que-checkbox-section">
             <input type="checkbox" class="form-group m-5 automatically-que-created-question"
                 name="automatically-que-created-question" id="auto-que-checkbox">
             <label for="auto-que-checkbox">Add Question to Que</label>
         </div>
-
+        <div class="privacy-checkbox-section border form-inline" id="privacy-checkbox-section">
+            <input type="checkbox" class="form-group m-5 privacy-checkbox" name="privacy-checkbox"
+                id="privacy-checkbox">
+            <label for="privacy-checkbox">Private only</label>
+        </div>
     </span>
 </form>
 {% endblock content %}
