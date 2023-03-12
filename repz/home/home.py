@@ -314,7 +314,7 @@ def quiz():
             set_session("quiz_category_names", selected_categories)
 
     selected_cats = selected_categories
-
+    
     quest_wCats_qry = (
         select(question, category, quizq, level.days_hence)
         .join(question.categories)
@@ -375,9 +375,9 @@ def quiz():
             for img in r.question.pics:
                 pics[img.pic_type].append(img.pic_string)
 
-            creator = select(users.username).where(users.user_id == r.question.created_by)  
+            creator = select(users.username).where(users.id == r.question.created_by)  
         
-            creator_username = session.execute(creator).first()  
+            creator_username = session.execute(creator).first()[0]  
             
             q = {
                 "quizq_id": r.quizq.quizq_id,
