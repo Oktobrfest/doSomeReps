@@ -11,7 +11,7 @@ from sqlalchemy.sql import func, exists, distinct
 from sqlalchemy.sql.expression import bindparam
 from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_
 from .database import Base, engine, session
-from .models import category, question, q_pic, quizq, level
+from .models import category, question, q_pic, quizq, level, rating
 
 import re
 
@@ -67,21 +67,30 @@ def new_quizq(question_ids, UID):
     qty_added = len(new_q_quiz_list)
     return qty_added
     
-
-
 def get_session(key):
     # Get the value from the session
     value = local_session.get(key, 'Not set')
     return value
 
-    
 def get_all_categories():
     category_list = []
     result = session.execute(select(category))
     category_list.extend(cat.category_name for cat in result.scalars())
     return category_list
+        
+def score(question_id):
+    ratings = session.execute(select(rating.rating).where(rating.question_id == question_id)).scalars().all()
     
+    score = []
+    for rate in ratings:
+        score += rate
     
+    if len(score) == 0:
+        final_score = 0
+    else:
+        final_score = sum(score) / len(score)
     
+    return final_score
+        
 
 

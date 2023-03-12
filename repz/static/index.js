@@ -14,7 +14,7 @@ var h_add = flask_util.url_for('home.add');
 
 function addSubmit(ev) {
     ev.preventDefault();
-    console.log(ev);
+  //  console.log(ev);
     fetch(h_add, {
         method: 'POST',
         body: new FormData(this)
@@ -98,11 +98,8 @@ function start_qz(ev) {
     ev.preventDefault();
     // Get the checkbox elements
     const checkboxes = document.querySelectorAll('input[type=checkbox]');
-    // Get the selected categories form element
-    const selected_catz1 = document.getElementById('categories');
     // Create a JavaScript object to store the data
     const selected_boxes = [];
-
     // Iterate over the checkboxes and add the checked ones to the object
     checkboxes.forEach(checkbox => {
         if (checkbox.checked) {
@@ -111,7 +108,7 @@ function start_qz(ev) {
     });
     // Convert the JavaScript object to a JSON string
     const selected_catz = JSON.stringify(selected_boxes);
-    console.log(ev);
+    // console.log(ev);
     fetch(quiz_page, {
         method: 'POST',
         headers: {
@@ -146,6 +143,15 @@ window.onload = (event) => {
             hideShowChange(button);
         });
     });
+
+
+
+
+
+    if (window.location.pathname === '/quemore') {
+        const que_more_search = document.querySelector("#que-more-search-button");
+        que_more_search.addEventListener('click', queMoreSearch);
+    }
 
 
     // const showHideButton = document.getElementById('collapse-button');
@@ -320,7 +326,7 @@ function populateQuestion(event) {
 
             const submitBtn = document.getElementsByClassName('question-submit-button')[0];
             const autoQue = document.getElementById('auto-que-checkbox-section');
-    
+
             // Set its display property to none
             submitBtn.style.display = 'none';
             autoQue.style.display = 'none';
@@ -402,20 +408,20 @@ function saveQuestion(ev) {
     q.id = document.getElementById("question-id").value;
     var checkBox = document.getElementById("privacy-checkbox");
     if (checkBox.checked) {
-    q.privacy = true;
+        q.privacy = true;
     } else {
-    q.privacy = false;
+        q.privacy = false;
     }
 
     // validation
     if (q.question_name.length < 3) {
         alert("Question name must be at least 3 characters long.");
         return false;
-      }
-      if (q.question_text.length < 8) {
+    }
+    if (q.question_text.length < 8) {
         alert("Question text must be at least 8 characters long.");
         return false;
-      }
+    }
 
     // categories
     let categories = [];
@@ -462,7 +468,7 @@ function saveQuestion(ev) {
 
     // append the question object to formData and convert the JavaScript object to a JSON string
     formData.append("updated_question", JSON.stringify(q));
-   
+
     fetch(saveq, {
         method: 'POST',
         body: formData,
@@ -518,9 +524,9 @@ function clearForm() {
     // clear out the categories checkboxes
     const checkboxes = document.querySelectorAll('#editquestionform-area input[type="checkbox"]');
     checkboxes.forEach(function (checkbox) {
-      checkbox.checked = false;
+        checkbox.checked = false;
     });
-               // checkbox.checked = true;
+    // checkbox.checked = true;
 
     // clear out the form values
     document.getElementById("question_name").value = "";
@@ -558,3 +564,63 @@ function hideQuestionArea() {
     const question_area = document.getElementById("editquestionform-area");
     question_area.style.display = "none";
 }
+
+var searchquefilters = flask_util.url_for('home.searchquefilters');
+
+function queMoreSearch(ev) {
+    ev.preventDefault();
+    // get filter values
+    const filters_obj = {
+        personal: document.getElementById("personal").checked,
+        public: document.getElementById("public").checked,
+        favorate: document.getElementById("favorate").checked,
+        blocked: document.getElementById("blocked").checked,
+        catz: getSelectedCategories()
+      };
+    
+    const filters = JSON.stringify(filters_obj);
+
+    fetch(searchquefilters, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: filters
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // populate the que search results list
+
+
+
+        }).catch(error => {
+            console.log(error);
+        });
+
+
+
+}
+
+function getSelectedCategories(){
+       // get categories
+       const selected_categories = document.querySelectorAll('#categories input[type=checkbox]');
+
+       const selected_search_categories = [];
+       selected_categories.forEach(checkbox => {
+           if (checkbox.checked) {
+               selected_search_categories.push(checkbox.value);
+           }
+       });
+
+       return selected_search_categories;
+}
+
+
+
+
+

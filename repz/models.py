@@ -82,8 +82,8 @@ class question(Base):
         "category", secondary=question_categories, back_populates="questions"
     )
     pics = relationship("q_pic", back_populates="parent_question", cascade="all, delete")
-    quizqs = relationship("quizq", back_populates="referenced_question", cascade="all, delete")    
-    
+    quizqs = relationship("quizq", back_populates="referenced_question", cascade="all, delete")   
+         
 class q_pic(Base):
     __tablename__ = "q_pic"
     pic_id = sa.Column(
@@ -141,6 +141,14 @@ class blocked_user(Base):
         {},
     )    
     
+class favorate_user(Base):
+    __tablename__ = "favorate_user"
+    user_id = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    favorate_user = sa.Column(Integer, ForeignKey("users.id"), nullable=False)
     
+    __table_args__ = (
+        PrimaryKeyConstraint('user_id', 'favorate_user'),
+        {},
+    )       
     
         

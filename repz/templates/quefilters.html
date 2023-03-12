@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-{% block quizfilters %}
+{% block quefilters %}
 <div class="container p-3 my-3 border rounded-8 categories-group">
   <div class="panel-group">
     <center><h1 class="category-title">Filters</h1></center>
-    <button id="collapse-button" class="btn btn-secondary" data-toggle="collapse" data-target="#quizfilters-section">Minimize</button>
-    <div id="quizfilters-section" class="collapse show">
-      <ul class="list-group list-group-flush form-group" id="quizfilters">
+    <button id="collapse-button" class="btn btn-secondary" data-toggle="collapse" data-target="#quefilters-section">Minimize</button>
+    <div id="quefilters-section" class="collapse show">
+      <ul class="list-group list-group-flush form-group" id="quefilters">
         <h2>Include:</h2>
         <li class="list-group-item category-item border">
-          <label for="quizfilter_name" class="checkbox-inline"></label>
+          <label for="quefilter_name" class="checkbox-inline"></label>
           <input type="checkbox" value=personal id="personal" name="personal" class="custom-checkbox"/>
           &nbsp Personal
         </li>
@@ -30,12 +30,6 @@
           <input type="checkbox" id="blocked" name="blocked" class="custom-checkbox"/>
           &nbsp Blocked Users
         </li>
-
-        <li class="list-group-item category-item border">
-          <label for="excluded" class="checkbox-inline"></label>
-          <input type="checkbox" id="excluded" name="excluded" class="custom-checkbox"/>
-          &nbsp Excluded Questions
-        </li>
          </ul>
     </div>
   </div>
@@ -45,4 +39,4 @@
 <script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
 {{ flask_util_js.js }}
 <script type="text/javascript" src="/static/index.js"></script>
-{% endblock quizfilters %}
+{% endblock quefilters %}

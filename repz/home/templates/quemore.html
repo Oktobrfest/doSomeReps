@@ -9,13 +9,44 @@ Add Content
 <div>
     <form id="que-more-questions" class="que-more-questions form-inline" method="POST">
         {% include "categories.html" %}
+        {% include "quefilters.html" %}
         <div class="form-group m-5">
+            <label for="search-que">Search</label>
+            <input type="button" class="btn btn-primary font-weight-bold" value="Search" id="que-more-search-button">
+
             {{ form.csrf_token }}
             {{ form.qty_to_que.label("Quantity to Add")}}
             {{ form.qty_to_que(class="form-control qty-to-que-number-form", value="Quantity to Add:") }}
-
             {{ form.que_more_submit(class="btn btn-primary font-weight-bold", value="Add More") }}
+            {# results found integer field #}
+            <p class="results-found" id="results-founnd">Results Found:  </p>            
+
         </div>
     </form>
 </div>
+
+<div id="container que-more-search-results-container" class="que-more-search-results">
+     <div class="panel-group">
+        <center>Que Search Results</center>
+        <table class="que-more-search-results-table" id="que-more-search-results-table">
+            <th class="checkbox-heading">Que</th>
+            <th class="exclude-heading">Exclude</th>
+            <th class="username-heading">Username</th>
+            <th class="rating-heading">Rating</th>
+            <th class="question-text-heading">Question?</th>
+            <th class="category-heading">Categories</th>
+
+        </table>
+
+        <div class="que-more-search-results-list">
+            <ul>
+
+
+            </ul>
+        </div>
+     </div>
+</div>
+
+
+
 {% endblock content %}

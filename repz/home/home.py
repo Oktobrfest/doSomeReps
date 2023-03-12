@@ -379,6 +379,8 @@ def quiz():
         
             creator_username = session.execute(creator).first()[0]  
             
+            rating = score(r.question.question_id)
+            
             q = {
                 "quizq_id": r.quizq.quizq_id,
                 "question_name": r.question.question_name,
@@ -386,6 +388,7 @@ def quiz():
                 "hint": r.question.hint,
                 "answer": r.question.answer,
                 "created_by": creator_username,
+                "rating": rating,
                 "level_no": r.quizq.level_no,
                 "categories": catz,
                 "catz_DEF_REDUNDANT": catz,
@@ -431,7 +434,6 @@ def quiz():
 @login_required
 def quemore():
     form = QueAdditionForm()
-
     UID = g._login_user.id
     category_list = get_all_categories()
     description = "Que More Questions"
@@ -737,3 +739,50 @@ def delete_pic(pic):
             #     print("No objects found in bucket")
         else:
             flash('Failed to delete picture from S3 Bucket!', category="failure")     
+            
+            
+            
+            
+@home.route("/searchquefilters", methods=["POST"], endpoint="searchquefilters")
+@login_required
+def searchquefilters():
+    UID = g._login_user.id
+    filters = request.get_json()
+    # okay, first get the users questions. So long as they selected personal. Add that to the que_list!
+    if filters.personal == True:
+        subquery = select(question).join(question.categories).where(category.category_name.in_(filters.catz)).where(question.created_by == UID).join(quizq, question.question_id != quizq.question_id)
+        
+    result = session.excecute(subquery).all()
+    personal_questions = []
+    for r in result:
+        personal_questions.append(r)
+              
+              
+              
+    
+    # first get the created_by user_id list from the filter selections by only grabbing the users that have a true value in each category seperately. One at a time! Then combine the list together.
+    user_list = []
+    
+    if filters.public == True:
+       # public_user_qry = select(users.user_id).where(users.user_id != UID).where(
+        a = 'a'
+    if filters.favorate == True:
+        a = 'a'
+    if filters.blocked == True:
+        a = 'a'            
+      
+    
+    
+    # then query everything in one shot trying to do a join that excludes quiz_qs. 
+    
+    
+   # subquery = select(question).join(question.categories).where(category.category_name.in_(selected_categories)).join(quizq, question.question_id == quizq.question_id)
+    
+    
+    
+   
+    
+    msg = "Search Completed"
+    flash(msg, category="success")
+    return msg           
+            

@@ -5,14 +5,36 @@ Add Content
 {% block content %}
 <form id="answer-result" class="answer-result-submission" method="post">
 {% include "categories.html" %}
-{% include "quizfilters.html" %}
 {% if q %}
 <h1 align="center">Quiz Question</h1>
 <h3 id="q-level-number">Level Number: {{ q.level_no }}</h3>
 
 <h3 id="q-categories">Categories: {{ q.categories|join(', ') }}
 </h3>
-<h3 id="created-by">Created By: {{ q.created_by }}</h3>
+<h3 id="created-by">Created By: {{ q.created_by }}</h3> 
+<input type="button" class="block-user-button btn btn-secondary font-weight-bold" value="Block User" id="block-user-button">
+
+<input type="button" class="favorate-user-button btn btn-primary font-weight-bold" value="Add to Favorates" id="favorate-user-button">
+
+
+<h3 id="current-rating">Current Rating: {{ q.rating }}</h3>
+<div class="star-rating">
+    <h3>Rate Question:</h3>
+    <input type="radio" name="stars" id="star-a" value="5"/>
+    <label for="star-a"></label>
+
+    <input type="radio" name="stars" id="star-b" value="4"/>
+    <label for="star-b"></label>
+
+    <input type="radio" name="stars" id="star-c" value="3"/>
+    <label for="star-c"></label>
+
+    <input type="radio" name="stars" id="star-d" value="2"/>
+    <label for="star-d"></label>
+
+    <input type="radio" name="stars" id="star-e" value="1"/>
+    <label for="star-e"></label>
+</div>
 
 <div class="q-question-section" id="q-question-section">
 
@@ -90,8 +112,13 @@ Add Content
         <h1>Result?</h1>
         <input type="submit" name="correct_submit" id="correct-answer-result-button" class="btn btn-success" value="Correct!">
         <input type="submit" name="incorrect_submit" id="incorrect-answer-result-button" class="btn btn-success" value="Wrong!">
+        &nbsp;
+        &nbsp;
+        <input type="submit" name="exclude-question-button" id="exclude-question-button" class="btn btn-success" value="Exclude Question!">
   
 </div>
+
+
  
 
 {% else %}
