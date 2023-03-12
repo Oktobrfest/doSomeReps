@@ -1,2 +1,29 @@
 {% extends "base.html" %}
-{% block title %}Reps Home{% endblock %}
+{% block title %}Reps Home{% endblock title %}
+{% block content %}
+
+{# favorate users #}
+<div class="col-md-3 col-sm-12" id="sidebar">
+    <div class="sidebar-header">
+      <h3>Favorate Users</h3>
+    </div>
+    <div class="list-group favorate-users">
+      {% for fav in favorates %}
+      <a href="{% url 'user_profile' user.id %}" class="list-group-item list-group-item-action">
+        <div class="d-flex w-100 justify-content-between">
+          <h5 class="mb-1">{{ fav.username }}</h5>
+        </div>
+        
+      </a>
+      {% endfor %}
+    <div class="search-results-list-unstyled" id="search-results-list-unstyled">
+    </div>
+  </div>
+
+
+
+
+
+
+
+  {% endblock content %}

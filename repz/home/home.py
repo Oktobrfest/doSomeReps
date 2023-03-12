@@ -39,7 +39,7 @@ from sqlalchemy import (
     text,
 )
 from ..database import Base, engine, session
-from ..models import category, question, q_pic, quizq, level, users
+from ..models import category, question, q_pic, quizq, level, users,favorate_user, blocked_user, excluded_question, rating
 import re
 
 from flask_uploads import configure_uploads, IMAGES, UploadSet
@@ -79,10 +79,21 @@ home = Blueprint("home", __name__, template_folder="templates", static_folder="s
 @login_required
 def homepage():
     """Homepage."""
+    UID1 = g._login_user.id
+    UID = copy.copy(UID1)
+    
+    # display list of favorate users
+    session.execute(select(favorate_user, users.username).join(favorate_user.user_id == users.id)).where(users.id == UID).all()
+    
+    favorates = []
+    for fav in favorates:
+        favorates.append(fav)
+    
     return render_template(
         "home.html",
         title="Homepage",
         description=".",
+        favorates=favorates,
         user=current_user,
     )
 
@@ -437,7 +448,6 @@ def quemore():
     UID = g._login_user.id
     category_list = get_all_categories()
     description = "Que More Questions"
-
     selected_categories = get_session("que_category_names")
 
     if form.validate_on_submit():
