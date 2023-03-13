@@ -39,7 +39,7 @@ from sqlalchemy import (
     text,
 )
 from ..database import Base, engine, session
-from ..models import category, question, q_pic, quizq, level, users,favorate_user, blocked_user, excluded_question, rating
+from ..models import category, question, q_pic, quizq, level, users, rating
 import re
 
 from flask_uploads import configure_uploads, IMAGES, UploadSet
@@ -83,11 +83,61 @@ def homepage():
     UID = copy.copy(UID1)
     
     # display list of favorate users
-    session.execute(select(favorate_user, users.username).join(favorate_user.user_id == users.id)).where(users.id == UID).all()
+    # didnt work session.execute(select(favorate_user, users.username).join(favorate_user.user_id == users.id)).where(users.id == UID).all()
     
+    # query = session.query(FavoriteUser, users)\
+    # .join(users, FavoriteUser.favorite_user_id == users.id)\
+    # .filter(FavoriteUser.user_id == UID)
+    
+    # favs = query.all()
+    
+    b_user_qry = select(users).where(users.id == 1)
+    b_user = session.execute(b_user_qry).first()
+                            
+    c_user_qry = select(users).where(users.id == 2)
+    c_user = session.execute(c_user_qry).first()
+    
+    d_user_qry = select(users).where(users.id == 3)
+    d_user = session.execute(d_user_qry).first()
+    
+    quest_qury = select(question).where(question.question_id == 23)
+    quest = session.execute(quest_qury).first()
+    qq = 'q'
+    for q in quest:
+        qq = q    
+    
+    
+    
+    
+    # user_b = b_user_qry.with_session(session).first()
+    # user_c = c_user_qry.with_session(session).first()
+    cc = 'c'
+    for c in c_user:
+        cc = c
+    
+    bb = 'b'
+    for b in b_user:
+        bb = b
+        
+    dd = 'd'
+    for d in d_user:
+        dd = d    
+        
+    dd.excluded_questions.append(qq)  
+    #dd.blocked_users.append(cc)  
+
+    # b_user.favorates.append(c_user)    
+    session.add(dd)
+    session.commit()     
+                    
+        
     favorates = []
-    for fav in favorates:
-        favorates.append(fav)
+    # for fav in c_user:
+    #     favorates.append(fav)
+    #     print(str(b_user.favorates.append(fav)))
+    #     b_user.favorates.append(fav)
+    
+    # aaaa = 'a'
     
     return render_template(
         "home.html",

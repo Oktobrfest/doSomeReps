@@ -16,8 +16,30 @@ question_categories = Table(
     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
 )
 
+# favorate users association table
+favorate_links = Table(
+    'favorate_links', 
+    Base.metadata,
+    Column('id', ForeignKey("users.id"), primary_key=True),
+    Column('favorate_id',ForeignKey("users.id"), primary_key=True),
+)    
+
+blocked_user = Table(
+    'blocked_user', 
+    Base.metadata,
+    Column('id', ForeignKey("users.id"), primary_key=True),
+    Column('blocked_user_id',ForeignKey("users.id"), primary_key=True),
+)   
+
+excluded_questions = Table(
+    "excluded_questions",
+    Base.metadata,
+    Column("users", ForeignKey("users.id"), primary_key=True),
+    Column("question_id", ForeignKey("question.question_id"), primary_key=True),
+)
+
 class users(UserMixin, Base):
-    __tablename__ = "users"  # <- must declare name for db table
+    __tablename__ = "users" 
     id = sa.Column(
         sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
     )
@@ -28,9 +50,29 @@ class users(UserMixin, Base):
     password = sa.Column(
         sa.String(200), primary_key=False, unique=False, nullable=False
     )
-
+    
+    favorates = relationship(
+        'users', 
+        secondary=favorate_links,
+        primaryjoin=(favorate_links.c.id == id),
+        secondaryjoin=(favorate_links.c.favorate_id == id),
+       # lazy='dynamic'
+    )
+    
+    blocked_users = relationship(
+        'users', 
+        secondary=blocked_user,
+        primaryjoin=(blocked_user.c.id == id),
+        secondaryjoin=(blocked_user.c.blocked_user_id == id),
+       # lazy='dynamic'
+    )
+    
+    excluded_questions = relationship(
+        "question", secondary=excluded_questions
+    )  
+    
     quizqs = relationship("quizq")
-
+    
     def set_password(self, password):
         """Create hashed password."""
         self.password = generate_password_hash(password, method="sha256")
@@ -121,34 +163,4 @@ class rating(Base):
         {},
     )
 
-class excluded_question(Base):
-    __tablename__ = "excluded_question"
-    user_id = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    question_id = sa.Column(Integer, ForeignKey("question.question_id", ondelete="CASCADE"), nullable=False)
-    
-    __table_args__ = (
-        PrimaryKeyConstraint('user_id', 'question_id'),
-        {},
-    )
-    
-class blocked_user(Base):
-    __tablename__ = "blocked_user"
-    user_id = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    blocked_user = sa.Column(Integer, ForeignKey("users.id"), nullable=False)
-    
-    __table_args__ = (
-        PrimaryKeyConstraint('user_id', 'blocked_user'),
-        {},
-    )    
-    
-class favorate_user(Base):
-    __tablename__ = "favorate_user"
-    user_id = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    favorate_user = sa.Column(Integer, ForeignKey("users.id"), nullable=False)
-    
-    __table_args__ = (
-        PrimaryKeyConstraint('user_id', 'favorate_user'),
-        {},
-    )       
-    
         
