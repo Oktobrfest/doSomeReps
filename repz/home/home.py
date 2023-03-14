@@ -25,7 +25,7 @@ from sqlalchemy.orm import (
     contains_eager,
 )
 from sqlalchemy.sql import func, exists, distinct
-from sqlalchemy.sql.expression import bindparam
+from sqlalchemy.sql.expression import bindparam, ColumnOperators
 from sqlalchemy import (
     select,
     Interval,
@@ -37,6 +37,7 @@ from sqlalchemy import (
     and_,
     or_,
     text,
+    
 )
 from ..database import Base, engine, session
 from ..models import category, question, q_pic, quizq, level, users, rating
@@ -809,28 +810,113 @@ def searchquefilters():
     UID = g._login_user.id
     filters = request.get_json()
     # okay, first get the users questions. So long as they selected personal. Add that to the que_list!
-    if filters.personal == True:
-        subquery = select(question).join(question.categories).where(category.category_name.in_(filters.catz)).where(question.created_by == UID).join(quizq, question.question_id != quizq.question_id)
+    # doesn't work cuz quizq needs to be only for the user
+    if filters['personal'] == True:
+        # first grab all that users questions within the categories selected
+        all_usr_qs_qry = select(question).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by == UID)
         
-    result = session.excecute(subquery).all()
-    personal_questions = []
-    for r in result:
-        personal_questions.append(r)
+        # then grab all the quiz_qs for that user. You can use the same subquery above to match it on the categories.
+        quiz_qz = select(question.question_id).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by == UID).join(quizq, quizq.question_id == question.question_id).where(quizq.user_id == UID)
+        
+        #then you compare the differences between the first query and second.
+        # dont work this way: res = subquery.not_in(quiz_qz)
+        
+        # query = subquery.filter(question.question_id.not_in(quiz_qz)) gave: nly one expression can be specified in the select list when the subquery is not introduced with EXISTS. 
+   # try next  quizez = session.query(quiz_qz.question_id)
+   # quizez = session.query(quiz_qz).all()
+   # quizez = session.query(quiz_qz)
+    # quizes = session.execute(quiz_qz).all()
+        quizez_objs = session.execute(quiz_qz).scalars().all()
+        
+        #then you compare the differences between the first query and results of second. (qry1 - qry2 = diff)
+        query = all_usr_qs_qry.filter(question.question_id.not_in(quizez_objs))
+    
+    # session.execute(query).all() 
+        
+        dif = session.execute(query).all()    
+        
+  
+    
+        personal_qs = []
+        for r in dif:
+            personal_qs.append(r)
+    
+        
+        
+    # result = session.execute(subquery).all()
+    # question_que = []
+    # for r in result:
+    #     question_que.append(r)
               
               
               
     
     # first get the created_by user_id list from the filter selections by only grabbing the users that have a true value in each category seperately. One at a time! Then combine the list together.
-    user_list = []
     
-    if filters.public == True:
-       # public_user_qry = select(users.user_id).where(users.user_id != UID).where(
-        a = 'a'
-    if filters.favorate == True:
-        a = 'a'
-    if filters.blocked == True:
-        a = 'a'            
+     #get users specified by the filters
+    user_list = []
+    # fav_qry = select(users.favorates).where(users.id == UID)
+    user1 = select(users).where(users.id == UID)
+    user_obj = session.execute(user1).first() 
+    # gather up the current user's favorate users 
+    fav_list = []
+    for u in user_obj:
+        for f in u.favorates:
+            fav_list.append(f.id)
+    
+      # gather up the current user's blocked users 
+    block_list = []
+    for u in user_obj:
+        for f in u.favorates:
+            block_list.append(f.id)        
+    
+    if filters['public'] == True:
+        public_user_qry = select(users.id).where(users.id != UID).filter(users.id.not_in(fav_list)).filter(users.id.not_in(block_list))
+        
+        res = session.execute(public_user_qry).all()    
+          
+        for r in res:
+            user_list.append(r)
+    
+    if filters['favorate'] == True:
+        user_list += fav_list
+       
+    if filters['blocked'] == True:
+         user_list += block_list           
+        
+        
+
+
       
+    #one way to do it: get list of all public questions
+    #1 within the categories
+    #2 
+  
+   
+    
+  
+   # select all but quiz-q stuff
+    #all_qs_qry =  
+ 
+    #works!!!
+    exclusion_qry = select(question.question_id).join(question.categories).where(category.category_name.in_(filters['catz'])).join(quizq, quizq.question_id == question.question_id).where(quizq.user_id == UID)
+        
+    exclusion_objs = session.execute(exclusion_qry).scalars().all()
+    
+    
+    
+    
+    question_que = []
+    for r in qryz_objs:
+        question_que.append(r)
+              
+    a = 'a'
+    
+    # users list
+    
+    
+    
+    
     
     
     # then query everything in one shot trying to do a join that excludes quiz_qs. 
@@ -838,11 +924,34 @@ def searchquefilters():
     
    # subquery = select(question).join(question.categories).where(category.category_name.in_(selected_categories)).join(quizq, question.question_id == quizq.question_id)
     
-    
+   
+   
+   
+   
+    # execute the query
+   # results = query.all()
+
+    # MAKE THIS A FUNCTION- IT'S used by 2 methods here
+    search_results = []
+    # for r in results:
+    #     catz = []
+    #     for c in r.question.categories:
+    #         catz.append(c.category_name)
+
+    #     q = {
+    #         "question_text": r.question.question_text,
+    #         "question_id": r.question.question_id,
+    #         "categories": catz,
+    #     }
+    #     search_results.append(q)
+
+    search_response = jsonify(search_results)
+    msg = "Search Completed"
+    flash(msg, category="success")
+    return search_response
     
    
     
-    msg = "Search Completed"
-    flash(msg, category="success")
-    return msg           
+
+       
             
