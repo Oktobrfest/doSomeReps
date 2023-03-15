@@ -15,6 +15,9 @@ configure_uploads(app, images)
 
 
 class QueAdditionForm(FlaskForm):
-    qty_to_que = IntegerField("qty_to_que", default=1, validators=[DataRequired(), NumberRange(min=0, max=999999)])
+    qty_to_que = IntegerField("qty_to_que", default=10, validators=[DataRequired(), NumberRange(min=0, max=999999)])
     que_more_submit = SubmitField("que_more_submit")
+    qty_to_que.data = 10
+
+
 

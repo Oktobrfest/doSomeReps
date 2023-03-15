@@ -2,35 +2,38 @@
 {% block quefilters %}
 <div class="container p-3 my-3 border rounded-8 categories-group">
   <div class="panel-group">
-    <center><h1 class="category-title">Filters</h1></center>
-    <button id="collapse-button" class="btn btn-secondary" data-toggle="collapse" data-target="#quefilters-section">Minimize</button>
+    <center>
+      <h1 class="category-title">Filters</h1>
+    </center>
+    <button id="collapse-button" class="btn btn-secondary" data-toggle="collapse"
+      data-target="#quefilters-section">Minimize</button>
     <div id="quefilters-section" class="collapse show">
       <ul class="list-group list-group-flush form-group" id="quefilters">
         <h2>Include:</h2>
         <li class="list-group-item category-item border">
           <label for="quefilter_name" class="checkbox-inline"></label>
-          <input type="checkbox" value=personal id="personal" name="personal" class="custom-checkbox"/>
+          <input type="checkbox" value=personal id="personal" name="personal" class="custom-checkbox" checked />
           &nbsp Personal
         </li>
 
         <li class="list-group-item category-item border">
-          <label for="public" class="checkbox-inline"></label>
-          <input type="checkbox" id="public" name="public" class="custom-checkbox"/>
-          &nbsp Public
-        </li>
-
-        <li class="list-group-item category-item border">
           <label for="favorate" class="checkbox-inline"></label>
-          <input type="checkbox" id="favorate" name="favorate" class="custom-checkbox"/>
+          <input type="checkbox" id="favorate" name="favorate" class="custom-checkbox" checked />
           &nbsp Favorate Users
         </li>
 
         <li class="list-group-item category-item border">
+          <label for="public" class="checkbox-inline"></label>
+          <input type="checkbox" id="public" name="public" class="custom-checkbox" />
+          &nbsp Public
+        </li>
+
+        <li class="list-group-item category-item border">
           <label for="blocked" class="checkbox-inline"></label>
-          <input type="checkbox" id="blocked" name="blocked" class="custom-checkbox"/>
+          <input type="checkbox" id="blocked" name="blocked" class="custom-checkbox" />
           &nbsp Blocked Users
         </li>
-         </ul>
+      </ul>
     </div>
   </div>
 </div>

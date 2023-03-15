@@ -886,7 +886,10 @@ def searchquefilters():
         rate_qry = select(rating.rating).where(rating.question_id == r.question_id)
         rates = session.execute(rate_qry).scalars().all()
         rating_total = [ x for x in rates ]
-        rate = sum(rating_total) / len(rating_total)
+        if len(rating_total) == 0:
+            rate = 0
+        else:
+            rate = sum(rating_total) / len(rating_total)
         
         q = {
             "question_text": r.question_text,

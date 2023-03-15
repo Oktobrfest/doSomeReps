@@ -268,3 +268,34 @@ span {
   line-height: 21px;
   }
 }  
+
+#que-more-search-results-container {
+  background: #ccffcc;
+  border-radius: 15px;
+
+}
+
+#que-more-search-results-table {
+  border: 2px solid;
+  margin: 10px;
+  padding: 5px;
+}
+
+#que-more-search-results-table tr,th,td {
+  border: 2px solid;
+  margin: 10px;
+  padding: 10px;
+}
+
+.block-button, .badge  {
+  padding: 10px;
+  margin: 10px;
+}
+
+.question-chkbox {
+ width: 30px;
+ height: 30px;
+}
+
+
+

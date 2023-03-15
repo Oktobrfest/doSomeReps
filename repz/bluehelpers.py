@@ -25,22 +25,25 @@ def clean_for_html(unclean: str) -> str:
     return clean.lower()
 
 def new_q_lookup(UID, selected_categories, qty_to_que):
-    subquery = select(question).join(question.categories).where(category.category_name.in_(selected_categories)).join(quizq, question.question_id == quizq.question_id)
+    # subquery = select(question).join(question.categories).where(category.category_name.in_(selected_categories)).join(quizq, question.question_id == quizq.question_id)
       
-    subq = session.execute(subquery.distinct()).all()
+    # subq = session.execute(subquery.distinct()).all()
                                                 
     
-    allocatted_question_ids = []
-    for s in subq:
-        allocatted_question_ids.append(s.question.question_id)
+    # allocatted_question_ids = []
+    # for s in subq:
+    #     allocatted_question_ids.append(s.question.question_id)
         
-    new_q_query = select(question).where(not_(question.question_id.in_(allocatted_question_ids))).join(question.categories).where(category.category_name.in_(selected_categories)).limit(qty_to_que)
+    # new_q_query = select(question).where(not_(question.question_id.in_(allocatted_question_ids))).join(question.categories).where(category.category_name.in_(selected_categories)).limit(qty_to_que)
 
-    new_questions = session.execute(new_q_query)
+    # new_questions = session.execute(new_q_query)
 
-    question_ids = []
-    for new_question in new_questions:
-        question_ids.append(new_question.question.question_id)
+    # question_ids = []
+    # for new_question in new_questions:
+    #     question_ids.append(new_question.question.question_id)
+        
+        
+        
     
     qty_added = new_quizq(question_ids, UID)   
     

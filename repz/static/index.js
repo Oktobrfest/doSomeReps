@@ -151,6 +151,9 @@ window.onload = (event) => {
     if (window.location.pathname === '/quemore') {
         const que_more_search = document.querySelector("#que-more-search-button");
         que_more_search.addEventListener('click', queMoreSearch);
+
+        const que_qty_field = document.getElementById('qty_to_que');
+        que_qty_field.value = 10;
     }
 
 
@@ -599,6 +602,10 @@ function queMoreSearch(ev) {
                 alert(msg);
                 return;
             } else {
+                // qty to add counter
+                const qty_field = document.getElementById("qty_to_que");
+                let que_count = qty_field.value;
+
                 // populate the que search results list
                 let table_body = document.getElementById("que-more-search-results-table");
                 data.forEach(q => {
@@ -610,20 +617,30 @@ function queMoreSearch(ev) {
                     // que checkbox
                     let que_cell = document.createElement("td");
                     var checkbox = document.createElement('input');
-                    chkbox_name = 'que_' + q.question_id + '_chkbox';
+                    chkbox_name = 'que-question-' + q.question_id + '-chkbox';
                     checkbox.type = "checkbox";
                     checkbox.name = chkbox_name;
                     checkbox.value = "True";
+                    checkbox.className = "que-question-chkbox question-chkbox";
                     checkbox.id = chkbox_name;
                     que_cell.appendChild(checkbox);
                     row.appendChild(que_cell);
+
+                    // select box counter
+                    if (que_count > 0) {
+                        row.que_cell.checkbox.checked = true;
+                        console.log("que_count: " + que_count);
+                        que_count -= 1;
+                    }
+
                     // exclude checkbox
                     let exclude_cell = document.createElement("td");
                     var checkbox = document.createElement('input');
-                    chkbox_name = 'que_' + q.question_id + '_chkbox';
+                    chkbox_name = 'exclude-question-' + q.question_id + '-chkbox';
                     checkbox.type = "checkbox";
                     checkbox.name = chkbox_name;
                     checkbox.value = "True";
+                    checkbox.className = "exclude-question-chkbox question-chkbox";
                     checkbox.id = chkbox_name;
                     exclude_cell.appendChild(checkbox);
                     row.appendChild(exclude_cell);
@@ -632,9 +649,10 @@ function queMoreSearch(ev) {
                     username_cell.innerHTML = q.username;
                     let blk_button = document.createElement("button");
                     blk_button.innerHTML = "Block";
-                    blk_button.className = "btn btn-danger";
+                    blk_button.className = "btn btn-danger block-button";
                     blk_button.setAttribute('data--blk-username', q.username);
                     username_cell.appendChild(blk_button);
+                    row.appendChild(username_cell);
                     // rating
                     let rating_cell = document.createElement("td");
                     rating_cell.innerHTML = q.rating;
@@ -683,23 +701,8 @@ function getSelectedCategories() {
 }
 
 
-function createTableRow(q) {
-    let div = document.createElement("div");
-    div.className = "image-container";
-    div.setAttribute('data-pic-id', pic_id);
-    // make close image button
-    var button = document.createElement('input');
-    button_name = 'pic-' + pic_id + '-close-button';
-    button.type = "button";
-    button.name = button_name;
-    button.value = 'X';
-    button.id = button_name;
-    button.setAttribute('data-value', pic_id);
-    button.className = "image-close-button";
-    button.addEventListener('click', eliminateImage);
-    div.appendChild(button);
-    return div;
-}
+
+
 
 
 
