@@ -809,7 +809,8 @@ def delete_pic(pic):
 def searchquefilters():
     UID = g._login_user.id
     filters = request.get_json()
-    # okay, first get the users questions. So long as they selected personal. Add that to the que_list!
+    
+    question_que = []
     if filters['personal'] == True:
         # first grab all that users questions within the categories selected
         all_usr_qs_qry = select(question).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by == UID)
@@ -822,11 +823,10 @@ def searchquefilters():
         #then you compare the differences between the first query and results of second. (qry1 - qry2 = diff)
         query = all_usr_qs_qry.filter(question.question_id.not_in(quizez_objs))
     
-        dif = session.execute(query).all()    
-           
-        personal_qs = []
+        dif = session.execute(query.distinct()).scalars().all()    
+      
         for r in dif:
-            personal_qs.append(r)
+            question_que.append(r)
     
      #get users specified by the filters
     user_list = []
@@ -870,7 +870,6 @@ def searchquefilters():
     
     filtered_questions = session.execute(final_query.distinct()).scalars().all()    
         
-    question_que = []
     for r in filtered_questions:
         question_que.append(r)
      
@@ -880,10 +879,21 @@ def searchquefilters():
         for c in r.categories:
             catz.append(c.category_name)
 
+        # get username
+        usr_qry = select(users.username).where(users.id == r.created_by)
+        username = session.execute(usr_qry).scalar()
+        # get rating
+        rate_qry = select(rating.rating).where(rating.question_id == r.question_id)
+        rates = session.execute(rate_qry).scalars().all()
+        rating_total = [ x for x in rates ]
+        rate = sum(rating_total) / len(rating_total)
+        
         q = {
             "question_text": r.question_text,
             "question_id": r.question_id,
             "categories": catz,
+            "username": username,
+            "rating": rate,
         }
         search_results.append(q)
 

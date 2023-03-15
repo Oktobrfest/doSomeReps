@@ -14,7 +14,7 @@ var h_add = flask_util.url_for('home.add');
 
 function addSubmit(ev) {
     ev.preventDefault();
-  //  console.log(ev);
+    //  console.log(ev);
     fetch(h_add, {
         method: 'POST',
         body: new FormData(this)
@@ -384,7 +384,6 @@ function createImgContainer(pic_id) {
 
 function eliminateImage(event) {
     let pic_id = event.target.dataset.value;
-    let pic = document.getElementById(pic_id);
     let pic_to_eliminate = document.querySelector('[data-pic-id="' + pic_id + '"]');
     pic_to_eliminate.remove();
 };
@@ -576,8 +575,8 @@ function queMoreSearch(ev) {
         favorate: document.getElementById("favorate").checked,
         blocked: document.getElementById("blocked").checked,
         catz: getSelectedCategories()
-      };
-    
+    };
+
     const filters = JSON.stringify(filters_obj);
 
     fetch(searchquefilters, {
@@ -594,11 +593,74 @@ function queMoreSearch(ev) {
             return response.json();
         })
         .then(data => {
-            // populate the que search results list
+            if (data.length == 0) {
+                let msg = "No questions found.";
+                setMsg(msg);
+                alert(msg);
+                return;
+            } else {
+                // populate the que search results list
+                let table_body = document.getElementById("que-more-search-results-table");
+                data.forEach(q => {
+                    let row = document.createElement("tr");
+                    row.className = "que-more-search-results-row";
+                    row.setAttribute('question-id', q.question_id);
+                    table_body.appendChild(row);
+                    // make cells
+                    // que checkbox
+                    let que_cell = document.createElement("td");
+                    var checkbox = document.createElement('input');
+                    chkbox_name = 'que_' + q.question_id + '_chkbox';
+                    checkbox.type = "checkbox";
+                    checkbox.name = chkbox_name;
+                    checkbox.value = "True";
+                    checkbox.id = chkbox_name;
+                    que_cell.appendChild(checkbox);
+                    row.appendChild(que_cell);
+                    // exclude checkbox
+                    let exclude_cell = document.createElement("td");
+                    var checkbox = document.createElement('input');
+                    chkbox_name = 'que_' + q.question_id + '_chkbox';
+                    checkbox.type = "checkbox";
+                    checkbox.name = chkbox_name;
+                    checkbox.value = "True";
+                    checkbox.id = chkbox_name;
+                    exclude_cell.appendChild(checkbox);
+                    row.appendChild(exclude_cell);
+                    // Username
+                    let username_cell = document.createElement("td");
+                    username_cell.innerHTML = q.username;
+                    let blk_button = document.createElement("button");
+                    blk_button.innerHTML = "Block";
+                    blk_button.className = "btn btn-danger";
+                    blk_button.setAttribute('data--blk-username', q.username);
+                    username_cell.appendChild(blk_button);
+                    // rating
+                    let rating_cell = document.createElement("td");
+                    rating_cell.innerHTML = q.rating;
+                    row.appendChild(rating_cell);
+                    // question text
+                    let question_text_td = document.createElement("td");
+                    question_text_td.innerHTML = q.question_text;
+                    row.appendChild(question_text_td);
+                    // categories
+                    let catz_cell = document.createElement("td");
+                    q.categories.forEach(c => {
+                        let catz_span = document.createElement("span");
+                        catz_span.className = "badge badge-pill badge-primary";
+                        catz_span.innerHTML = c;
+                        catz_cell.appendChild(catz_span);
+                    });
+                    row.appendChild(catz_cell);
+                
 
+                });
+
+            };
 
 
         }).catch(error => {
+
             console.log(error);
         });
 
@@ -606,21 +668,38 @@ function queMoreSearch(ev) {
 
 }
 
-function getSelectedCategories(){
-       // get categories
-       const selected_categories = document.querySelectorAll('#categories input[type=checkbox]');
+function getSelectedCategories() {
+    // get categories
+    const selected_categories = document.querySelectorAll('#categories input[type=checkbox]');
 
-       const selected_search_categories = [];
-       selected_categories.forEach(checkbox => {
-           if (checkbox.checked) {
-               selected_search_categories.push(checkbox.value);
-           }
-       });
+    const selected_search_categories = [];
+    selected_categories.forEach(checkbox => {
+        if (checkbox.checked) {
+            selected_search_categories.push(checkbox.value);
+        }
+    });
 
-       return selected_search_categories;
+    return selected_search_categories;
 }
 
 
+function createTableRow(q) {
+    let div = document.createElement("div");
+    div.className = "image-container";
+    div.setAttribute('data-pic-id', pic_id);
+    // make close image button
+    var button = document.createElement('input');
+    button_name = 'pic-' + pic_id + '-close-button';
+    button.type = "button";
+    button.name = button_name;
+    button.value = 'X';
+    button.id = button_name;
+    button.setAttribute('data-value', pic_id);
+    button.className = "image-close-button";
+    button.addEventListener('click', eliminateImage);
+    div.appendChild(button);
+    return div;
+}
 
 
 
