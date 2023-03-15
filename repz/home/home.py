@@ -810,7 +810,6 @@ def searchquefilters():
     UID = g._login_user.id
     filters = request.get_json()
     # okay, first get the users questions. So long as they selected personal. Add that to the que_list!
-    # doesn't work cuz quizq needs to be only for the user
     if filters['personal'] == True:
         # first grab all that users questions within the categories selected
         all_usr_qs_qry = select(question).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by == UID)
@@ -828,8 +827,6 @@ def searchquefilters():
         personal_qs = []
         for r in dif:
             personal_qs.append(r)
-    
-    # first get the created_by user_id list from the filter selections by only grabbing the users that have a true value in each category seperately. One at a time! Then combine the list together.
     
      #get users specified by the filters
     user_list = []
@@ -858,26 +855,18 @@ def searchquefilters():
        
     if filters['blocked'] == True:
         user_list += block_list           
-        
-    #one way to do it: get list of all public questions
-    #1 within the categories
-    #2 within the user_list
-    filtered_users_qs_qry = select(question).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by.in_(user_list))
-  
-    # filtered_users_qs_objs = session.execute(filtered_users_qs_qry).scalars().all()
     
-  
-   # select all but quiz-q stuff
-    #all_qs_qry =  
- 
-    #works!!!
+    # all questions list    
+    filtered_users_qs_qry = select(question).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by.in_(user_list)).where(question.privacy == False)
+    
+    # questions to exclude from all questions list(filtered_users_qs_qry)
     exclusion_qry = select(question.question_id).join(question.categories).where(category.category_name.in_(filters['catz'])).join(quizq, quizq.question_id == question.question_id).where(quizq.user_id == UID)
         
     exclusion_objs = session.execute(exclusion_qry.distinct()).scalars().all()
-    exclusion_tuple = tuple([ x for x in exclusion_objs ])
-   # x_tuple = tuple(exclusion_list)
+    # not needed! exclusion_tuple = tuple([ x for x in exclusion_objs ])
     
-    final_query = filtered_users_qs_qry.filter(question.question_id.not_in(exclusion_tuple))
+    # all questions list - exclusion_qry = final_query
+    final_query = filtered_users_qs_qry.filter(question.question_id.not_in(exclusion_objs))
     
     filtered_questions = session.execute(final_query.distinct()).scalars().all()    
         
@@ -888,12 +877,12 @@ def searchquefilters():
     search_results = []          
     for r in question_que:
         catz = []
-        for c in r.question.categories:
+        for c in r.categories:
             catz.append(c.category_name)
 
         q = {
-            "question_text": r.question.question_text,
-            "question_id": r.question.question_id,
+            "question_text": r.question_text,
+            "question_id": r.question_id,
             "categories": catz,
         }
         search_results.append(q)
