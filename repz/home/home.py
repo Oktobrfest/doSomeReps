@@ -818,38 +818,16 @@ def searchquefilters():
         # then grab all the quiz_qs for that user. You can use the same subquery above to match it on the categories.
         quiz_qz = select(question.question_id).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by == UID).join(quizq, quizq.question_id == question.question_id).where(quizq.user_id == UID)
         
-        #then you compare the differences between the first query and second.
-        # dont work this way: res = subquery.not_in(quiz_qz)
-        
-        # query = subquery.filter(question.question_id.not_in(quiz_qz)) gave: nly one expression can be specified in the select list when the subquery is not introduced with EXISTS. 
-   # try next  quizez = session.query(quiz_qz.question_id)
-   # quizez = session.query(quiz_qz).all()
-   # quizez = session.query(quiz_qz)
-    # quizes = session.execute(quiz_qz).all()
-        quizez_objs = session.execute(quiz_qz).scalars().all()
+        quizez_objs = session.execute(quiz_qz.distinct()).scalars().all()
         
         #then you compare the differences between the first query and results of second. (qry1 - qry2 = diff)
         query = all_usr_qs_qry.filter(question.question_id.not_in(quizez_objs))
     
-    # session.execute(query).all() 
-        
         dif = session.execute(query).all()    
-        
-  
-    
+           
         personal_qs = []
         for r in dif:
             personal_qs.append(r)
-    
-        
-        
-    # result = session.execute(subquery).all()
-    # question_que = []
-    # for r in result:
-    #     question_que.append(r)
-              
-              
-              
     
     # first get the created_by user_id list from the filter selections by only grabbing the users that have a true value in each category seperately. One at a time! Then combine the list together.
     
@@ -860,15 +838,12 @@ def searchquefilters():
     user_obj = session.execute(user1).first() 
     # gather up the current user's favorate users 
     fav_list = []
-    for u in user_obj:
-        for f in u.favorates:
-            fav_list.append(f.id)
-    
-      # gather up the current user's blocked users 
     block_list = []
-    for u in user_obj:
-        for f in u.favorates:
-            block_list.append(f.id)        
+    for user in user_obj:
+        for f in user.favorates:
+            fav_list.append(f.id)
+        for b in user.blocked_users:
+            block_list.append(b.id)        
     
     if filters['public'] == True:
         public_user_qry = select(users.id).where(users.id != UID).filter(users.id.not_in(fav_list)).filter(users.id.not_in(block_list))
@@ -876,23 +851,20 @@ def searchquefilters():
         res = session.execute(public_user_qry).all()    
           
         for r in res:
-            user_list.append(r)
+            user_list.append(r[0])
     
     if filters['favorate'] == True:
         user_list += fav_list
        
     if filters['blocked'] == True:
-         user_list += block_list           
+        user_list += block_list           
         
-        
-
-
-      
     #one way to do it: get list of all public questions
     #1 within the categories
-    #2 
+    #2 within the user_list
+    filtered_users_qs_qry = select(question).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by.in_(user_list))
   
-   
+    # filtered_users_qs_objs = session.execute(filtered_users_qs_qry).scalars().all()
     
   
    # select all but quiz-q stuff
@@ -901,49 +873,30 @@ def searchquefilters():
     #works!!!
     exclusion_qry = select(question.question_id).join(question.categories).where(category.category_name.in_(filters['catz'])).join(quizq, quizq.question_id == question.question_id).where(quizq.user_id == UID)
         
-    exclusion_objs = session.execute(exclusion_qry).scalars().all()
+    exclusion_objs = session.execute(exclusion_qry.distinct()).scalars().all()
+    exclusion_tuple = tuple([ x for x in exclusion_objs ])
+   # x_tuple = tuple(exclusion_list)
     
+    final_query = filtered_users_qs_qry.filter(question.question_id.not_in(exclusion_tuple))
     
-    
-    
+    filtered_questions = session.execute(final_query.distinct()).scalars().all()    
+        
     question_que = []
-    for r in qryz_objs:
+    for r in filtered_questions:
         question_que.append(r)
-              
-    a = 'a'
-    
-    # users list
-    
-    
-    
-    
-    
-    
-    # then query everything in one shot trying to do a join that excludes quiz_qs. 
-    
-    
-   # subquery = select(question).join(question.categories).where(category.category_name.in_(selected_categories)).join(quizq, question.question_id == quizq.question_id)
-    
-   
-   
-   
-   
-    # execute the query
-   # results = query.all()
+     
+    search_results = []          
+    for r in question_que:
+        catz = []
+        for c in r.question.categories:
+            catz.append(c.category_name)
 
-    # MAKE THIS A FUNCTION- IT'S used by 2 methods here
-    search_results = []
-    # for r in results:
-    #     catz = []
-    #     for c in r.question.categories:
-    #         catz.append(c.category_name)
-
-    #     q = {
-    #         "question_text": r.question.question_text,
-    #         "question_id": r.question.question_id,
-    #         "categories": catz,
-    #     }
-    #     search_results.append(q)
+        q = {
+            "question_text": r.question.question_text,
+            "question_id": r.question.question_id,
+            "categories": catz,
+        }
+        search_results.append(q)
 
     search_response = jsonify(search_results)
     msg = "Search Completed"

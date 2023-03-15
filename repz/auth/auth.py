@@ -88,7 +88,7 @@ def signup():
             session.add(new_user)
             session.commit()
             flash('Account created!', category='success')
-            return render_template( url_for('auth.login', user=current_user ))
+            return redirect( url_for('auth.login', user=current_user ))
         else:
             flash('That username already exists. Please choose a different one.', category='error')
             # return render_template(url_for('auth.signup', user=current_user ))
