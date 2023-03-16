@@ -144,9 +144,12 @@ window.onload = (event) => {
         });
     });
 
-
-
-
+    if (window.location.pathname === '/') {
+        const unfavorite_button = document.querySelectorAll(".unfavorite-user-button");
+        unfavorite_button.forEach(function (button) {
+            button.addEventListener('click', unfavorate_user(ev));
+        });
+    }
 
     if (window.location.pathname === '/quemore') {
         const que_more_search = document.querySelector("#que-more-search-button");
@@ -645,6 +648,16 @@ function queMoreSearch(ev) {
                     exclude_cell.appendChild(checkbox);
                     row.appendChild(exclude_cell);
                     // Username
+                    // star/favorite
+                    let star = document.createElement("input");
+                    star.type = "radio";
+                    star.name = 'favorite-star-user-' + q.username;
+                    if (q.favorate == true) {
+                        star.checked = true;
+                    };
+
+                    row.appendChild(star);
+                    // users name
                     let username_cell = document.createElement("td");
                     username_cell.innerHTML = q.username;
                     let blk_button = document.createElement("button");
@@ -700,6 +713,41 @@ function getSelectedCategories() {
     return selected_search_categories;
 }
 
+
+var unfavorate_usr = flask_util.url_for('home.unfavorate_user');
+
+function unfavorate_user(ev) {
+    ev.preventDefault();
+    const user_id = ev.target.getAttribute('data-unfav-usr');
+    usr_id = JSON.stringify(user_id);
+
+    const formData = new FormData();
+    formData.append('user_id', usr_id);
+
+    fetch(unfav, {
+        method: 'POST',
+        body: formData,
+        enctype: 'multipart/form-data'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // remove the row from the table
+                let row = ev.target.parentElement.parentElement;
+                row.parentElement.removeChild(row);
+            } else {
+                alert("Error unfavorating user.");
+            }
+        }).catch(error => {
+            console.log(error);
+        });
+
+}
 
 
 

@@ -69,13 +69,20 @@ def init_app():
         ACCESS_KEY_ID = environ.get("ACCESS_KEY_ID")
         SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
         bucket = environ.get("BUCKET")
-        
+      
         g.user = current_user
         
+        login_manager = LoginManager(app)
+        login_manager.login_view = "login"
+        
+        
+        
+               
         @login_manager.user_loader
         def load_user(user_id):
             if user_id == 'None':
                 current_user = flask_login.AnonymousUserMixin
+                
                 # print(vars(current_user))
                 return current_user
             stmt = select(users).where(users.id == int(user_id))

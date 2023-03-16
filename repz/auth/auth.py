@@ -1,7 +1,6 @@
 from flask import Blueprint, redirect, render_template, flash, request, session, url_for
 from flask_login import login_required, logout_user, current_user, login_user
 from flask import current_app as app
-# from .. import login_manager
 from ..models import users
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.sql import func
@@ -24,6 +23,8 @@ routes = Blueprint('routes', __name__,
     static_folder='static'
     )
 
+
+    
 @auth.route('/login', methods=['GET', 'POST'], endpoint='login')
 def login():
     # return render_template( 'login.html' )
@@ -94,7 +95,5 @@ def signup():
             # return render_template(url_for('auth.signup', user=current_user ))
 
     return render_template('signup.html', user=current_user )
-    
-    
     
     
