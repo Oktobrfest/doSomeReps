@@ -4,21 +4,41 @@
 
 {# favorate users #}
 <div class="col-md-3 col-sm-12" id="sidebar">
-    <div class="sidebar-header">
-      <h3>Favorate Users</h3>
-    </div>
-    <div class="list-group favorate-users">
-      {% for fav in favorates %}
- {#     <a href="{% url 'user_profile' user.id %}" class="list-group-item list-group-item-action">
-        <div class="d-flex w-100 justify-content-between">
-          <h5 class="mb-1">{{ fav.username }}</h5>
-        </div>
-        
-      </a>
-      #}
-      {% endfor %}
-    <div class="search-results-list-unstyled" id="search-results-list-unstyled">
-    </div>
+  <div class="sidebar-header">
+    <center>
+      <h3>Favorite Users</h3>
+    </center>
   </div>
+  <div class="list-group favorite-users">
+    <ul>
+      {% for key, value in favorites.items() %}
+      {# include unfavorite button #}
+      <li class="form-inline">
+        <h5 class="mb-1 favorite-user-name" id="favorite-usr-{{ key }}">{{ value }}</h5> &nbsp
+        <input type="button" data-unfav-usr="{{ key }}" class="btn btn-primary font-weight-bold unfavorite-user-button" value="Remove"
+          id="unfavorite-usr-{{ key }}">
+      </li>
+      {% endfor %}
+    </ul>
+    
+     </div>
+</div>
+
+<div id="user-message">
+  <h3>
+    <center>
+      <h3 id="user-message-text">
+        {% if quiz_q_count > 0 %}
+          You have {{ quiz_q_count }} quiz questions to answer. 
+          <a class="link" id="quiz-link" href="/quiz">Take Quiz
+          </a>
+        {% endif %}
+      </h3>
+    </center>
+  </h3>
+
+
+</div>
+
 
   {% endblock content %}

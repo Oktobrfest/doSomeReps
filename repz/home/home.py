@@ -83,6 +83,25 @@ def homepage():
     UID1 = g._login_user.id
     UID = copy.copy(UID1)
     
+    fav_qry = select(users).where(users.id == 3)
+    
+    user = session.execute(fav_qry).scalars().first()
+    
+    
+    favorites = {}
+    for u in user.favorates:
+        favorites[u.id] = u.username
+    
+    quiz_q_count = 1
+    
+    
+    
+    # favorites = []
+    # for u in user.favorates:
+    #     favorites.append(u.username)
+
+
+        
     # display list of favorate users
     # didnt work session.execute(select(favorate_user, users.username).join(favorate_user.user_id == users.id)).where(users.id == UID).all()
     
@@ -92,47 +111,8 @@ def homepage():
     
     # favs = query.all()
     
-    b_user_qry = select(users).where(users.id == 1)
-    b_user = session.execute(b_user_qry).first()
-                            
-    c_user_qry = select(users).where(users.id == 2)
-    c_user = session.execute(c_user_qry).first()
-    
-    d_user_qry = select(users).where(users.id == 3)
-    d_user = session.execute(d_user_qry).first()
-    
-    quest_qury = select(question).where(question.question_id == 23)
-    quest = session.execute(quest_qury).first()
-    qq = 'q'
-    for q in quest:
-        qq = q    
-    
-    
-    
-    
-    # user_b = b_user_qry.with_session(session).first()
-    # user_c = c_user_qry.with_session(session).first()
-    cc = 'c'
-    for c in c_user:
-        cc = c
-    
-    bb = 'b'
-    for b in b_user:
-        bb = b
-        
-    dd = 'd'
-    for d in d_user:
-        dd = d    
-        
-    dd.excluded_questions.append(qq)  
-    #dd.blocked_users.append(cc)  
-
-    # b_user.favorates.append(c_user)    
-    session.add(dd)
-    session.commit()     
                     
-        
-    favorates = []
+    # favorates = []
     # for fav in c_user:
     #     favorates.append(fav)
     #     print(str(b_user.favorates.append(fav)))
@@ -144,8 +124,10 @@ def homepage():
         "home.html",
         title="Homepage",
         description=".",
-        favorates=favorates,
+        favorites=favorites,
         user=current_user,
+        quiz_q_count=quiz_q_count,
+    
     )
 
 
@@ -882,6 +864,16 @@ def searchquefilters():
         # get username
         usr_qry = select(users.username).where(users.id == r.created_by)
         username = session.execute(usr_qry).scalar()
+        
+        # see if user is a favorate
+        fav_qry = select(users).where(users.id == UID)
+        user = session.execute(fav_qry).scalars().first()
+        fav = False
+        for u in user.favorates:
+                if u.id == r.created_by:
+                    fav = True
+    
+        
         # get rating
         rate_qry = select(rating.rating).where(rating.question_id == r.question_id)
         rates = session.execute(rate_qry).scalars().all()
@@ -896,6 +888,8 @@ def searchquefilters():
             "question_id": r.question_id,
             "categories": catz,
             "username": username,
+            "user_id": r.created_by,
+            "favorite": fav,
             "rating": rate,
         }
         search_results.append(q)
@@ -907,6 +901,20 @@ def searchquefilters():
     
    
     
+@home.route("/unfavorate_user", methods=["POST"], endpoint="unfavorate_user")
+@login_required
+def unfavorate_user():
+    UID = g._login_user.id
+    formData = request.get_json()
+    
+    qry = select(users).where(users.id == UID)
+    
+    user_obj = session.execute(qry).first()
+    
+    # COMPLETE THIS AFTER YOU CAN ADD FAVORITE USERS!!!
 
        
+    msg = "NAHHH BROOO Un-favorited User"
+    flash(msg, category="success")
+    return msg   
             
