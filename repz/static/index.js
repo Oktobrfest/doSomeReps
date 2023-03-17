@@ -147,7 +147,7 @@ window.onload = (event) => {
     if (window.location.pathname === '/') {
         const unfavorite_button = document.querySelectorAll(".unfavorite-user-button");
         unfavorite_button.forEach(function (button) {
-            button.addEventListener('click', unfavorate_user(ev));
+            button.addEventListener('click', unFavoriteUser(ev));
         });
     }
 
@@ -583,6 +583,9 @@ function queMoreSearch(ev) {
         catz: getSelectedCategories()
     };
 
+    // clear old results
+    clearTable();
+
     const filters = JSON.stringify(filters_obj);
 
     fetch(searchquefilters, {
@@ -610,11 +613,12 @@ function queMoreSearch(ev) {
                 let que_count = qty_field.value;
 
                 // populate the que search results list
-                let table_body = document.getElementById("que-more-search-results-table");
+                let table_body = document.getElementById("que-more-search-results-body");
                 data.forEach(q => {
                     let row = document.createElement("tr");
                     row.className = "que-more-search-results-row";
                     row.setAttribute('question-id', q.question_id);
+                    row.setAttribute('created-by', q.created_by);
                     table_body.appendChild(row);
                     // make cells
                     // que checkbox
@@ -631,7 +635,8 @@ function queMoreSearch(ev) {
 
                     // select box counter
                     if (que_count > 0) {
-                        row.que_cell.checkbox.checked = true;
+                        que_cell.childNodes[0].checked = true;
+                        //  fail: row.que_cell.checkbox.checked = true;
                         console.log("que_count: " + que_count);
                         que_count -= 1;
                     }
@@ -648,24 +653,23 @@ function queMoreSearch(ev) {
                     exclude_cell.appendChild(checkbox);
                     row.appendChild(exclude_cell);
                     // Username
-                    // star/favorite
-                    let star = document.createElement("input");
-                    star.type = "radio";
-                    star.name = 'favorite-star-user-' + q.username;
-                    if (q.favorate == true) {
-                        star.checked = true;
-                    };
-
-                    row.appendChild(star);
-                    // users name
                     let username_cell = document.createElement("td");
+
                     username_cell.innerHTML = q.username;
                     let blk_button = document.createElement("button");
-                    blk_button.innerHTML = "Block";
+
                     blk_button.className = "btn btn-danger block-button";
-                    blk_button.setAttribute('data--blk-username', q.username);
-                    username_cell.appendChild(blk_button);
+                    blk_button.setAttribute('data-blk-user-id', q.created_by);
+
+                    blk_button.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        blkUser(q.created_by)
+                    });
+
+                    // blk_button.addEventListener('click', blkUser(q.created_by));
                     row.appendChild(username_cell);
+                    username_cell.appendChild(blk_button);
+                    blk_button.innerHTML = "Block";
                     // rating
                     let rating_cell = document.createElement("td");
                     rating_cell.innerHTML = q.rating;
@@ -683,20 +687,12 @@ function queMoreSearch(ev) {
                         catz_cell.appendChild(catz_span);
                     });
                     row.appendChild(catz_cell);
-                
-
                 });
-
             };
 
-
         }).catch(error => {
-
             console.log(error);
         });
-
-
-
 }
 
 function getSelectedCategories() {
@@ -713,10 +709,9 @@ function getSelectedCategories() {
     return selected_search_categories;
 }
 
+var unfavorite_user = flask_util.url_for('home.unfavorite_user');
 
-var unfavorate_usr = flask_util.url_for('home.unfavorate_user');
-
-function unfavorate_user(ev) {
+function unFavoriteUser(ev) {
     ev.preventDefault();
     const user_id = ev.target.getAttribute('data-unfav-usr');
     usr_id = JSON.stringify(user_id);
@@ -724,7 +719,61 @@ function unfavorate_user(ev) {
     const formData = new FormData();
     formData.append('user_id', usr_id);
 
-    fetch(unfav, {
+    fetch(unfavorite_user, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: formData,
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // remove the row from the table
+                let row = ev.target.parentElement.parentElement;
+                row.parentElement.removeChild(row);
+            } else {
+                alert("Error unfavoriting user.");
+            }
+        }).catch(error => {
+            console.log(error);
+        });
+}
+
+function removeBlocked(row, created_by) {
+    row_creator = row.getAttribute('created-by');
+    if (row_creator == created_by) {
+        row.remove();
+    };
+}
+
+var block_user = flask_util.url_for('home.block_user');
+
+function blkUser(created_by) {
+    const formData = new FormData();
+    formData.append('block_user_id', created_by);
+
+    // loop tru the table bodys rows and remove the row with the matching user id
+    let table_body = document.getElementById("que-more-search-results-body");
+    let rows = table_body.getElementsByTagName("tr");
+    let i = 0;
+    while (i < rows.length) {
+        for (var r of rows) {
+            row_creator = r.getAttribute('created-by');
+            if (row_creator == created_by) {
+                r.remove();
+                break;
+            };
+        };
+        i++;
+    };
+
+    fetch(block_user, {
         method: 'POST',
         body: formData,
         enctype: 'multipart/form-data'
@@ -741,16 +790,18 @@ function unfavorate_user(ev) {
                 let row = ev.target.parentElement.parentElement;
                 row.parentElement.removeChild(row);
             } else {
-                alert("Error unfavorating user.");
+                alert("Error blocking user.");
             }
         }).catch(error => {
             console.log(error);
         });
-
 }
 
-
-
-
+function clearTable() {
+    let table_body = document.getElementById("que-more-search-results-body");
+    while (table_body.firstChild) {
+        table_body.removeChild(table_body.firstChild);
+    }
+}
 
 
