@@ -947,11 +947,37 @@ def block_user():
     
     session.add(usr)
     session.commit() 
-    
-    
-    # COMPLETE THIS AFTER YOU CAN ADD FAVORITE USERS!!!
+           
+    msg = "Blocked User"
+    flash(msg, category="success")
+    return msg      
 
-       
-    msg = "NAHHH BROOO Un-favorited User"
+
+@home.route("/unblock_user", methods=["POST"], endpoint="unblock_user")
+@login_required
+def unblock_user():
+    UID = g._login_user.id
+    
+    block_user_id = request.form.get("blk_user_id")
+    
+    block_user_id_int = int(float(block_user_id))
+        
+    blked_usr_qry = select(users).where(users.id == block_user_id_int)
+    
+    blked_usr_obj = session.execute(blked_usr_qry).first()
+    
+    blocked_user = blked_usr_obj[0]
+    
+    qry = select(users).where(users.id == UID)
+    
+    user_obj = session.execute(qry).first()
+    
+    usr = user_obj[0]
+    
+    usr.blocked_users.remove(blocked_user)
+
+    session.commit() 
+        
+    msg = "Unblocked User"
     flash(msg, category="success")
     return msg      

@@ -152,8 +152,8 @@ window.onload = (event) => {
         });
         // unblock button
         const unblock_button = document.querySelectorAll(".unblock-user-button");
-        unfavorite_button.forEach(function (button) {
-            button.addEventListener('click', unBlockUser(ev));
+        unblock_button.forEach(function (button) {
+            button.addEventListener('click', unBlockUser);
         });
 
 
@@ -813,20 +813,20 @@ function clearTable() {
 }
 
 // home page --- this is all the work of AI. check it over!!
+var unblock_user = flask_util.url_for('home.unblock_user');
+
 function unBlockUser(ev) {
     ev.preventDefault();
     const blk_user_id = ev.target.getAttribute('data-unblk-usr');
-    block_usr_id = JSON.stringify(blk_user_id);
+    // const block_usr_id = JSON.stringify(blk_user_id);
 
     const formData = new FormData();
-    formData.append('user_id', usr_id);
+    formData.append('blk_user_id', blk_user_id);
 
     fetch(unblock_user, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
         body: formData,
+        enctype: 'multipart/form-data'
     })
         .then(response => {
             if (!response.ok) {
@@ -836,7 +836,7 @@ function unBlockUser(ev) {
         })
         .then(data => {
             if (data.success) {
-                // remove the row from the table
+                // remove the row from the table DOESNT WORK!!!!!!!!!!!!!!!!!!
                 let row = ev.target.parentElement.parentElement;
                 row.parentElement.removeChild(row);
             } else {
