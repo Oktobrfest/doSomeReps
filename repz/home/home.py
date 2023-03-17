@@ -980,4 +980,7 @@ def unblock_user():
         
     msg = "Unblocked User"
     flash(msg, category="success")
-    return msg      
+    
+    response_msg = jsonify('ok')
+    
+    return response_msg      

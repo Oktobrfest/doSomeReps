@@ -741,7 +741,7 @@ function unFavoriteUser(ev) {
             return response.json();
         })
         .then(data => {
-            if (data.success) {
+            if (data == 'ok') {
                 // remove the row from the table
                 let row = ev.target.parentElement.parentElement;
                 row.parentElement.removeChild(row);
@@ -793,12 +793,12 @@ function blkUser(created_by) {
             return response.json();
         })
         .then(data => {
-            if (data.success) {
+            if (data == 'ok') {
                 // remove the row from the table
                 let row = ev.target.parentElement.parentElement;
                 row.parentElement.removeChild(row);
             } else {
-                alert("Error blocking user.");
+                alert("Error unfavoriting user.");
             }
         }).catch(error => {
             console.log(error);
@@ -835,12 +835,12 @@ function unBlockUser(ev) {
             return response.json();
         })
         .then(data => {
-            if (data.success) {
-                // remove the row from the table DOESNT WORK!!!!!!!!!!!!!!!!!!
-                let row = ev.target.parentElement.parentElement;
+            if (data == 'ok') {
+                // remove the row from the table
+                let row = ev.target.parentElement;
                 row.parentElement.removeChild(row);
             } else {
-                alert("Error unblocking user.");
+                alert("Error unfavoriting user.");
             }
         }).catch(error => {
             console.log(error);
