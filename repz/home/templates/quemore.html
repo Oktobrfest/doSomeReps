@@ -7,6 +7,9 @@ Add Content
 <h1 align="center">{{ description }}</h1>
 
 <div>
+    <div class="alert alert-success alter-dismissable fade show" id="my-message-area" role="alert">
+
+    </div>
     <form id="que-more-questions" class="que-more-questions form-inline" method="POST">
         {% include "categories.html" %}
         {% include "quefilters.html" %}
@@ -28,12 +31,19 @@ Add Content
      <div class="panel-group">
         <h1><center>Que Search Results</center></h1>
         <table class="que-more-search-results-table" id="que-more-search-results-table">
+            <thead>
             <th class="checkbox-heading">Que</th>
             <th class="exclude-heading">Exclude</th>
             <th class="username-heading">Username</th>
             <th class="rating-heading">Rating</th>
             <th class="question-text-heading">Question</th>
             <th class="category-heading">Categories</th>
+        </thead>
+        <tbody id="que-more-search-results-body" >
+
+
+
+        </tbody>
 
         </table>
 

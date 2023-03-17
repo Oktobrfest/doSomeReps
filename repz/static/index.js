@@ -145,10 +145,18 @@ window.onload = (event) => {
     });
 
     if (window.location.pathname === '/') {
+        // unfavorate button
         const unfavorite_button = document.querySelectorAll(".unfavorite-user-button");
         unfavorite_button.forEach(function (button) {
             button.addEventListener('click', unFavoriteUser(ev));
         });
+        // unblock button
+        const unblock_button = document.querySelectorAll(".unblock-user-button");
+        unfavorite_button.forEach(function (button) {
+            button.addEventListener('click', unBlockUser(ev));
+        });
+
+
     }
 
     if (window.location.pathname === '/quemore') {
@@ -804,4 +812,39 @@ function clearTable() {
     }
 }
 
+// home page --- this is all the work of AI. check it over!!
+function unBlockUser(ev) {
+    ev.preventDefault();
+    const blk_user_id = ev.target.getAttribute('data-unblk-usr');
+    block_usr_id = JSON.stringify(blk_user_id);
+
+    const formData = new FormData();
+    formData.append('user_id', usr_id);
+
+    fetch(unblock_user, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: formData,
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // remove the row from the table
+                let row = ev.target.parentElement.parentElement;
+                row.parentElement.removeChild(row);
+            } else {
+                alert("Error unblocking user.");
+            }
+        }).catch(error => {
+            console.log(error);
+        });
+
+}
 

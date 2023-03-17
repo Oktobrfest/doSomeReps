@@ -83,14 +83,18 @@ def homepage():
     UID1 = g._login_user.id
     UID = copy.copy(UID1)
     
-    fav_qry = select(users).where(users.id == 3)
+    user_qry = select(users).where(users.id == UID)
     
-    user = session.execute(fav_qry).scalars().first()
+    user = session.execute(user_qry).scalars().first()
     
     
     favorites = {}
+    blocked = {}
     for u in user.favorates:
         favorites[u.id] = u.username
+    
+    for b in user.blocked_users:
+        blocked[b.id] = b.username
     
     quiz_q_count = 1
     
@@ -125,6 +129,7 @@ def homepage():
         title="Homepage",
         description=".",
         favorites=favorites,
+        blocked=blocked,
         user=current_user,
         quiz_q_count=quiz_q_count,
     
@@ -888,7 +893,7 @@ def searchquefilters():
             "question_id": r.question_id,
             "categories": catz,
             "username": username,
-            "user_id": r.created_by,
+            "created_by": r.created_by,
             "favorite": fav,
             "rating": rate,
         }
@@ -901,9 +906,9 @@ def searchquefilters():
     
    
     
-@home.route("/unfavorate_user", methods=["POST"], endpoint="unfavorate_user")
+@home.route("/unfavorite_user", methods=["POST"], endpoint="unfavorite_user")
 @login_required
-def unfavorate_user():
+def unfavorite_user():
     UID = g._login_user.id
     formData = request.get_json()
     
@@ -917,4 +922,36 @@ def unfavorate_user():
     msg = "NAHHH BROOO Un-favorited User"
     flash(msg, category="success")
     return msg   
-            
+         
+         
+         
+@home.route("/block_user", methods=["POST"], endpoint="block_user")
+@login_required
+def block_user():
+    UID = g._login_user.id
+    
+    block_user_id = request.form.get("block_user_id")
+    
+    blked_usr_qry = select(users).where(users.id == block_user_id)
+    blked_usr_obj = session.execute(blked_usr_qry).first()
+    
+    blocked_user = blked_usr_obj[0]
+    
+    qry = select(users).where(users.id == UID)
+    
+    user_obj = session.execute(qry).first()
+    
+    usr = user_obj[0]
+    
+    usr.blocked_users.append(blocked_user)
+    
+    session.add(usr)
+    session.commit() 
+    
+    
+    # COMPLETE THIS AFTER YOU CAN ADD FAVORITE USERS!!!
+
+       
+    msg = "NAHHH BROOO Un-favorited User"
+    flash(msg, category="success")
+    return msg      

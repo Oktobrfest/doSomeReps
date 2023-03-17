@@ -3,7 +3,9 @@
 {% block content %}
 
 {# favorate users #}
+
 <div class="col-md-3 col-sm-12" id="sidebar">
+  <div class="user-list-area" id="favorite-user-list-area">
   <div class="sidebar-header">
     <center>
       <h3>Favorite Users</h3>
@@ -15,13 +17,37 @@
       {# include unfavorite button #}
       <li class="form-inline">
         <h5 class="mb-1 favorite-user-name" id="favorite-usr-{{ key }}">{{ value }}</h5> &nbsp
-        <input type="button" data-unfav-usr="{{ key }}" class="btn btn-primary font-weight-bold unfavorite-user-button" value="Remove"
-          id="unfavorite-usr-{{ key }}">
+        <input type="button" data-unfav-usr="{{ key }}" class="btn btn-primary font-weight-bold unfavorite-user-button"
+          value="Remove" id="unfavorite-usr-{{ key }}">
       </li>
       {% endfor %}
     </ul>
-    
-     </div>
+  </div>
+</div>
+
+<div class="user-list-area" id="blocked-user-list-area">
+  <div class="sidebar-header">
+    <center>
+      <h3>Blocked Users</h3>
+    </center>
+  </div>
+  <div class="list-group blocked-users">
+    <ul>
+      {% for key, value in blocked.items() %}
+      {# include unfavorite button #}
+      <li class="form-inline">
+        <h5 class="mb-1 blocked-user-name" id="blocked-usr-{{ key }}">{{ value }}</h5> &nbsp
+        <input type="button" data-unblk-usr="{{ key }}" class="btn btn-primary font-weight-bold unblock-user-button"
+          value="Unblock" id="unblock-usr-{{ key }}">
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+
+
+
 </div>
 
 <div id="user-message">
@@ -29,9 +55,9 @@
     <center>
       <h3 id="user-message-text">
         {% if quiz_q_count > 0 %}
-          You have {{ quiz_q_count }} quiz questions to answer. 
-          <a class="link" id="quiz-link" href="/quiz">Take Quiz
-          </a>
+        You have {{ quiz_q_count }} quiz questions to answer.
+        <a class="link" id="quiz-link" href="/quiz">Take Quiz
+        </a>
         {% endif %}
       </h3>
     </center>
@@ -41,4 +67,4 @@
 </div>
 
 
-  {% endblock content %}
+{% endblock content %}

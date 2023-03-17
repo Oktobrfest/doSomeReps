@@ -270,7 +270,7 @@ span {
 }  
 
 #que-more-search-results-container {
-  background: #ccffcc;
+  background: brown;
   border-radius: 15px;
 
 }
@@ -297,5 +297,11 @@ span {
  height: 30px;
 }
 
+.user-list-area {
+  background: gray;
+  border-radius: 15px;
+  padding: 10px;
+  margin: 10px;
+}
 
 
