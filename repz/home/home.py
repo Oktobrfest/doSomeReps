@@ -956,9 +956,10 @@ def unblock_user():
 def save_to_que():
     UID = g._login_user.id
     
-    que = request.form.get("que")
+    data = request.get_json()
+    que = data.get("que", [])
     
-    
+    qty_added = new_quizq(que, UID)   
     
     
     

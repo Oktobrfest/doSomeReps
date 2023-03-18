@@ -850,22 +850,19 @@ function saveToQue(ev) {
             let isChecked = checkbox.checked;
             if (isChecked) {
                 let question_id = row.getAttribute('question-id');
-                que.push({
-                    question_id: question_id,
-                    isChecked: isChecked
-                });
+                que.push(question_id);
             }
           
     });
 
 
-    const formData = new FormData();
-    formData.append('que', que);
+    const que_arry = JSON.stringify({que: que});
+    
 
     fetch(SAVE_2_QUE, {
         method: 'POST',
-        body: formData,
-        enctype: 'multipart/form-data'
+        headers: {'Content-Type': 'application/json'},
+        body: que_arry
     })
         .then(response => {
             if (!response.ok) {
