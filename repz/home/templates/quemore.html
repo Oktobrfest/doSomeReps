@@ -20,7 +20,12 @@ Add Content
             {{ form.csrf_token }}
             {{ form.qty_to_que.label("Quantity to Add:")}}
             {{ form.qty_to_que(class="form-control qty-to-que-number-form", value="Quantity to Add:") }}
-            {{ form.que_more_submit(class="btn btn-primary font-weight-bold", value="Save") }}
+            {# form.que_more_submit(class="btn btn-primary font-weight-bold", value="OLDBSSave") #}
+
+            <input type="buttin" class="btn btn-primary save-to-que font-weight-bold" value="Save" id="save-to-que">
+
+            
+
             {# results found integer field 
             <p class="results-found" id="results-founnd">Results Found:  </p>#}            
 
@@ -39,14 +44,9 @@ Add Content
             <th class="question-text-heading">Question</th>
             <th class="category-heading">Categories</th>
         </thead>
-        <tbody id="que-more-search-results-body" >
-
-
-
+        <tbody id="que-more-search-results-body">
         </tbody>
-
         </table>
-
         <div class="que-more-search-results-list">
             <ul>
 

@@ -86,8 +86,7 @@ def homepage():
     user_qry = select(users).where(users.id == UID)
     
     user = session.execute(user_qry).scalars().first()
-    
-    
+        
     favorites = {}
     blocked = {}
     for u in user.favorates:
@@ -97,33 +96,7 @@ def homepage():
         blocked[b.id] = b.username
     
     quiz_q_count = 1
-    
-    
-    
-    # favorites = []
-    # for u in user.favorates:
-    #     favorites.append(u.username)
-
-
-        
-    # display list of favorate users
-    # didnt work session.execute(select(favorate_user, users.username).join(favorate_user.user_id == users.id)).where(users.id == UID).all()
-    
-    # query = session.query(FavoriteUser, users)\
-    # .join(users, FavoriteUser.favorite_user_id == users.id)\
-    # .filter(FavoriteUser.user_id == UID)
-    
-    # favs = query.all()
-    
-                    
-    # favorates = []
-    # for fav in c_user:
-    #     favorates.append(fav)
-    #     print(str(b_user.favorates.append(fav)))
-    #     b_user.favorates.append(fav)
-    
-    # aaaa = 'a'
-    
+      
     return render_template(
         "home.html",
         title="Homepage",
@@ -132,8 +105,7 @@ def homepage():
         blocked=blocked,
         user=current_user,
         quiz_q_count=quiz_q_count,
-    
-    )
+        )
 
 
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
@@ -162,13 +134,11 @@ def addcontent():
         if privacy_chkbox == "on":
             privacy = True
         else:
-            privacy = False
-        
+            privacy = False        
 
         category_names = request.form.getlist("category_name")
 
     #  TEESTING MULTIPLE IMAGE UPLOADS
-
     if form.validate_on_submit():
         fail = False
         if len(question_name) < 1 or len(question_text) < 3 or len(answer) < 1:
@@ -228,13 +198,11 @@ def addcontent():
             form=form,
         )
 
-
 def allowed_file(filename):
     return (
         "." in filename
         and filename.split(".", 1)[1].lower() in Config.ALLOWED_EXTENSIONS
     )
-
 
 @home.route("/add", methods=["POST"], endpoint="add")
 @login_required
@@ -266,7 +234,6 @@ def add():
     else:
         data = ""
     return jsonify(data, htl)
-
 
 @home.route("/quiz", methods=["GET", "POST"], endpoint="quiz")
 @login_required
@@ -460,7 +427,6 @@ def quiz():
             flash(
                 "No more questions in your selected categories are currently due. Either try to select more categories or que more questions for those categories"
             )
-
     try:
         que_list[0]
     except:
@@ -476,7 +442,6 @@ def quiz():
         category_list=category_list,
         q=q,
         selected_categories=selected_categories
-        # form=form,
     )
 
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
@@ -488,45 +453,45 @@ def quemore():
     description = "Que More Questions"
     selected_categories = get_session("que_category_names")
 
-    if form.validate_on_submit():
-        qty_to_que = form.qty_to_que.data
-        que_more_submit = form.que_more_submit.data
-        selected_categories = request.form.getlist("category_name")
+    # if form.validate_on_submit():
+    #     qty_to_que = form.qty_to_que.data
+    #     que_more_submit = form.que_more_submit.data
+    #     selected_categories = request.form.getlist("category_name")
 
-        # validate that categories have been selected
-        if len(selected_categories) < 1:
-            msg = "You idiot! You didn't select any question categories! Try again."
-            flash(msg)
-            return render_template(
-                "quemore.html",
-                title="Que More Questions",
-                description=description,
-                user=current_user,
-                form=form,
-                category_list=category_list,
-            )
-        else:
-            set_session("que_category_names", selected_categories)
+    #     # validate that categories have been selected
+    #     if len(selected_categories) < 1:
+    #         msg = "You idiot! You didn't select any question categories! Try again."
+    #         flash(msg)
+    #         return render_template(
+    #             "quemore.html",
+    #             title="Que More Questions",
+    #             description=description,
+    #             user=current_user,
+    #             form=form,
+    #             category_list=category_list,
+    #         )
+    #     else:
+    #         set_session("que_category_names", selected_categories)
 
-        qty_added = new_q_lookup(UID, selected_categories, qty_to_que)
+    #     qty_added = new_q_lookup(UID, selected_categories, qty_to_que)
 
-        # if all the categories are selected redirect to make more questions otherwise/message telling them to select more categories
-        if qty_added < 1:
-            if len(selected_categories) == len(category_list):
-                flash(
-                    "You already added all the questions into your que. There are no more questions left to add. You need to make more questions if you'd like to expand your que"
-                )
-                return redirect(url_for("home.addcontent"))
-            else:
-                flash(
-                    "No more questions in your selected categories are left to que up. Either try to select more categories or create more questions for your chosen categories"
-                )
-                description = "Select more categories or create more questions"
-                return redirect(url_for("home.quemore"))
-        # success
-        msg = "You added " + str(qty_added) + " more question(s) to your que!"
-        flash(msg)
-        return redirect(url_for("home.quiz"))
+    #     # if all the categories are selected redirect to make more questions otherwise/message telling them to select more categories
+    #     if qty_added < 1:
+    #         if len(selected_categories) == len(category_list):
+    #             flash(
+    #                 "You already added all the questions into your que. There are no more questions left to add. You need to make more questions if you'd like to expand your que"
+    #             )
+    #             return redirect(url_for("home.addcontent"))
+    #         else:
+    #             flash(
+    #                 "No more questions in your selected categories are left to que up. Either try to select more categories or create more questions for your chosen categories"
+    #             )
+    #             description = "Select more categories or create more questions"
+    #             return redirect(url_for("home.quemore"))
+    #     # success
+    #     msg = "You added " + str(qty_added) + " more question(s) to your que!"
+    #     flash(msg)
+    #     return redirect(url_for("home.quiz"))
 
     return render_template(
         "quemore.html",
@@ -564,7 +529,6 @@ def editquestions():
         form=form,
         q=q,
     )
-
 
 @home.route("/searchq", methods=["POST"], endpoint="searchq")
 @login_required
@@ -984,3 +948,27 @@ def unblock_user():
     response_msg = jsonify('ok')
     
     return response_msg      
+
+
+
+@home.route("/save_to_que", methods=["POST"], endpoint="save_to_que")
+@login_required
+def save_to_que():
+    UID = g._login_user.id
+    
+    que = request.form.get("que")
+    
+    
+    
+    
+    
+    
+    
+    msg = "Unblocked User"
+    flash(msg, category="success")
+    
+    response_msg = jsonify('ok')
+    
+    return response_msg      
+    
+

@@ -8,8 +8,6 @@ function unhighlight(x) {
     x.style.borderStyle;
 }
 
-// var h_add = flask_util_js.url_for('home.add');
-// //var h_add = flask_util.url_for('home.add');
 var h_add = flask_util.url_for('home.add');
 
 function addSubmit(ev) {
@@ -54,12 +52,6 @@ function addShow(data, htl) {
 // bind only once attempt#1
 //  didnt work : document.onload = runOnce(document);
 document.addEventListener('readystatechange', event => {
-
-    // When HTML/DOM elements are ready:
-    // if (event.target.readyState === "interactive") {   //does same as:  ..addEventListener("DOMContentLoaded"..
-    //     runOnce(document);
-    // }
-
     // When window loaded ( external resources are loaded too- `css`,`src`, etc...) 
     if (event.target.readyState === "complete") {
         runOnce(document);
@@ -75,20 +67,6 @@ function runOnce(document) {
     }
 };
 
-// attach the event listener to the button
-// function bindlistener(document) {
-//     var frm = document.getElementById('startquizform');
-//     if (frm) {
-
-//         frm.addEventListener('submit', start_qz, {
-//             once: true,
-//         });
-//     }
-// };
-
-// window.addEventListener('load', () => {
-//     bindlistener(document);
-//   });
 
 // get quiz page url VIA url_for
 var quiz_page = flask_util.url_for('home.quiz');
@@ -155,8 +133,6 @@ window.onload = (event) => {
         unblock_button.forEach(function (button) {
             button.addEventListener('click', unBlockUser);
         });
-
-
     }
 
     if (window.location.pathname === '/quemore') {
@@ -165,9 +141,14 @@ window.onload = (event) => {
 
         const que_qty_field = document.getElementById('qty_to_que');
         que_qty_field.value = 10;
+
+        const save_to_que_button = document.querySelector("#save-to-que");
+        save_to_que_button.addEventListener('click', saveToQue);
+
+
+
+
     }
-
-
     // const showHideButton = document.getElementById('collapse-button');
     // if (showHideButton) {
     //     showHideButton.onclick = function (event) {
@@ -775,7 +756,7 @@ function blkUser(created_by) {
             row_creator = r.getAttribute('created-by');
             if (row_creator == created_by) {
                 r.remove();
-                break;
+                i--;               
             };
         };
         i++;
@@ -848,3 +829,60 @@ function unBlockUser(ev) {
 
 }
 
+
+
+
+var SAVE_2_QUE = flask_util.url_for('home.save_to_que');
+
+function saveToQue(ev) {
+    ev.preventDefault();
+
+    // FIRST DO VALIDATION TO SEE THAT THERE ARE CHECKBOXES SELECTED/QUESTIONS QUED!!!
+
+    const que_table_body = document.getElementById("que-more-search-results-body");
+    const rows = [...que_table_body.children];
+
+    let que = [];
+    rows.forEach(row => {
+             // Get the checkbox element
+            let checkbox = row.querySelector('input[type="checkbox"]');
+              // Get the value of the checkbox
+            let isChecked = checkbox.checked;
+            if (isChecked) {
+                let question_id = row.getAttribute('question-id');
+                que.push({
+                    question_id: question_id,
+                    isChecked: isChecked
+                });
+            }
+          
+    });
+
+
+    const formData = new FormData();
+    formData.append('que', que);
+
+    fetch(SAVE_2_QUE, {
+        method: 'POST',
+        body: formData,
+        enctype: 'multipart/form-data'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data == 'ok') {
+                (function () {
+                    location.reload();
+                })
+            } else {
+                alert("Error Queing Questions");
+            }
+        }).catch(error => {
+            console.log(error);
+        });
+
+}
