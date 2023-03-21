@@ -98,6 +98,8 @@ def homepage():
     selected_cats = get_all_categories()
     
     que_list = get_quizes(selected_cats, UID)
+    
+    catz_chart = render_chart('peepee', 'poopoo')
       
     return render_template(
         "home.html",
@@ -107,6 +109,7 @@ def homepage():
         blocked=blocked,
         user=current_user,
         quiz_q_count=len(que_list),
+        catz_chart=catz_chart,
         )
 
 

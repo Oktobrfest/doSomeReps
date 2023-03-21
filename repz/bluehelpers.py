@@ -189,13 +189,6 @@ def get_quizes(selected_cats, UID):
 
 
 def render_chart(x_labels, y_labels):
-    from flask import Flask, render_template
-
-
-app = Flask(__name__)
-
-@app.route('/')
-def index():
     # Create sample data
     x = np.array(['A', 'B', 'C', 'D', 'E'])
     y = np.array([10, 20, 30, 40, 50])
@@ -209,10 +202,7 @@ def index():
     fig.savefig(buffer, format='png')
     chart_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
     
-    # Render the template with the chart
-    return render_template('index.html', chart_image=chart_image)
+    return chart_image
 
-if __name__ == '__main__':
-    app.run(debug=True)
 
 
