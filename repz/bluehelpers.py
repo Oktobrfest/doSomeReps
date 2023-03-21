@@ -11,11 +11,18 @@ from sqlalchemy.sql import func, exists, distinct
 from sqlalchemy.sql.expression import bindparam
 from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_
 from .database import Base, engine, session
-from .models import category, question, q_pic, quizq, level, rating
+from .models import category, question, q_pic, quizq, level, rating, users
 
 import re
 
 from flask import session as local_session
+
+from datetime import datetime, timedelta
+
+import matplotlib.pyplot as plt
+import numpy as np
+from io import BytesIO
+import base64
 
 
 def clean_for_html(unclean: str) -> str:
@@ -95,5 +102,117 @@ def score(question_id):
     
     return final_score
         
+
+def get_quizes(selected_cats, UID):
+    quest_wCats_qry = (
+            select(question, category, quizq, level.days_hence)
+            .join(question.categories)
+            .where(category.category_name.in_(selected_cats))
+            .join(
+                quizq,
+                and_(
+                    question.question_id == quizq.question_id,
+                    quizq.user_id == UID,
+                    quizq.answered_on.is_(None),
+                ),
+            )
+            .join(level, quizq.level_no == level.level_no)
+        )
+
+    result = session.execute(quest_wCats_qry.distinct()).all()
+
+#   result_list = []
+    que_list = []
+    now = datetime.now()
+    for r in result:
+        # see if it's due to be answered- (levels 2+)
+        if r.quizq.level_no > 1:
+            # find the quiz question that was answered before it and grab that datetime
+            previous_level = r.quizq.level_no - 1
+            previous_quizq = (
+                select(quizq.answered_on)
+                .where(quizq.user_id == UID)
+                .where(quizq.question_id == r.quizq.question_id)
+                .where(quizq.level_no == previous_level)
+                .where(quizq.correct == True)
+                .order_by(quizq.answered_on.desc())
+            )
+            previous_quizq_date = (
+                session.execute(previous_quizq.distinct()).scalars().first()
+            )
+            answered_on = previous_quizq_date
+            days_hence = r.days_hence
+            due_date = answered_on + timedelta(days=days_hence)
+            if now > due_date:
+                addit = True
+            else:
+                addit = False
+        else:
+            addit = True  # if it's level #1
+        if addit == True:
+            catz = []  # duplicate, but prob doesn't add all the categories!
+            categories = []
+            for c in r.question.categories:
+                catz.append(c.category_name)
+                for qu in c.questions:
+                    if qu.question_id == r.question.question_id:
+                        for cc in qu.categories:
+                            categories.append(cc.category_name)
+
+            pics = {k: [] for k in ["answer_pics", "hint_image", "question_image"]}
+            for img in r.question.pics:
+                pics[img.pic_type].append(img.pic_string)
+
+            creator = select(users.username).where(users.id == r.question.created_by)  
+
+            creator_username = session.execute(creator).first()[0]  
+            
+            rating = score(r.question.question_id)
+            
+            q = {
+                "quizq_id": r.quizq.quizq_id,
+                "question_name": r.question.question_name,
+                "question_text": r.question.question_text,
+                "hint": r.question.hint,
+                "answer": r.question.answer,
+                "created_by": creator_username,
+                "rating": rating,
+                "level_no": r.quizq.level_no,
+                "categories": catz,
+                "catz_DEF_REDUNDANT": catz,
+                "pics": pics,
+            }
+
+            que_list.append(q)
+            
+    return que_list        
+
+
+def render_chart(x_labels, y_labels):
+    from flask import Flask, render_template
+
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    # Create sample data
+    x = np.array(['A', 'B', 'C', 'D', 'E'])
+    y = np.array([10, 20, 30, 40, 50])
+    
+    # Create the bar chart
+    fig, ax = plt.subplots()
+    ax.bar(x, y)
+    
+    # Render the chart to a base64-encoded string
+    buffer = BytesIO()
+    fig.savefig(buffer, format='png')
+    chart_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    
+    # Render the template with the chart
+    return render_template('index.html', chart_image=chart_image)
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 

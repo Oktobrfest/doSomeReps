@@ -52,7 +52,6 @@ from werkzeug.utils import secure_filename
 
 # from ..s3upload import upload_file
 from ..aws_s3 import *
-from datetime import datetime, timedelta
 import random
 import copy
 
@@ -95,7 +94,10 @@ def homepage():
     for b in user.blocked_users:
         blocked[b.id] = b.username
     
-    quiz_q_count = 1
+    
+    selected_cats = get_all_categories()
+    
+    que_list = get_quizes(selected_cats, UID)
       
     return render_template(
         "home.html",
@@ -104,7 +106,7 @@ def homepage():
         favorites=favorites,
         blocked=blocked,
         user=current_user,
-        quiz_q_count=quiz_q_count,
+        quiz_q_count=len(que_list),
         )
 
 
@@ -331,89 +333,9 @@ def quiz():
 
     selected_cats = selected_categories
     
-    quest_wCats_qry = (
-        select(question, category, quizq, level.days_hence)
-        .join(question.categories)
-        .where(category.category_name.in_(selected_cats))
-        .join(
-            quizq,
-            and_(
-                question.question_id == quizq.question_id,
-                quizq.user_id == UID,
-                quizq.answered_on.is_(None),
-            ),
-        )
-        .join(level, quizq.level_no == level.level_no)
-    )
+    que_list = get_quizes(selected_cats, UID)
 
-    result = session.execute(quest_wCats_qry.distinct()).all()
-
-    result_list = []
-    que_list = []
-    now = datetime.now()
-    for r in result:
-        # see if it's due to be answered- (levels 2+)
-        if r.quizq.level_no > 1:
-            # find the quiz question that was answered before it and grab that datetime
-            previous_level = r.quizq.level_no - 1
-            previous_quizq = (
-                select(quizq.answered_on)
-                .where(quizq.user_id == UID)
-                .where(quizq.question_id == r.quizq.question_id)
-                .where(quizq.level_no == previous_level)
-                .where(quizq.correct == True)
-                .order_by(quizq.answered_on.desc())
-            )
-            previous_quizq_date = (
-                session.execute(previous_quizq.distinct()).scalars().first()
-            )
-            answered_on = previous_quizq_date
-            days_hence = r.days_hence
-            due_date = answered_on + timedelta(days=days_hence)
-            if now > due_date:
-                addit = True
-            else:
-                addit = False
-        else:
-            addit = True  # if it's level #1
-
-        if addit == True:
-            catz = []  # duplicate, but prob doesn't add all the categories!
-            categories = []
-            for c in r.question.categories:
-                catz.append(c.category_name)
-                for qu in c.questions:
-                    if qu.question_id == r.question.question_id:
-                        for cc in qu.categories:
-                            categories.append(cc.category_name)
-
-            pics = {k: [] for k in ["answer_pics", "hint_image", "question_image"]}
-            for img in r.question.pics:
-                pics[img.pic_type].append(img.pic_string)
-
-            creator = select(users.username).where(users.id == r.question.created_by)  
-        
-            creator_username = session.execute(creator).first()[0]  
-            
-            rating = score(r.question.question_id)
-            
-            q = {
-                "quizq_id": r.quizq.quizq_id,
-                "question_name": r.question.question_name,
-                "question_text": r.question.question_text,
-                "hint": r.question.hint,
-                "answer": r.question.answer,
-                "created_by": creator_username,
-                "rating": rating,
-                "level_no": r.quizq.level_no,
-                "categories": catz,
-                "catz_DEF_REDUNDANT": catz,
-                "pics": pics,
-            }
-
-            que_list.append(q)
-
-        result_list.append(r)
+    #    result_list.append(r)
 
     # if no questions are due to be answered give user the option to add more or select more categories.
     if len(que_list) < 1:
@@ -752,8 +674,7 @@ def delete_pic(pic):
         else:
             flash('Failed to delete picture from S3 Bucket!', category="failure")     
             
-            
-            
+                        
             
 @home.route("/searchquefilters", methods=["POST"], endpoint="searchquefilters")
 @login_required
@@ -840,8 +761,7 @@ def searchquefilters():
         fav = False
         for u in user.favorates:
                 if u.id == r.created_by:
-                    fav = True
-    
+                    fav = True    
         
         # get rating
         rate_qry = select(rating.rating).where(rating.question_id == r.question_id)
@@ -867,8 +787,7 @@ def searchquefilters():
     msg = "Search Completed"
     flash(msg, category="success")
     return search_response
-    
-   
+       
     
 @home.route("/unfavorite_user", methods=["POST"], endpoint="unfavorite_user")
 @login_required
@@ -885,8 +804,7 @@ def unfavorite_user():
        
     msg = "NAHHH BROOO Un-favorited User"
     flash(msg, category="success")
-    return msg   
-         
+    return msg            
          
          
 @home.route("/block_user", methods=["POST"], endpoint="block_user")
@@ -950,7 +868,6 @@ def unblock_user():
     return response_msg      
 
 
-
 @home.route("/save_to_que", methods=["POST"], endpoint="save_to_que")
 @login_required
 def save_to_que():
@@ -959,17 +876,12 @@ def save_to_que():
     data = request.get_json()
     que = data.get("que", [])
     
-    qty_added = new_quizq(que, UID)   
+    qty_added = new_quizq(que, UID)    
     
-    
-    
-    
-    
-    msg = "Unblocked User"
+    msg = "Saved " + str(qty_added) + " questions to your que" 
     flash(msg, category="success")
     
     response_msg = jsonify('ok')
     
-    return response_msg      
-    
+    return response_msg          
 

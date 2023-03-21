@@ -218,16 +218,17 @@ span {
 }
 
 // style for the star-rating
-/* use reverse flexbox to take advantage of flex-direction: reverse */
+/* use reverse flexbox to take advantage of flex-direction: reverse  */
 .star-rating {
   display: flex;
   align-items: center;
   width: 160px;
-  flex-direction: row-reverse;
+  flex-direction: column-reverse; 
   justify-content: space-between;
   margin: 40px auto;
   position: relative;
 }
+
 /* hide the inputs */
 .star-rating input {
   display: none;
@@ -253,7 +254,6 @@ span {
 /* set shape of unselected label */
 .star-rating label::before {
   content: '\2606';
-  position: absolute;
   top: 0px;
   line-height: 26px;
 }
