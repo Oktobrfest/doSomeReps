@@ -64,6 +64,10 @@ def init_app():
         app.register_blueprint(routes)
         app.register_blueprint(auth)
         
+        #shit included to be able to step into other modules
+        app.config['DEBUG'] = True
+        app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+        
         #Flask uploads
         #    s3 bucket tests
         ACCESS_KEY_ID = environ.get("ACCESS_KEY_ID")

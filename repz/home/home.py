@@ -74,6 +74,20 @@ def favicon():
 # Blueprint Configuration
 home = Blueprint("home", __name__, template_folder="templates", static_folder="static")
 
+@home.route("/about", methods=["GET", "POST"], endpoint="about")
+def about():
+    """About us page."""
+    
+    
+    catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
+    
+    
+    return render_template(
+        "about.html",
+        title="About",
+        description="About us page.",
+        catz_chart=catz_chart,
+    )
 
 @home.route("/", methods=["GET", "POST"], endpoint="homepage")
 @login_required
@@ -99,7 +113,21 @@ def homepage():
     
     que_list = get_quizes(selected_cats, UID)
     
-    catz_chart = render_chart('peepee', 'poopoo')
+    category_count = {}
+    for q in que_list:
+        for c in q["categories"]: 
+            if c in category_count:
+                category_count[c] += 1
+            else:
+                                category_count[c] = 1       
+    
+    x_arr = []
+    y_arr = []
+    for k,v in category_count.items():
+        x_arr.append(k)
+        y_arr.append(v)
+    
+    catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
       
     return render_template(
         "home.html",
@@ -458,7 +486,8 @@ def editquestions():
 @home.route("/searchq", methods=["POST"], endpoint="searchq")
 @login_required
 def searchq():
-
+    UID1 = g._login_user.id
+    UID = copy.copy(UID1)
     # get The submitted Json values
     filters = request.get_json()
     set_session("filter_categories", filters)
@@ -479,6 +508,7 @@ def searchq():
         .options(joinedload(question.categories))
         .join(question.categories)
         .filter(category.category_name.in_(filter_cats))
+        .filter(question.created_by==UID)
     )
 
     # query = session.query(question.question_name, question.question_id, category, category.category_name).join(question.categories).filter(category.category_name.in_(filter_cats))

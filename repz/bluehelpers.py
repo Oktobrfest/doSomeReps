@@ -188,14 +188,20 @@ def get_quizes(selected_cats, UID):
     return que_list        
 
 
-def render_chart(x_labels, y_labels):
+def render_chart(x_arr, y_arr, x_label, y_label):
     # Create sample data
-    x = np.array(['A', 'B', 'C', 'D', 'E'])
-    y = np.array([10, 20, 30, 40, 50])
+    x = np.array(x_arr)
+    y = np.array(y_arr)
+    
+
     
     # Create the bar chart
     fig, ax = plt.subplots()
     ax.bar(x, y)
+    
+         # Set the axis labels
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
     
     # Render the chart to a base64-encoded string
     buffer = BytesIO()

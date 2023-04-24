@@ -8,6 +8,8 @@
         </button>
         <div class="collapse navbar-collapse" id="navbar">
           <div class="navbar-nav">
+            <a class="nav-item nav-link {% if request.path == url_for('home.about') %}active{% endif %}" id="signUp"
+            href="/about">About Us</a>
             {% if user.is_authenticated %}
             <a class="nav-item nav-link {% if request.path == url_for('home.homepage') %}active{% endif %}" id="home"
               href="/">Home/Stats</a>
@@ -26,6 +28,8 @@
               href="/login">Login</a>
             <a class="nav-item nav-link {% if request.path == url_for('auth.signup') %}active{% endif %}" id="signUp"
               href="/signup">Sign Up</a>
+
+
             {% endif %}
           </div>
         </div>
