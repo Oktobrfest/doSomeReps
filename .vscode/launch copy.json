@@ -9,9 +9,8 @@
             "type": "python",
             "request": "launch",
             "module": "flask",
-            "pythonPath": "/home/ubuntu/projects/venv/bin/python",
             "env": {
-                "FLASK_APP": "this_isnt_the_right_launchfile.py",
+                "FLASK_APP": "wsgi.py",
                 "FLASK_DEBUG": "1",
                 "PYTHONPATH": "${workspaceRoot}"
             },

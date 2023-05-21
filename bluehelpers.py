@@ -210,5 +210,18 @@ def render_chart(x_arr, y_arr, x_label, y_label):
     
     return chart_image
 
+def get_user(user_id):
+    if not isinstance(user_id, int):
+        try:
+            user_id_int = int(float(user_id))
+        except:
+            user_id_int = 0
+    else:
+        user_id_int = user_id
 
-
+    usr_qry = select(users).where(users.id == user_id_int)
+    
+    usr_obj = session.execute(usr_qry).first()
+    
+    user = usr_obj[0]
+    return user

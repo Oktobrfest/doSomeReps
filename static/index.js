@@ -126,7 +126,7 @@ window.onload = (event) => {
         // unfavorate button
         const unfavorite_button = document.querySelectorAll(".unfavorite-user-button");
         unfavorite_button.forEach(function (button) {
-            button.addEventListener('click', unFavoriteUser(ev));
+            button.addEventListener('click', unFavoriteUser);
         });
         // unblock button
         const unblock_button = document.querySelectorAll(".unblock-user-button");
@@ -703,17 +703,17 @@ var unfavorite_user = flask_util.url_for('home.unfavorite_user');
 function unFavoriteUser(ev) {
     ev.preventDefault();
     const user_id = ev.target.getAttribute('data-unfav-usr');
-    usr_id = JSON.stringify(user_id);
+    let usr_id = JSON(user_id);
 
-    const formData = new FormData();
-    formData.append('user_id', usr_id);
+    // const formData = new FormData();
+    // formData.append('user_id', usr_id);
 
     fetch(unfavorite_user, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: formData,
+        body: { "user_id": usr_id }
     })
         .then(response => {
             if (!response.ok) {
@@ -756,7 +756,7 @@ function blkUser(created_by) {
             row_creator = r.getAttribute('created-by');
             if (row_creator == created_by) {
                 r.remove();
-                i--;               
+                i--;
             };
         };
         i++;
@@ -844,24 +844,24 @@ function saveToQue(ev) {
 
     let que = [];
     rows.forEach(row => {
-             // Get the checkbox element
-            let checkbox = row.querySelector('input[type="checkbox"]');
-              // Get the value of the checkbox
-            let isChecked = checkbox.checked;
-            if (isChecked) {
-                let question_id = row.getAttribute('question-id');
-                que.push(question_id);
-            }
-          
+        // Get the checkbox element
+        let checkbox = row.querySelector('input[type="checkbox"]');
+        // Get the value of the checkbox
+        let isChecked = checkbox.checked;
+        if (isChecked) {
+            let question_id = row.getAttribute('question-id');
+            que.push(question_id);
+        }
+
     });
 
 
-    const que_arry = JSON.stringify({que: que});
-    
+    const que_arry = JSON.stringify({ que: que });
+
 
     fetch(SAVE_2_QUE, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: que_arry
     })
         .then(response => {

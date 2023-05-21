@@ -77,9 +77,9 @@ home = Blueprint("home", __name__, template_folder="templates", static_folder="s
 @home.route("/about", methods=["GET", "POST"], endpoint="about")
 def about():
     """About us page."""
+   
     
-    
-    catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
+    # catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
     
     
     return render_template(
@@ -826,18 +826,24 @@ def searchquefilters():
 @login_required
 def unfavorite_user():
     UID = g._login_user.id
-    formData = request.get_json()
-    
-    qry = select(users).where(users.id == UID)
-    
-    user_obj = session.execute(qry).first()
-    
-    # COMPLETE THIS AFTER YOU CAN ADD FAVORITE USERS!!!
+   
+    data = request.get_json()  # This will give you a Python dictionary
+    user_id = data['user_id']
 
-       
-    msg = "NAHHH BROOO Un-favorited User"
+    unfav_user = get_user(unfav_uid)
+    usr = get_user(UID)
+    
+    usr.favorates.remove(unfav_user)
+
+    session.commit() 
+        
+    msg = "Unblocked User"
     flash(msg, category="success")
-    return msg            
+    
+    response_msg = jsonify('ok')
+    
+    return response_msg      
+           
          
          
 @home.route("/block_user", methods=["POST"], endpoint="block_user")
@@ -917,4 +923,8 @@ def save_to_que():
     response_msg = jsonify('ok')
     
     return response_msg          
+
+
+
+
 
