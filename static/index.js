@@ -170,7 +170,12 @@ window.onload = (event) => {
         const save_question_button = document.querySelector("#save-question-button");
         save_question_button.addEventListener('click', clearMsgArea);
     }
-}
+
+    if (window.location.pathname === '/quiz') {
+        const add_favorite_button = document.querySelector("#favorate-user-button");
+        add_favorite_button.addEventListener('click', addFavoriteUser);
+       }
+ }
 var searchq = flask_util.url_for('home.searchq');
 
 // submit search form data via json to backend
@@ -703,8 +708,7 @@ var unfavorite_user = flask_util.url_for('home.unfavorite_user');
 function unFavoriteUser(ev) {
     ev.preventDefault();
     const user_id = ev.target.getAttribute('data-unfav-usr');
-    let usr_id = JSON(user_id);
-
+   
     // const formData = new FormData();
     // formData.append('user_id', usr_id);
 
@@ -713,7 +717,7 @@ function unFavoriteUser(ev) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: { "user_id": usr_id }
+        body: JSON.stringify({ "user_id": user_id })
     })
         .then(response => {
             if (!response.ok) {
@@ -883,3 +887,14 @@ function saveToQue(ev) {
         });
 
 }
+
+
+function addFavoriteUser(ev) {
+    ev.preventDefault();
+    
+    // get the blocked user id
+    
+
+
+
+

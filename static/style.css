@@ -217,15 +217,12 @@ span {
   display: none;
 }
 
-// style for the star-rating
-/* use reverse flexbox to take advantage of flex-direction: reverse  */
-.star-rating {
+#starrating {
   display: flex;
   align-items: center;
   width: 160px;
-  flex-direction: column-reverse; 
+  flex-direction: row-reverse; 
   justify-content: space-between;
-  margin: 40px auto;
   position: relative;
 }
 
@@ -304,4 +301,32 @@ span {
   margin: 10px;
 }
 
+.q-question-title-container {
+      display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
+.qq-flexbox {
+  display: flex;
+  justify-content: space-between;
+
+}
+
+.q-section-left-column {
+  width: 66%;
+}
+
+.q-section-right-column {
+  width: 33%;
+}
+
+
+.question-text-section {
+display: inline-flex;
+align-items: baseline;
+justify-content: space-around;
+align-content: flex-end;
+flex-wrap: wrap;
+flex-direction: row;
+}

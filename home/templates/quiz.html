@@ -4,129 +4,155 @@ Add Content
 {% endblock title %}
 {% block content %}
 <form id="answer-result" class="answer-result-submission" method="post">
-{% include "categories.html" %}
-{% if q %}
-<h1 align="center">Quiz Question</h1>
-<h3 id="q-level-number">Level Number: {{ q.level_no }}</h3>
+    {% include "categories.html" %}
+    {% if q %}
+    <div class="q-question-title-container">
+        <h1 align="center">Quiz Question&nbsp;</h1>
+        <h1 id="q-level-number"> Level Number: {{ q.level_no }}</h1>
+        <h3 id="current-rating">&nbsp; - Question Rating: {{ q.rating }}</h3>
+    </div>
 
-<h3 id="q-categories">Categories: {{ q.categories|join(', ') }}
-</h3>
-<h3 id="created-by">Created By: {{ q.created_by }}</h3> 
-<input type="button" class="block-user-button btn btn-secondary font-weight-bold" value="Block User" id="block-user-button">
+    <h3 id="q-categories">Categories: {{ q.categories|join(', ') }}
+    </h3>
 
-<input type="button" class="favorate-user-button btn btn-primary font-weight-bold" value="Add to Favorates" id="favorate-user-button">
+    <div class="q-question-section" id="q-question-section">
 
 
-<h3 id="current-rating">Current Rating: {{ q.rating }}</h3>
- <h3>Rate Question:</h3>
-<div class="star-rating">
-    <input type="radio" name="stars" id="star-a" value="1"/>
-    <label for="star-a"></label>
+        <div class="qq-flexbox">
 
-    <input type="radio" name="stars" id="star-b" value="2"/>
-    <label for="star-b"></label>
+            <div id="q-section-left-column">
+                <div id="question-text-section" class="question-text-section">
+                    <h3 id="q-question-h3question">Question: &nbsp; </h3>
+                    <p id="q-question-text">{{ q.question_text }} </p>
+                </div>
+            </div>
 
-    <input type="radio" name="stars" id="star-c" value="3"/>
-    <label for="star-c"></label>
+            {# if q.created_by != user.username #}
+            <div class="q-section-right-column">
+                <h3 id="created-by">Created By: {{ q.created_by }}</h3>
+                <input type="button" class="block-user-button btn btn-secondary font-weight-bold" value="Block User"
+                    id="block-user-button">
 
-    <input type="radio" name="stars" id="star-d" value="4"/>
-    <label for="star-d"></label>
+                <input type="button" class="favorite-user-button btn btn-primary font-weight-bold"
+                    value="Add to Favorites" id="favorite-user-button" data-value={{ q.created_by }}>
 
-    <input type="radio" name="stars" id="star-e" value="5"/>
-    <label for="star-e"></label>
-</div>
 
-<div class="q-question-section" id="q-question-section">
+                <h3>Rate Question:</h3>
+                <div id="starrating" class="star-rating">
+                    <input type="radio" name="stars" id="star-e" value="5" />
+                    <label for="star-e"></label>
 
-    <h1 id="q-question-title" class="q-question-title">Title: {{ q.question_name }}</h1>
+                    <input type="radio" name="stars" id="star-d" value="4" />
+                    <label for="star-d"></label>
 
-    <div id="question-text-section" class="question-text-section">
-    <h3 id="q-categories">Question: </h3>
-    <p id="q-question">{{ q.question_text }} </p>
-</div>
-    <div id="q-image" class="q-image-area">
-        {% for pic in q.pics['question_image'] %}
-        {% if pic %}
-        <tr>
-            <td> <img class="card-img-top" src="{{ pic }}"></td>
-        </tr>
+                    <input type="radio" name="stars" id="star-c" value="3" />
+                    <label for="star-c"></label>
+
+                    <input type="radio" name="stars" id="star-b" value="2" />
+                    <label for="star-b"></label>
+
+                    <input type="radio" name="stars" id="star-a" value="1" />
+                    <label for="star-a"></label>
+                </div>
+            </div>
+            {# endif #}
+        </div>
+
+
+
+
+
+
+
+        <div id="q-image" class="q-image-area">
+            {% for pic in q.pics['question_image'] %}
+            {% if pic %}
+            <tr>
+                <td> <img class="card-img-top" src="{{ pic }}"></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+
+        {% if q.hint or q.pics.hint_image %}
+        <div id="q-hint-area" class="q-hint-section">
+            <button type="button" id="hint-button" class="btn btn-info" data-toggle="collapse"
+                data-target="#q-hint-reveal">Show
+                Hint</button>
+            <div id="q-hint-reveal" class="q-hint-section collapse hide card">
+
+                <h5 class="card-title hint-title">HINT!</h5>
+                <p id="q-hint-reveal-text" class="card-text q-hint-text">hint words go here: {{ q.hint }}</p>
+                <div id="hint-image-area" class="hint-image-area">
+                    {% for pic in q.pics['hint_image'] %}
+                    {% if pic %}
+                    <tr>
+                        <td> <img class="card-img-top hint-image" src="{{ pic }}"></td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+
+                </div>
+
+
+            </div>
+        </div>
         {% endif %}
-        {% endfor %}
-    </div>
+
+        <div id="q-answer-area" class="q-answer-section">
+            <button type="button" id="answer-button" class="btn btn-info" data-toggle="collapse"
+                data-target="#q-answer-reveal">Show
+                Answer</button>
+
+            <div id="q-answer-reveal" class="q-answer-section collapse hide card">
 
 
-    {% if q.hint or q.pics.hint_image %}
-    <div id="q-hint-area" class="q-hint-section">
-        <button type="button" id="hint-button" class="btn btn-info" data-toggle="collapse" data-target="#q-hint-reveal">Show
-            Hint</button>
-        <div id="q-hint-reveal" class="q-hint-section collapse hide card">
-
-            <h5 class="card-title hint-title">HINT!</h5>
-            <p id="q-hint-reveal-text" class="card-text q-hint-text">hint words go here: {{ q.hint }}</p>
-            <div id="hint-image-area" class="hint-image-area">
-                {% for pic in q.pics['hint_image'] %}
-                {% if pic %}
-                <tr>
-                    <td> <img class="card-img-top hint-image" src="{{ pic }}"></td>
-                </tr>
-                {% endif %}
-                {% endfor %}
-
-            </div>
-
-
-        </div>
-    </div>
-    {% endif %}
-
-    <div id="q-answer-area" class="q-answer-section">
-        <button type="button" id="answer-button" class="btn btn-info" data-toggle="collapse" data-target="#q-answer-reveal">Show
-            Answer</button>
-
-        <div id="q-answer-reveal" class="q-answer-section collapse hide card">
-
-
-            {# {% if q.pics['answer_pics'][0] %} #}
-            {# <!-- {% endif %} --> #}
-            <h5 class="card-title">ANSWER:</h5>
-            <p id="q-answer-reveal-text" class="card-text q-answer-text"> {{ q.answer }}</p>
-            <div id="answer-image" class="answer-image-area">
-                {% for pic in q.pics['answer_pics'] %}
-                {% if pic %}
-                <tr>
-                    {{ pic }}
-                    <td> <img class="answer-img" src="{{ pic }}"></td>
-                </tr>
-                {% endif %}
-                {% endfor %}
+                {# {% if q.pics['answer_pics'][0] %} #}
+                {# <!-- {% endif %} --> #}
+                <h5 class="card-title">ANSWER:</h5>
+                <p id="q-answer-reveal-text" class="card-text q-answer-text"> {{ q.answer }}</p>
+                <div id="answer-image" class="answer-image-area">
+                    {% for pic in q.pics['answer_pics'] %}
+                    {% if pic %}
+                    <tr>
+                        {{ pic }}
+                        <td> <img class="answer-img" src="{{ pic }}"></td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </div>
             </div>
         </div>
+
+
     </div>
 
+    <div id="q-result-section" class="q-result">
 
-</div>
-
-<div id="q-result-section" class="q-result">
-   
         <input type="hidden" id="quizq-id" name="quizq-id" value={{ q.quizq_id }}>
         <h1>Result?</h1>
-        <input type="submit" name="correct_submit" id="correct-answer-result-button" class="btn btn-success" value="Correct!">
-        <input type="submit" name="incorrect_submit" id="incorrect-answer-result-button" class="btn btn-success" value="Wrong!">
+        <input type="submit" name="correct_submit" id="correct-answer-result-button" class="btn btn-success"
+            value="Correct!">
+        <input type="submit" name="incorrect_submit" id="incorrect-answer-result-button" class="btn btn-success"
+            value="Wrong!">
         &nbsp;
         &nbsp;
-        <input type="submit" name="exclude-question-button" id="exclude-question-button" class="btn btn-success" value="Exclude Question!">
-  
-</div>
+        <input type="submit" name="exclude-question-button" id="exclude-question-button" class="btn btn-success"
+            value="Exclude Question!">
+
+    </div>
 
 
- 
 
-{% else %}
-<center>
-    {# <form id="startquizform" class="start-quiz-form"> #}
-<input type="submit" name="start-quiz" id="start-quiz-button" class="btn btn-lg start-quiz-button btn-success" value="Start!">
 
-</center>
-{% endif %}
+    {% else %}
+    <center>
+        {# <form id="startquizform" class="start-quiz-form"> #}
+            <input type="submit" name="start-quiz" id="start-quiz-button"
+                class="btn btn-lg start-quiz-button btn-success" value="Start!">
+
+    </center>
+    {% endif %}
 </form>
 {% endblock content %}

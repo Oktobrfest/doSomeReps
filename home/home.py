@@ -830,14 +830,14 @@ def unfavorite_user():
     data = request.get_json()  # This will give you a Python dictionary
     user_id = data['user_id']
 
-    unfav_user = get_user(unfav_uid)
+    unfav_user = get_user(user_id)
     usr = get_user(UID)
     
     usr.favorates.remove(unfav_user)
 
     session.commit() 
         
-    msg = "Unblocked User"
+    msg = "Unfavorited User"
     flash(msg, category="success")
     
     response_msg = jsonify('ok')
@@ -852,19 +852,13 @@ def block_user():
     UID = g._login_user.id
     
     block_user_id = request.form.get("block_user_id")
-    
-    blked_usr_qry = select(users).where(users.id == block_user_id)
-    blked_usr_obj = session.execute(blked_usr_qry).first()
-    
-    blocked_user = blked_usr_obj[0]
-    
-    qry = select(users).where(users.id == UID)
-    
-    user_obj = session.execute(qry).first()
-    
-    usr = user_obj[0]
+    blocked_user = get_user(block_user_id)
+    usr = get_user(UID)
     
     usr.blocked_users.append(blocked_user)
+
+    if blocked_user in usr.favorates:
+        usr.favorates.remove(blocked_user)
     
     session.add(usr)
     session.commit() 
@@ -878,22 +872,9 @@ def block_user():
 @login_required
 def unblock_user():
     UID = g._login_user.id
-    
     block_user_id = request.form.get("blk_user_id")
-    
-    block_user_id_int = int(float(block_user_id))
-        
-    blked_usr_qry = select(users).where(users.id == block_user_id_int)
-    
-    blked_usr_obj = session.execute(blked_usr_qry).first()
-    
-    blocked_user = blked_usr_obj[0]
-    
-    qry = select(users).where(users.id == UID)
-    
-    user_obj = session.execute(qry).first()
-    
-    usr = user_obj[0]
+    blocked_user = get_user(block_user_id)
+    usr = get_user(UID)
     
     usr.blocked_users.remove(blocked_user)
 
