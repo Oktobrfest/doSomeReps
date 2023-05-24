@@ -15,7 +15,7 @@
     <ul>
       {% for key, value in favorites.items() %}
       {# include unfavorite button #}
-      <li class="form-inline">
+      <li class="form-inline" id="fav-user-id-{{ key }}-row">
         <h5 class="mb-1 favorite-user-name" id="favorite-usr-{{ key }}">{{ value }}</h5> &nbsp
         <input type="button" data-unfav-usr="{{ key }}" class="btn btn-primary font-weight-bold unfavorite-user-button"
           value="Remove" id="unfavorite-usr-{{ key }}">

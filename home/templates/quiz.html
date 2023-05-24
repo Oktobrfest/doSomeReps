@@ -19,7 +19,6 @@ Add Content
 
 
         <div class="qq-flexbox">
-
             <div id="q-section-left-column">
                 <div id="question-text-section" class="question-text-section">
                     <h3 id="q-question-h3question">Question: &nbsp; </h3>
@@ -29,12 +28,12 @@ Add Content
 
             {# if q.created_by != user.username #}
             <div class="q-section-right-column">
-                <h3 id="created-by">Created By: {{ q.created_by }}</h3>
+                <h3 id="created-by">Created By: {{ q.created_by_username }}</h3>
                 <input type="button" class="block-user-button btn btn-secondary font-weight-bold" value="Block User"
                     id="block-user-button">
 
                 <input type="button" class="favorite-user-button btn btn-primary font-weight-bold"
-                    value="Add to Favorites" id="favorite-user-button" data-value={{ q.created_by }}>
+                    value="Add to Favorites" id="favorite-user-button" data-value={{ q.created_by_id }}>
 
 
                 <h3>Rate Question:</h3>
@@ -55,6 +54,15 @@ Add Content
                     <label for="star-a"></label>
                 </div>
             </div>
+
+            <div id="provided-answer-section" class="provided-answer-area">
+                <input type="textarea" name="provided-ansewer" id="provided-answer-field" class="provided-answer-field">
+                <label for="provided-answer-field">Answer:</label> 
+            </div>
+
+
+
+
             {# endif #}
         </div>
 
@@ -151,7 +159,6 @@ Add Content
         {# <form id="startquizform" class="start-quiz-form"> #}
             <input type="submit" name="start-quiz" id="start-quiz-button"
                 class="btn btn-lg start-quiz-button btn-success" value="Start!">
-
     </center>
     {% endif %}
 </form>

@@ -172,10 +172,10 @@ window.onload = (event) => {
     }
 
     if (window.location.pathname === '/quiz') {
-        const add_favorite_button = document.querySelector("#favorate-user-button");
+        const add_favorite_button = document.querySelector("#favorite-user-button");
         add_favorite_button.addEventListener('click', addFavoriteUser);
-       }
- }
+    }
+}
 var searchq = flask_util.url_for('home.searchq');
 
 // submit search form data via json to backend
@@ -708,7 +708,7 @@ var unfavorite_user = flask_util.url_for('home.unfavorite_user');
 function unFavoriteUser(ev) {
     ev.preventDefault();
     const user_id = ev.target.getAttribute('data-unfav-usr');
-   
+
     // const formData = new FormData();
     // formData.append('user_id', usr_id);
 
@@ -728,8 +728,11 @@ function unFavoriteUser(ev) {
         .then(data => {
             if (data == 'ok') {
                 // remove the row from the table
-                let row = ev.target.parentElement.parentElement;
-                row.parentElement.removeChild(row);
+                let remove_button = ev.target;
+                let user_id_no = remove_button.getAttribute('data-unfav-usr');
+                let row_id = "fav-user-id-" + user_id_no + "-row";
+                let remove_row = document.getElementById(row_id);
+                remove_row.style.display = 'None'; 
             } else {
                 alert("Error unfavoriting user.");
             }
@@ -888,12 +891,38 @@ function saveToQue(ev) {
 
 }
 
+var FAV_USER_URL = flask_util.url_for('home.fav_user');
 
 function addFavoriteUser(ev) {
     ev.preventDefault();
-    
-    // get the blocked user id
-    
+    const fav_user_id = ev.target.getAttribute('data-value');
+
+    fetch(FAV_USER_URL, {
+        method: 'POST',
+        body: fav_user_id,
+        enctype: 'text/plain'
+    }).then(response => {
+        if (!response.ok) {
+            throw new Error(`Http error! status: ${response.status}`);
+        }
+        return response.json();
+    }).then(data => {
+        if (data == 'ok') {
+            // hide the favorite user button
+            const fav_user_button = document.querySelector('#favorite-user-button');
+            fav_user_button.style.display = 'none';
+        } else {
+            throw new Error(`Server returned response other than ok for favoriting a user. status: ${data}`)
+        };
+
+    }
+    ).catch(
+        error => {
+            console.log(error);
+        }
+    );
+
+}
 
 
 

@@ -147,6 +147,7 @@ class quizq(Base):
     level_no = sa.Column(Integer, ForeignKey("level.level_no"), nullable=False)
     answered_on = sa.Column(sa.DateTime, index=False, unique=False, nullable=True)
     correct = sa.Column(Bool, nullable=True)
+    provided_answer = sa.Column(sa.String(600), primary_key=False, unique=False, nullable=True)
     
     referenced_question = relationship("question", back_populates="quizqs")
     

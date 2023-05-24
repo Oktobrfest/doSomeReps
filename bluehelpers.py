@@ -175,11 +175,11 @@ def get_quizes(selected_cats, UID):
                 "question_text": r.question.question_text,
                 "hint": r.question.hint,
                 "answer": r.question.answer,
-                "created_by": creator_username,
+                "created_by_id": r.question.created_by,
+                "created_by_username": creator_username,
                 "rating": rating,
                 "level_no": r.quizq.level_no,
                 "categories": catz,
-                "catz_DEF_REDUNDANT": catz,
                 "pics": pics,
             }
 

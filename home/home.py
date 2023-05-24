@@ -79,7 +79,7 @@ def about():
     """About us page."""
    
     
-    # catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
+    catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
     
     
     return render_template(
@@ -299,7 +299,8 @@ def quiz():
         correct_submit = request.form.get("correct_submit")
         quizq_id = request.form.get("quizq-id")
         start_quiz = request.form.get("start-quiz")
-
+        provided_answer = request.form.get("provided-answer")        
+        
         # if it's a correct/incorrect answer
         if (start_quiz == None) and (
             (correct_submit == "Correct!") or (incorrect_submit == "Wrong!")
@@ -316,7 +317,7 @@ def quiz():
             update_stmt = (
                 update(quizq)
                 .where(quizq.quizq_id == current_quiz[0].quizq_id)
-                .values(answered_on=time_now)
+                .values(answered_on=time_now, provided_answer = provided_answer)
             )
 
             if correct_submit == "Correct!":
@@ -820,8 +821,31 @@ def searchquefilters():
     msg = "Search Completed"
     flash(msg, category="success")
     return search_response
-       
+
+
+@home.route("/fav_user", methods=["POST"], endpoint="fav_user")
+@login_required
+def fav_user():
+    UID = g._login_user.id
+   # because you sent the data via text/plain, It needs decoding.
+    data = request.data.decode("utf-8")
+    user_id = data
+
+    fav_user = get_user(user_id)
+    usr = get_user(UID)
     
+    usr.favorates.append(fav_user)
+
+    session.commit() 
+        
+    msg = "Question creator added to your favorites list"
+    flash(msg, category="success")
+    
+    response_msg = jsonify('ok')
+    
+    return response_msg 
+
+
 @home.route("/unfavorite_user", methods=["POST"], endpoint="unfavorite_user")
 @login_required
 def unfavorite_user():
@@ -843,8 +867,7 @@ def unfavorite_user():
     response_msg = jsonify('ok')
     
     return response_msg      
-           
-         
+                    
          
 @home.route("/block_user", methods=["POST"], endpoint="block_user")
 @login_required
