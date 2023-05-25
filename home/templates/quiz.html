@@ -9,7 +9,12 @@ Add Content
     <div class="q-question-title-container">
         <h1 align="center">Quiz Question&nbsp;</h1>
         <h1 id="q-level-number"> Level Number: {{ q.level_no }}</h1>
-        <h3 id="current-rating">&nbsp; - Question Rating: {{ q.rating }}</h3>
+        <h3 id="current-rating">&nbsp; - Question Rating: {{ q.rating }} &nbsp; </h3>
+
+        <div id="singlestar" class="star-rating">
+            <input type="radio" name="stars" id="star-f" value="1" checked="true"/>
+            <label for="star-f"></label>
+        </div>
     </div>
 
     <h3 id="q-categories">Categories: {{ q.categories|join(', ') }}
@@ -55,21 +60,13 @@ Add Content
                 </div>
             </div>
 
-            <div id="provided-answer-section" class="provided-answer-area">
-                <input type="textarea" name="provided-ansewer" id="provided-answer-field" class="provided-answer-field">
-                <label for="provided-answer-field">Answer:</label> 
-            </div>
+
 
 
 
 
             {# endif #}
         </div>
-
-
-
-
-
 
 
         <div id="q-image" class="q-image-area">
@@ -109,6 +106,19 @@ Add Content
         {% endif %}
 
         <div id="q-answer-area" class="q-answer-section">
+
+            <div id="provided-answer-section" class="provided-answer-area">
+                <h3><label for="provided-answer-field">Your Answer:</label></h3>
+
+                <textarea name="provided-ansewer" id="provided-answer-field" class="provided-answer-field"
+                    rows="4"></textarea>
+
+                <input type="button" class="answer-submit-btn btn-primary" id="answer-submit-btn" value="Submit Answer"
+                    name="submit-answer-button">
+            </div>
+
+
+
             <button type="button" id="answer-button" class="btn btn-info" data-toggle="collapse"
                 data-target="#q-answer-reveal">Show
                 Answer</button>

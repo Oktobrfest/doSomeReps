@@ -330,3 +330,50 @@ align-content: flex-end;
 flex-wrap: wrap;
 flex-direction: row;
 }
+
+#provided-answer-field {
+  width: 550px;
+}
+
+#provided-answer-section {
+  display: Flex;
+  align-items: flex-start
+}
+
+.q-section-right-column { 
+  border: 2px solid;
+  margin: 0.3rem;
+  padding: 0.5rem;
+  border-radius: 15px;
+  background-color: pink;
+}
+
+// Single star *after question rating number
+/* #singlestar {
+  display: flex;
+  align-items: center;
+  flex-direction: row-reverse; 
+  justify-content: space-between;
+  position: relative;
+} */
+
+#singlestar label {
+  height: 5em;  /* adjust as needed to match the size of your h1 */
+}
+
+#singlestar label::before {
+  font-size: 1.5em; /* adjust this value to change the size of the star */
+  line-height: 1em; /* you may also need to adjust line-height to align the star vertically */
+  display: inline-flex;
+  align-items: start;
+  align-self: start;;
+
+}
+
+#singlestar {
+  display: inline-flex;
+  align-items: start;
+  align-self: start;;
+
+}
+

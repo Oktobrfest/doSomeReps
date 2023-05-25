@@ -140,7 +140,7 @@ def homepage():
         catz_chart=catz_chart,
         )
 
-
+# creates a new question
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
 @login_required
 def addcontent():
@@ -237,6 +237,7 @@ def allowed_file(filename):
         and filename.split(".", 1)[1].lower() in Config.ALLOWED_EXTENSIONS
     )
 
+# adds a new category
 @home.route("/add", methods=["POST"], endpoint="add")
 @login_required
 def add():
@@ -405,11 +406,12 @@ def quemore():
     UID = g._login_user.id
     category_list = get_all_categories()
     description = "Que More Questions"
-    selected_categories = get_session("que_category_names")
+    search_que_filters = get_session("search_que_filters")
+    selected_categories = search_que_filters['catz']
 
     # if form.validate_on_submit():
     #     qty_to_que = form.qty_to_que.data
-    #     que_more_submit = form.que_more_submit.data
+    #     que_moDoing school on Zoe the the  in the sumre_submit = form.que_more_submit.data
     #     selected_categories = request.form.getlist("category_name")
 
     #     # validate that categories have been selected
@@ -484,6 +486,7 @@ def editquestions():
         q=q,
     )
 
+# not quemore search button
 @home.route("/searchq", methods=["POST"], endpoint="searchq")
 @login_required
 def searchq():
@@ -491,8 +494,7 @@ def searchq():
     UID = copy.copy(UID1)
     # get The submitted Json values
     filters = request.get_json()
-    set_session("filter_categories", filters)
-
+    
     filter_cats = filters["search-categories"]
 
     # query db
@@ -578,6 +580,8 @@ def getq():
     # response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
+
+#save question changes within edit questions page
 @home.route("/saveq", methods=["POST"], endpoint="saveq")
 @login_required
 def saveq():
@@ -709,12 +713,15 @@ def delete_pic(pic):
             flash('Failed to delete picture from S3 Bucket!', category="failure")     
             
                         
-            
+            # In the quemore page
 @home.route("/searchquefilters", methods=["POST"], endpoint="searchquefilters")
 @login_required
 def searchquefilters():
     UID = g._login_user.id
     filters = request.get_json()
+
+    set_session("search_que_filters", filters)
+
     
     question_que = []
     if filters['personal'] == True:
@@ -817,6 +824,10 @@ def searchquefilters():
         }
         search_results.append(q)
 
+    # add selected categories to the session
+   #   set_session("quiz_category_names", filters['catz'])
+    
+    
     search_response = jsonify(search_results)
     msg = "Search Completed"
     flash(msg, category="success")
