@@ -1,3 +1,76 @@
+//  ACTUALLY RUNS JUST ONCE!!! 
+window.onload = (event) => {
+
+    // grab ALL the collapse buttons
+    const collapseButtons = document.querySelectorAll('#collapse-button');
+    // loop through them and add the event listener
+    collapseButtons.forEach(function (button) {
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            hideShowChange(button);
+        });
+    });
+
+    if (window.location.pathname === '/') {
+        // unfavorate button
+        const unfavorite_button = document.querySelectorAll(".unfavorite-user-button");
+        unfavorite_button.forEach(function (button) {
+            button.addEventListener('click', unFavoriteUser);
+        });
+        // unblock button
+        const unblock_button = document.querySelectorAll(".unblock-user-button");
+        unblock_button.forEach(function (button) {
+            button.addEventListener('click', unBlockUser);
+        });
+    }
+
+    if (window.location.pathname === '/quemore') {
+        const que_more_search = document.querySelector("#que-more-search-button");
+        que_more_search.addEventListener('click', queMoreSearch);
+
+        const que_qty_field = document.getElementById('qty_to_que');
+        que_qty_field.value = 10;
+
+        const save_to_que_button = document.querySelector("#save-to-que");
+        save_to_que_button.addEventListener('click', saveToQue);
+
+
+
+
+    }
+    // const showHideButton = document.getElementById('collapse-button');
+    // if (showHideButton) {
+    //     showHideButton.onclick = function (event) {
+    //         event.preventDefault();
+    //         hideShowChange(showHideButton);
+    //     };
+    // }
+    // exclude other pages from loading this
+    if (window.location.pathname === '/editquestions') {
+        // select the search form
+        const filterform = document.getElementById('search-filters-form');
+        // select the search button
+        const searchbutton = document.getElementById('search-button');
+        searchbutton.addEventListener('click', clearMsgArea);
+        // process the search
+        if (searchbutton) {
+            searchbutton.onclick = function () { getSearchData(filterform) };
+        };
+        const save_question_button = document.querySelector("#save-question-button");
+        save_question_button.addEventListener('click', clearMsgArea);
+    }
+
+    if (window.location.pathname === '/quiz') {
+        const add_favorite_button = document.querySelector("#favorite-user-button");
+        add_favorite_button.addEventListener('click', addFavoriteUser);
+
+        const submit_answer_button = document.getElementById('answer-submit-btn');
+        submit_answer_button.addEventListener('click', submitAnswer, {
+            once: true
+        }
+        );
+    }
+}
 
 function highlight(x) {
     x.style.borderStyle = "dotted solid double dashed";
@@ -109,73 +182,7 @@ function start_qz(ev) {
 //     });
 //   });
 
-//  ACTUALLY RUNS JUST ONCE!!! 
-window.onload = (event) => {
 
-    // grab ALL the collapse buttons
-    const collapseButtons = document.querySelectorAll('#collapse-button');
-    // loop through them and add the event listener
-    collapseButtons.forEach(function (button) {
-        button.addEventListener('click', function (event) {
-            event.preventDefault();
-            hideShowChange(button);
-        });
-    });
-
-    if (window.location.pathname === '/') {
-        // unfavorate button
-        const unfavorite_button = document.querySelectorAll(".unfavorite-user-button");
-        unfavorite_button.forEach(function (button) {
-            button.addEventListener('click', unFavoriteUser);
-        });
-        // unblock button
-        const unblock_button = document.querySelectorAll(".unblock-user-button");
-        unblock_button.forEach(function (button) {
-            button.addEventListener('click', unBlockUser);
-        });
-    }
-
-    if (window.location.pathname === '/quemore') {
-        const que_more_search = document.querySelector("#que-more-search-button");
-        que_more_search.addEventListener('click', queMoreSearch);
-
-        const que_qty_field = document.getElementById('qty_to_que');
-        que_qty_field.value = 10;
-
-        const save_to_que_button = document.querySelector("#save-to-que");
-        save_to_que_button.addEventListener('click', saveToQue);
-
-
-
-
-    }
-    // const showHideButton = document.getElementById('collapse-button');
-    // if (showHideButton) {
-    //     showHideButton.onclick = function (event) {
-    //         event.preventDefault();
-    //         hideShowChange(showHideButton);
-    //     };
-    // }
-    // exclude other pages from loading this
-    if (window.location.pathname === '/editquestions') {
-        // select the search form
-        const filterform = document.getElementById('search-filters-form');
-        // select the search button
-        const searchbutton = document.getElementById('search-button');
-        searchbutton.addEventListener('click', clearMsgArea);
-        // process the search
-        if (searchbutton) {
-            searchbutton.onclick = function () { getSearchData(filterform) };
-        };
-        const save_question_button = document.querySelector("#save-question-button");
-        save_question_button.addEventListener('click', clearMsgArea);
-    }
-
-    if (window.location.pathname === '/quiz') {
-        const add_favorite_button = document.querySelector("#favorite-user-button");
-        add_favorite_button.addEventListener('click', addFavoriteUser);
-    }
-}
 var searchq = flask_util.url_for('home.searchq');
 
 // submit search form data via json to backend
@@ -732,7 +739,7 @@ function unFavoriteUser(ev) {
                 let user_id_no = remove_button.getAttribute('data-unfav-usr');
                 let row_id = "fav-user-id-" + user_id_no + "-row";
                 let remove_row = document.getElementById(row_id);
-                remove_row.style.display = 'None'; 
+                remove_row.style.display = 'None';
             } else {
                 alert("Error unfavoriting user.");
             }
@@ -923,6 +930,17 @@ function addFavoriteUser(ev) {
     );
 
 }
+
+
+
+function submitAnswer() {
+    const provided_answer_text = document.getElementById('provided-answer-field');
+    provided_answer_text.classList.add("disabled");
+    provided_answer_text.readOnly = true;
+}
+
+
+
 
 
 

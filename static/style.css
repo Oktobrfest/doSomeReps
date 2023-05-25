@@ -331,14 +331,14 @@ flex-wrap: wrap;
 flex-direction: row;
 }
 
-#provided-answer-field {
+.answer-text {
   width: 550px;
+  padding: 0.2em;
+  margin: 0.2em;
+  minimum-width: 300px !important;
 }
 
-#provided-answer-section {
-  display: Flex;
-  align-items: flex-start
-}
+
 
 .q-section-right-column { 
   border: 2px solid;
@@ -374,6 +374,70 @@ flex-direction: row;
   display: inline-flex;
   align-items: start;
   align-self: start;;
-
 }
+
+.bigbtn {
+  align-self: center;
+  height: 100px;
+  margin: 0.5em;
+  padding: 1.0em;
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+.btn3d {
+  /* background-color: #337ab7;
+  color: #fff; */
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.3);
+}
+
+.provided-answer-field.disabled {
+  background-color: #f2f2f2;
+  color: #808080;
+}
+
+.q-answer-container {
+  display: flex;
+  flex-direction: row;
+  border: none !important;
+  padding: 0.5em;
+  margin: 0.5em;
+}
+
+#q-answer-reveal-text {
+  border: 2px solid;
+  min-height: 6em;
+}
+
+.q-answer-container {
+  display: Flex;
+  align-items: flex-start
+}
+
+@media screen and (max-width: 768px) {
+  .q-answer-container {
+    flex-direction: column;
+  }
+}
+
+.button-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+#incorrect-answer-result-button {
+  background-color: #f90000;
+}
+
+
+
+
+
+
+
+
 
