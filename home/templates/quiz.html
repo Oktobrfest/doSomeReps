@@ -7,9 +7,9 @@ Add Content
     {% include "categories.html" %}
     {% if q %}
     <div class="q-question-title-container">
-        <h1 align="center">Quiz Question&nbsp;</h1>
-        <h1 id="q-level-number"> Level Number: {{ q.level_no }}</h1>
-        <h3 id="current-rating">&nbsp; - Question {% if q.rating == 0 %}
+        <h1 class="hide-if-small" align="center">Quiz Question&nbsp;</h1>
+        <h1 class="shrink-if-small" id="q-level-number"> Level Number: {{ q.level_no }}</h1>
+        <h3 class="shrink-if-small" id="current-rating">&nbsp; - Question {% if q.rating == 0 %}
             Unrated </h3>
         {% else %}
         Rating: {{ q.rating }}
@@ -26,12 +26,17 @@ Add Content
 
     </div>
 
-    <h3 id="q-categories">Categories: {{ q.categories|join(', ') }}
+    <h3 id="q-categories">Categories:
+        {% for cat in q.categories %}
+        <li
+            class="search-result-category-item list-inline-item list-group-item-secondary list-group-item-sm text-center questions-category ">
+            {{ cat }}
+        </li>
+        {% endfor %}
+        <!-- {{ q.categories|join(', ') }} -->
     </h3>
 
     <div class="q-question-section" id="q-question-section">
-
-
         <div class="qq-flexbox">
             <div id="q-section-left-column">
                 <div id="question-text-section" class="question-text-section">

@@ -1,7 +1,29 @@
 {% extends "base.html" %} {% block title %}Login{% endblock %} 
 {% block content %}
+
+<div class="site-advertisement" id="title-container">
+  <head>
+    <h2 class="about-page-heading">
+      DoSomeReps.com is a 100% free spaced repetition learning platform you can use to study any subject matter!
+    </h2>
+
+
+
+   
+  </head>
+</div>
+
+<div class="login-description-text">
+    <h5>
+      This site takes the guess work out of having to worry about how often you should review study material and automatically presents you with questions at key intervals right before your brain begins to forget the key facts. This site uses experimentally derived time gaps that have been scientifically proven to maximize the retention of information. 
+    </h5>
+
+  </div>
+
+
     <form method="POST">
       <h3 align="center">Login</h3>
+      <div class="login-container" id="login-area">
       <div class="form-group">
         <label for="username">Username</label>
         <input
@@ -19,10 +41,10 @@
           class="form-control"
           id="password"
           name="password"
-          placeholder="Enter password"
-        />
+          placeholder="Enter password"/>
       </div>
-      <br />
+       <br />
       <button type="submit" class="btn btn-primary">Login</button>
+      </div>
     </form>
     {% endblock %}

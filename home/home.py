@@ -61,6 +61,8 @@ from flask import send_from_directory
 from ..homeforms import *
 from ..bluehelpers import *
 import json
+import math
+from ..charts import *
 
 @app.route("/favicon.ico")
 def favicon():
@@ -79,66 +81,89 @@ def about():
     """About us page."""
    
     
-    catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
+    # catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
     
     
     return render_template(
         "about.html",
         title="About",
         description="About us page.",
-        catz_chart=catz_chart,
+        #catz_chart=catz_chart,
     )
 
 @home.route("/", methods=["GET", "POST"], endpoint="homepage")
-@login_required
 def homepage():
     """Homepage."""
-    UID1 = g._login_user.id
-    UID = copy.copy(UID1)
-    
-    user_qry = select(users).where(users.id == UID)
-    
-    user = session.execute(user_qry).scalars().first()
+    if current_user.is_authenticated:
+        # Render a homepage for authenticated users
+        UID1 = g._login_user.id
+        UID = copy.copy(UID1)
         
-    favorites = {}
-    blocked = {}
-    for u in user.favorates:
-        favorites[u.id] = u.username
+        user_qry = select(users).where(users.id == UID)
+        
+        user = session.execute(user_qry).scalars().first()
+            
+        favorites = {}
+        blocked = {}
+        for u in user.favorates:
+            favorites[u.id] = u.username
+        
+        for b in user.blocked_users:
+            blocked[b.id] = b.username
+        
+        
+        selected_cats = get_all_categories()
+        
+        que_list = get_quizes(selected_cats, UID)
+
+        category_count = {}
+        for q in que_list:
+            for c in q['categories']: 
+                if c in category_count:
+                    category_count[c] += 1
+                else:
+                    category_count[c] = 1       
+
+        sorted_cats = sorted(category_count.items(), lambda x: x[1], reverse = True)
+        sorted_cats_dict = dict(sorted_cats)
+        limited_sorted_cats = sorted_cats_dict[:1]
+
+        x_arr, y_arr = split_dict(category_count)
+              
+        catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
+        
+        return render_template(
+            "home.html",
+            title="Homepage",
+            description=".",
+            favorites=favorites,
+            blocked=blocked,
+            user=current_user,
+            quiz_q_count=len(que_list),
+            catz_chart=catz_chart,
+            )
+    else:
+        # categories graph
+        # get all questions that are public
+        questions_qry = select(question).where(question.privacy==False)
+        questions_sql_models = session.execute(questions_qry).scalars().all()
+        questions_list = listify_sql(questions_sql_models)
+        questions_dict = tally_catz(questions_list)
+        categories, question_count = split_dict(questions_dict)
+        categories_graph = render_chart(categories, question_count, 'Categories', 'Questions')
+
+        repetition_days_real = list(session.execute(select(level.days_hence)).scalars().all())
+        forgetting_chart = rep_vs_forget(repetition_days_real)
+
+        # Render a different homepage for unauthenticated users
+        return render_template('landing.html',
+                               user=current_user,
+                               forgetting_chart = forgetting_chart,
+                               categories_graph = categories_graph)
+
+
+
     
-    for b in user.blocked_users:
-        blocked[b.id] = b.username
-    
-    
-    selected_cats = get_all_categories()
-    
-    que_list = get_quizes(selected_cats, UID)
-    
-    category_count = {}
-    for q in que_list:
-        for c in q["categories"]: 
-            if c in category_count:
-                category_count[c] += 1
-            else:
-                                category_count[c] = 1       
-    
-    x_arr = []
-    y_arr = []
-    for k,v in category_count.items():
-        x_arr.append(k)
-        y_arr.append(v)
-    
-    catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
-      
-    return render_template(
-        "home.html",
-        title="Homepage",
-        description=".",
-        favorites=favorites,
-        blocked=blocked,
-        user=current_user,
-        quiz_q_count=len(que_list),
-        catz_chart=catz_chart,
-        )
 
 # creates a new question
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")

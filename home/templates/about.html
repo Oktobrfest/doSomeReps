@@ -2,22 +2,36 @@
 {% block title %}About us{% endblock title %}
 {% block content %}
 
+<p>
+  This site uses a question/answer format of learning which has been shown to help activate your brain on a deeper level than by other methodologies like passively reading notes or watching videos. In order to optimally learn you need to engauge your brain! Sorry, I know it hurts sometimes, but no pain no gain!
+</p>
 
+
+<p class="about-page-sub-heading">
+  There is some pre-existing material that you may be interested in studying on this site, however it is intended that you upload materials your interested in studying and share it with the community. Shared material gets rated by the community and you could choose to block users or follow others to learn from their uploaded content. You can also choose to keep everything you upload completely private. If some days you only want to study some categories instead of others, just unselect those categories in the take quiz page. 
+</p>
 
 
 <div>
-  <div id="chart-area" class="chart-area">
+  <!-- <div id="chart-area" class="chart-area">
     <h3 id="chart-title" class="chart-title">Categories and Question Count
     </h3>
     <div id="chart-container" class="chart-container">
-        <body>
+
+      <body>
         <img src="data:image/png;base64,{{ catz_chart }}" />
-    </body>
+      </body>
 
 
+    </div>
+  </div> -->
+
+  <div class="spaced-repetition-durations-graph">
+    <p>
+      The spaced durations are displayed below.
+    </p>
   </div>
 
 </div>
-
 
 {% endblock content %}

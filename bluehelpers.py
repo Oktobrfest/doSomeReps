@@ -193,7 +193,7 @@ def render_chart(x_arr, y_arr, x_label, y_label):
     x = np.array(x_arr)
     y = np.array(y_arr)
     
-
+    
     
     # Create the bar chart
     fig, ax = plt.subplots()
@@ -202,7 +202,10 @@ def render_chart(x_arr, y_arr, x_label, y_label):
          # Set the axis labels
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
-    
+
+    if y_label == 'Questions':
+        ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+
     # Render the chart to a base64-encoded string
     buffer = BytesIO()
     fig.savefig(buffer, format='png')
@@ -225,3 +228,35 @@ def get_user(user_id):
     
     user = usr_obj[0]
     return user
+
+
+# def listify_sql(models):
+#     obj_list = []
+#     obj_list.extend(o for o in models)
+#     return obj_list
+
+def listify_sql(models):
+    obj_list = list(models)
+    return obj_list
+
+
+def tally_catz(questions_list):
+    category_count = {}
+    for q in questions_list:
+        for c in q.categories: 
+            cat = c.category_name
+            if cat in category_count:
+                category_count[cat] += 1
+            else:
+                category_count[cat] = 1       
+    return category_count
+
+def split_dict(dict):        
+    x_arr = []
+    y_arr = []
+    for k,v in dict.items():
+        x_arr.append(k)
+        y_arr.append(v)
+    return x_arr, y_arr
+
+

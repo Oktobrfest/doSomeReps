@@ -931,16 +931,27 @@ function addFavoriteUser(ev) {
 
 }
 
-
-
 function submitAnswer() {
     const provided_answer_text = document.getElementById('provided-answer-field');
     provided_answer_text.classList.add("disabled");
     provided_answer_text.readOnly = true;
+    
+    const submit_answer_button = document.getElementById('answer-submit-btn');
+    submit_answer_button.style.display = 'none';
+
+    setTimeout(function() {
+        scrollToBottom();
+      }, 200);
 }
 
+//scroll to bottom of quiz page
+function  scrollToBottom() {
 
+    document.documentElement.scrollTop = document.documentElement.scrollHeight;
+    document.body.scrollTop = document.body.scrollHeight;
 
+   // window.scrollTo( 0, document.body.scrollHeight);
+}
 
 
 
