@@ -334,10 +334,31 @@ def quiz():
         selected_categories = request.form.getlist("category_name")
         incorrect_submit = request.form.get("incorrect_submit")
         correct_submit = request.form.get("correct_submit")
-        quizq_id = request.form.get("quizq-id")
+        quizq_id = int(request.form.get("quizq-id"))
         start_quiz = request.form.get("start-quiz")
         provided_answer = request.form.get("provided-answer")        
-        
+        exclude_question = request.form.get("exclude-question-button")
+
+        # exclude question                                    
+        if ((start_quiz == None) and 
+            (exclude_question == "exclude!")):
+            cur_user = get_user(UID)
+
+            # get current question id via quiz_id
+            q_id_qry = select(quizq.question_id).where(quizq.quizq_id == quizq_id)
+            q_id = session.execute(q_id_qry).scalar()
+
+            excluded_q_qry = select(question.question_id).where(question.question_id == q_id)
+
+            excluded_q_obj = session.execute(excluded_q_qry).first()
+
+
+            cur_user.excluded_questions.append(excluded_q_obj)
+
+            session.add(cur_user)
+            session.commit() 
+
+
         # if it's a correct/incorrect answer
         if (start_quiz == None) and (
             (correct_submit == "Correct!") or (incorrect_submit == "Wrong!")
@@ -443,11 +464,15 @@ def quemore():
     category_list = get_all_categories()
     description = "Que More Questions"
     search_que_filters = get_session("search_que_filters")
-    selected_categories = search_que_filters['catz']
-
+    if search_que_filters == 'Not set':
+        selected_categories = []
+    else:
+        selected_categories = search_que_filters['catz']
+  
+    # OLD WAY- DELETE THIS PROBABLY
     # if form.validate_on_submit():
     #     qty_to_que = form.qty_to_que.data
-    #     que_moDoing school on Zoe the the  in the sumre_submit = form.que_more_submit.data
+    #     # ???_submit = form.que_more_submit.data
     #     selected_categories = request.form.getlist("category_name")
 
     #     # validate that categories have been selected

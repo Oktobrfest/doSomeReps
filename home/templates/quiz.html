@@ -134,7 +134,7 @@ Add Content
                         <h4><strong> Submit <br> Answer</strong></h4>
                     </button>
                     <button type="submit" name="exclude-question-button" id="exclude-question-button"
-                        class="btn btn-success bigbtn btn3d">
+                        class="btn btn-success bigbtn btn3d" value="exclude">
                         <h4><strong>Exclude <br> Question!</strong> </h4>
                     </button>
                 </div>
@@ -153,8 +153,7 @@ Add Content
                         {% for pic in q.pics['answer_pics'] %}
                         {% if pic %}
                         <tr>
-                            {{ pic }}
-                            <td> <img class="answer-img" src="{{ pic }}"></td>
+                            <td> <img class="answer-img picture" src="{{ pic }}"></td>
                         </tr>
                         {% endif %}
                         {% endfor %}
@@ -163,11 +162,11 @@ Add Content
                     <div id="q-result-section" class="q-result button-container">
                         <input type="hidden" id="quizq-id" name="quizq-id" value={{ q.quizq_id }}>
                         <button type="submit" name="correct_submit" id="correct-answer-result-button"
-                            class="btn btn-success bigbtn btn3d">
+                            class="btn btn-success bigbtn btn3d" value="Correct!">
                             <h4><strong>Correct!</h4></strong>
                         </button>
                         <button type="submit" name="incorrect_submit" id="incorrect-answer-result-button"
-                            class="btn btn-success bigbtn btn3d">
+                            class="btn btn-success bigbtn btn3d" value="Wrong!">
                             <h4><strong></strong>Wrong!</h4></strong>
                         </button>
                     </div>

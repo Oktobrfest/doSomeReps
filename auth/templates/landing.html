@@ -10,25 +10,19 @@
   </head>
 </div>
 
-<div class="centering-container">
-    <div class="image-container">
-      <img id="edu-tree" src="/static/edu-tree.jpg" type="image" alt="education tree">
+<div id="sign-up-call-to-action" class="sign-up-call-to-action centering-container">
+
+  <div id="image-container" class="image-container">
+    <img id="graduation-hat" src="/static/graduation-hat.png" type="image" alt="Graduation Cap">
   </div>
-
-  <div class="login-section-field">
-
-
-      <div class="login-button-container">
-        <h3 class="login-button-helper-text">Start Learning Properly:</h3>
-        <a href="{{ url_for('auth.login') }}">
-          <button id="login-link-button" class="btn btn-secondary bigbtn btn3d">
-            <h1>Login!</h1>
-          </button>
-        </a>
-      </div>
-  
-  </div>
+  <h3 id="sign-up-title">Sign up now to get started:</h3>
+  <a href="{{ url_for('auth.signup') }}" id="sign-up-link" class="link-button-href">
+    <button id="sign-up-button" class="bigbtn btn btn-secondary btn3d redbtn">
+      <h1 class="button-inner-text">Sign Up!</h1>
+    </button>
+  </a>
 </div>
+
 
 <div class="login-advertizing-row">
   <div class="login-description-text">
@@ -40,6 +34,23 @@
     </h5>
   </div>
 
+</div>
+
+<div class="centering-container">
+    <div class="image-container">
+      <img id="edu-tree" src="/static/edu-tree.jpg" type="image" alt="education tree">
+  </div>
+  <div class="login-section-field">
+      <div class="login-button-container">
+        <h3 class="login-button-helper-text">Start Learning Properly:</h3>
+        <a href="{{ url_for('auth.login') }}">
+          <button id="login-link-button" class="btn btn-secondary bigbtn btn3d redbtn">
+            <h1 class="button-inner-text">Login!</h1>
+          </button>
+        </a>
+      </div>
+  
+  </div>
 </div>
 
 <h5 class="seeking-help">I am looking for partners to help me finish the website faster to make it more appealing and

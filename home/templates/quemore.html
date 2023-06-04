@@ -15,14 +15,14 @@ Add Content
         {% include "quefilters.html" %}
         <div class="form-group m-5">
            
-            <input type="button" class="btn btn-primary font-weight-bold" value="Search" id="que-more-search-button">
+            <input type="button" class="btn btn-primary font-weight-bold typical-spacing" value="&nbsp Search &nbsp" id="que-more-search-button">
 
             {{ form.csrf_token }}
             {{ form.qty_to_que.label("Quantity to Add:")}}
             {{ form.qty_to_que(class="form-control qty-to-que-number-form", value="Quantity to Add:") }}
             {# form.que_more_submit(class="btn btn-primary font-weight-bold", value="OLDBSSave") #}
 
-            <input type="buttin" class="btn btn-primary save-to-que font-weight-bold" value="Save" id="save-to-que">
+            <input type="buttin" class="btn btn-primary save-to-que font-weight-bold typical-spacing" value="Save" id="save-to-que">
 
             
 

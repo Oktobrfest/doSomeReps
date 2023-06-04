@@ -116,7 +116,6 @@ label[for=answer], label[for=hint] {
 
 #sidebar {
   width: 450px;
-  height: 100vh;
   overflow: auto;
   margin: 10px;
   margin-top: 0px !important;
@@ -375,7 +374,7 @@ flex-direction: row;
 
 .bigbtn {
   align-self: center;
-  height: 100px;
+  min-height: 100px;
   margin: 0.5em;
   padding: 1.0em;
   padding-left: 2em;
@@ -396,7 +395,6 @@ flex-direction: row;
 
 .q-answer-container {
   display: flex;
-  flex-direction: row;
   border: none !important;
   padding: 0.5em;
   margin: 0.5em;
@@ -473,9 +471,9 @@ flex-direction: row;
   height: auto;
 }
 
-#login-link-button {
-  background-color: red;
-  min-width: 150px;
+.redbtn {
+  background-color: red!important;
+  min-width: 150px!important;
 }
 
 .login-button-container {
@@ -583,15 +581,11 @@ footer {
     padding-top: 20px; /* Padding at the top of the bottom section */
 }
 
-.btn {
-    color: #ffffff; /* Button text color is white for contrast */
-    background-color: #6c757d; /* Button background color is a lighter grey */
+.button-inner-text {
+  margin: 5px;
+  padding: 5px;
 }
 
-.btn:hover {
-    color: #ffffff; /* Button text color remains white when hovered over */
-    background-color: #5a6268; /* Button background color darkens when hovered over */
+.picture {
+  max-width:100%;
 }
-
-
-
