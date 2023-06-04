@@ -499,6 +499,8 @@ flex-direction: row;
   display: flex;
   justify-content: center; /* Horizontally center the content */
   align-items: center; /* Vertically center the content */
+  margin: 5px;
+  padding: 5px;
 }
 
 #community-image-container {
@@ -549,8 +551,47 @@ flex-direction: row;
 
 }
 
+.typical-spacing {
+  padding: 5px;
+  margin: 5px;
+}
 
 
+footer {
+    background-color: #343a40; /* A dark grey color */
+    color: #ffffff; /* Text color is white for contrast */
+    padding: 20px 0; /* Padding at the top and bottom of the footer */
+    margin-top: 20px; /* Margin at the top of the footer to separate from the content above */
+}
+
+.footer-content {
+    margin: 0 auto; /* Center the content */
+    max-width: 960px; /* Maximum width of the content */
+    padding: 0 20px; /* Padding at the sides of the content */
+}
+
+.footer-content h4 {
+    margin-bottom: 15px; /* Space below the headings */
+}
+
+.footer-content p {
+    margin-bottom: 0; /* Remove the space below paragraphs */
+}
+
+.footer-bottom {
+    border-top: 1px solid #ffffff; /* A border at the top of the bottom section for separation */
+    padding-top: 20px; /* Padding at the top of the bottom section */
+}
+
+.btn {
+    color: #ffffff; /* Button text color is white for contrast */
+    background-color: #6c757d; /* Button background color is a lighter grey */
+}
+
+.btn:hover {
+    color: #ffffff; /* Button text color remains white when hovered over */
+    background-color: #5a6268; /* Button background color darkens when hovered over */
+}
 
 
 

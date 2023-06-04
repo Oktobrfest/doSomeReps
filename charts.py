@@ -34,7 +34,7 @@ def rep_vs_forget(repetition_days_real):
 
     plt.figure(figsize=(10,6))
 
-    plt.plot(x_values, y_values_forgetting_curve, label='Natural Retention / Forgetting Curve')
+    plt.plot(x_values, y_values_forgetting_curve, label='Retention / Ebbinghaus Forgetting Curve')
     plt.plot(x_values, y_values_spaced_repetition, label='Spaced Repetition')
             
     # Add horizontal lines along the labels

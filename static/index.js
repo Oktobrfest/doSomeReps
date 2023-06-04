@@ -34,17 +34,8 @@ window.onload = (event) => {
         const save_to_que_button = document.querySelector("#save-to-que");
         save_to_que_button.addEventListener('click', saveToQue);
 
-
-
-
     }
-    // const showHideButton = document.getElementById('collapse-button');
-    // if (showHideButton) {
-    //     showHideButton.onclick = function (event) {
-    //         event.preventDefault();
-    //         hideShowChange(showHideButton);
-    //     };
-    // }
+
     // exclude other pages from loading this
     if (window.location.pathname === '/editquestions') {
         // select the search form
@@ -70,6 +61,21 @@ window.onload = (event) => {
         }
         );
     }
+
+    if (window.location.pathname === '/about') {
+        let times = document.getElementsByClassName('rep-duration');
+        times.forEach( (t) => {
+            if ( t.value < 1 ) {
+                // convert to hours
+                hours = t.value / 24;
+                t.value = hours;
+            };
+        });
+
+    }
+
+
+
 }
 
 function highlight(x) {

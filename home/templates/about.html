@@ -68,15 +68,15 @@
 
   <div id="about-reps-container" class="about-reps-container text-container">
   <div class="spaced-repetition-durations-title">
-    <p>
-      The spaced durations are displayed below.
-    </p>
+    <h3 id="spaced-repetition-duration-title-text" class="title">
+      Our spaced intervals:
+    </h3>
   </div>
     
     <div id="repetition-days-list" class="repetition-list-container">
       <ul>
         {% for day in days %}
-        <li id="rep-{{ day[0] }}">{{ day[1] }}
+        <li class="rep-duration" id="rep-{{ day[0] }}">{{ day[1] }}
         </li>
         {% endfor %}
       </ul>
@@ -87,7 +87,7 @@
 
 </div>
 
-<div id="why-bother-container" class="width-spaning-text-area">
+<div id="why-bother-container" class="width-spaning-text-area typical-spacing">
 
 <h3 id="why-spaced-reps-title" class="title">Why bother with spaced repetition?</h3>
 <p id="why-spaced-reps-text" class="text-container">Ultimately, spaced repetition helps you permanantly retain what you're studying! By exposing yourself to the same material a few
