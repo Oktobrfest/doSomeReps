@@ -1,40 +1,65 @@
-{% extends "base.html" %} {% block title %}Login{% endblock %} 
+{% extends "base.html" %} {% block title %}Login{% endblock %}
 {% block content %}
 
 <div class="site-advertisement" id="title-container">
+
   <head>
     <h2 class="about-page-heading">
-      DoSomeReps.com is a 100% free spaced repetition learning platform you can use to study any subject matter!
-    </h2>   
+      DoSomeReps is a 100% free spaced repetition learning platform you can use to study any subject matter!
+    </h2>
   </head>
 </div>
 
-<div class="login-description-text">
+<div class="centering-container">
+  <div class="login-section-field">
+    <div class="image-container">
+      <img id="edu-tree" src="/static/edu-tree.jpg" type="image" alt="Image">
+      <div class="login-button-container">
+        <h3 class="login-button-helper-text">Start Learning Properly:</h3>
+        <a href="{{ url_for('auth.login') }}">
+          <button id="login-link-button" class="btn btn-secondary bigbtn btn3d">
+            <h1>Login!</h1>
+          </button>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="login-advertizing-row">
+  <div class="login-description-text">
     <h5>
-      This site takes the guess work out of having to worry about how often you should review study material and automatically presents you with questions at key intervals right before your brain begins to forget the key facts. This site uses experimentally derived time gaps that have been scientifically proven to maximize the retention of information. 
+      Take the guess work out of having to worry about how often you should review study material! We automatically presents you with questions at key intervals right before your brain begins to forget the facts, thus challenging you to recall those near faded memories at just the right time. Our experimentally derived time gaps have
+      been shown to maximize the retention of information with the fewest quantity of repetitions, thus saving you time
+      studying.
     </h5>
   </div>
 
-    <h5 class="seeking-help">I am looking for partners to help me finish the website faster to make it more appealing and convenient to use. Join me by messaging me on github or sending me an email if interested. daveemail@gmx.com</h5>
+</div>
 
-    <div id="chart-area" class="chart-area">
-      <h3 id="chart-title" class="chart-title">Top category questions
-      </h3>
-      <div id="chart-container" class="chart-container">
-          <body>
-          <img src="data:image/png;base64,{{ categories_graph }}" />
-      </body>
-    </div>
-  </div>
+<h5 class="seeking-help">I am looking for partners to help me finish the website faster to make it more appealing and
+  convenient to use. Join me by messaging me on github or sending me an email if interested. daveemail@gmx.com</h5>
 
-  <div id="chart-area" class="chart-area">
-    <h3 id="chart-title" class="chart-title">Top category questions
-    </h3>
-    <div id="chart-container" class="chart-container">
-        <body>
-        <img src="data:image/png;base64,{{ forgetting_chart }}" />
+<div id="chart-area" class="chart-area">
+  <h3 id="chart-title" class="chart-title">
+  </h3>
+  <div id="chart-container" class="chart-container">
+
+    <body>
+      <img src="data:image/png;base64,{{ forgetting_chart }}" />
     </body>
   </div>
 </div>
 
-    {% endblock %}
+<div id="chart-area" class="chart-area">
+  <h3 id="chart-title" class="chart-title">Top category questions
+  </h3>
+  <div id="chart-container" class="chart-container">
+
+    <body>
+      <img src="data:image/png;base64,{{ categories_graph }}" />
+    </body>
+  </div>
+</div>
+
+{% endblock %}

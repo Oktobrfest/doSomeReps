@@ -82,10 +82,16 @@ def about():
    
     
     # catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
-    
+    day_qry = select(level.level_no,level.days_hence)
+    days_obj = session.execute(day_qry).scalars().all()
+    days = [ d.level_no for d in days_obj ]
+
+
     
     return render_template(
         "about.html",
+        user=current_user,
+        days=days,
         title="About",
         description="About us page.",
         #catz_chart=catz_chart,
@@ -124,11 +130,12 @@ def homepage():
                 else:
                     category_count[c] = 1       
 
-        sorted_cats = sorted(category_count.items(), lambda x: x[1], reverse = True)
+        sorted_cats = sorted(category_count.items(), key = lambda x: x[1], reverse = True)
+       # limited_sorted_cats = sorted_cats[:1]
         sorted_cats_dict = dict(sorted_cats)
-        limited_sorted_cats = sorted_cats_dict[:1]
+        
 
-        x_arr, y_arr = split_dict(category_count)
+        x_arr, y_arr = split_dict(sorted_cats_dict)
               
         catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
         
@@ -149,10 +156,15 @@ def homepage():
         questions_sql_models = session.execute(questions_qry).scalars().all()
         questions_list = listify_sql(questions_sql_models)
         questions_dict = tally_catz(questions_list)
-        categories, question_count = split_dict(questions_dict)
+        # Limited 10 categories.
+        sorted_ques_cat_count = sorted(questions_dict.items(), key = lambda x: x[1], reverse = True)
+        limited_cat_count = dict(sorted_ques_cat_count[:10])
+
+        categories, question_count = split_dict(limited_cat_count)
         categories_graph = render_chart(categories, question_count, 'Categories', 'Questions')
 
         repetition_days_real = list(session.execute(select(level.days_hence)).scalars().all())
+
         forgetting_chart = rep_vs_forget(repetition_days_real)
 
         # Render a different homepage for unauthenticated users

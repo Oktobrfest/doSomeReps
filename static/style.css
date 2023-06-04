@@ -462,3 +462,52 @@ flex-direction: row;
   margin-bottom: 1rem;
   padding: 1rem;
 }
+
+.chart-container {
+  max-width: 100%;
+  overflow-x: auto; /* Add horizontal scrollbar if needed */
+}
+
+.chart-container img {
+  max-width: 100%; /* Reduce the size of the chart to fit the container */
+  height: auto;
+}
+
+#login-link-button {
+  background-color: red;
+  min-width: 150px;
+}
+
+.login-button-container {
+  display: inline-flex;
+  align-items: center;
+}
+
+#edu-tree {
+  width: 150px;
+}
+
+.login-section-field {
+  display: center;
+}
+
+.image-container {
+  justify-content: center;
+}
+
+.centering-container {
+  display: flex;
+  justify-content: center; /* Horizontally center the content */
+  align-items: center; /* Vertically center the content */
+}
+
+
+
+
+
+
+
+
+
+
+
