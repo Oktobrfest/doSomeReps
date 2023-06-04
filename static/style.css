@@ -501,10 +501,53 @@ flex-direction: row;
   align-items: center; /* Vertically center the content */
 }
 
+#community-image-container {
+  width: 39%;
+  padding: 5px;
+  margin: 5px;
+}
 
+#community-text-container {
+  width: 59%;
+  padding: 5px;
+  margin: 5px;
+}
 
+#text-container {
+  padding: 5px;
+  margin: 5px;
+}
 
+#hourglass-container {
+  width: 50%;
+}
 
+#hourglass {
+  max-height: 250px;
+}
+
+#hourglass-container {
+  padding-left: 17%;
+}
+
+@media screen and (max-width: 500px) {
+  .centering-container {
+    flex-direction: column;
+  }
+
+  #hourglass-container {
+    padding-left: 0%;
+}
+
+#community-image-container, #community-text-container {
+  width: 100%;
+}
+
+#site-format-container, #community-container, #repetition-days-conatiner {
+  flex-direction: column-reverse;
+}
+
+}
 
 
 

@@ -80,11 +80,10 @@ home = Blueprint("home", __name__, template_folder="templates", static_folder="s
 def about():
     """About us page."""
    
-    
-    # catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
     day_qry = select(level.level_no,level.days_hence)
-    days_obj = session.execute(day_qry).scalars().all()
-    days = [ d.level_no for d in days_obj ]
+    days_obj_all = session.execute(day_qry).all()
+        
+    days = [ (d.level_no, d.days_hence) for d in days_obj_all ]
 
 
     
