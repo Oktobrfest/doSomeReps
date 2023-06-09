@@ -334,24 +334,23 @@ def quiz():
         selected_categories = request.form.getlist("category_name")
         incorrect_submit = request.form.get("incorrect_submit")
         correct_submit = request.form.get("correct_submit")
-        quizq_id = int(request.form.get("quizq-id"))
+        quizq_id = request.form.get("quizq-id")
         start_quiz = request.form.get("start-quiz")
         provided_answer = request.form.get("provided-answer")        
         exclude_question = request.form.get("exclude-question-button")
 
         # exclude question                                    
         if ((start_quiz == None) and 
-            (exclude_question == "exclude!")):
+            (exclude_question == "exclude")):
             cur_user = get_user(UID)
 
             # get current question id via quiz_id
             q_id_qry = select(quizq.question_id).where(quizq.quizq_id == quizq_id)
             q_id = session.execute(q_id_qry).scalar()
 
-            excluded_q_qry = select(question.question_id).where(question.question_id == q_id)
+            excluded_q_qry = select(question).where(question.question_id == q_id)
 
-            excluded_q_obj = session.execute(excluded_q_qry).first()
-
+            excluded_q_obj = session.execute(excluded_q_qry).first()[0]
 
             cur_user.excluded_questions.append(excluded_q_obj)
 
@@ -523,7 +522,6 @@ def quemore():
 @home.route("/editquestions", methods=["GET", "POST"], endpoint="editquestions")
 @login_required
 def editquestions():
-
     UID1 = g._login_user.id
     UID = copy.copy(UID1)
     form = questionForm()
@@ -557,6 +555,7 @@ def searchq():
     filters = request.get_json()
     
     filter_cats = filters["search-categories"]
+    excluded_chkbox = filters['excluded-filter-checkbox']
 
     # query db
     # list of column names to search
@@ -574,6 +573,17 @@ def searchq():
         .filter(category.category_name.in_(filter_cats))
         .filter(question.created_by==UID)
     )
+
+  # get the user obj
+    user = get_user(UID)
+
+    excluded_question_ids = [q.question_id for q in user.excluded_questions]
+    if excluded_chkbox == False:
+        # update query to exclude them
+        query = query.filter(~question.question_id.in_(excluded_question_ids))
+    else:
+        query = query.filter(question.question_id.in_(excluded_question_ids))
+
 
     # query = session.query(question.question_name, question.question_id, category, category.category_name).join(question.categories).filter(category.category_name.in_(filter_cats))
     for column_name in column_names:
@@ -1002,5 +1012,7 @@ def save_to_que():
 
 
 
-
+@home.route("/unexclude_q", methods=["POST"], endpoint="unexclude_q")
+@login_required
+def unexclude_q():
 

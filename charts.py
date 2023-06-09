@@ -82,6 +82,27 @@ def rep_vs_forget(repetition_days_real):
 
     return chart_image
 
+def render_chart(x_arr, y_arr, x_label, y_label):
+    # Create sample data
+    x = np.array(x_arr)
+    y = np.array(y_arr)  
+        
+    # Create the bar chart
+    fig, ax = plt.subplots()
+    ax.bar(x, y)
+    
+         # Set the axis labels
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
 
+    if y_label == 'Questions':
+        ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+
+    # Render the chart to a base64-encoded string
+    buffer = BytesIO()
+    fig.savefig(buffer, format='png')
+    chart_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    
+    return chart_image
 
 

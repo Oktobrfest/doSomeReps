@@ -130,6 +130,10 @@ label[for=answer], label[for=hint] {
   border: solid;
 }
 
+#delete-question-button {
+  left-margin: 2em;
+}
+
 @media (max-width: 800px) {
   #sidebar {
     position: relative;
@@ -313,11 +317,11 @@ span {
 }
 
 .q-section-left-column {
-  width: 66%;
+  max-width: 54%;
 }
 
 .q-section-right-column {
-  width: 33%;
+  max-width: 45%;
 }
 
 .question-text-section {
@@ -330,10 +334,9 @@ flex-direction: row;
 }
 
 .answer-text {
-  width: 550px;
   padding: 0.8em;
   margin: 0.2em;
-  minimum-width: 300px !important;
+  min-width: 300px !important;
 }
 
 .q-section-right-column { 
@@ -560,7 +563,13 @@ footer {
     color: #ffffff; /* Text color is white for contrast */
     padding: 20px 0; /* Padding at the top and bottom of the footer */
     margin-top: 20px; /* Margin at the top of the footer to separate from the content above */
-}
+    /* float: left; */
+    display: flex;
+    align-content: space-around;
+    justify-content: center;
+    align-items: flex-end;
+    flex-wrap: wrap
+  }
 
 .footer-content {
     margin: 0 auto; /* Center the content */
@@ -589,3 +598,12 @@ footer {
 .picture {
   max-width:100%;
 }
+
+.footer-row {
+  display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+}
+

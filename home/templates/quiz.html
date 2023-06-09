@@ -45,15 +45,25 @@ Add Content
                 </div>
             </div>
 
-            {# if q.created_by != user.username #}
+
             <div class="q-section-right-column">
-                <h3 id="created-by">Created By: {{ q.created_by_username }}</h3>
+
+                <h3 id="created-by">Created By:{{ q.created_by_username }}</h3>
+
+                <!-- FUTURE TODO. LINK TO EDIT THE QUESTION:
+                <button type="button" class="edit-question-link-button btn btn-secondary font-weight-bold" id="edit-question-link-button">
+                    <a href=""</button> -->
+
+
+                {# if q.created_by != user.username #}
+
+
+
                 <input type="button" class="block-user-button btn btn-secondary font-weight-bold" value="Block User"
                     id="block-user-button">
 
                 <input type="button" class="favorite-user-button btn btn-primary font-weight-bold"
                     value="Add to Favorites" id="favorite-user-button" data-value={{ q.created_by_id }}>
-
 
                 <h3>Rate Question:</h3>
                 <div id="starrating" class="star-rating">
@@ -72,16 +82,11 @@ Add Content
                     <input type="radio" name="stars" id="star-a" value="1" />
                     <label for="star-a"></label>
                 </div>
+
+                {# endif #}
             </div>
 
-
-
-
-
-
-            {# endif #}
         </div>
-
 
         <div id="q-image" class="q-image-area">
             {% for pic in q.pics['question_image'] %}
@@ -92,7 +97,6 @@ Add Content
             {% endif %}
             {% endfor %}
         </div>
-
 
         {% if q.hint or q.pics.hint_image %}
         <div id="q-hint-area" class="q-hint-section">

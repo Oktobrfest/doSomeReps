@@ -64,14 +64,19 @@ Edit Questions
                   &nbsp Answer
                 </li>
 
-                <li class="list-group-item filter-item border">
-                  <label for="title-filter-checkbox" class="checkbox-inline"></label>
-                  <input type="checkbox" value="question_name" id="title-filter-checkbox" name="title-filter-checkbox"
-                    class="custom-checkbox" />
-                  &nbsp Title (optional)
-                </li>
-
               </ul>
+
+              <li class="list-group-item filter-item border">
+                <label for="excluded-filter-checkbox" class="checkbox-inline"></label>
+                <input type="checkbox" value="excluded" id="excluded-filter-checkbox" name="excluded-filter-checkbox"
+                  class="custom-checkbox" />
+                &nbsp Excluded Questions
+              </li>
+
+
+
+
+
             </ul>
 
             <ul class="form-group inline border">
@@ -108,7 +113,7 @@ Edit Questions
     </div>
 
     <!-- Page Content  -->
-    <div id="edit-question-content" class="col-md-8 col-sm-12">
+    <div id="edit-question-content" class="col-md-8 col-sm-12 container">
       <div id="edit-question-header">
         <h2 class="edit-question-title">Edit Question: <p id="edit-question-title-heading" class="text-normal"></p>
         </h2>

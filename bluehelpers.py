@@ -31,32 +31,20 @@ def clean_for_html(unclean: str) -> str:
     clean = re.sub(r"\s+", "_", unclean)
     return clean.lower()
 
-def new_q_lookup(UID, selected_categories, qty_to_que):
+# OLD WAY. DELETE THIS?
+#def new_q_lookup(UID, selected_categories, qty_to_que):
     # subquery = select(question).join(question.categories).where(category.category_name.in_(selected_categories)).join(quizq, question.question_id == quizq.question_id)
-      
     # subq = session.execute(subquery.distinct()).all()
-                                                
-    
     # allocatted_question_ids = []
     # for s in subq:
     #     allocatted_question_ids.append(s.question.question_id)
-        
     # new_q_query = select(question).where(not_(question.question_id.in_(allocatted_question_ids))).join(question.categories).where(category.category_name.in_(selected_categories)).limit(qty_to_que)
-
     # new_questions = session.execute(new_q_query)
-
     # question_ids = []
     # for new_question in new_questions:
     #     question_ids.append(new_question.question.question_id)
-        
-        
-        
-    
-    qty_added = new_quizq(question_ids, UID)   
-    
-    return qty_added
-
-
+    # qty_added = new_quizq(question_ids, UID)   
+    # return qty_added
 
 def set_session(key, value):
     # Set a value in the session
@@ -187,32 +175,6 @@ def get_quizes(selected_cats, UID):
             
     return que_list        
 
-
-def render_chart(x_arr, y_arr, x_label, y_label):
-    # Create sample data
-    x = np.array(x_arr)
-    y = np.array(y_arr)
-    
-    
-    
-    # Create the bar chart
-    fig, ax = plt.subplots()
-    ax.bar(x, y)
-    
-         # Set the axis labels
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-
-    if y_label == 'Questions':
-        ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
-
-    # Render the chart to a base64-encoded string
-    buffer = BytesIO()
-    fig.savefig(buffer, format='png')
-    chart_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
-    
-    return chart_image
-
 def get_user(user_id):
     if not isinstance(user_id, int):
         try:
@@ -229,7 +191,7 @@ def get_user(user_id):
     user = usr_obj[0]
     return user
 
-
+# also works- ie. another way of doing same thing
 # def listify_sql(models):
 #     obj_list = []
 #     obj_list.extend(o for o in models)

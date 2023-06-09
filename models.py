@@ -38,6 +38,27 @@ excluded_questions = Table(
     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
 )
 
+class question(Base):
+    __tablename__ = "question"
+    question_id = sa.Column(
+        sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
+    )
+    question_name = sa.Column(sa.String(255), nullable=True)
+    created_on = sa.Column(sa.DateTime, index=False, unique=False, nullable=True)
+    question_text = sa.Column(
+        sa.String(1500), primary_key=False, unique=False, nullable=True
+    )
+    hint = sa.Column(sa.String(255), primary_key=False, unique=False, nullable=True)
+    answer = sa.Column(sa.String(600), primary_key=False, unique=False, nullable=False)
+    created_by = sa.Column(Integer, ForeignKey("users.id"), nullable=True)
+    privacy = sa.Column(sa.Boolean, server_default='false') 
+    
+    categories = relationship(
+        "category", secondary=question_categories, back_populates="questions"
+    )
+    pics = relationship("q_pic", back_populates="parent_question", cascade="all, delete")
+    quizqs = relationship("quizq", back_populates="referenced_question", cascade="all, delete")   
+
 class users(UserMixin, Base):
     __tablename__ = "users" 
     id = sa.Column(
@@ -68,7 +89,10 @@ class users(UserMixin, Base):
     )
     
     excluded_questions = relationship(
-        "question", secondary=excluded_questions
+        "question", 
+        secondary=excluded_questions,
+        primaryjoin=(excluded_questions.c.users == id),
+        secondaryjoin=(excluded_questions.c.question_id == question.question_id),
     )  
     
     quizqs = relationship("quizq")
@@ -105,26 +129,7 @@ class level(Base):
     days_hence = sa.Column(sa.Float, nullable=False)
     quizqs = relationship("quizq")
 
-class question(Base):
-    __tablename__ = "question"
-    question_id = sa.Column(
-        sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
-    )
-    question_name = sa.Column(sa.String(255), nullable=True)
-    created_on = sa.Column(sa.DateTime, index=False, unique=False, nullable=True)
-    question_text = sa.Column(
-        sa.String(1500), primary_key=False, unique=False, nullable=True
-    )
-    hint = sa.Column(sa.String(255), primary_key=False, unique=False, nullable=True)
-    answer = sa.Column(sa.String(600), primary_key=False, unique=False, nullable=False)
-    created_by = sa.Column(Integer, ForeignKey("users.id"), nullable=True)
-    privacy = sa.Column(sa.Boolean, server_default='false') 
-    
-    categories = relationship(
-        "category", secondary=question_categories, back_populates="questions"
-    )
-    pics = relationship("q_pic", back_populates="parent_question", cascade="all, delete")
-    quizqs = relationship("quizq", back_populates="referenced_question", cascade="all, delete")   
+
          
 class q_pic(Base):
     __tablename__ = "q_pic"

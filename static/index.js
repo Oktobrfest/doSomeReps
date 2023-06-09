@@ -1,6 +1,5 @@
 //  ACTUALLY RUNS JUST ONCE!!! 
 window.onload = (event) => {
-
     // grab ALL the collapse buttons
     const collapseButtons = document.querySelectorAll('#collapse-button');
     // loop through them and add the event listener
@@ -63,15 +62,25 @@ window.onload = (event) => {
     }
 
     if (window.location.pathname === '/about') {
-        let times = document.getElementsByClassName('rep-duration');
-        times.forEach( (t) => {
-            if ( t.value < 1 ) {
-                // convert to hours
-                hours = t.value / 24;
-                t.value = hours;
-            };
-        });
+        let timesCollection = document.getElementsByClassName('rep-duration');
 
+        Array.prototype.forEach.call(timesCollection, function(element) {
+            let days = parseFloat(element.outerText);
+            if ( days < .04 ) {
+                // convert to hours
+                let hours = (days * 24.0*60).toFixed();
+                element.textContent = hours + ' Mins';
+            } else if
+                ( days > .04 && days < 2 ) {
+                    let hours = (days * 24.0).toFixed();
+                    element.textContent = hours + ' Hours';
+
+            } else {
+                element.textContent = days.toFixed() + ' days';
+            }
+            ;
+           
+          });
     }
 
 
@@ -221,6 +230,10 @@ function getSearchData(filterform) {
             selected_search_within.push(checkbox.value);
         }
     });
+
+    // get excluded checkbox
+    var excluded_filter = document.getElementById('excluded-filter-checkbox').checked;
+
     // get search query
     const search_val = document.getElementById('search-terms').value;
 
@@ -228,7 +241,8 @@ function getSearchData(filterform) {
     const search_values = {
         'search-terms': search_val,
         'search-categories': selected_search_categories,
-        'search-within': selected_search_within
+        'search-within': selected_search_within,
+        'excluded-filter-checkbox': excluded_filter
     };
 
     // Convert the JavaScript object to a JSON string
@@ -277,6 +291,25 @@ function getSearchData(filterform) {
                 hidden.setAttribute('data-value', item.question_id);
                 li.setAttribute('data-value', item.question_id);
                 li.appendChild(hidden);
+
+                if (excluded_filter == true) {
+                    let unexc = document.createElement('Button');
+                    unexc.name = 'unexclude-q-' + item.question_id;
+                    unexc.innerHTML = 'Unexclude Question';
+                    unexc.id = 'unexclude-question-button';
+                    unexc.className = 'unexclude-button btn btn-secondary';
+                    unexc.setAttribute('data-value', item.question_id);
+                    li.appendChild(unexc);
+                    // unexclude button eventlistiner
+                    let qid = item.question_id;
+                    document.addEventListener('click', function (event, qid ) {
+                        event.preventDefault();
+                        unexclude(qid);
+
+                    });
+                };
+
+
                 li.addEventListener('click', clearMsgArea);
                 li.addEventListener('click', populateQuestion);
                 n = document.getElementById("search-results-list-unstyled").appendChild(li);
@@ -286,6 +319,17 @@ function getSearchData(filterform) {
             console.log(error);
         });
 };
+
+
+var unexclude_q = flask_util.url_for(home.unexclude_q);
+
+function unexclude(qid) {
+    fetch(
+
+};
+
+
+
 
 var getq = flask_util.url_for('home.getq');
 
