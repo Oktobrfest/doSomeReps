@@ -60,9 +60,6 @@ window.onload = (event) => {
         );
         // const exclude_q_btn = document.getElementById('exclude-question-button');
         // exclude_q_btn.addEventListener('click', exclude_q);
-
-
-
     }
 
     if (window.location.pathname === '/about') {
@@ -81,14 +78,9 @@ window.onload = (event) => {
 
             } else {
                 element.textContent = days.toFixed() + ' days';
-            }
-            ;
-
+            };
         });
     }
-
-
-
 }
 
 function highlight(x) {
@@ -100,7 +92,7 @@ function unhighlight(x) {
     x.style.borderStyle;
 }
 
-var h_add = flask_util.url_for('ajax.add');
+var h_add = flask_util.url_for('quest_ajx.add');
 
 function addSubmit(ev) {
     ev.preventDefault();
@@ -202,7 +194,7 @@ function start_qz(ev) {
 //   });
 
 
-var searchq = flask_util.url_for('home.searchq');
+var searchq = flask_util.url_for('quest_ajx.searchq');
 
 // submit search form data via json to backend
 function getSearchData(filterform) {
@@ -321,7 +313,7 @@ function getSearchData(filterform) {
 };
 
 
-var UNEXCLUDE_Q = flask_util.url_for('home.unexclude_q');
+var UNEXCLUDE_Q = flask_util.url_for('que_ajx.unexclude_q');
 
 function unexclude(event) {
 
@@ -350,7 +342,7 @@ function unexclude(event) {
 }
 
 
-var getq = flask_util.url_for('home.getq');
+var getq = flask_util.url_for('quest_ajx.getq');
 
 function populateQuestion(event) {
     clearForm();
@@ -471,7 +463,7 @@ function hideShowChange(button) {
     }
 }
 
-var saveq = flask_util.url_for('ajax.saveq');
+var saveq = flask_util.url_for('quest_ajx.saveq');
 
 function saveQuestion(ev) {
     q = {};
@@ -552,7 +544,7 @@ function saveQuestion(ev) {
         })
 }
 
-var deleteq = flask_util.url_for('home.deleteq');
+var deleteq = flask_util.url_for('quest_ajx.deleteq');
 
 function deleteQuestion(ev) {
     clearMsgArea();
@@ -633,7 +625,7 @@ function hideQuestionArea() {
     question_area.style.display = "none";
 }
 
-var searchquefilters = flask_util.url_for('home.searchquefilters');
+var searchquefilters = flask_util.url_for('que_ajx.searchquefilters');
 
 function queMoreSearch(ev) {
     ev.preventDefault();
@@ -800,7 +792,7 @@ function getSelectedCategories() {
     return selected_search_categories;
 }
 
-var unfavorite_user = flask_util.url_for('home.unfavorite_user');
+var unfavorite_user = flask_util.url_for('user_ajx.unfavorite_user');
 
 function unFavoriteUser(ev) {
     ev.preventDefault();
@@ -845,7 +837,7 @@ function removeBlocked(row, created_by) {
     };
 }
 
-var block_user = flask_util.url_for('home.block_user');
+var block_user = flask_util.url_for('user_ajx.block_user');
 
 function blkUser(created_by) {
     const formData = new FormData();
@@ -898,7 +890,7 @@ function clearTable() {
 }
 
 // home page -
-var unblock_user = flask_util.url_for('home.unblock_user');
+var unblock_user = flask_util.url_for('user_ajx.unblock_user');
 
 function unBlockUser(ev) {
     ev.preventDefault();
@@ -930,13 +922,10 @@ function unBlockUser(ev) {
         }).catch(error => {
             console.log(error);
         });
-
 }
 
 
-
-
-var SAVE_2_QUE = flask_util.url_for('home.save_to_que');
+var SAVE_2_QUE = flask_util.url_for('que_ajx.save_to_que');
 
 function saveToQue(ev) {
     ev.preventDefault();
@@ -974,9 +963,7 @@ function saveToQue(ev) {
         };
     });
 
-
     const que_arry = JSON.stringify({ que: que, exclude: exclude, unexclude: unexclude });
-
 
     fetch(SAVE_2_QUE, {
         method: 'POST',
@@ -1004,7 +991,7 @@ function saveToQue(ev) {
 
 }
 
-var FAV_USER_URL = flask_util.url_for('home.fav_user');
+var FAV_USER_URL = flask_util.url_for('user_ajx.fav_user');
 
 function addFavoriteUser(ev) {
     ev.preventDefault();
@@ -1034,7 +1021,6 @@ function addFavoriteUser(ev) {
             console.log(error);
         }
     );
-
 }
 
 function submitAnswer() {
