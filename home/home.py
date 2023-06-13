@@ -705,11 +705,6 @@ def saveq():
 @home.route("/deleteq", methods=["POST"], endpoint="deleteq")
 @login_required
 def deleteq():
-
-    # double check this
-    @home.route("/deleteq", methods=["POST"], endpoint="deleteq")
-@login_required
-def deleteq():
     delete_q = request.get_json()
     q = session.execute(
             select(question).where(question.question_id == delete_q["id"])
@@ -725,40 +720,12 @@ def deleteq():
         delete_pic(pic)
     
     # find all entries in 'excluded_questions' where 'question_id' matches the question you want to delete
-    excluded_entries = session.query(excluded_questions).filter_by(question_id=delete_q["id"]).all()
+    #excluded_entries = session.query(ExcludedQuestions).filter_by(question_id=delete_q["id"]).all()
 
     # delete those entries
-    for entry in excluded_entries:
-        session.delete(entry)
-    
-    session.delete(q)
-    session.commit()
-    msg = "Question Deleted"
-    flash(msg, category="success")
-    return msg
-    # double check thgis
+    #for entry in excluded_entries:
+   #     session.delete(entry)
 
-
-
-
-
-
-
-
-
-    delete_q = request.get_json()
-    q = session.execute(
-            select(question).where(question.question_id == delete_q["id"])
-        ).first()
-    
-    q = session.query(question).options(joinedload(question.pics)).filter_by(question_id=delete_q["id"]).first()
-
-# gather the q_pics and remove them from s3
-    q_pics = q.pics
-
-# loop over the q_pics and delete their corresponding objects in S3
-    for pic in q_pics:
-        delete_pic(pic)
     
     session.delete(q)
     session.commit()

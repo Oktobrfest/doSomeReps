@@ -34,8 +34,8 @@ blocked_user = Table(
 excluded_questions = Table(
     "excluded_questions",
     Base.metadata,
-    Column("users", ForeignKey("users.id"), primary_key=True),
-    Column("question_id", ForeignKey("question.question_id"), primary_key=True),
+    Column("users", ForeignKey("users.id", onupdate="CASCADE", ondelete="CASCADE"), primary_key=True),
+    Column("question_id", ForeignKey("question.question_id", onupdate="CASCADE", ondelete="CASCADE"), primary_key=True),
 )
 
 class question(Base):
@@ -93,7 +93,7 @@ class users(UserMixin, Base):
         secondary=excluded_questions,
         primaryjoin=(excluded_questions.c.users == id),
         secondaryjoin=(excluded_questions.c.question_id == question.question_id),
-        cascade="all"
+        cascade="all, delete" 
     )  
     
     quizqs = relationship("quizq")
