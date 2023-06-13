@@ -14,8 +14,11 @@ from .database import Base, engine, session
 from .models import category, question, q_pic, quizq, level, rating, users
 
 import re
+from flask import jsonify, make_response, g, current_app as app
 
-from flask import session as local_session
+from werkzeug.utils import secure_filename
+
+from flask import session as local_session,flash
 
 from datetime import datetime, timedelta
 
@@ -23,6 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from io import BytesIO
 import base64
+from .aws_s3 import *
 
 
 def clean_for_html(unclean: str) -> str:
@@ -260,3 +264,61 @@ def exclude(exclusion_ids, UID):
     session.commit()
 
     return exclude_count
+
+
+
+
+def delete_pic(pic):
+        file_key = os.path.basename(pic.pic_string)
+        is_delete_success = delete_s3_object(file_key)
+        if is_delete_success:
+            session.delete(pic)
+            # try:
+            #     s3_client.head_object(Bucket=Config.BUCKET, Key=file_key)
+            #     exists = True
+            # except botocore.exceptions.ClientError as e:
+            #     if e.response['Error']['Code'] == "404":
+            #         exists = False
+            #     else:
+            #         raise
+            # print(f"Object exists in bucket: {exists}")
+            # resp = s3_client.list_objects_v2(Bucket=Config.BUCKET, Prefix=file_key)
+            # if 'Contents' in resp:
+            #     for obj in resp['Contents']:
+            #         print(f"Object key: {obj['Key']}")
+            # else:
+            #     print("No objects found in bucket")
+        else:
+            flash('Failed to delete picture from S3 Bucket!', category="failure")     
+
+def allowed_file(filename):
+    return (
+        "." in filename
+        and filename.split(".", 1)[1].lower() in Config.ALLOWED_EXTENSIONS
+    )
+            
+
+def save_pictures(question, request):
+    pic_types = {"answer_pics", "hint_image", "question_image"}
+    for pic_type in pic_types:
+        if pic_type in request.files:
+            pictures = request.files.getlist(pic_type)
+            for pic in pictures:
+                if pic and allowed_file(pic.filename):
+                    picname = secure_filename(pic.filename)
+                    pic.save(os.path.join(app.config["UPLOAD_FOLDER"], picname))
+                    file_directory = "repz/home/static/"
+                    file_name = file_directory + picname
+                    Metadata = {
+                        "x-amz-meta-question": question.question_id,
+                        "x-amz-meta-pic_type": pic_type,
+                    }
+                    ExtraArgs = {"Metadata": Metadata}
+                    location_string = upload_file_to_s3(
+                        file_name, ExtraArgs, object_name=picname
+                    )
+                    question.pics.append(
+                        q_pic(pic_string=location_string, pic_type=pic_type)
+                    )
+    session.commit()                
+    return question

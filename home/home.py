@@ -40,7 +40,7 @@ from sqlalchemy import (
     
 )
 from ..database import Base, engine, session
-from ..models import category, question, q_pic, quizq, level, users, rating
+from ..models import category, question, q_pic, quizq, level, users, rating, excluded_questions
 import re
 
 from flask_uploads import configure_uploads, IMAGES, UploadSet
@@ -64,6 +64,10 @@ import json
 import math
 from ..charts import *
 
+# Blueprint Configuration
+home = Blueprint("home", __name__, template_folder="templates", static_folder="static")
+
+
 @app.route("/favicon.ico")
 def favicon():
     return send_from_directory(
@@ -71,10 +75,6 @@ def favicon():
         "favicon.ico",
         mimetype="image/vnd.microsoft.icon",
     )
-
-
-# Blueprint Configuration
-home = Blueprint("home", __name__, template_folder="templates", static_folder="static")
 
 @home.route("/about", methods=["GET", "POST"], endpoint="about")
 def about():
@@ -260,44 +260,6 @@ def addcontent():
             category_list=category_list,
             form=form,
         )
-
-def allowed_file(filename):
-    return (
-        "." in filename
-        and filename.split(".", 1)[1].lower() in Config.ALLOWED_EXTENSIONS
-    )
-
-# adds a new category
-@home.route("/add", methods=["POST"], endpoint="add")
-@login_required
-def add():
-    newCategory = request.form.get("add_category_field", type=str)
-    # validation
-    er = False
-    htl = ""
-    if len(newCategory) < 3:
-        flash("too short bro!", category="failure")
-        er = True
-    else:
-        query = Query([category])
-        result = query.with_session(session)
-        for c in result:
-            if newCategory == c.category_name:
-                flash("category already exists")
-                er = True
-    data = "start val"
-    if er == False:
-        new_cat = category(category_name=newCategory)
-        session.add(new_cat)
-        session.commit()
-        flash("Category created!", category="success")
-
-        # clean up the string
-        data = newCategory
-        htl = clean_for_html(newCategory)
-    else:
-        data = ""
-    return jsonify(data, htl)
 
 @home.route("/quiz", methods=["GET", "POST"], endpoint="quiz")
 @login_required
@@ -643,72 +605,12 @@ def getq():
     return response
 
 
-#save question changes within edit questions page
-@home.route("/saveq", methods=["POST"], endpoint="saveq")
-@login_required
-def saveq():
-    # print the form data
-    print(request.form)
-
-    # retrieve the updated question data
-    updated_question_json = request.form['updated_question']
-    
-    # convert the JSON string to a Python object
-    updated_question = json.loads(updated_question_json)
-    
-    # loop through the database pics and see if they match the ones in the request
-    q = session.query(question).filter_by(question_id=updated_question['id']).first()
-    
-    # Check if any existing images need to be deleted
-    for pic in q.pics:
-        if pic.pic_type == "hint_image":
-            if pic.pic_string not in set(updated_question['pics_by_type']['hint']):
-                delete_pic(pic)
-        elif pic.pic_type == "answer_pics":
-            if pic.pic_string not in set(updated_question["pics_by_type"]["answer"]):
-               delete_pic(pic)
-        elif pic.pic_type == "question_image":
-            if pic.pic_string not in set(updated_question["pics_by_type"]["question"]):
-                delete_pic(pic)  
-    
-    save_pictures(q, request)
-    
-    privacy = updated_question['privacy']
-    # if privacy == "on":
-    #     privacy = True
-    # else:
-    #     privacy = False
-    
-    session.query(question).filter(question.question_id == updated_question['id']).update(
-        {
-            "question_text": updated_question['question_text'],
-            "hint": updated_question['hint'],
-            "answer": updated_question['answer'],
-            "privacy": privacy,
-        },
-        synchronize_session=False,
-    )
-    
-    # update question categories
-    selected_cats = session.query(category).filter(category.category_name.in_(updated_question['categories'])).all()
-
-    # update the categories associated with the question
-    q.categories = selected_cats
-
-    # commit the changes to the database
-    session.commit()
-
-    msg = "Question Saved"
-    flash(msg, category="success")
-    return msg
 
 @home.route("/deleteq", methods=["POST"], endpoint="deleteq")
 @login_required
 def deleteq():
     delete_q = request.get_json()
-    q = session.execute(
-            select(question).where(question.question_id == delete_q["id"])
-        ).first()
+    question_id = delete_q["id"]
     
     q = session.query(question).options(joinedload(question.pics)).filter_by(question_id=delete_q["id"]).first()
 
@@ -719,13 +621,13 @@ def deleteq():
     for pic in q_pics:
         delete_pic(pic)
     
+    exquestion = session.query(question).filter(question.question_id == question_id).first()
+
     # find all entries in 'excluded_questions' where 'question_id' matches the question you want to delete
-    #excluded_entries = session.query(ExcludedQuestions).filter_by(question_id=delete_q["id"]).all()
+    q_users = session.query(users).filter(users.excluded_questions.contains(exquestion)).all()
 
-    # delete those entries
-    #for entry in excluded_entries:
-   #     session.delete(entry)
-
+    for usr in q_users:
+        usr.excluded_questions.remove(exquestion)
     
     session.delete(q)
     session.commit()
@@ -733,54 +635,8 @@ def deleteq():
     flash(msg, category="success")
     return msg
 
-def save_pictures(question, request):
-    pic_types = {"answer_pics", "hint_image", "question_image"}
-    for pic_type in pic_types:
-        if pic_type in request.files:
-            pictures = request.files.getlist(pic_type)
-            for pic in pictures:
-                if pic and allowed_file(pic.filename):
-                    picname = secure_filename(pic.filename)
-                    pic.save(os.path.join(app.config["UPLOAD_FOLDER"], picname))
-                    file_directory = "repz/home/static/"
-                    file_name = file_directory + picname
-                    Metadata = {
-                        "x-amz-meta-question": question.question_id,
-                        "x-amz-meta-pic_type": pic_type,
-                    }
-                    ExtraArgs = {"Metadata": Metadata}
-                    location_string = upload_file_to_s3(
-                        file_name, ExtraArgs, object_name=picname
-                    )
-                    question.pics.append(
-                        q_pic(pic_string=location_string, pic_type=pic_type)
-                    )
-    session.commit()                
-    return question
 
-def delete_pic(pic):
-        file_key = os.path.basename(pic.pic_string)
-        is_delete_success = delete_s3_object(file_key)
-        if is_delete_success:
-            session.delete(pic)
-            # try:
-            #     s3_client.head_object(Bucket=Config.BUCKET, Key=file_key)
-            #     exists = True
-            # except botocore.exceptions.ClientError as e:
-            #     if e.response['Error']['Code'] == "404":
-            #         exists = False
-            #     else:
-            #         raise
-            # print(f"Object exists in bucket: {exists}")
-            # resp = s3_client.list_objects_v2(Bucket=Config.BUCKET, Prefix=file_key)
-            # if 'Contents' in resp:
-            #     for obj in resp['Contents']:
-            #         print(f"Object key: {obj['Key']}")
-            # else:
-            #     print("No objects found in bucket")
-        else:
-            flash('Failed to delete picture from S3 Bucket!', category="failure")     
-            
+
                         
             # In the quemore page
 @home.route("/searchquefilters", methods=["POST"], endpoint="searchquefilters")
@@ -794,7 +650,6 @@ def searchquefilters():
     cur_user = get_user(UID)  
     excluded_question_ids = [q.question_id for q in cur_user.excluded_questions]
 
-    
     question_que = []
     if filters['personal'] == True:
         # first grab all that users questions within the categories selected
@@ -810,7 +665,6 @@ def searchquefilters():
 
         if filters['excluded'] == False:
             query = query.filter(~question.question_id.in_(excluded_question_ids))
-
     
         dif = session.execute(query.distinct()).scalars().all()    
       
@@ -845,11 +699,9 @@ def searchquefilters():
     if filters['blocked'] == True:
         user_list += block_list   
 
-
     # all questions list    
     filtered_users_qs_qry = select(question).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by.in_(user_list)).where(question.privacy == False)
 
-       
     # questions to exclude from all questions list(filtered_users_qs_qry)
     exclusion_qry = select(question.question_id).join(question.categories).where(category.category_name.in_(filters['catz'])).join(quizq, quizq.question_id == question.question_id).where(quizq.user_id == UID)
 
@@ -917,11 +769,9 @@ def searchquefilters():
             "excluded": excluded,
         }
         search_results.append(q)
-
     # add selected categories to the session
    #   set_session("quiz_category_names", filters['catz'])
-    
-    
+        
     search_response = jsonify(search_results)
     msg = "Search Completed"
     flash(msg, category="success")
