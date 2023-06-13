@@ -3,7 +3,7 @@ from flask_login import login_required, logout_user, current_user, login_user
 from flask import current_app as app
 from ..models import users
 from ..bluehelpers import *
-
+import json
 
 from ..database import *
 from ..models import *
@@ -15,7 +15,7 @@ ajax = Blueprint("ajax", __name__)
 
 
 # adds a new category
-@home.route("/add", methods=["POST"], endpoint="add")
+@ajax.route("/add", methods=["POST"], endpoint="add")
 @login_required
 def add():
     newCategory = request.form.get("add_category_field", type=str)
@@ -49,12 +49,9 @@ def add():
 
 
 #save question changes within edit questions page
-@home.route("/saveq", methods=["POST"], endpoint="saveq")
+@ajax.route("/saveq", methods=["POST"], endpoint="saveq")
 @login_required
 def saveq():
-    # print the form data
-    print(request.form)
-
     # retrieve the updated question data
     updated_question_json = request.form['updated_question']
     

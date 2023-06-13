@@ -100,7 +100,7 @@ function unhighlight(x) {
     x.style.borderStyle;
 }
 
-var h_add = flask_util.url_for('home.add');
+var h_add = flask_util.url_for('ajax.add');
 
 function addSubmit(ev) {
     ev.preventDefault();
@@ -471,7 +471,7 @@ function hideShowChange(button) {
     }
 }
 
-var saveq = flask_util.url_for('home.saveq');
+var saveq = flask_util.url_for('ajax.saveq');
 
 function saveQuestion(ev) {
     q = {};
@@ -897,7 +897,7 @@ function clearTable() {
     }
 }
 
-// home page --- this is all the work of AI. check it over!!
+// home page -
 var unblock_user = flask_util.url_for('home.unblock_user');
 
 function unBlockUser(ev) {

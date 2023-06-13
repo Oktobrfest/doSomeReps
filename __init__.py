@@ -30,7 +30,7 @@ from .flask_util_js import FlaskUtilJs
 from sqlalchemy.orm import Query
 
 from flask_uploads import configure_uploads, IMAGES, UploadSet
-
+from . import ajax
 
 def init_app():
     """Create Flask application."""
@@ -56,12 +56,15 @@ def init_app():
     with app.app_context():
         # Blueprint Shit
         # Import parts of our application
-        from repz.routes import routes
+        #from repz.routes import routes
         from repz.home.home import home
         from repz.auth.auth import auth
+        from repz.ajax.ajax import ajax
+
         # Register Blueprints
         app.register_blueprint(home)
-        app.register_blueprint(routes)
+        #app.register_blueprint(routes)
+        app.register_blueprint(ajax)
         app.register_blueprint(auth)
         
         #shit included to be able to step into other modules
