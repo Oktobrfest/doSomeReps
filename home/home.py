@@ -195,7 +195,6 @@ def addcontent():
         )
 
     if request.method == "POST":
-        question_name = request.form.get("question_name")
         question_text = request.form.get("question_text")
         hint = request.form.get("hint")
         answer = request.form.get("answer")
@@ -210,19 +209,15 @@ def addcontent():
     #  TEESTING MULTIPLE IMAGE UPLOADS
     if form.validate_on_submit():
         fail = False
-        if len(question_name) < 1 or len(question_text) < 3 or len(answer) < 1:
-            flash("Question Name is too short bro!", category="failure")
+        if len(question_text) < 3 or len(answer) < 1:
+            flash("Question text is too short!", category="failure")
             fail = True
-        existing_q_name = session.execute(
-            select(question).where(question.question_name == question_name)
-        ).first()
         existing_q_text = session.execute(
             select(question).where(question.question_text == question_text)
         ).first()
-        if existing_q_name is not None or existing_q_text is not None:
+        if existing_q_text is not None:
             flash("question already exists!", category="failure")
             fail = True
-
         if fail == True:
             return redirect(url_for("home.addcontent"))
 
@@ -230,7 +225,6 @@ def addcontent():
 
         # create new question!
         new_question = question(
-            question_name=question_name,
             question_text=question_text,
             hint=hint,
             created_on=func.now(),
@@ -584,8 +578,6 @@ def searchq():
     else:
         query = query.filter(question.question_id.in_(excluded_question_ids))
 
-
-    # query = session.query(question.question_name, question.question_id, category, category.category_name).join(question.categories).filter(category.category_name.in_(filter_cats))
     for column_name in column_names:
         query = query.filter(or_(getattr(question, column_name).contains(search_value)))
 
@@ -599,7 +591,7 @@ def searchq():
             catz.append(c.category_name)
 
         q = {
-            "question_name": r.question.question_name,
+            "question_text": r.question.question_text,
             "question_id": r.question.question_id,
             "categories": catz,
         }
@@ -636,7 +628,6 @@ def getq():
             ]
 
     q = {
-        "question_name": question_obj.question_name,
         "question_text": question_obj.question_text,
         "hint": question_obj.hint,
         "answer": question_obj.answer,
@@ -690,7 +681,6 @@ def saveq():
     
     session.query(question).filter(question.question_id == updated_question['id']).update(
         {
-            "question_name": updated_question['question_name'],
             "question_text": updated_question['question_text'],
             "hint": updated_question['hint'],
             "answer": updated_question['answer'],
@@ -715,6 +705,47 @@ def saveq():
 @home.route("/deleteq", methods=["POST"], endpoint="deleteq")
 @login_required
 def deleteq():
+
+    # double check this
+    @home.route("/deleteq", methods=["POST"], endpoint="deleteq")
+@login_required
+def deleteq():
+    delete_q = request.get_json()
+    q = session.execute(
+            select(question).where(question.question_id == delete_q["id"])
+        ).first()
+    
+    q = session.query(question).options(joinedload(question.pics)).filter_by(question_id=delete_q["id"]).first()
+
+    # gather the q_pics and remove them from s3
+    q_pics = q.pics
+
+    # loop over the q_pics and delete their corresponding objects in S3
+    for pic in q_pics:
+        delete_pic(pic)
+    
+    # find all entries in 'excluded_questions' where 'question_id' matches the question you want to delete
+    excluded_entries = session.query(excluded_questions).filter_by(question_id=delete_q["id"]).all()
+
+    # delete those entries
+    for entry in excluded_entries:
+        session.delete(entry)
+    
+    session.delete(q)
+    session.commit()
+    msg = "Question Deleted"
+    flash(msg, category="success")
+    return msg
+    # double check thgis
+
+
+
+
+
+
+
+
+
     delete_q = request.get_json()
     q = session.execute(
             select(question).where(question.question_id == delete_q["id"])
@@ -747,7 +778,7 @@ def save_pictures(question, request):
                     file_directory = "repz/home/static/"
                     file_name = file_directory + picname
                     Metadata = {
-                        "x-amz-meta-question": question.question_name,
+                        "x-amz-meta-question": question.question_id,
                         "x-amz-meta-pic_type": pic_type,
                     }
                     ExtraArgs = {"Metadata": Metadata}
@@ -793,6 +824,9 @@ def searchquefilters():
 
     set_session("search_que_filters", filters)
 
+    cur_user = get_user(UID)  
+    excluded_question_ids = [q.question_id for q in cur_user.excluded_questions]
+
     
     question_que = []
     if filters['personal'] == True:
@@ -806,6 +840,10 @@ def searchquefilters():
         
         #then you compare the differences between the first query and results of second. (qry1 - qry2 = diff)
         query = all_usr_qs_qry.filter(question.question_id.not_in(quizez_objs))
+
+        if filters['excluded'] == False:
+            query = query.filter(~question.question_id.in_(excluded_question_ids))
+
     
         dif = session.execute(query.distinct()).scalars().all()    
       
@@ -838,20 +876,28 @@ def searchquefilters():
         user_list += fav_list
        
     if filters['blocked'] == True:
-        user_list += block_list           
-    
+        user_list += block_list   
+
+
     # all questions list    
     filtered_users_qs_qry = select(question).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by.in_(user_list)).where(question.privacy == False)
-    
+
+       
     # questions to exclude from all questions list(filtered_users_qs_qry)
     exclusion_qry = select(question.question_id).join(question.categories).where(category.category_name.in_(filters['catz'])).join(quizq, quizq.question_id == question.question_id).where(quizq.user_id == UID)
+
         
     exclusion_objs = session.execute(exclusion_qry.distinct()).scalars().all()
     # not needed! exclusion_tuple = tuple([ x for x in exclusion_objs ])
     
     # all questions list - exclusion_qry = final_query
     final_query = filtered_users_qs_qry.filter(question.question_id.not_in(exclusion_objs))
-    
+
+     #excluded questions omited from all quesitons list            
+    if filters['excluded'] == False:
+        # update query to exclude them
+         final_query = final_query.filter(~question.question_id.in_(excluded_question_ids))
+      
     filtered_questions = session.execute(final_query.distinct()).scalars().all()    
         
     for r in filtered_questions:
@@ -884,6 +930,15 @@ def searchquefilters():
         else:
             rate = sum(rating_total) / len(rating_total)
         
+        # see if in excluded list
+        if filters['excluded'] == False:
+            excluded = False
+        else:
+            if r.question_id in excluded_question_ids:
+                 excluded = True
+            else:
+                excluded = False
+
         q = {
             "question_text": r.question_text,
             "question_id": r.question_id,
@@ -892,6 +947,7 @@ def searchquefilters():
             "created_by": r.created_by,
             "favorite": fav,
             "rating": rate,
+            "excluded": excluded,
         }
         search_results.append(q)
 
@@ -910,6 +966,7 @@ def searchquefilters():
 def fav_user():
     UID = g._login_user.id
    # because you sent the data via text/plain, It needs decoding.
+   # redundant!
     data = request.data.decode("utf-8")
     user_id = data
 
@@ -965,7 +1022,6 @@ def block_user():
     if blocked_user in usr.favorates:
         usr.favorates.remove(blocked_user)
     
-    session.add(usr)
     session.commit() 
            
     msg = "Blocked User"
@@ -1000,10 +1056,27 @@ def save_to_que():
     
     data = request.get_json()
     que = data.get("que", [])
+    exclusion_ids = data.get("exclude", [])
+    unexclude_ids = data.get("unexclude", [])
+    msg = ""
+
+    if len(que) > 0:
+        qty_added = new_quizq(que, UID)  
+        msg = "Saved " + str(qty_added) + " questions to your que. "
+    else:
+        qty_added = 0
     
-    qty_added = new_quizq(que, UID)    
+    if len(exclusion_ids) > 0:
+        exclude_count = exclude(exclusion_ids, UID)
+        msg = msg + "Excluded " + str(exclude_count) + " questions. " 
     
-    msg = "Saved " + str(qty_added) + " questions to your que" 
+    if len(unexclude_ids) > 0:
+        unexclude_count = 0
+        for unx_id in unexclude_ids:
+            res_msg = unexclude(unx_id, UID)
+            if 'success' in res_msg:
+                unexclude_count += 1
+        msg = msg + "Un-Excluded " + str(unexclude_count) + ' questions.'
     flash(msg, category="success")
     
     response_msg = jsonify('ok')
@@ -1011,8 +1084,41 @@ def save_to_que():
     return response_msg          
 
 
-
 @home.route("/unexclude_q", methods=["POST"], endpoint="unexclude_q")
 @login_required
 def unexclude_q():
+    UID = g._login_user.id
+
+    question_id = request.get_json()
+
+    enexclude_result = unexclude(question_id, UID)
+    
+    if 'success' in enexclude_result:
+        flash(enexclude_result['success'], category="success")
+    else:
+        flash(enexclude_result['failure'], category="failure")
+        # impliment logging in future #todo
+    
+    response_msg = jsonify('ok')
+    
+    return response_msg
+
+
+# @home.route("/exclude_q", methods=["POST"], endpoint="exclude_q")
+# @login_required
+# def exclude_q():
+#     UID = g._login_user.id
+    
+
+#     msg = "Excluded Question"
+#     flash(msg, category="success")
+    
+#     response_msg = jsonify('ok')
+    
+#     return response_msg
+
+
+
+
+
 

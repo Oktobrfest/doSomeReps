@@ -41,10 +41,6 @@ label[for=answer], label[for=hint] {
   padding: 1.15em;
 }
 
-#question_name {
-  width: 80%;
-}
-
 #categories, #search-within-categories, #quizfilters {
   display: flex;
   flex-wrap: wrap;

@@ -93,6 +93,7 @@ class users(UserMixin, Base):
         secondary=excluded_questions,
         primaryjoin=(excluded_questions.c.users == id),
         secondaryjoin=(excluded_questions.c.question_id == question.question_id),
+        cascade="all"
     )  
     
     quizqs = relationship("quizq")

@@ -32,7 +32,6 @@ window.onload = (event) => {
 
         const save_to_que_button = document.querySelector("#save-to-que");
         save_to_que_button.addEventListener('click', saveToQue);
-
     }
 
     // exclude other pages from loading this
@@ -59,28 +58,33 @@ window.onload = (event) => {
             once: true
         }
         );
+        // const exclude_q_btn = document.getElementById('exclude-question-button');
+        // exclude_q_btn.addEventListener('click', exclude_q);
+
+
+
     }
 
     if (window.location.pathname === '/about') {
         let timesCollection = document.getElementsByClassName('rep-duration');
 
-        Array.prototype.forEach.call(timesCollection, function(element) {
+        Array.prototype.forEach.call(timesCollection, function (element) {
             let days = parseFloat(element.outerText);
-            if ( days < .04 ) {
+            if (days < .04) {
                 // convert to hours
-                let hours = (days * 24.0*60).toFixed();
+                let hours = (days * 24.0 * 60).toFixed();
                 element.textContent = hours + ' Mins';
             } else if
-                ( days > .04 && days < 2 ) {
-                    let hours = (days * 24.0).toFixed();
-                    element.textContent = hours + ' Hours';
+                (days > .04 && days < 2) {
+                let hours = (days * 24.0).toFixed();
+                element.textContent = hours + ' Hours';
 
             } else {
                 element.textContent = days.toFixed() + ' days';
             }
             ;
-           
-          });
+
+        });
     }
 
 
@@ -222,7 +226,6 @@ function getSearchData(filterform) {
     });
     // get search within checkboxes
     const search_within_checkboxes = document.querySelectorAll('.search-within-categories input[type=checkbox]');
-    console.log(search_within_checkboxes);
 
     const selected_search_within = [];
     search_within_checkboxes.forEach(checkbox => {
@@ -266,7 +269,7 @@ function getSearchData(filterform) {
             data.forEach(function (item) {
                 let li = document.createElement('li');
                 li.className = 'question-result-list-item list-group-item list-group-item-action list-group-item-light'
-                let text = document.createTextNode(item.question_name);
+                let text = document.createTextNode(item.question_text);
                 // Append the text to <div>
                 li.appendChild(text);
                 let ul = document.createElement('ul');
@@ -301,14 +304,11 @@ function getSearchData(filterform) {
                     unexc.setAttribute('data-value', item.question_id);
                     li.appendChild(unexc);
                     // unexclude button eventlistiner
-                    let qid = item.question_id;
-                    document.addEventListener('click', function (event, qid ) {
+                    unexc.addEventListener('click', function (event) {
                         event.preventDefault();
-                        unexclude(qid);
-
+                        unexclude(event);
                     });
                 };
-
 
                 li.addEventListener('click', clearMsgArea);
                 li.addEventListener('click', populateQuestion);
@@ -321,14 +321,33 @@ function getSearchData(filterform) {
 };
 
 
-var unexclude_q = flask_util.url_for(home.unexclude_q);
+var UNEXCLUDE_Q = flask_util.url_for('home.unexclude_q');
 
-function unexclude(qid) {
-    fetch(
+function unexclude(event) {
 
-};
+    var question_id = event.target.dataset.value;
 
-
+    fetch(UNEXCLUDE_Q, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: question_id
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}. Data received: ${response}`);
+            };
+            return response.json();
+        })
+        .then(() => {
+            const listItem = document.querySelector(`li[data-value="${question_id}"]`);
+            listItem.style.display = 'None';
+        })
+        .catch(error => {
+            console.log(error);
+        });
+}
 
 
 var getq = flask_util.url_for('home.getq');
@@ -367,7 +386,6 @@ function populateQuestion(event) {
             // clear out the previous forms pictures
             clearPics();
             // populate the forms
-            document.getElementById("question_name").value = data.question_name;
             document.getElementById("question_text").value = data.question_text;
             document.getElementById("hint").value = data.hint;
             document.getElementById("answer").value = data.answer;
@@ -391,9 +409,9 @@ function populateQuestion(event) {
             // const save_question_button = document.querySelector("#save-question-button");
             // save_question_button.dataset.questionButton = data.question_id;
             // Get the element with class "edit-question-title"
-            var title_heading = document.querySelector("#edit-question-title-heading");
-            // Append some text to the element
-            title_heading.innerHTML = data.question_name;
+            // var title_heading = document.querySelector("#edit-question-title-heading");
+            // // Append some text to the element
+            // title_heading.innerHTML = data.question_name;
             // Handle images
             // loop through the image strings in the "pics_by_type" object
             for (let picType in data.pics_by_type) {
@@ -457,7 +475,6 @@ var saveq = flask_util.url_for('home.saveq');
 
 function saveQuestion(ev) {
     q = {};
-    q.question_name = document.getElementById("question_name").value;
     q.question_text = document.getElementById("question_text").value;
     q.hint = document.getElementById("hint").value;
     q.answer = document.getElementById("answer").value;
@@ -470,10 +487,6 @@ function saveQuestion(ev) {
     }
 
     // validation
-    if (q.question_name.length < 3) {
-        alert("Question name must be at least 3 characters long.");
-        return false;
-    }
     if (q.question_text.length < 8) {
         alert("Question text must be at least 8 characters long.");
         return false;
@@ -585,7 +598,6 @@ function clearForm() {
     // checkbox.checked = true;
 
     // clear out the form values
-    document.getElementById("question_name").value = "";
     document.getElementById("question_text").value = "";
     document.getElementById("hint").value = "";
     document.getElementById("answer").value = "";
@@ -631,6 +643,7 @@ function queMoreSearch(ev) {
         public: document.getElementById("public").checked,
         favorate: document.getElementById("favorate").checked,
         blocked: document.getElementById("blocked").checked,
+        excluded: document.getElementById("excluded").checked,
         catz: getSelectedCategories()
     };
 
@@ -674,35 +687,62 @@ function queMoreSearch(ev) {
                     // make cells
                     // que checkbox
                     let que_cell = document.createElement("td");
-                    var checkbox = document.createElement('input');
+                    let que_checkbox = document.createElement('input');
                     chkbox_name = 'que-question-' + q.question_id + '-chkbox';
-                    checkbox.type = "checkbox";
-                    checkbox.name = chkbox_name;
-                    checkbox.value = "True";
-                    checkbox.className = "que-question-chkbox question-chkbox";
-                    checkbox.id = chkbox_name;
-                    que_cell.appendChild(checkbox);
+                    que_checkbox.type = "checkbox";
+                    que_checkbox.name = chkbox_name;
+                    //que_checkbox.value = "True";
+                    que_checkbox.className = "que-question-chkbox question-chkbox";
+                    que_checkbox.id = chkbox_name;
+                    que_cell.appendChild(que_checkbox);
                     row.appendChild(que_cell);
 
+
                     // select box counter
-                    if (que_count > 0) {
+                    if (q.excluded == false & que_count > 0) {
                         que_cell.childNodes[0].checked = true;
-                        //  fail: row.que_cell.checkbox.checked = true;
-                        console.log("que_count: " + que_count);
+                        //console.log("que_count: " + que_count);
                         que_count -= 1;
                     }
 
                     // exclude checkbox
                     let exclude_cell = document.createElement("td");
-                    var checkbox = document.createElement('input');
-                    chkbox_name = 'exclude-question-' + q.question_id + '-chkbox';
-                    checkbox.type = "checkbox";
-                    checkbox.name = chkbox_name;
-                    checkbox.value = "True";
-                    checkbox.className = "exclude-question-chkbox question-chkbox";
-                    checkbox.id = chkbox_name;
-                    exclude_cell.appendChild(checkbox);
+                    let ex_checkbox = document.createElement('input');
+                    ex_chkbox_name = 'exclude-question-' + q.question_id + '-chkbox';
+                    ex_checkbox.type = "checkbox";
+                    ex_checkbox.name = chkbox_name;
+                    //ex_checkbox.value = "True";
+                    ex_checkbox.className = "exclude-question-chkbox question-chkbox";
+                    ex_checkbox.id = chkbox_name;
+                    exclude_cell.appendChild(ex_checkbox);
                     row.appendChild(exclude_cell);
+
+                    // check-box if excluded
+                    if (q.excluded == true) {
+                        exclude_cell.childNodes[0].checked = true;
+                    }
+
+                    let hidden_exc = document.createElement('input');
+                    hidden_ex_name = 'excluded-q-' + q.question_id;
+                    hidden_exc.type = 'hidden';
+                    hidden_exc.name = hidden_ex_name;
+                    hidden_exc.value = hidden_ex_name;
+                    row.setAttribute('data-excluded-q', q.excluded);
+                    row.appendChild(hidden_exc);
+
+                    // only one checked at a time
+                    que_checkbox.addEventListener('change', () => {
+                        if (que_checkbox.checked) {
+                            ex_checkbox.checked = false;
+                        }
+                    });
+
+                    ex_checkbox.addEventListener('change', () => {
+                        if (ex_checkbox.checked) {
+                            que_checkbox.checked = false;
+                        }
+                    });
+
                     // Username
                     let username_cell = document.createElement("td");
 
@@ -907,20 +947,35 @@ function saveToQue(ev) {
     const rows = [...que_table_body.children];
 
     let que = [];
+    let exclude = [];
+    let unexclude = [];
     rows.forEach(row => {
+        let question_id = row.getAttribute('question-id');
         // Get the checkbox element
-        let checkbox = row.querySelector('input[type="checkbox"]');
+        let q_checkbox = row.querySelector('input[type="checkbox"].que-question-chkbox');
+        let ex_checkbox = row.querySelector('input[type="checkbox"].exclude-question-chkbox');
         // Get the value of the checkbox
-        let isChecked = checkbox.checked;
-        if (isChecked) {
-            let question_id = row.getAttribute('question-id');
-            que.push(question_id);
-        }
+        let q_isChecked = q_checkbox.checked;
+        let ex_isChecked = ex_checkbox.checked;
 
+        // see if exclsion property changed
+        let currently_excluded = row.getAttribute('data-excluded-q');
+        
+
+        if (q_isChecked == true) {
+            que.push(question_id);
+        };
+
+        if ((ex_isChecked == true) & (currently_excluded == "false")) {
+            exclude.push(question_id);
+        };
+        if (ex_isChecked == false & currently_excluded == "true" ) {
+            unexclude.push(question_id);
+        };
     });
 
 
-    const que_arry = JSON.stringify({ que: que });
+    const que_arry = JSON.stringify({ que: que, exclude: exclude, unexclude: unexclude });
 
 
     fetch(SAVE_2_QUE, {
@@ -930,6 +985,7 @@ function saveToQue(ev) {
     })
         .then(response => {
             if (!response.ok) {
+                console.log(response);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
@@ -938,7 +994,7 @@ function saveToQue(ev) {
             if (data == 'ok') {
                 (function () {
                     location.reload();
-                })
+                })();
             } else {
                 alert("Error Queing Questions");
             }
@@ -960,7 +1016,7 @@ function addFavoriteUser(ev) {
         enctype: 'text/plain'
     }).then(response => {
         if (!response.ok) {
-            throw new Error(`Http error! status: ${response.status}`);
+            throw new Error(`Http error! status: ${response.status}, data returned: ${data}`);
         }
         return response.json();
     }).then(data => {
@@ -969,7 +1025,7 @@ function addFavoriteUser(ev) {
             const fav_user_button = document.querySelector('#favorite-user-button');
             fav_user_button.style.display = 'none';
         } else {
-            throw new Error(`Server returned response other than ok for favoriting a user. status: ${data}`)
+            throw new Error(`status: ${response.status}. Server returned response other than ok for favoriting a user. status: ${data}`)
         };
 
     }
@@ -985,24 +1041,43 @@ function submitAnswer() {
     const provided_answer_text = document.getElementById('provided-answer-field');
     provided_answer_text.classList.add("disabled");
     provided_answer_text.readOnly = true;
-    
+
     const submit_answer_button = document.getElementById('answer-submit-btn');
     submit_answer_button.style.display = 'none';
 
-    setTimeout(function() {
+    setTimeout(function () {
         scrollToBottom();
-      }, 200);
+    }, 200);
 }
 
 //scroll to bottom of quiz page
-function  scrollToBottom() {
-
+function scrollToBottom() {
     document.documentElement.scrollTop = document.documentElement.scrollHeight;
     document.body.scrollTop = document.body.scrollHeight;
-
-   // window.scrollTo( 0, document.body.scrollHeight);
+    // window.scrollTo( 0, document.body.scrollHeight);
 }
 
 
+// const EXCLUDE_Q = flask_util.url_for('home.exclude_q');
 
+// function exclude_q(event) {
+//     question_id = event.data.target.value;
 
+//     fetch(EXCLUDE_Q, {
+//         method: 'POST',
+//         body: question_id,
+//         headers: { 'Content-Type': 'application/json' },
+//         }).then(response => {
+//             if (!response.ok) {
+//                 console.log(response);
+//                 throw new Error(`Server returned an error. Response Status: ${response.status}. Data returned was: ${data}`);
+//             };
+//             // reload page
+//             location.reload();
+//         }).catch(
+//             error => {
+//                 console.log(error);
+//             }
+//         );
+
+// };

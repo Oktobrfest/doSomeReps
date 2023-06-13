@@ -92,6 +92,11 @@ def score(question_id):
         
 
 def get_quizes(selected_cats, UID):
+
+    user = get_user(UID)
+
+    excluded_question_ids = [q.question_id for q in user.excluded_questions]
+   
     quest_wCats_qry = (
             select(question, category, quizq, level.days_hence)
             .join(question.categories)
@@ -106,7 +111,11 @@ def get_quizes(selected_cats, UID):
             )
             .join(level, quizq.level_no == level.level_no)
         )
+    
+        # update query to omit 'excluded questions'
+    quest_wCats_qry = quest_wCats_qry.filter(~question.question_id.in_(excluded_question_ids))
 
+  
     result = session.execute(quest_wCats_qry.distinct()).all()
 
 #   result_list = []
@@ -159,7 +168,6 @@ def get_quizes(selected_cats, UID):
             
             q = {
                 "quizq_id": r.quizq.quizq_id,
-                "question_name": r.question.question_name,
                 "question_text": r.question.question_text,
                 "hint": r.question.hint,
                 "answer": r.question.answer,
@@ -222,3 +230,33 @@ def split_dict(dict):
     return x_arr, y_arr
 
 
+def unexclude(question_id, UID):
+    user = get_user(UID)
+    
+    ques_qry = select(question).where(question.question_id == question_id)
+    
+    ques_obj = session.execute(ques_qry).first()[0]
+
+    if ques_obj in user.excluded_questions:
+        user.excluded_questions.remove(ques_obj)
+        session.commit() 
+        msg = { 'success': "Un-Excluded Question" }
+    else:
+        msg = { 'failure': "Question object not found in user's excluded questions" }
+        print(msg)
+
+    return msg
+
+def exclude(exclusion_ids, UID):
+    user = get_user(UID)
+
+    ques_qry = session.query(question).filter(question.question_id.in_(exclusion_ids))
+    exclude_obs = ques_qry.all()
+
+    exclude_count = 0
+    for exc in exclude_obs:
+        exclude_count += 1
+        user.excluded_questions.append(exc)
+    session.commit()
+
+    return exclude_count
