@@ -216,6 +216,9 @@ def addcontent():
         if existing_q_text is not None:
             flash("question already exists!", category="failure")
             fail = True
+        if len(category_names) < 1:
+            fail = True
+            flash("You must select at least one category!", category="failure")
         if fail == True:
             return redirect(url_for("home.addcontent"))
 

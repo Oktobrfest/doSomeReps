@@ -38,6 +38,13 @@ excluded_questions = Table(
     Column("question_id", ForeignKey("question.question_id", onupdate="CASCADE", ondelete="CASCADE"), primary_key=True),
 )
 
+question_sources = Table(
+    "question_sources",
+    Base.metadata,
+    Column("source", ForeignKey("source.source_id"), primary_key=True),
+    Column("question_id", ForeignKey("question.question_id"), primary_key=True),
+)
+
 class question(Base):
     __tablename__ = "question"
     question_id = sa.Column(
@@ -56,8 +63,27 @@ class question(Base):
     categories = relationship(
         "category", secondary=question_categories, back_populates="questions"
     )
+
+    sources = relationship(
+        "category", secondary=question_sources, back_populates="sources_questions"
+    )
+
     pics = relationship("q_pic", back_populates="parent_question", cascade="all, delete")
-    quizqs = relationship("quizq", back_populates="referenced_question", cascade="all, delete")   
+    quizqs = relationship("quizq", back_populates="referenced_question", cascade="all, delete")
+
+class source(Base):
+    __tablename__ = "category"
+    source_id = sa.Column(
+        sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
+    )
+    url_string = Column(sa.String(500), nullable=False, unique=True, primary_key=False)
+    shortcut = sa.Column(
+        sa.String(60), nullable=True, unique=False, primary_key=False
+    )
+    sources_questions = relationship(
+        "question", secondary=question_categories, back_populates="categories"
+    )
+
 
 class users(UserMixin, Base):
     __tablename__ = "users" 
@@ -71,6 +97,8 @@ class users(UserMixin, Base):
     password = sa.Column(
         sa.String(200), primary_key=False, unique=False, nullable=False
     )
+    role = sa.Column(sa.Integer, index=False, nullable=False, server_default=1)
+    email_verified = sa.Column(sa.bool, index=False, nullable=False, server_default=False)
     
     favorates = relationship(
         'users', 
@@ -106,6 +134,7 @@ class users(UserMixin, Base):
     def check_password(self, password):
         """Check hashed password."""
         return check_password_hash(self.password, password)
+    
 
     # def __repr__(self):
     #     return f"User(id={self.id!r}, username={self.username!r}, pass={self.password}, created on={self.created_on}, email={self.email}, last_login={self.last_login})"

@@ -60,7 +60,7 @@ Add Content
 
 
                 <input type="button" class="block-user-button btn btn-secondary font-weight-bold" value="Block User"
-                    id="block-user-button">
+                    id="block-user-button" data-user-id-info="data-blk-user-id{{ q.created_by_id }}" data-value="{{ q.created_by_id }}">
 
                 <input type="button" class="favorite-user-button btn btn-primary font-weight-bold"
                     value="Add to Favorites" id="favorite-user-button" data-value={{ q.created_by_id }}>

@@ -60,6 +60,16 @@ window.onload = (event) => {
         );
         // const exclude_q_btn = document.getElementById('exclude-question-button');
         // exclude_q_btn.addEventListener('click', exclude_q);
+
+        const blk_button = document.getElementById('block-user-button');
+        let creator = blk_button.getAttribute('data-value');
+        blk_button.addEventListener('click', function (event) {
+            event.preventDefault();
+            blkUser(creator)
+        });
+
+
+
     }
 
     if (window.location.pathname === '/about') {
@@ -746,7 +756,8 @@ function queMoreSearch(ev) {
 
                     blk_button.addEventListener('click', function (event) {
                         event.preventDefault();
-                        blkUser(q.created_by)
+                        let blocked_user = clearBlockedUsers(q.created_by);
+                        blocked_user.blkUser();
                     });
 
                     // blk_button.addEventListener('click', blkUser(q.created_by));
@@ -839,10 +850,7 @@ function removeBlocked(row, created_by) {
 
 var block_user = flask_util.url_for('user_ajx.block_user');
 
-function blkUser(created_by) {
-    const formData = new FormData();
-    formData.append('block_user_id', created_by);
-
+function clearBlockedUsers(created_by) {
     // loop tru the table bodys rows and remove the row with the matching user id
     let table_body = document.getElementById("que-more-search-results-body");
     let rows = table_body.getElementsByTagName("tr");
@@ -857,6 +865,12 @@ function blkUser(created_by) {
         };
         i++;
     };
+    return created_by;
+}
+
+function blkUser(created_by) {
+    const formData = new FormData();
+    formData.append('block_user_id', created_by);   
 
     fetch(block_user, {
         method: 'POST',

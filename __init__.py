@@ -56,7 +56,6 @@ def init_app():
     with app.app_context():
         # Blueprint Shit
         # Import parts of our application
-        #from repz.routes import routes
         from repz.home.home import home
         from repz.auth.auth import auth
         from repz.ajax.quest_ajx.quest_ajx import quest_ajx
@@ -65,8 +64,6 @@ def init_app():
 
         # Register Blueprints
         app.register_blueprint(home)
-        #app.register_blueprint(routes)
-        app.register_blueprint(ajax)
         app.register_blueprint(auth)
         app.register_blueprint(quest_ajx)
         app.register_blueprint(user_ajx)
