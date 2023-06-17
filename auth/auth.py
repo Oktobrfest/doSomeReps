@@ -54,7 +54,7 @@ def logout():
 @auth.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'GET':
-        awead
+        return redirect( url_for('auth.login', user=current_user ))
         return render_template( 'signup.html', user=current_user )
         
     if request.method == 'POST':
