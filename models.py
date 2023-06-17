@@ -50,40 +50,38 @@ class question(Base):
     question_id = sa.Column(
         sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
     )
-    question_name = sa.Column(sa.String(255), nullable=True)
     created_on = sa.Column(sa.DateTime, index=False, unique=False, nullable=True)
     question_text = sa.Column(
         sa.String(1500), primary_key=False, unique=False, nullable=True
     )
-    hint = sa.Column(sa.String(255), primary_key=False, unique=False, nullable=True)
-    answer = sa.Column(sa.String(600), primary_key=False, unique=False, nullable=False)
-    created_by = sa.Column(Integer, ForeignKey("users.id"), nullable=True)
-    privacy = sa.Column(sa.Boolean, server_default='false') 
+    hint = sa.Column(sa.String(2000), primary_key=False, unique=False, nullable=True)
+    answer = sa.Column(sa.String(4000), primary_key=False, unique=False, nullable=False)
+    created_by = sa.Column(Integer, ForeignKey("users.id"), nullable=False)
+    privacy = sa.Column(sa.Boolean, default=False) 
     
     categories = relationship(
         "category", secondary=question_categories, back_populates="questions"
     )
 
     sources = relationship(
-        "category", secondary=question_sources, back_populates="sources_questions"
+        "source", secondary=question_sources, back_populates="sources_questions"
     )
 
     pics = relationship("q_pic", back_populates="parent_question", cascade="all, delete")
     quizqs = relationship("quizq", back_populates="referenced_question", cascade="all, delete")
 
 class source(Base):
-    __tablename__ = "category"
+    __tablename__ = "source"
     source_id = sa.Column(
         sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
     )
-    url_string = Column(sa.String(500), nullable=False, unique=True, primary_key=False)
+    url_string = Column(sa.String(400), nullable=False, unique=True, primary_key=False)
     shortcut = sa.Column(
         sa.String(60), nullable=True, unique=False, primary_key=False
     )
     sources_questions = relationship(
-        "question", secondary=question_categories, back_populates="categories"
+        "question", secondary=question_sources, back_populates="sources"
     )
-
 
 class users(UserMixin, Base):
     __tablename__ = "users" 
@@ -97,8 +95,9 @@ class users(UserMixin, Base):
     password = sa.Column(
         sa.String(200), primary_key=False, unique=False, nullable=False
     )
-    role = sa.Column(sa.Integer, index=False, nullable=False, server_default=1)
-    email_verified = sa.Column(sa.bool, index=False, nullable=False, server_default=False)
+    role = sa.Column(sa.Integer, index=False, nullable=False, default=1)
+    email_verified = sa.Column(sa.Boolean, index=False, nullable=False, default=False)
+    token = sa.Column(sa.String(60), nullable=True)
     
     favorates = relationship(
         'users', 
@@ -148,6 +147,8 @@ class category(Base):
     category_name = sa.Column(
         sa.String(60), nullable=False, unique=True, primary_key=True
     )
+    created_by = sa.Column(Integer, ForeignKey("users.id"), nullable=True)
+
     questions = relationship(
         "question", secondary=question_categories, back_populates="categories"
     )
@@ -182,13 +183,11 @@ class quizq(Base):
     user_id = sa.Column(Integer, ForeignKey("users.id"), nullable=False)
     level_no = sa.Column(Integer, ForeignKey("level.level_no"), nullable=False)
     answered_on = sa.Column(sa.DateTime, index=False, unique=False, nullable=True)
-    correct = sa.Column(Bool, nullable=True)
+    correct = sa.Column(sa.Boolean, nullable=True)
     provided_answer = sa.Column(sa.String(600), primary_key=False, unique=False, nullable=True)
     
     referenced_question = relationship("question", back_populates="quizqs")
     
-
-
 class rating(Base):
     __tablename__ = "rating"
     user_id = sa.Column(Integer, ForeignKey("users.id"), nullable=False)

@@ -54,10 +54,11 @@ def logout():
 @auth.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'GET':
+        awead
         return render_template( 'signup.html', user=current_user )
-
-    if request.method == 'POST':
         
+    if request.method == 'POST':
+        asdf 
         username = request.form.get('username')
         password = request.form.get('password1')
         password2 = request.form.get('password2')
@@ -83,9 +84,10 @@ def signup():
                     created_on=func.now(),
                     email= email,
                     password=generate_password_hash(
-                        password, method='sha256')
-                    )
-            login_user(new_user)
+                        password, method='sha256'),
+                    role=1,
+                    email_verified=False
+            )
             session.add(new_user)
             session.commit()
             flash('Account created!', category='success')
