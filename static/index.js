@@ -48,6 +48,16 @@ window.onload = (event) => {
         const save_question_button = document.querySelector("#save-question-button");
         save_question_button.addEventListener('click', clearMsgArea);
     }
+    // expanding textarea fields
+    if ((window.location.pathname === '/addcontent') || (window.location.pathname === '/editquestions')) {
+        const textareas = document.getElementsByTagName('textarea');
+        for (let i = 0; i < textareas.length; i++) {
+            autoResize(textareas[i]);
+            textareas[i].addEventListener('input', function () {
+                autoResize(this);
+            });
+        }
+    }
 
     if (window.location.pathname === '/quiz') {
         const add_favorite_button = document.querySelector("#favorite-user-button");
@@ -67,8 +77,6 @@ window.onload = (event) => {
             event.preventDefault();
             blkUser(creator)
         });
-
-
 
     }
 
@@ -101,46 +109,46 @@ function highlight(x) {
 function unhighlight(x) {
     x.style.borderStyle;
 }
-
-var h_add = flask_util.url_for('quest_ajx.add');
+// add a new category
+var ADD_CAT = flask_util.url_for('quest_ajx.addcat');
 
 function addSubmit(ev) {
     ev.preventDefault();
-    //  console.log(ev);
-    fetch(h_add, {
+    fetch(ADD_CAT, {
         method: 'POST',
         body: new FormData(this)
     })
-        .then(parseJSON)
-        .then(addShow);
+        .then(response => response.json())
+        .then(res => {
+            if (res.data !== 'error') {
+                addCatHtml(res.data, res.htl)
+            };
+        })
+        .catch(error => console.error('Error:', error));
 }
 
-function parseJSON(response) {
-    return response.json();
-}
+function addCatHtml(data, htl) {
+    // var span = document.getElementById('resTextlt');
+    let node = document.createElement("li");
+    node.className = 'list-group-item category-item border';
+    let checkbox = document.createElement('input');
+    checkbox.type = "checkbox";
+    checkbox.name = 'category_name';
+    checkbox.checked = true;
+    checkbox.value = htl;
+    checkbox.id = 'category_name'
+    checkbox.setAttribute('class', 'custom-checkbox');
 
-function addShow(data, htl) {
-    if ((data !== '') && (data[0] !== '')) {
-        // var span = document.getElementById('resTextlt');
-        var node = document.createElement("li");
-        node.className = 'list-group-item'
-        var checkbox = document.createElement('input');
-        chkbox_name = 'cat_' + data[1] + '_chkbox';
-        checkbox.type = "checkbox";
-        checkbox.name = chkbox_name;
-        checkbox.value = "True";
-        checkbox.id = chkbox_name;
-
-        var label = document.createElement('label')
-        label.htmlFor = chkbox_name;
-        // didnt work label_txt = '  ' + data
-        str1 = '.  '
-        const label_txt = str1.concat('    ', data[0]);
-        label.appendChild(document.createTextNode(label_txt));
-        n = document.getElementById("categories").appendChild(node);
-        n.appendChild(checkbox);
-        n.appendChild(label);
-    }
+    const label = document.createElement('label');
+    label.htmlFor = 'category_name';
+    label.setAttribute('class', 'checkbox-inline');
+    // didnt work label_txt = '  ' + data
+    const str1 = '.  ';
+    const label_txt = str1.concat('    ', data);
+    label.appendChild(document.createTextNode(label_txt));
+    n = document.getElementById("categories").appendChild(node);
+    n.appendChild(checkbox);
+    n.appendChild(label);
 }
 
 // bind only once attempt#1
@@ -188,22 +196,7 @@ function start_qz(ev) {
         },
         body: selected_catz
     })
-    // .then(parseJSON)
-    // .then(addShow);
 }
-// function toggleSidebar() {
-//     var sidebar = document.getElementById("sidebar");
-//     var isCollapsed = sidebar.classList.contains("collapsed");
-//     sidebar.classList.toggle("collapsed", !isCollapsed);
-//   }
-
-//   window.addEventListener('load', function() {
-//     document.getElementById('sidebarCollapse').addEventListener('click', function() {
-//       document.getElementById('sidebar').classList.toggle('active');
-//     });
-//   });
-
-
 var searchq = flask_util.url_for('quest_ajx.searchq');
 
 // submit search form data via json to backend
@@ -397,7 +390,8 @@ function populateQuestion(event) {
             // console.log(data['categories']);
             // loop through the categories and check the checkboxes
             data['categories'].forEach(function (item) {
-                const checkbox = document.querySelector('#editquestionform-area input[type="checkbox"][value="' + item + '"]');
+                let cat = addUnderscores(item);
+                const checkbox = document.querySelector('#editquestionform-area input[type="checkbox"][value="' + cat + '"]');
                 checkbox.checked = true;
             });
 
@@ -435,6 +429,10 @@ function populateQuestion(event) {
                     question_image.appendChild(imgContainer);
                 }
             }
+            // Call autoResize function to resize these textarea after setting their values
+            autoResize(question_text);
+            autoResize(hint);
+            autoResize(answer);
         })
         .catch(error => {
             console.log(error);
@@ -870,7 +868,7 @@ function clearBlockedUsers(created_by) {
 
 function blkUser(created_by) {
     const formData = new FormData();
-    formData.append('block_user_id', created_by);   
+    formData.append('block_user_id', created_by);
 
     fetch(block_user, {
         method: 'POST',
@@ -963,7 +961,7 @@ function saveToQue(ev) {
 
         // see if exclsion property changed
         let currently_excluded = row.getAttribute('data-excluded-q');
-        
+
 
         if (q_isChecked == true) {
             que.push(question_id);
@@ -972,7 +970,7 @@ function saveToQue(ev) {
         if ((ex_isChecked == true) & (currently_excluded == "false")) {
             exclude.push(question_id);
         };
-        if (ex_isChecked == false & currently_excluded == "true" ) {
+        if (ex_isChecked == false & currently_excluded == "true") {
             unexclude.push(question_id);
         };
     });
@@ -1057,27 +1055,11 @@ function scrollToBottom() {
     // window.scrollTo( 0, document.body.scrollHeight);
 }
 
+function autoResize(textarea) {
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
+}
 
-// const EXCLUDE_Q = flask_util.url_for('home.exclude_q');
-
-// function exclude_q(event) {
-//     question_id = event.data.target.value;
-
-//     fetch(EXCLUDE_Q, {
-//         method: 'POST',
-//         body: question_id,
-//         headers: { 'Content-Type': 'application/json' },
-//         }).then(response => {
-//             if (!response.ok) {
-//                 console.log(response);
-//                 throw new Error(`Server returned an error. Response Status: ${response.status}. Data returned was: ${data}`);
-//             };
-//             // reload page
-//             location.reload();
-//         }).catch(
-//             error => {
-//                 console.log(error);
-//             }
-//         );
-
-// };
+function addUnderscores(str) {
+    return str.replace(/ /g, "_");
+}

@@ -603,3 +603,6 @@ footer {
     justify-content: space-evenly;
 }
 
+.form-control.answer {
+  max-height: 600px;
+}

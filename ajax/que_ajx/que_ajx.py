@@ -21,6 +21,8 @@ que_ajx = Blueprint("que_ajx", __name__)
 def searchquefilters():
     UID = g._login_user.id
     filters = request.get_json()
+    cleaned_cats = list(map(lambda x: remove_underscore(x), filters['catz']))
+    filters['catz'] = cleaned_cats
 
     set_session("search_que_filters", filters)
 

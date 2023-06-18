@@ -16,9 +16,9 @@ quest_ajx = Blueprint("quest_ajx", __name__)
 
 
 # adds a new category
-@quest_ajx.route("/add", methods=["POST"], endpoint="add")
+@quest_ajx.route("/addcat", methods=["POST"], endpoint="addcat")
 @login_required
-def add():
+def addcat():
     newCategory = request.form.get("add_category_field", type=str)
     # validation
     er = False
@@ -44,8 +44,9 @@ def add():
         data = newCategory
         htl = clean_for_html(newCategory)
     else:
-        data = ""
-    return jsonify(data, htl)
+        data = "error"
+        htl = "error"
+    return jsonify({'data': data, 'htl': htl})
 
 #save question changes within edit questions page
 @quest_ajx.route("/saveq", methods=["POST"], endpoint="saveq")
