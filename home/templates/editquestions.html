@@ -78,7 +78,7 @@ Edit Questions
 
 
             </ul>
-
+            {# SET SOMETHING TO CAT!! #}
             <ul class="form-group inline border">
               <div id="category-section" class="collapse show">
                 <ul class="list-group list-group-flush form-group search-filter-categories" id="categories">
@@ -86,8 +86,8 @@ Edit Questions
                   {% set cat = (category|replace( " ", "_" ))|trim %}
                   <li class="list-group-item category-item border">
                     <label for="category_name" class="checkbox-inline"></label>
-                    <input type="checkbox" value={{ category }} id="category_name" name="category_name"
-                      class="custom-checkbox" {% if category in filter_categories %}checked{% endif %} />
+                    <input type="checkbox" value={{ cat }} id="category_name" name="category_name"
+                      class="custom-checkbox" {% if cat in filter_categories %}checked{% endif %} />
                     &nbsp {{ category }}
                   </li>
                   {% endfor %}

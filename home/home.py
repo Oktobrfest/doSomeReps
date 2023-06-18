@@ -182,6 +182,7 @@ def addcontent():
     UID = copy.copy(UID1)
     form = questionForm()
     category_list = get_all_categories()
+    # cleaned_cat_list = list(map(lambda x: clean_for_html(x), category_list))
     if request.method == "GET":
         return render_template(
             "addcontent.html",
@@ -203,6 +204,9 @@ def addcontent():
             privacy = False        
 
         category_names = request.form.getlist("category_name")
+
+        #remove the html versions underscores
+        spaced_cats = list(map(lambda x: remove_underscore(x), category_names))
 
     #  TEESTING MULTIPLE IMAGE UPLOADS
     if form.validate_on_submit():
@@ -235,7 +239,7 @@ def addcontent():
             privacy=privacy
         )
         # append categories so it dont glitch
-        for cat_name in category_names:
+        for cat_name in spaced_cats:
             query = Query([category]).filter(category.category_name == cat_name)
             cat = query.with_session(session).first()
             new_question.categories.append(cat)
@@ -434,7 +438,7 @@ def quemore():
         selected_categories=selected_categories,
     )
 
-@home.route("/editquestions", methods=["GET", "POST"], endpoint="editquestions")
+@home.route("/editquestions", methods=["GET"], endpoint="editquestions")
 @login_required
 def editquestions():
     UID1 = g._login_user.id

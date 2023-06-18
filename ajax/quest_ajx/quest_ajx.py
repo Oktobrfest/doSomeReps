@@ -113,8 +113,14 @@ def searchq():
     UID = copy.copy(UID1)
     # get The submitted Json values
     filters = request.get_json()
+        
+    underscored_cats = filters["search-categories"]
     
-    filter_cats = filters["search-categories"]
+    set_session("filter_categories", underscored_cats)
+
+
+    filter_cats = list(map(lambda x: remove_underscore(x), underscored_cats))
+
     excluded_chkbox = filters['excluded-filter-checkbox']
 
     # query db

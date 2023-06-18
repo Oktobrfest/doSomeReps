@@ -54,11 +54,9 @@ def logout():
 @auth.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'GET':
-        return redirect( url_for('auth.login', user=current_user ))
         return render_template( 'signup.html', user=current_user )
         
     if request.method == 'POST':
-        asdf 
         username = request.form.get('username')
         password = request.form.get('password1')
         password2 = request.form.get('password2')

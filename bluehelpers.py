@@ -35,6 +35,10 @@ def clean_for_html(unclean: str) -> str:
     clean = re.sub(r"\s+", "_", unclean)
     return clean.lower()
 
+def remove_underscore(html_string: str) -> str:
+    spaced_string = re.sub(r"_" ," ", html_string)
+    return spaced_string
+
 # OLD WAY. DELETE THIS?
 #def new_q_lookup(UID, selected_categories, qty_to_que):
     # subquery = select(question).join(question.categories).where(category.category_name.in_(selected_categories)).join(quizq, question.question_id == quizq.question_id)
