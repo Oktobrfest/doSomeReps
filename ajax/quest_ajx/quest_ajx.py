@@ -234,12 +234,12 @@ def deleteq():
         delete_pic(pic)
     
     exquestion = session.query(question).filter(question.question_id == question_id).first()
-
     # find all entries in 'excluded_questions' where 'question_id' matches the question you want to delete
-    q_users = session.query(users).filter(users.excluded_questions.contains(exquestion)).all()
+    if exquestion is not None: 
+        q_users = session.query(users).filter(users.excluded_questions.contains(exquestion)).all()
 
-    for usr in q_users:
-        usr.excluded_questions.remove(exquestion)
+        for usr in q_users:
+            usr.excluded_questions.remove(exquestion)
     
     session.delete(q)
     session.commit()

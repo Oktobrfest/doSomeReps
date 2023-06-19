@@ -314,7 +314,7 @@ def save_pictures(question, request):
                     file_directory = "repz/home/static/"
                     file_name = file_directory + picname
                     Metadata = {
-                        "x-amz-meta-question": question.question_id,
+                        # "x-amz-meta-question": question.question_id,
                         "x-amz-meta-pic_type": pic_type,
                     }
                     ExtraArgs = {"Metadata": Metadata}
