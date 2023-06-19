@@ -57,6 +57,28 @@ window.onload = (event) => {
                 autoResize(this);
             });
         }
+       // make sure checkboxes are selected before submitting
+var form = document.getElementById('add_question');
+
+// Add a 'submit' event listener to the form
+form.addEventListener('submit', function(event) {
+    // Select all checkboxes
+    var checkboxes = document.getElementsByClassName('custom-checkbox');
+
+    // Check if at least one checkbox is checked
+    var atLeastOneChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+
+    // If no checkboxes are checked, prevent the form from being submitted and display an alert
+    if (!atLeastOneChecked) {
+        event.preventDefault();
+        alert('Please select at least one category before submitting the form.');
+    }
+});
+
+
+
+
+
     }
 
     if (window.location.pathname === '/quiz') {

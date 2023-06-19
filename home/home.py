@@ -384,9 +384,7 @@ def quiz():
     selected_cats = selected_categories
     
     que_list = get_quizes(selected_cats, UID)
-
     #    result_list.append(r)
-
     # if no questions are due to be answered give user the option to add more or select more categories.
     if len(que_list) < 1:
         # see if all the categories have been searched through
