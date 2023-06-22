@@ -2,16 +2,14 @@
 from flask import Flask, g
 import os, sys
 from .database import Base, engine, session
-# dir_path = os.path.dirname(os.path.realpath(__file__))
-# parent_dir_path = os.path.abspath(os.path.join(dir_path, os.pardir))
-# sys.path.insert(0, parent_dir_path)
 from flask_login import LoginManager, current_user
 from config import Config
 from flask import render_template, Blueprint, request, flash, redirect, url_for
+from flask_caching import Cache
+
 
 import os
 import sys
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from .models import users
 import sqlalchemy as sa
 from sqlalchemy import select, update
@@ -32,6 +30,9 @@ from sqlalchemy.orm import Query
 from flask_uploads import configure_uploads, IMAGES, UploadSet
 from . import ajax
 
+#makes this globaly available
+cache = Cache(config={'CACHE_TYPE': 'simple'})
+
 def init_app():
     """Create Flask application."""
     app = Flask(__name__, instance_relative_config=False)
@@ -45,13 +46,11 @@ def init_app():
     app.config['UPLOADED_IMAGES_DEST'] = Config.UPLOADED_IMAGES_DEST
         
     app.config['SECRET_KEY'] = Config.SECRET_KEY
-
-
-    
-    
+      
     # lets you reference url_for in .js files
-    fujs = FlaskUtilJs(app)
-    
+    fujs = FlaskUtilJs(app)    
+
+    cache.init_app(app)
 
     with app.app_context():
         # Blueprint Shit
@@ -68,12 +67,10 @@ def init_app():
         app.register_blueprint(quest_ajx)
         app.register_blueprint(user_ajx)
         app.register_blueprint(que_ajx)
-        #shit included to be able to step into other modules
+
         app.config['DEBUG'] = True
         app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
         
-        #Flask uploads
-        #    s3 bucket tests
         ACCESS_KEY_ID = environ.get("ACCESS_KEY_ID")
         SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
         bucket = environ.get("BUCKET")
@@ -82,16 +79,11 @@ def init_app():
         
         login_manager = LoginManager(app)
         login_manager.login_view = "login"
-        
-        
-        
-               
+                       
         @login_manager.user_loader
         def load_user(user_id):
             if user_id == 'None':
                 current_user = flask_login.AnonymousUserMixin
-                
-                # print(vars(current_user))
                 return current_user
             stmt = select(users).where(users.id == int(user_id))
             result = session.execute(stmt)
@@ -101,8 +93,6 @@ def init_app():
                 result = session.execute(stmt)
                 session.commit()
                 return user_obj
-                #  Didnt work: return sa.session.get(users, id)
-                #NOT WORKED: return users.query.get(id) if id is not None else None
 
         @login_manager.unauthorized_handler
         def unauthorized():
@@ -110,12 +100,7 @@ def init_app():
             flash('You must be logged in to view that page.')
             # return render_template(url_for('homo.home1'))
             return flask.redirect(flask.url_for('auth.login', user=current_user))
-        
-
-    
+            
     Base.metadata.create_all(engine)
-    
-    
-    
-    
+       
     return app

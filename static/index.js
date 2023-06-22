@@ -74,11 +74,6 @@ form.addEventListener('submit', function(event) {
         alert('Please select at least one category before submitting the form.');
     }
 });
-
-
-
-
-
     }
 
     if (window.location.pathname === '/quiz') {
@@ -121,6 +116,20 @@ form.addEventListener('submit', function(event) {
             };
         });
     }
+
+    if ((window.location.pathname === '/quiz') || (window.location.pathname === '/quemore') (window.location.pathname === '/editquestions')    ) {
+    document.getElementById("select-all-btn").addEventListener("click", function() {
+        var checkboxes = document.querySelectorAll('input[type="checkbox"]#category_name');
+        var allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+
+        for (var checkbox of checkboxes) {
+            checkbox.checked = !allChecked;
+        }
+    
+        this.textContent = allChecked ? 'Select All' : 'Uncheck All';
+    });
+}
+
 }
 
 function highlight(x) {
@@ -424,12 +433,6 @@ function populateQuestion(event) {
             submitBtn.style.display = 'none';
             autoQue.style.display = 'none';
 
-            // const save_question_button = document.querySelector("#save-question-button");
-            // save_question_button.dataset.questionButton = data.question_id;
-            // Get the element with class "edit-question-title"
-            // var title_heading = document.querySelector("#edit-question-title-heading");
-            // // Append some text to the element
-            // title_heading.innerHTML = data.question_name;
             // Handle images
             // loop through the image strings in the "pics_by_type" object
             for (let picType in data.pics_by_type) {
@@ -617,7 +620,6 @@ function clearForm() {
     checkboxes.forEach(function (checkbox) {
         checkbox.checked = false;
     });
-    // checkbox.checked = true;
 
     // clear out the form values
     document.getElementById("question_text").value = "";
@@ -719,7 +721,6 @@ function queMoreSearch(ev) {
                     que_cell.appendChild(que_checkbox);
                     row.appendChild(que_cell);
 
-
                     // select box counter
                     if (q.excluded == false & que_count > 0) {
                         que_cell.childNodes[0].checked = true;
@@ -780,7 +781,6 @@ function queMoreSearch(ev) {
                         blocked_user.blkUser();
                     });
 
-                    // blk_button.addEventListener('click', blkUser(q.created_by));
                     row.appendChild(username_cell);
                     username_cell.appendChild(blk_button);
                     blk_button.innerHTML = "Block";
@@ -828,9 +828,6 @@ var unfavorite_user = flask_util.url_for('user_ajx.unfavorite_user');
 function unFavoriteUser(ev) {
     ev.preventDefault();
     const user_id = ev.target.getAttribute('data-unfav-usr');
-
-    // const formData = new FormData();
-    // formData.append('user_id', usr_id);
 
     fetch(unfavorite_user, {
         method: 'POST',
@@ -958,12 +955,10 @@ function unBlockUser(ev) {
         });
 }
 
-
 var SAVE_2_QUE = flask_util.url_for('que_ajx.save_to_que');
 
 function saveToQue(ev) {
     ev.preventDefault();
-
     // FIRST DO VALIDATION TO SEE THAT THERE ARE CHECKBOXES SELECTED/QUESTIONS QUED!!!
 
     const que_table_body = document.getElementById("que-more-search-results-body");
@@ -983,7 +978,6 @@ function saveToQue(ev) {
 
         // see if exclsion property changed
         let currently_excluded = row.getAttribute('data-excluded-q');
-
 
         if (q_isChecked == true) {
             que.push(question_id);
@@ -1048,7 +1042,6 @@ function addFavoriteUser(ev) {
         } else {
             throw new Error(`status: ${response.status}. Server returned response other than ok for favoriting a user. status: ${data}`)
         };
-
     }
     ).catch(
         error => {
@@ -1085,3 +1078,4 @@ function autoResize(textarea) {
 function addUnderscores(str) {
     return str.replace(/ /g, "_");
 }
+

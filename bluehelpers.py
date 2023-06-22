@@ -27,6 +27,8 @@ import numpy as np
 from io import BytesIO
 import base64
 from .aws_s3 import *
+from repz import cache
+
 
 
 def clean_for_html(unclean: str) -> str:
@@ -78,11 +80,20 @@ def get_session(key):
     value = local_session.get(key, 'Not set')
     return value
 
-def get_all_categories():
+def get_all_db_categories():
     category_list = []
     result = session.execute(select(category))
     category_list.extend(cat.category_name for cat in result.scalars())
     return category_list
+
+def get_all_categories():
+    category_list = cache.get('category_list')
+    if category_list is None:
+        category_list = get_all_db_categories()
+        cache.set('category_list', category_list, timeout=60*60*24*7) # 1 week
+    
+    return category_list   
+
         
 def score(question_id):
     ratings = session.execute(select(rating.rating).where(rating.question_id == question_id)).scalars().all()
@@ -122,11 +133,9 @@ def get_quizes(selected_cats, UID):
     
         # update query to omit 'excluded questions'
     quest_wCats_qry = quest_wCats_qry.filter(~question.question_id.in_(excluded_question_ids))
-
   
     result = session.execute(quest_wCats_qry.distinct()).all()
 
-#   result_list = []
     que_list = []
     now = datetime.now()
     for r in result:
@@ -205,7 +214,13 @@ def get_user(user_id):
     usr_obj = session.execute(usr_qry).first()
     
     user = usr_obj[0]
+
     return user
+
+# cache.set(get_users_cache_key(user_id), user) 
+# def get_users_cache_key(uid) -> str:
+#     key = 'user_' + str(uid)
+#     return key  
 
 # also works- ie. another way of doing same thing
 # def listify_sql(models):
@@ -213,9 +228,58 @@ def get_user(user_id):
 #     obj_list.extend(o for o in models)
 #     return obj_list
 
+# def remove_cache_q(q_id, que_list, que_cache_key) -> list:
+#     q_id_int = int(q_id)
+#     # index = None
+#     extracted_q = ""
+#     # for q in que_list:
+#     #     if q['quizq_id'] == q_id_int: # data types are off string vs int
+#     #         extracted_q = q
+
+#     # list_comprehended_que_list = [q for q in que_list if q["quizq_id"] != q_id_int]
+
+#    # filtered_que_list = list(filter(lambda q: q["quizq_id"] != q_id, q_id_int))
+
+#     reverse_list = que_list
+#     for i in range(len(reverse_list) - 1, -1, -1):
+#         if reverse_list[i]["quizq_id"] == q_id_int:
+#             extracted_q = reverse_list[i]
+#             del reverse_list[i]
+
+#     que_list2 = que_list
+#     extracted_q2 = None
+#     for i in range(len(que_list2) - 1, -1, -1):
+#         if que_list2[i]["quizq_id"] == q_id_int:
+#             extracted_q2 = que_list2.pop(i)
+       
+
+#     extracted_q3 = None
+#     list_comprehended_que_list2 = [q for q in que_list if q["quizq_id"] != q_id_int or (extracted_q3 := q, False)[1]]
+
+#    # for lists withn lists: que_list = [q for i, q in enumerate(que_list) if q.quizq_id != q_id]
+
+
+#     # for i,q in que_list:
+#     #     if q.quizq_id == q_id:
+#     #     #    index = i
+#     #         que_list.remove(q)
+#     cache.set(que_cache_key, que_list, timeout=600) 
+#     return que_list
+
 def listify_sql(models):
     obj_list = list(models)
     return obj_list
+
+#list of dicts of lists
+def tally_que_catz(quizq_list):
+    category_count = {}
+    for q in quizq_list:
+        for c in q['categories']:
+            if c in category_count:
+                category_count[c] += 1
+            else:
+                category_count[c] = 1
+    return category_count
 
 
 def tally_catz(questions_list):
@@ -268,9 +332,6 @@ def exclude(exclusion_ids, UID):
     session.commit()
 
     return exclude_count
-
-
-
 
 def delete_pic(pic):
         file_key = os.path.basename(pic.pic_string)

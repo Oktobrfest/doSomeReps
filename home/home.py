@@ -64,10 +64,12 @@ import json
 import math
 from ..charts import *
 
+from repz import cache
+import hashlib
+
+
 # Blueprint Configuration
 home = Blueprint("home", __name__, template_folder="templates", static_folder="static")
-
-
 @app.route("/favicon.ico")
 def favicon():
     return send_from_directory(
@@ -77,15 +79,13 @@ def favicon():
     )
 
 @home.route("/about", methods=["GET", "POST"], endpoint="about")
+@cache.cached(timeout=500000)
 def about():
-    """About us page."""
-   
+    """About us page."""   
     day_qry = select(level.level_no,level.days_hence)
     days_obj_all = session.execute(day_qry).all()
         
     days = [ (d.level_no, d.days_hence) for d in days_obj_all ]
-
-
     
     return render_template(
         "about.html",
@@ -130,10 +130,9 @@ def homepage():
                     category_count[c] = 1       
 
         sorted_cats = sorted(category_count.items(), key = lambda x: x[1], reverse = True)
-       # limited_sorted_cats = sorted_cats[:1]
-        sorted_cats_dict = dict(sorted_cats)
+        limited_sorted_cats = sorted_cats[:5]
+        sorted_cats_dict = dict(limited_sorted_cats)
         
-
         x_arr, y_arr = split_dict(sorted_cats_dict)
               
         catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
@@ -157,7 +156,7 @@ def homepage():
         questions_dict = tally_catz(questions_list)
         # Limited 10 categories.
         sorted_ques_cat_count = sorted(questions_dict.items(), key = lambda x: x[1], reverse = True)
-        limited_cat_count = dict(sorted_ques_cat_count[:10])
+        limited_cat_count = dict(sorted_ques_cat_count[:2])
 
         categories, question_count = split_dict(limited_cat_count)
         categories_graph = render_chart(categories, question_count, 'Categories', 'Questions')
@@ -257,12 +256,15 @@ def addcontent():
             new_quizq(question_ids, current_user.id)
 
         flash("New question created!", category="success")
+
+        selected_categories = category_names
         return render_template(
             "addcontent.html",
             title="Add content",
             description=".",
             user=current_user,
             category_list=category_list,
+            selected_categories=selected_categories,
             form=form,
         )
 
@@ -272,8 +274,10 @@ def quiz():
     # Redundant
     # user_id_no = current_user.get_id()
     # UIDa = current_user.id
-    UID1 = g._login_user.id
-    UID = copy.copy(UID1)
+    UID = g._login_user.id
+    #UID = copy.copy(UID1)
+    cats_due = []
+
     category_list = get_all_categories()
     time_now = func.now()
     if request.method == "GET":
@@ -287,18 +291,33 @@ def quiz():
                 description=".",
                 user=current_user,
                 category_list=category_list,
-                q=""
-                # form=form,
+                q="",
+                selected_categories=selected_categories
             )
+    else:
+        selected_categories = request.form.getlist("category_name")
+
+# implement caching
+    # first hash the user & categories selected
+    #firstly sort category list
+    sorted_cats = sorted(selected_categories)
+    cats_string = ''.join(sorted_cats)
+    cat_hash = hashlib.md5(cats_string.encode()).hexdigest()
+    que_cache_key = f"que_user_{UID}_cats_{cat_hash}"
+    que_list = cache.get(que_cache_key)
 
     if request.method == "POST":
-        selected_categories = request.form.getlist("category_name")
         incorrect_submit = request.form.get("incorrect_submit")
         correct_submit = request.form.get("correct_submit")
-        quizq_id = request.form.get("quizq-id")
+        quizq_id_str = request.form.get("quizq-id")
         start_quiz = request.form.get("start-quiz")
         provided_answer = request.form.get("provided-answer")        
         exclude_question = request.form.get("exclude-question-button")
+        if quizq_id_str is not None:
+            quizq_id = int(quizq_id_str)
+        else:
+            quizq_id = ""
+
 
         # exclude question                                    
         if ((start_quiz == None) and 
@@ -315,10 +334,16 @@ def quiz():
 
             cur_user.excluded_questions.append(excluded_q_obj)
 
+            #remove from cache
+            if len(que_list) > 0: 
+                for i, q in enumerate(que_list):
+                    if q['quizq_id'] == quizq_id:
+                        que_list.pop(i)
+                        break
+                cache.set(que_cache_key, que_list, timeout=600)
+   
             session.add(cur_user)
-            session.commit() 
-
-
+            
         # if it's a correct/incorrect answer
         if (start_quiz == None) and (
             (correct_submit == "Correct!") or (incorrect_submit == "Wrong!")
@@ -345,15 +370,23 @@ def quiz():
                     new_lvl = current_quiz[0].level_no + 1
                 else:  # None signifies the question is complete and no more levels left
                     new_lvl = None
-
                 update_stmt = update_stmt.values(correct=True)
+            #remove from cache
+                if que_list is not None:    
+                    for i in range(len(que_list) - 1, -1, -1):
+                        if que_list[i]["quizq_id"] == quizq_id:
+                            c = que_list.pop(i)
+                            break
+                    cache.set(que_cache_key, que_list, timeout=600) 
             elif incorrect_submit == "Wrong!":
                 update_stmt = update_stmt.values(correct=False)
                 new_lvl = 1
-
-            # Execute the update statement
-            updated_quizq = session.execute(update_stmt)
-
+                if len(que_list) > 0:
+                    que_list = [q for q in que_list if q["quizq_id"] != quizq_id or (w := q, False)[1]]      
+                    cache.set(que_cache_key, que_list, timeout=600) 
+            # Execute the update statement for the answered quiz question
+            session.execute(update_stmt)
+            
             # next create a new quizQ Level for that question
             if new_lvl != None:
                 new_quizq = quizq(
@@ -362,12 +395,13 @@ def quiz():
                     level_no=new_lvl,
                 )
                 # Create new quiz Q
-                session.add(new_quizq)
-                session.commit()
+                session.add(new_quizq)                
 
+        # Implement caching - remove answered question from cached Q list           
+        session.commit()
         if len(selected_categories) < 1:
             # FAILED VALIDATION'
-            msg = "You idiot! You didn't select any question categories! Try again."
+            msg = "You didn't select any question categories! Try again."
             flash(msg)
             return render_template(
                 "quiz.html",
@@ -381,28 +415,44 @@ def quiz():
         else:
             set_session("quiz_category_names", selected_categories)
 
-    selected_cats = selected_categories
-    
-    que_list = get_quizes(selected_cats, UID)
-    #    result_list.append(r)
+    if que_list is None:
+        selected_cats = [ remove_underscore(x) for x in selected_categories ]
+        que_list = get_quizes(selected_cats, UID)
+        cache.set(que_cache_key, que_list, timeout=600)     
+
+    success_msg = "Congradulations! You've completed all the questions currently due! You have two options: Either wait for the questions you've already answered to come due again, or to start answering more questions immediately you need to expand your training que! For the ladder option, select how many more questions you'd like to add to your que below and click 'Add More'"
     # if no questions are due to be answered give user the option to add more or select more categories.
     if len(que_list) < 1:
         # see if all the categories have been searched through
         if len(selected_categories) == len(category_list):
-            msg = "Congradulations! You've completed all the questions currently due! You have two options: Either wait for the questions you've already answered to come due again, or to start answering more questions immediately you need to expand your training que! For the ladder option, select how many more questions you'd like to add to your que below and click 'Add More'"
-
-            flash(msg)
+            flash(success_msg)
             return redirect(url_for("home.quemore"))
+        # give the user a list of categories for which he has quizes due
         else:
-            flash(
-                "No more questions in your selected categories are currently due. Either try to select more categories or que more questions for those categories"
-            )
-    try:
-        que_list[0]
-    except:
+            unselected_cat_quizes = get_quizes(category_list, UID)
+            if len(unselected_cat_quizes) < 1:
+                flash(success_msg)
+                return redirect(url_for("home.quemore"))
+            else:
+                cats_w_quizes = tally_que_catz(unselected_cat_quizes)
+                # add the tally to a string
+                cats_due_txt = ""
+                for cat, num in cats_w_quizes.items():
+                    cats_due_txt += f"{cat}: {num}, "
+                    cleaned_cat = clean_for_html(cat)
+                    cats_due.append(cleaned_cat)
+
+                # MAKE A MESSAGE TELLING USER WHAT CATS TO SELECT FOR MORE QUIZES
+                msg_txt =  "No more questions in your selected categories are currently due. Either que more questions for those categories or select the following categories which have questions due: "
+                msg = msg_txt + cats_due_txt
+            flash(msg)
+    # redundant!?
+    # try:
+    #     que_list[0]
+    # except:
         q = ""
     else:
-        q = que_list[0]
+          q = que_list[0]
 
     return render_template(
         "quiz.html",
@@ -411,7 +461,8 @@ def quiz():
         user=current_user,
         category_list=category_list,
         q=q,
-        selected_categories=selected_categories
+        selected_categories=selected_categories,
+        cats_due=cats_due
     )
 
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")

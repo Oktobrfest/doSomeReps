@@ -39,7 +39,8 @@ def addcat():
         session.add(new_cat)
         session.commit()
         flash("Category created!", category="success")
-
+        category_list = get_all_categories()
+        cache.set('category_list', category_list, timeout=60*60*24*7) # a weekapp
         # clean up the string
         data = newCategory
         htl = clean_for_html(newCategory)
@@ -76,10 +77,6 @@ def saveq():
     save_pictures(q, request)
     
     privacy = updated_question['privacy']
-    # if privacy == "on":
-    #     privacy = True
-    # else:
-    #     privacy = False
     
     session.query(question).filter(question.question_id == updated_question['id']).update(
         {
@@ -215,8 +212,6 @@ def getq():
     response = make_response(res_q)
     # response.headers['Access-Control-Allow-Origin'] = '*'
     return response
-
-
 
 @quest_ajx.route("/deleteq", methods=["POST"], endpoint="deleteq")
 @login_required
