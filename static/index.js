@@ -42,11 +42,45 @@ window.onload = (event) => {
         const searchbutton = document.getElementById('search-button');
         searchbutton.addEventListener('click', clearMsgArea);
         // process the search
-        if (searchbutton) {
-            searchbutton.onclick = function () { getSearchData(filterform) };
-        };
+        searchbutton.onclick = function () { getSearchData(filterform) };
+       
         const save_question_button = document.querySelector("#save-question-button");
         save_question_button.addEventListener('click', clearMsgArea);
+
+        // add select all cats button
+        const insert_into_div = document.getElementById("search-filters");
+        let select_all_btn = document.createElement("button");
+        select_all_btn.setAttribute('class', 'select-all-btn-edit-qs btb btn-secondary');
+        select_all_btn.id = 'select-all-btn-edit-qs';
+        select_all_btn.textContent = 'Select All';
+
+        insert_into_div.append(select_all_btn);
+        
+        function handleSelectAllClick() {
+            event.preventDefault();
+            var checkboxes = document.querySelectorAll('#search-filters-form input[type="checkbox"]#category_name');
+            var allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+        
+            for (var checkbox of checkboxes) {
+              checkbox.checked = !allChecked;
+            }
+            this.textContent = allChecked ? 'Select All' : 'Uncheck All';
+          }
+        
+          select_all_btn.addEventListener('click', handleSelectAllClick);
+      
+      
+  
+
+
+
+
+
+
+
+
+
+
     }
     // expanding textarea fields
     if ((window.location.pathname === '/addcontent') || (window.location.pathname === '/editquestions')) {
@@ -57,44 +91,52 @@ window.onload = (event) => {
                 autoResize(this);
             });
         }
-       // make sure checkboxes are selected before submitting
-var form = document.getElementById('add_question');
+        if (window.location.pathname === '/addcontent') {
+            // make sure checkboxes are selected before submitting
+            var form = document.getElementById('add_question');
+            document.getElementById("select-all-btn").classList.add("hidden");
 
-// Add a 'submit' event listener to the form
-form.addEventListener('submit', function(event) {
-    // Select all checkboxes
-    var checkboxes = document.getElementsByClassName('custom-checkbox');
+            // Add a 'submit' event listener to the form
+            form.addEventListener('submit', function (event) {
+                // Select all checkboxes
+                var checkboxes = document.getElementsByClassName('custom-checkbox');
 
-    // Check if at least one checkbox is checked
-    var atLeastOneChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+                // Check if at least one checkbox is checked
+                var atLeastOneChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
 
-    // If no checkboxes are checked, prevent the form from being submitted and display an alert
-    if (!atLeastOneChecked) {
-        event.preventDefault();
-        alert('Please select at least one category before submitting the form.');
-    }
-});
+                // If no checkboxes are checked, prevent the form from being submitted and display an alert
+                if (!atLeastOneChecked) {
+                    event.preventDefault();
+                    alert('Please select at least one category before submitting the form.');
+                }
+            });
+        }
     }
 
     if (window.location.pathname === '/quiz') {
         const add_favorite_button = document.querySelector("#favorite-user-button");
-        add_favorite_button.addEventListener('click', addFavoriteUser);
+        if (add_favorite_button) {
+            add_favorite_button.addEventListener('click', addFavoriteUser);
+        };
 
         const submit_answer_button = document.getElementById('answer-submit-btn');
-        submit_answer_button.addEventListener('click', submitAnswer, {
-            once: true
-        }
-        );
+        if (submit_answer_button) {
+            submit_answer_button.addEventListener('click', submitAnswer, {
+                once: true
+            }
+            );
+        };
         // const exclude_q_btn = document.getElementById('exclude-question-button');
         // exclude_q_btn.addEventListener('click', exclude_q);
 
         const blk_button = document.getElementById('block-user-button');
-        let creator = blk_button.getAttribute('data-value');
-        blk_button.addEventListener('click', function (event) {
-            event.preventDefault();
-            blkUser(creator)
-        });
-
+        if (blk_button) {
+            let creator = blk_button.getAttribute('data-value');
+            blk_button.addEventListener('click', function (event) {
+                event.preventDefault();
+                blkUser(creator)
+            });
+        };
     }
 
     if (window.location.pathname === '/about') {
@@ -117,18 +159,18 @@ form.addEventListener('submit', function(event) {
         });
     }
 
-    if ((window.location.pathname === '/quiz') || (window.location.pathname === '/quemore') (window.location.pathname === '/editquestions')    ) {
-    document.getElementById("select-all-btn").addEventListener("click", function() {
-        var checkboxes = document.querySelectorAll('input[type="checkbox"]#category_name');
-        var allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+    if ((window.location.pathname === '/quiz') || (window.location.pathname === '/quemore') || (window.location.pathname === '/editquestions')) {
+        document.getElementById("select-all-btn").addEventListener("click", function () {
+            event.preventDefault();
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]#category_name');
+            var allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
 
-        for (var checkbox of checkboxes) {
-            checkbox.checked = !allChecked;
-        }
-    
-        this.textContent = allChecked ? 'Select All' : 'Uncheck All';
-    });
-}
+            for (var checkbox of checkboxes) {
+                checkbox.checked = !allChecked;
+            }
+            this.textContent = allChecked ? 'Select All' : 'Uncheck All';
+        });
+    }
 
 }
 
@@ -414,7 +456,11 @@ function populateQuestion(event) {
             // populate the forms
             document.getElementById("question_text").value = data.question_text;
             document.getElementById("hint").value = data.hint;
-            document.getElementById("answer").value = data.answer;
+           // document.getElementById("answer").value = data.answer;
+            let code_area = document.getElementById("answer-code-area");
+            
+            code_area.textContent = data.answer;
+
             document.getElementById("question-id").value = data.id;
             document.getElementById("privacy-checkbox").checked = data.privacy;
             // get list of categories
@@ -612,6 +658,18 @@ function clearPics() {
 }
 
 function clearForm() {
+    // make sure there's something to clear first
+    let question_txt = document.getElementById("question_text");
+    let hint = document.getElementById("hint");
+    let answer = document.getElementById("answer");
+    let question_id = document.getElementById("question-id");
+    let privacy_checkbox = document.getElementById("privacy-checkbox");
+    let edit_question_title_heading = document.getElementById("edit-question-title-heading");
+
+    if (question_txt == null || hint == null || answer == null || question_id == null || privacy_checkbox == null || edit_question_title_heading == null) {
+        return;
+    }
+
     // clear out the previous forms pictures
     clearPics();
 
@@ -803,7 +861,6 @@ function queMoreSearch(ev) {
                     row.appendChild(catz_cell);
                 });
             };
-
         }).catch(error => {
             console.log(error);
         });

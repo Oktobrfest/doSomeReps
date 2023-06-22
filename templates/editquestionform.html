@@ -6,8 +6,9 @@
 
 
 <link href="/static/prism.css" rel="stylesheet" />
-<script  type="text/javascript" src="/static/prism.js"></script>
-{# <script src="/static/prism-autoloader.min.js"></script> DONT HAVE THIS #}
+<script type="text/javascript" src="/static/prism.js"></script>
+{#
+<script src="/static/prism-autoloader.min.js"></script> DONT HAVE THIS #}
 
 <link href="{{ url_for('static', filename='prism.css') }}" rel="stylesheet" />
 <script src="{{ url_for('static', filename='prism.js') }}"></script>
@@ -16,11 +17,11 @@
 
 <script>
     Prism.highlightAll();
-    </script>
-    
+</script>
+
 
 <div class="question-form-area form-group border ">
-      {# question text #}
+    {# question text #}
     <label for="question_text" class="required form-label">Question Text</label>
     <textarea class="form-control question_text required" id="question_text" name="question_text"
         placeholder="Enter question here" maxlength="1499" required></textarea>
@@ -43,10 +44,13 @@
 {# question Answer #}
 <div id="answer-section" class="answer-form-area form-group border">
     <label for="answer" class="required">Answer</label>
-    <pre><code class="language-php">
+  
+    
+          <pre> 
     <textarea class="form-control answer" id="answer" name="answer" placeholder="Enter answer here"
-        required maxlength="3999"></textarea>
-    </code></pre>
+        required maxlength="3999"> <code id="answer-code-area" class="language-PHP language-js language-python"></code>       
+        </textarea>
+              </pre> 
     <dl>
         <p id="upload-answer-image">
             Upload Answer Images:
@@ -56,7 +60,8 @@
 </div>
 
 <span id="question-form-checkbox-section" class="form-group form-inline m-4">
-    <button type="submit" class="btn btn-primary question-submit-button" onmouseover="highlight(this)" onmouseout="unhighlight(this)">
+    <button type="submit" class="btn btn-primary question-submit-button" onmouseover="highlight(this)"
+        onmouseout="unhighlight(this)">
         Submit
     </button>
     <div class="auto-que-checkbox-section question-option-checkbox border form-inline" id="auto-que-checkbox-section">
@@ -65,8 +70,7 @@
         <label for="auto-que-checkbox">Add Question to Que</label>
     </div>
     <div class="privacy-checkbox-section question-option-checkbox border form-inline" id="privacy-checkbox-section">
-        <input type="checkbox" class="form-group m-3 privacy-checkbox" name="privacy-checkbox"
-            id="privacy-checkbox">
+        <input type="checkbox" class="form-group m-3 privacy-checkbox" name="privacy-checkbox" id="privacy-checkbox">
         <label for="privacy-checkbox">Private only</label>
     </div>
 </span>
