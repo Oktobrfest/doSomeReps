@@ -10,6 +10,7 @@ from sqlalchemy import select
 from ..database import *
 from ..models import *
 from repz.routes import *
+from ..bluehelpers import get_user
 
 
 # Blueprint Configuration
@@ -22,8 +23,6 @@ routes = Blueprint('routes', __name__,
     template_folder='templates',
     static_folder='static'
     )
-
-
     
 @auth.route('/login', methods=['GET', 'POST'], endpoint='login')
 def login():
@@ -40,10 +39,18 @@ def login():
         elif current_user1 and current_user1.check_password(password=password):
             login_user(current_user1)
             #  next_page = request.args.get("next")
+
             flash('Logged in!', category='success')
             return redirect(url_for('home.homepage', user=current_user))
         flash("Invalid username/password combination", category='error')
     return render_template( 'login.html', user=current_user )
+
+# def get_user_cached(uid):
+#     user_cache_key = get_users_cache_key()
+#     user_obj = cache.get(user_cache_key)
+#     if user_obj == None:
+#         user_obj = get_user(uid)
+#     return user_obj
 
 @auth.route("/logout")
 def logout():

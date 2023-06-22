@@ -4,11 +4,26 @@
 {{ flask_util_js.js }}
 <script type="text/javascript" src="/static/index.js"></script>
 
+
+<link href="/static/prism.css" rel="stylesheet" />
+<script  type="text/javascript" src="/static/prism.js"></script>
+{# <script src="/static/prism-autoloader.min.js"></script> DONT HAVE THIS #}
+
+<link href="{{ url_for('static', filename='prism.css') }}" rel="stylesheet" />
+<script src="{{ url_for('static', filename='prism.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='prism.css') }}">
+
+
+<script>
+    Prism.highlightAll();
+    </script>
+    
+
 <div class="question-form-area form-group border ">
       {# question text #}
     <label for="question_text" class="required form-label">Question Text</label>
     <textarea class="form-control question_text required" id="question_text" name="question_text"
-        placeholder="Enter question here" required></textarea>
+        placeholder="Enter question here" maxlength="1499" required></textarea>
     {# upload image for question #}
     <p id="upload-question-image"> Upload a Question Image:
         {{ form.csrf_token }}
@@ -19,7 +34,7 @@
 {# question Hint #}
 <div id="hint_area" class="hint-section">
     <label for="hint">Hint</label>
-    <textarea class="form-control hint" id="hint" name="hint" placeholder="Enter hint"></textarea>
+    <textarea class="form-control hint" id="hint" name="hint" placeholder="Enter hint" maxlength="1999"></textarea>
     <p id="upload-hint-image">Upload a Hint Image:
         {{ form.hint_image }}
     </p>
@@ -28,8 +43,10 @@
 {# question Answer #}
 <div id="answer-section" class="answer-form-area form-group border">
     <label for="answer" class="required">Answer</label>
+    <pre><code class="language-php">
     <textarea class="form-control answer" id="answer" name="answer" placeholder="Enter answer here"
-        required></textarea>
+        required maxlength="3999"></textarea>
+    </code></pre>
     <dl>
         <p id="upload-answer-image">
             Upload Answer Images:
@@ -38,7 +55,7 @@
     </dl>
 </div>
 
-<span id="question-form-checkbox-section" class="form-group form-inline m-4" style="white-space:nowrap">
+<span id="question-form-checkbox-section" class="form-group form-inline m-4">
     <button type="submit" class="btn btn-primary question-submit-button" onmouseover="highlight(this)" onmouseout="unhighlight(this)">
         Submit
     </button>

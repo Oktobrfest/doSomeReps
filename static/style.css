@@ -73,6 +73,7 @@ label[for=answer], label[for=hint] {
   border-radius: 25px;
   background-color: #66ff66;
   padding: 1.15em;
+  word-wrap: break-word;
 }
 
 .answer-form-area {
@@ -605,4 +606,9 @@ footer {
 
 .form-control.answer {
   max-height: 600px;
+}
+
+.answer-cls {
+  max-width: 1000px;
+  white-space:nowrap;
 }
