@@ -341,7 +341,6 @@ def quiz():
                         que_list.pop(i)
                         break
                 cache.set(que_cache_key, que_list, timeout=600)
-   
             session.add(cur_user)
             
         # if it's a correct/incorrect answer
