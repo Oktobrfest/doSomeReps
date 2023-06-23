@@ -66,6 +66,7 @@ from ..charts import *
 
 from repz import cache
 import hashlib
+from sqlalchemy import create_engine
 
 
 # Blueprint Configuration
@@ -305,6 +306,8 @@ def quiz():
     cat_hash = hashlib.md5(cats_string.encode()).hexdigest()
     que_cache_key = f"que_user_{UID}_cats_{cat_hash}"
     que_list = cache.get(que_cache_key)
+    if que_list is None:
+        que_list = []
 
     if request.method == "POST":
         incorrect_submit = request.form.get("incorrect_submit")
@@ -355,6 +358,8 @@ def quiz():
             )
             current_quiz = session.execute(qry).scalars().all()
 
+            print(qry)
+
             # set fields applicable to both possibilities (completed date & by whom)
             update_stmt = (
                 update(quizq)
@@ -376,7 +381,7 @@ def quiz():
                         if que_list[i]["quizq_id"] == quizq_id:
                             c = que_list.pop(i)
                             break
-                    cache.set(que_cache_key, que_list, timeout=600) 
+                    cache.set(que_cache_key, que_list, timeout=300) 
             elif incorrect_submit == "Wrong!":
                 update_stmt = update_stmt.values(correct=False)
                 new_lvl = 1
@@ -414,7 +419,7 @@ def quiz():
         else:
             set_session("quiz_category_names", selected_categories)
 
-    if que_list is None:
+    if len(que_list) < 1:
         selected_cats = [ remove_underscore(x) for x in selected_categories ]
         que_list = get_quizes(selected_cats, UID)
         cache.set(que_cache_key, que_list, timeout=600)     

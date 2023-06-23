@@ -99,7 +99,7 @@ Add Content
             <div id="q-hint-reveal" class="q-hint-section collapse hide card">
 
                 <h5 class="card-title hint-title">HINT!</h5>
-                <p id="q-hint-reveal-text" class="card-text q-hint-text">hint words go here: {{ q.hint }}</p>
+                <p id="q-hint-reveal-text" class="card-text q-hint-text">{{ q.hint }}</p>
                 <div id="hint-image-area" class="hint-image-area">
                     {% for pic in q.pics['hint_image'] %}
                     {% if pic %}
