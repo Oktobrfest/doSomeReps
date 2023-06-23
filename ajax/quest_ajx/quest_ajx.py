@@ -243,6 +243,32 @@ def deleteq():
     return msg
 
 
+@quest_ajx.route("/rateq", methods=["POST"], endpoint="rateq")
+@login_required
+def rateq():
+    data = request.get_json()
+    quizq_id = data['quizq_id']
+    rated = data['rating']
+    UID = g._login_user.id
 
+    question_id_qry = select(quizq.question_id).where(quizq.quizq_id == quizq_id)
+    question_id = session.execute(question_id_qry).scalar()
 
+    existing_rating = session.query(rating).filter(rating.question_id == question_id, rating.user_id == UID).first()
+
+    if existing_rating is None:
+        # create new rating entry
+        new_rating = rating(question_id = question_id,
+                        user_id = UID,
+                        rating = rated,)
+        
+        session.add(new_rating)
+        session.commit()
+        msg = "Question Rated"
+    else:
+        existing_rating.rating = rated
+        msg = "Question Rating Updated"
+
+    flash(msg, category="success")
+    return msg
 

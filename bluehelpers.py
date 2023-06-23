@@ -9,7 +9,7 @@ from sqlalchemy.orm import (
    )
 from sqlalchemy.sql import func, exists, distinct
 from sqlalchemy.sql.expression import bindparam
-from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_
+from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_, func, text
 from .database import Base, engine, session
 from .models import category, question, q_pic, quizq, level, rating, users
 
@@ -98,14 +98,21 @@ def get_all_categories():
 def score(question_id):
     ratings = session.execute(select(rating.rating).where(rating.question_id == question_id)).scalars().all()
     
-    score = []
+    score = 0.0
+    count = 0
     for rate in ratings:
         score += rate
+        count += 1
     
-    if len(score) == 0:
+    if count == 0:
         final_score = 0
     else:
-        final_score = sum(score) / len(score)
+        final_score = score / count
+
+    # if len(score) == 0:
+    #     final_score = 0
+    # else:
+    #     final_score = sum(score) / len(score)
     
     return final_score
         
@@ -116,25 +123,63 @@ def get_quizes(selected_cats, UID):
 
     excluded_question_ids = [q.question_id for q in user.excluded_questions]
    
+    # quest_wCats_qry = (
+    #         select(question, category, quizq, level.days_hence)
+    #         .join(question.categories)
+    #         .where(category.category_name.in_(selected_cats))
+    #         .join(
+    #             quizq,
+    #             and_(
+    #                 question.question_id == quizq.question_id,
+    #                 quizq.user_id == UID,
+    #                 quizq.answered_on.is_(None),
+    #             ),
+    #         )
+    #         .join(level, quizq.level_no == level.level_no)
+    #         .group_by(question, quizq, level.days_hence)
+    #     )
+
+#     quest_wCats_qry = (
+#     select(question, func.string_agg(category.category_name, ','), quizq, level.days_hence)
+#     .join(question.categories)
+#     .where(category.category_name.in_(selected_cats))
+#     .join(
+#         quizq,
+#         and_(
+#             question.question_id == quizq.question_id,
+#             quizq.user_id == UID,
+#             quizq.answered_on.is_(None),
+#         ),
+#     )
+#     .join(level, quizq.level_no == level.level_no)
+#     .group_by(question, quizq, level.days_hence)
+# )
+#     result = session.execute(quest_wCats_qry).all()
+
+
     quest_wCats_qry = (
-            select(question, category, quizq, level.days_hence)
-            .join(question.categories)
-            .where(category.category_name.in_(selected_cats))
-            .join(
-                quizq,
-                and_(
-                    question.question_id == quizq.question_id,
-                    quizq.user_id == UID,
-                    quizq.answered_on.is_(None),
-                ),
-            )
-            .join(level, quizq.level_no == level.level_no)
+        select(question, text("STRING_AGG(category.category_name, ',')"), quizq, level.days_hence)
+        .join(question.categories)
+        .where(category.category_name.in_(selected_cats))
+        .join(
+            quizq,
+            and_(
+                question.question_id == quizq.question_id,
+                quizq.user_id == UID,
+                quizq.answered_on.is_(None),
+            ),
         )
+        .join(level, quizq.level_no == level.level_no)
+        .group_by(question, quizq, level.days_hence)
+    )
+ 
+
     
         # update query to omit 'excluded questions'
     quest_wCats_qry = quest_wCats_qry.filter(~question.question_id.in_(excluded_question_ids))
   
-    result = session.execute(quest_wCats_qry.distinct()).all()
+    result = session.execute(quest_wCats_qry).all()
+   # result = session.execute(quest_wCats_qry.distinct()).all()
 
     que_list = []
     now = datetime.now()
