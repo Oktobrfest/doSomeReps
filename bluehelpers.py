@@ -11,7 +11,7 @@ from sqlalchemy.sql import func, exists, distinct
 from sqlalchemy.sql.expression import bindparam
 from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_, func, text
 from .database import Base, engine, session
-from .models import category, question, q_pic, quizq, level, rating, users
+from .models import category, question, q_pic, quizq, level, rating, users, question_categories
 
 import re
 from flask import jsonify, make_response, g, current_app as app
@@ -28,6 +28,7 @@ from io import BytesIO
 import base64
 from .aws_s3 import *
 from repz import cache
+import time
 
 
 
@@ -123,67 +124,46 @@ def get_quizes(selected_cats, UID):
 
     excluded_question_ids = [q.question_id for q in user.excluded_questions]
    
-    # quest_wCats_qry = (
-    #         select(question, category, quizq, level.days_hence)
-    #         .join(question.categories)
-    #         .where(category.category_name.in_(selected_cats))
-    #         .join(
-    #             quizq,
-    #             and_(
-    #                 question.question_id == quizq.question_id,
-    #                 quizq.user_id == UID,
-    #                 quizq.answered_on.is_(None),
-    #             ),
-    #         )
-    #         .join(level, quizq.level_no == level.level_no)
-    #         .group_by(question, quizq, level.days_hence)
-    #     )
-
-#     quest_wCats_qry = (
-#     select(question, func.string_agg(category.category_name, ','), quizq, level.days_hence)
-#     .join(question.categories)
-#     .where(category.category_name.in_(selected_cats))
-#     .join(
-#         quizq,
-#         and_(
-#             question.question_id == quizq.question_id,
-#             quizq.user_id == UID,
-#             quizq.answered_on.is_(None),
-#         ),
-#     )
-#     .join(level, quizq.level_no == level.level_no)
-#     .group_by(question, quizq, level.days_hence)
-# )
-#     result = session.execute(quest_wCats_qry).all()
-
-
+  # ORIGINAL WORKIN:
     quest_wCats_qry = (
-        select(question, text("STRING_AGG(category.category_name, ',')"), quizq, level.days_hence)
-        .join(question.categories)
-        .where(category.category_name.in_(selected_cats))
-        .join(
-            quizq,
-            and_(
-                question.question_id == quizq.question_id,
-                quizq.user_id == UID,
-                quizq.answered_on.is_(None),
-            ),
-        )
-        .join(level, quizq.level_no == level.level_no)
-        .group_by(question, quizq, level.days_hence)
+    select(question, text("STRING_AGG(category.category_name, ',')"), quizq, level.days_hence)   
+    .join(question.categories)
+    .join(
+        quizq,
+        and_(
+            question.question_id == quizq.question_id,
+            quizq.user_id == UID,
+            quizq.answered_on.is_(None),
+        ),
     )
- 
+    .join(level, quizq.level_no == level.level_no)
+    .group_by(question, quizq, level.days_hence)
+)
 
-    
         # update query to omit 'excluded questions'
     quest_wCats_qry = quest_wCats_qry.filter(~question.question_id.in_(excluded_question_ids))
+
+    # Print the SQL query
+    # print(str("============================================================================================================"))
+    # print(str(quest_wCats_qry))
   
+    # Start the timer
+    start_time = time.time()
+
     result = session.execute(quest_wCats_qry).all()
    # result = session.execute(quest_wCats_qry.distinct()).all()
+
+    # Calculate the elapsed time
+    elapsed_time = time.time() - start_time
+    print("Elapsed time:", elapsed_time, "seconds")
 
     que_list = []
     now = datetime.now()
     for r in result:
+        question_cats = [c.category_name for c in r.question.categories]
+        if not set(question_cats) & set(selected_cats):
+            continue  # Skip the current iteration if there's no intersection
+        
         # see if it's due to be answered- (levels 2+)
         if r.quizq.level_no > 1:
             # find the quiz question that was answered before it and grab that datetime
@@ -209,14 +189,14 @@ def get_quizes(selected_cats, UID):
         else:
             addit = True  # if it's level #1
         if addit == True:
-            catz = []  # duplicate, but prob doesn't add all the categories!
-            categories = []
-            for c in r.question.categories:
-                catz.append(c.category_name)
-                for qu in c.questions:
-                    if qu.question_id == r.question.question_id:
-                        for cc in qu.categories:
-                            categories.append(cc.category_name)
+            # catz = []  # duplicate, but prob doesn't add all the categories!
+            # categories = []
+            # for c in r.question.categories:
+            #     catz.append(c.category_name)
+            #     for qu in c.questions:
+            #         if qu.question_id == r.question.question_id:
+            #             for cc in qu.categories:
+            #                 categories.append(cc.category_name)
 
             pics = {k: [] for k in ["answer_pics", "hint_image", "question_image"]}
             for img in r.question.pics:
@@ -237,7 +217,7 @@ def get_quizes(selected_cats, UID):
                 "created_by_username": creator_username,
                 "rating": rating,
                 "level_no": r.quizq.level_no,
-                "categories": catz,
+                "categories": question_cats,
                 "pics": pics,
             }
 
