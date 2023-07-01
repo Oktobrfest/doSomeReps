@@ -57,22 +57,25 @@ Add Content
 
                 <input type="button" class="favorite-user-button btn btn-primary font-weight-bold"
                     value="Add to Favorites" id="favorite-user-button" data-value={{ q.created_by_id }}>
-
+                        {% if q.user_rated is none %}
                 <h3>Rate Question:</h3>
+                        {% else %}
+                        <h3>Your Rating:</h3>
+                        {% endif %}
                 <div id="starrating" class="star-rating">
-                    <input type="radio" name="stars" id="star-e" value="5" />
+                    <input type="radio" name="stars" id="star-e" value="5" {% if q.user_rated == 5 %}checked{% endif %} />
                     <label for="star-e"></label>
 
-                    <input type="radio" name="stars" id="star-d" value="4" />
+                    <input type="radio" name="stars" id="star-d" value="4" {% if q.user_rated == 4 %}checked{% endif %} />
                     <label for="star-d"></label>
 
-                    <input type="radio" name="stars" id="star-c" value="3" />
+                    <input type="radio" name="stars" id="star-c" value="3" {% if q.user_rated == 3 %}checked{% endif %} />
                     <label for="star-c"></label>
 
-                    <input type="radio" name="stars" id="star-b" value="2" />
+                    <input type="radio" name="stars" id="star-b" value="2" {% if q.user_rated == 2 %}checked{% endif %}/>
                     <label for="star-b"></label>
 
-                    <input type="radio" name="stars" id="star-a" value="1" />
+                    <input type="radio" name="stars" id="star-a" value="1" {% if q.user_rated == 1 %}checked{% endif %} />
                     <label for="star-a"></label>
                 </div>
 

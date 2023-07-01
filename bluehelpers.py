@@ -120,6 +120,9 @@ def score(question_id):
 
 def get_quizes(selected_cats, UID):
 
+      # Start the timer (to time excecution speed for development)
+    start_time = time.time()
+
     user = get_user(UID)
 
     excluded_question_ids = [q.question_id for q in user.excluded_questions]
@@ -147,15 +150,8 @@ def get_quizes(selected_cats, UID):
     # print(str("============================================================================================================"))
     # print(str(quest_wCats_qry))
   
-    # Start the timer
-    start_time = time.time()
-
     result = session.execute(quest_wCats_qry).all()
    # result = session.execute(quest_wCats_qry.distinct()).all()
-
-    # Calculate the elapsed time
-    elapsed_time = time.time() - start_time
-    print("Elapsed time:", elapsed_time, "seconds")
 
     que_list = []
     now = datetime.now()
@@ -164,6 +160,8 @@ def get_quizes(selected_cats, UID):
         if not set(question_cats) & set(selected_cats):
             continue  # Skip the current iteration if there's no intersection
         
+        last_ansered = None
+        user_rated = None
         # see if it's due to be answered- (levels 2+)
         if r.quizq.level_no > 1:
             # find the quiz question that was answered before it and grab that datetime
@@ -184,6 +182,11 @@ def get_quizes(selected_cats, UID):
             due_date = answered_on + timedelta(days=days_hence)
             if now > due_date:
                 addit = True
+                last_ansered = answered_on
+                user_rate_qry = select(rating.rating).where(rating.question_id == r.question.question_id).where(rating.user_id == UID)
+                user_rated = session.execute(user_rate_qry).scalars().first()
+                # if len(user_rated) > 0:
+                #     user_rated = user_rated[0]               
             else:
                 addit = False
         else:
@@ -206,7 +209,7 @@ def get_quizes(selected_cats, UID):
 
             creator_username = session.execute(creator).first()[0]  
             
-            rating = score(r.question.question_id)
+            rating_score = score(r.question.question_id)
             
             q = {
                 "quizq_id": r.quizq.quizq_id,
@@ -215,14 +218,19 @@ def get_quizes(selected_cats, UID):
                 "answer": r.question.answer,
                 "created_by_id": r.question.created_by,
                 "created_by_username": creator_username,
-                "rating": rating,
+                "rating": rating_score,
                 "level_no": r.quizq.level_no,
                 "categories": question_cats,
                 "pics": pics,
+                "last_ansered": last_ansered,
+                "user_rated": user_rated
             }
-
             que_list.append(q)
-            
+
+    # Calculate the elapsed time of function excecution for Development ONLY
+    elapsed_time = time.time() - start_time
+    print("Elapsed time:", elapsed_time, "seconds")   
+
     return que_list        
 
 def get_user(user_id):

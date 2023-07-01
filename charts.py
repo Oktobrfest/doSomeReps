@@ -95,8 +95,16 @@ def render_chart(x_arr, y_arr, x_label, y_label):
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
 
+    # Rotate x-axis labels by 45 degrees
+    ax.set_xticklabels(x, rotation=-35, ha='left')
+
     if y_label == 'Questions':
         ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+
+    # Adjust the layout to prevent labels from being cut off
+    plt.tight_layout()
+    # Alternatively, you can manually adjust the bottom margin
+    # plt.subplots_adjust(bottom=0.2)
 
     # Render the chart to a base64-encoded string
     buffer = BytesIO()

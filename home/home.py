@@ -71,7 +71,7 @@ from sqlalchemy import create_engine
 
 # Blueprint Configuration
 home = Blueprint("home", __name__, template_folder="templates", static_folder="static")
-@app.route("/favicon.ico")
+@home.route("/favicon.ico")
 def favicon():
     return send_from_directory(
         os.path.join(app.root_path, "static"),
@@ -157,7 +157,7 @@ def homepage():
         questions_dict = tally_catz(questions_list)
         # Limited 10 categories.
         sorted_ques_cat_count = sorted(questions_dict.items(), key = lambda x: x[1], reverse = True)
-        limited_cat_count = dict(sorted_ques_cat_count[:2])
+        limited_cat_count = dict(sorted_ques_cat_count[:8])
 
         categories, question_count = split_dict(limited_cat_count)
         categories_graph = render_chart(categories, question_count, 'Categories', 'Questions')
@@ -357,8 +357,7 @@ def quiz():
                 .where(quizq.quizq_id == quizq_id)
             )
             current_quiz = session.execute(qry).scalars().all()
-
-            print(qry)
+            # print(qry)
 
             # set fields applicable to both possibilities (completed date & by whom)
             update_stmt = (
@@ -456,8 +455,12 @@ def quiz():
     # except:
         q = ""
     else:
-          q = que_list[0]
-
+        # sort by date
+        # sorted_que_list = sorted(que_list, key=lambda k: k['last_ansered']) 
+        sorted_que_list = sorted(que_list, key=lambda k: (k['last_ansered'] is None, k['last_ansered']))
+        sorted_que_list = sorted_que_list[:7]
+        q = random.choice(sorted_que_list)
+        
     return render_template(
         "quiz.html",
         title="Quiz",
