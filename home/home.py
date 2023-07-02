@@ -150,16 +150,10 @@ def homepage():
             )
     else:
         # categories graph
-        # get all questions that are public
-        questions_qry = select(question).where(question.privacy==False)
-        questions_sql_models = session.execute(questions_qry).scalars().all()
-        questions_list = listify_sql(questions_sql_models)
-        questions_dict = tally_catz(questions_list)
-        # Limited 10 categories.
-        sorted_ques_cat_count = sorted(questions_dict.items(), key = lambda x: x[1], reverse = True)
-        limited_cat_count = dict(sorted_ques_cat_count[:8])
-
+        sorted_ques_cat_count = cat_questions_count(8)
+        limited_cat_count = dict(sorted_ques_cat_count)
         categories, question_count = split_dict(limited_cat_count)
+                        
         categories_graph = render_chart(categories, question_count, 'Categories', 'Questions')
 
         repetition_days_real = list(session.execute(select(level.days_hence)).scalars().all())

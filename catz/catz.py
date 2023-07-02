@@ -40,19 +40,28 @@ from sqlalchemy import (
 from ..database import Base, engine, session
 from ..models import category, question, q_pic, quizq, level, users, rating, excluded_questions
 
+from ..bluehelpers import *
+from flask_login import current_user, login_required
 
 
+catz = Blueprint(
+    'catz', __name__,
+    template_folder='templates',
+    static_folder='static'
+)
 
 
-catz = Blueprint("catz", __name__, template_folder="templates", static_folder="static")
-
-
-@app.route('/categories/')
-def categories():
-    # Get all categories from the database
-    categories = Category.query.all()
+@catz.route('/topiclist', methods=['GET', 'POST'], endpoint='topiclist')
+def topiclist():
+    topics_list = cat_questions_count(100)
+    topics = dict(topics_list)
+   
     # Render the template and pass the categories to it
-    return render_template('categories.html', categories=categories)
+    
+    return render_template('topiclist.html', 
+                           user=current_user,
+                           topics=topics,
+                           )
 
 
 

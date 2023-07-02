@@ -420,3 +420,14 @@ def save_pictures(question, request):
                     )
     session.commit()                
     return question
+
+  # get all questions that are public
+def cat_questions_count(qty):
+    questions_qry = select(question).where(question.privacy==False)
+    questions_sql_models = session.execute(questions_qry).scalars().all()
+    questions_list = listify_sql(questions_sql_models)
+    questions_dict = tally_catz(questions_list)
+    # Limited 10 categories.
+    sorted_ques_cat_count = sorted(questions_dict.items(), key = lambda x: x[1], reverse = True)
+    return sorted_ques_cat_count[:qty]
+   

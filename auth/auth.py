@@ -19,10 +19,10 @@ auth = Blueprint(
     template_folder='templates',
     static_folder='static'
 )
-routes = Blueprint('routes', __name__,
-    template_folder='templates',
-    static_folder='static'
-    )
+# routes = Blueprint('routes', __name__,
+#     template_folder='templates',
+#     static_folder='static'
+#     )
     
 @auth.route('/login', methods=['GET', 'POST'], endpoint='login')
 def login():
