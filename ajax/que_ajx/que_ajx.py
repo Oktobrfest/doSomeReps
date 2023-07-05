@@ -28,9 +28,12 @@ def searchquefilters():
 
     cur_user = get_user(UID)  
     excluded_question_ids = [q.question_id for q in cur_user.excluded_questions]
-
+    # Start the timer (to time excecution speed for development)
+    start_time = time.time()
+        
     question_que = []
     if filters['personal'] == True:
+   
         # first grab all that users questions within the categories selected
         all_usr_qs_qry = select(question).join(question.categories).where(category.category_name.in_(filters['catz'])).where(question.created_by == UID)
         
@@ -49,6 +52,10 @@ def searchquefilters():
       
         for r in dif:
             question_que.append(r)
+            
+            # Calculate the elapsed time of function excecution for Development ONLY
+        elapsed_time = time.time() - start_time
+        print("personal Elapsed time:", elapsed_time, "seconds")   
     
      #get users specified by the filters
     user_list = []
@@ -67,7 +74,9 @@ def searchquefilters():
     if filters['public'] == True:
         public_user_qry = select(users.id).where(users.id != UID).filter(users.id.not_in(fav_list)).filter(users.id.not_in(block_list))
         
-        res = session.execute(public_user_qry).all()    
+        res = session.execute(public_user_qry).all()   
+        elapsed_time = time.time() - elapsed_time - start_time
+        print("public Elapsed time:", elapsed_time, "seconds")    
           
         for r in res:
             user_list.append(r[0])
@@ -84,8 +93,11 @@ def searchquefilters():
     # questions to exclude from all questions list(filtered_users_qs_qry)
     exclusion_qry = select(question.question_id).join(question.categories).where(category.category_name.in_(filters['catz'])).join(quizq, quizq.question_id == question.question_id).where(quizq.user_id == UID)
 
-        
+    elapsed_time = time.time() - elapsed_time - start_time
+    print("line 96 Elapsed time:", elapsed_time, "seconds")        
     exclusion_objs = session.execute(exclusion_qry.distinct()).scalars().all()
+    elapsed_time = time.time() - elapsed_time - start_time
+    print("line 99 Elapsed time:", elapsed_time, "seconds")        
     # not needed! exclusion_tuple = tuple([ x for x in exclusion_objs ])
     
     # all questions list - exclusion_qry = final_query
@@ -97,6 +109,9 @@ def searchquefilters():
          final_query = final_query.filter(~question.question_id.in_(excluded_question_ids))
       
     filtered_questions = session.execute(final_query.distinct()).scalars().all()    
+    
+    elapsed_time = time.time() - elapsed_time
+    print("line 113 Elapsed time:", elapsed_time, "seconds")      
         
     for r in filtered_questions:
         question_que.append(r)
@@ -122,6 +137,10 @@ def searchquefilters():
         # get rating
         rate_qry = select(rating.rating).where(rating.question_id == r.question_id)
         rates = session.execute(rate_qry).scalars().all()
+        
+        elapsed_time = time.time() - elapsed_time
+        print("line 141 Elapsed time:", elapsed_time, "seconds")     
+        
         rating_total = [ x for x in rates ]
         if len(rating_total) == 0:
             rate = 0
