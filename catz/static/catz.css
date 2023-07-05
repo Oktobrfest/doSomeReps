@@ -1,0 +1,38 @@
+
+
+.heading {
+    font-size: 2em;
+    font-weight: bold;
+    text-align: center;
+    margin: 0.67em 0;
+}
+
+.underline {
+    text-decoration: underline;
+  }
+  
+  .sort-indicator {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border: solid;
+    border-width: 0 11px 11px 11px;
+    border-color: transparent transparent #000000 transparent;
+    margin-left: 5px; /* Adjust the margin as needed */
+    vertical-align: middle;
+  }
+  
+
+
+  .sort-indicator {
+    display: none;
+    /* Styles for the sort indicator when not sorted */
+  }
+  
+  .sorted .sort-indicator {
+    display: inline-block;
+    /* Styles for the sort indicator when sorted */
+  }
+
+  
+  

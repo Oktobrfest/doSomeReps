@@ -192,6 +192,7 @@ window.onload = (event) => {
 
         // Event listener for the 'Topic List' header
         topicHeader.addEventListener('click', () => {
+            toggleSortIndicator(topicHeader);
             // Sort the rows alphabetically by topic
             rows.sort((a, b) => a.cells[0].innerText.localeCompare(b.cells[0].innerText));
             // Clear the table and add the sorted rows
@@ -201,12 +202,27 @@ window.onload = (event) => {
 
         // Event listener for the 'Question Count' header
         countHeader.addEventListener('click', () => {
+            toggleSortIndicator(countHeader);
             // Sort the rows numerically by count
             rows.sort((a, b) => a.cells[1].innerText - b.cells[1].innerText);
             // Clear the table and add the sorted rows
             while (table.rows.length > 1) table.deleteRow(1);
             rows.forEach(row => table.appendChild(row));
         });
+
+          // Function to toggle the sort indicator class on the header
+const toggleSortIndicator = (header) => {
+    const isSorted = header.classList.contains('sorted');
+    topicHeader.classList.remove('sorted');
+    countHeader.classList.remove('sorted');
+    if (!isSorted) {
+      header.classList.add('sorted');
+    }
+  };
+
+       
+
+
     }
 
 
@@ -223,6 +239,8 @@ window.onload = (event) => {
 
 
 }
+
+
 
 
 

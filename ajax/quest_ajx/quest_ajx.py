@@ -39,8 +39,8 @@ def addcat():
         session.add(new_cat)
         session.commit()
         flash("Category created!", category="success")
-        category_list = get_all_categories()
-        cache.set('category_list', category_list, timeout=60*60*24*7) # a weekapp
+        category_list = get_all_db_categories()
+        cache.set('category_list', category_list, timeout=60*60*24) # a day
         # clean up the string
         data = newCategory
         htl = clean_for_html(newCategory)

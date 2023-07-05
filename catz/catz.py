@@ -11,7 +11,7 @@ from flask import (
     session as local_session,
 )
 
-from flask import jsonify, make_response, g, current_app as app
+from flask import jsonify, make_response, g, send_from_directory, current_app as app
 
 from sqlalchemy.orm import (
     Query,
@@ -47,6 +47,10 @@ from flask_login import current_user, login_required
 catz = Blueprint(
     'catz', __name__,
     template_folder='templates',
+)
+
+catz_static = Blueprint(
+    'catz_static', __name__,
     static_folder='static'
 )
 
@@ -63,6 +67,9 @@ def topiclist():
                            topics=topics,
                            )
 
+@catz_static.route('/static/<path:filename>')
+def custom_static(filename):
+    return send_from_directory(catz_static.static_folder, filename)
 
 
 

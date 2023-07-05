@@ -1,15 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Topic List{% endblock title %}
+{% block head %}
+<link href="{{ url_for('catz_static.custom_static', filename='catz.css') }}" rel="stylesheet">
+
+{{ super() }}
+{% endblock head %}
 {% block content %}
 <div>
   <div>
     <table id="topic-table">
       <tr>
         <th id="sort-by-topic"  class="heading topic-heading-title">
-          <h1 class="topic-heading-title">Topic List</h1>
+          <h1 class="topic-heading-title underline">Topic List  <span class="sort-indicator"></span></h1>
+         
         </th>
         <th id="sort-by-count" class="heading topic-question-count-title">
-          <h1 class="topic-question-count-title">Question Count</h1>
+          <h1 class="topic-question-count-title underline">Question Count <span class="sort-indicator"></span></h1>
       </tr>
       {% for topic, count in topics.items() %}
       <tr>
@@ -24,5 +30,6 @@
     </table>
   </div>
 </div>
+
 
 {% endblock content %}
