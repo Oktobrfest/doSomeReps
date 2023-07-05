@@ -12,7 +12,7 @@ Add Content
         <h3 class="shrink-if-small" id="current-rating">&nbsp; - Question {% if q.rating == 0 %}
             Unrated </h3>
         {% else %}
-        Rating: {{ q.rating }}
+        Rating: {{ q.rating|round(1) }}
         <div id="singlestar" class="star-rating">
             <input type="radio" name="stars" id="star-f" value="1" checked="true" />
             <label for="star-f"></label>

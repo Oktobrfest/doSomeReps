@@ -150,8 +150,8 @@ def get_quizes(selected_cats, UID):
     # print(str("============================================================================================================"))
     # print(str(quest_wCats_qry))
   
-    result = session.execute(quest_wCats_qry).all()
-   # result = session.execute(quest_wCats_qry.distinct()).all()
+    # works- but added distinct anyway -maybe do speed test- result = session.execute(quest_wCats_qry).all()
+    result = session.execute(quest_wCats_qry.distinct()).all()
 
     que_list = []
     now = datetime.now()
@@ -161,7 +161,8 @@ def get_quizes(selected_cats, UID):
             continue  # Skip the current iteration if there's no intersection
         
         last_ansered = None
-        user_rated = None
+        user_rate_qry = select(rating.rating).where(rating.question_id == r.question.question_id).where(rating.user_id == UID)
+        user_rated = session.execute(user_rate_qry).scalars().first()
         # see if it's due to be answered- (levels 2+)
         if r.quizq.level_no > 1:
             # find the quiz question that was answered before it and grab that datetime
@@ -183,24 +184,11 @@ def get_quizes(selected_cats, UID):
             if now > due_date:
                 addit = True
                 last_ansered = answered_on
-                user_rate_qry = select(rating.rating).where(rating.question_id == r.question.question_id).where(rating.user_id == UID)
-                user_rated = session.execute(user_rate_qry).scalars().first()
-                # if len(user_rated) > 0:
-                #     user_rated = user_rated[0]               
             else:
                 addit = False
         else:
             addit = True  # if it's level #1
         if addit == True:
-            # catz = []  # duplicate, but prob doesn't add all the categories!
-            # categories = []
-            # for c in r.question.categories:
-            #     catz.append(c.category_name)
-            #     for qu in c.questions:
-            #         if qu.question_id == r.question.question_id:
-            #             for cc in qu.categories:
-            #                 categories.append(cc.category_name)
-
             pics = {k: [] for k in ["answer_pics", "hint_image", "question_image"]}
             for img in r.question.pics:
                 pics[img.pic_type].append(img.pic_string)
@@ -229,7 +217,7 @@ def get_quizes(selected_cats, UID):
 
     # Calculate the elapsed time of function excecution for Development ONLY
     elapsed_time = time.time() - start_time
-    print("Elapsed time:", elapsed_time, "seconds")   
+    print("Total get Que List Run Time:", elapsed_time, "seconds")   
 
     return que_list        
 
