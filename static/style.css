@@ -537,6 +537,8 @@ flex-direction: row;
 
   #hourglass-container {
     padding-left: 0%;
+
+
 }
 
 #community-image-container, #community-text-container {
@@ -546,6 +548,11 @@ flex-direction: row;
 #site-format-container, #community-container, #repetition-days-conatiner {
   flex-direction: column-reverse;
 }
+
+#login-area {
+  flex-direction: column;
+}
+
 
 }
 
