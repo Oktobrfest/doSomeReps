@@ -443,16 +443,15 @@ def quiz():
                 msg_txt =  "No more questions in your selected categories are currently due. Either que more questions for those categories or select the following categories which have questions due: "
                 msg = msg_txt + cats_due_txt
             flash(msg)
-    # redundant!?
-    # try:
-    #     que_list[0]
-    # except:
         q = ""
     else:
         # sort by date
         # sorted_que_list = sorted(que_list, key=lambda k: k['last_ansered']) 
         sorted_que_list = sorted(que_list, key=lambda k: (k['last_ansered'] is None, k['last_ansered']))
-        sorted_que_list = sorted_que_list[:7]
+        if len(sorted_que_list) > 30:
+            sorted_que_list = sorted_que_list[:17]
+        else:
+            sorted_que_list = sorted_que_list[:7]
         q = random.choice(sorted_que_list)
         
     return render_template(

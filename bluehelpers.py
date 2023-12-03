@@ -119,7 +119,6 @@ def score(question_id):
         
 
 def get_quizes(selected_cats, UID):
-
       # Start the timer (to time excecution speed for development)
     start_time = time.time()
 
@@ -127,7 +126,6 @@ def get_quizes(selected_cats, UID):
 
     excluded_question_ids = [q.question_id for q in user.excluded_questions]
    
-  # ORIGINAL WORKIN:
     quest_wCats_qry = (
     select(question, text("STRING_AGG(category.category_name, ',')"), quizq, level.days_hence)   
     .join(question.categories)
@@ -146,7 +144,7 @@ def get_quizes(selected_cats, UID):
         # update query to omit 'excluded questions'
     quest_wCats_qry = quest_wCats_qry.filter(~question.question_id.in_(excluded_question_ids))
 
-    # Print the SQL query
+    #Print the SQL query
     # print(str("============================================================================================================"))
     # print(str(quest_wCats_qry))
   

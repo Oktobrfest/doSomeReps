@@ -131,8 +131,7 @@ def searchq():
 
     # build the query
     query = (
-        session.query(question, category)
-        .options(joinedload(question.categories))
+        session.query(question).distinct(question.question_id)
         .join(question.categories)
         .filter(category.category_name.in_(filter_cats))
         .filter(question.created_by==UID)
@@ -157,12 +156,12 @@ def searchq():
     search_results = []
     for r in results:
         catz = []
-        for c in r.question.categories:
+        for c in r.categories:
             catz.append(c.category_name)
 
         q = {
-            "question_text": r.question.question_text,
-            "question_id": r.question.question_id,
+            "question_text": r.question_text,
+            "question_id": r.question_id,
             "categories": catz,
         }
         search_results.append(q)

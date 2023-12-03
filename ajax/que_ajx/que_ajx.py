@@ -103,12 +103,12 @@ def searchquefilters():
     # not needed! exclusion_tuple = tuple([ x for x in exclusion_objs ])
     
     # all questions list - exclusion_qry = final_query
-    # final_query = filtered_users_qs_qry.filter(question.question_id.not_in(exclusion_objs))
+    final_query = filtered_users_qs_qry.filter(question.question_id.not_in(exclusion_objs))
 
     #  #excluded questions omited from all quesitons list            
-    # if filters['excluded'] == False:
-    #     # update query to exclude them
-    #      final_query = final_query.filter(~question.question_id.in_(excluded_question_ids))
+    if filters['excluded'] == False:
+        # update query to exclude them
+        final_query = final_query.filter(~question.question_id.in_(excluded_question_ids))
 
     sst = time.time()
 
