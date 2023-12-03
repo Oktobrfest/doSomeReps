@@ -1,0 +1,67 @@
+# General
+*.log
+*.csv
+*.dat
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.flaskenv
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.pycapp
+*.pyz
+*.egg
+*.egg-info/
+*.swp
+
+# Virtual Environments
+venv/
+.env/
+.venv/
+
+# Docker
+.dockerignore
+
+# Node (if using Node.js in your project)
+/node_modules/
+.npm/
+.yarn/
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Build and Distribution
+/dist/
+/build/
+/docs/_build/
+/htmlcov/
+/coverage/
+*.cover
+
+# Test and Coverage Reports
+.pytest_cache/
+.cache/
+.coverage
+.coverage.*
+.tox/
+
+# Image files
+*.jpg
+*.png
+*.bmp
+*.svg
+
+# Lock files
+*.lock
+
+# Documentation
+/docs/_build/
