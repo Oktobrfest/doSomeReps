@@ -394,7 +394,9 @@ def quiz():
                 # Create new quiz Q
                 session.add(new_quizq)                
 
-        # Implement caching - remove answered question from cached Q list           
+        # Implement caching - remove answered question from cached Q list  
+        print(str(session.query(quizq).filter_by(user_id=UID, level_no=new_lvl)))
+        X = '33'
         session.commit()
         if len(selected_categories) < 1:
             # FAILED VALIDATION'
