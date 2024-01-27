@@ -1,7 +1,7 @@
 
 """Application entry point."""
 # import sys
-
+print("wsgi just ran!")
 # print(sys.executable)
 # print(sys.version)
 
@@ -20,5 +20,8 @@ app.debug = True
 # logging.basicConfig(stream=sys.stderr)
 # sys.path.insert(0,"/var/www/html/repz/")
 
+# Oriignal with AWS:
+#     app.run(host="127.0.0.1", port=12000, debug=True, 
+
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=12000, debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=5002, debug=True, use_reloader=False)

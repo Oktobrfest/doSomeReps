@@ -1,6 +1,6 @@
 import sys
 import logging
-
+print("/doSomeReps/app.wsgi just ran!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! if you dont see this just delete this shit file!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 logging.basicConfig(stream=sys.stderr)
 sys.path.insert(0, '/home/ubuntu/projects')
