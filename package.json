@@ -1,0 +1,11 @@
+{
+    "name": "reps",
+    "version": "0.1",
+    "description": "",
+    "dependencies": {
+      "pdfjs-dist": "^4.0.x"
+    },
+    "author": "Oktobrfest",
+    "license": "ISC"
+  }
+  
