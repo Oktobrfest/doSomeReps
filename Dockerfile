@@ -10,7 +10,8 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm
 
-COPY requirements.txt package.json ./
+COPY requirements.txt requirements.txt
+COPY package*.json ./
 
 RUN pip install -r requirements.txt
 RUN npm install
