@@ -70,8 +70,8 @@ def init_app():
         app.register_blueprint(quest_ajx)
         app.register_blueprint(user_ajx)
         app.register_blueprint(que_ajx)
-        print("zzzzzzzzzzzzzzzzzzzz")
-        app.config['DEBUG'] = True
+    
+       # redundant- delete this? app.config['DEBUG'] = True
         app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
         
         ACCESS_KEY_ID = environ.get("ACCESS_KEY_ID")

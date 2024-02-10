@@ -395,9 +395,10 @@ def quiz():
                 session.add(new_quizq)                
 
         # Implement caching - remove answered question from cached Q list  
-        print(str(session.query(quizq).filter_by(user_id=UID, level_no=new_lvl)))
-        X = '33'
+        # print(str(session.query(quizq).filter_by(user_id=UID, level_no=new_lvl)))
+
         session.commit()
+     
         if len(selected_categories) < 1:
             # FAILED VALIDATION'
             msg = "You didn't select any question categories! Try again."
@@ -515,8 +516,16 @@ def editquestions():
         q=q,
     )
 
-
-
+@home.route("/studymaterials", methods=["GET", "POST"], endpoint="studymaterials")
+@login_required
+def studymaterials():
+    
+    
+    return render_template(
+        "studymaterials.html",
+        title="Study Materials",
+        user=current_user,
+       )
 
 
 # @home.route("/exclude_q", methods=["POST"], endpoint="exclude_q")
