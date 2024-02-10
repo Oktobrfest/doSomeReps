@@ -9,10 +9,12 @@ Flask==2.2.2
 Flask-Caching==2.0.2
 Flask-Login==0.6.2
 flask-paginate==2022.1.8
-Flask-Uploads==0.2.1
+Flask-Reuploaded==1.4.0
 Flask-WTF==1.1.1
 fonttools==4.39.2
 greenlet==2.0.1
+importlib-metadata==7.0.0
+importlib-resources==6.1.1
 itsdangerous==2.1.2
 Jinja2==3.1.2
 jmespath==1.0.1
@@ -25,7 +27,8 @@ packaging==23.0
 pathspec==0.10.3
 Pillow==9.4.0
 platformdirs==2.6.2
-pyodbc==4.0.35
+# psycopg2==2.9.9
+psycopg2-binary
 pyparsing==3.0.9
 python-dateutil==2.8.2
 python-dotenv==0.21.0
@@ -33,7 +36,8 @@ s3transfer==0.6.0
 six==1.16.0
 SQLAlchemy==1.4.46
 tomli==2.0.1
+typing_extensions==4.8.0
 urllib3==1.26.14
 Werkzeug==2.2.2
 WTForms==3.0.1
-ipython==8.18.1
+zipp==3.17.0
