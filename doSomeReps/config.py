@@ -47,9 +47,9 @@ class Config:
 
     # Configure SQLAlchemy logging
     logging.basicConfig()
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
-    logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
-    logging.getLogger('sqlalchemy.orm').setLevel(logging.WARNING)
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+    logging.getLogger('sqlalchemy.pool').setLevel(logging.DEBUG)
+    logging.getLogger('sqlalchemy.orm').setLevel(logging.DEBUG)
 
     # Redirect SQLAlchemy logs to stdout
     logging.getLogger('sqlalchemy.engine').addHandler(logging.StreamHandler(sys.stdout))

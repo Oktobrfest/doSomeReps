@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Python: Remote Attach",
-            "type": "python",
+            "type": "debugpy",
             "request": "attach",
             "connect": {
                 "host": "0.0.0.0",
@@ -22,7 +22,7 @@
         },
         {
             "name": "justMyCode False- Python: Remote Attach",
-            "type": "python",
+            "type": "debugpy",
             "request": "attach",
             "connect": {
                 "host": "0.0.0.0",
