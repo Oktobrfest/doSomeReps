@@ -65,7 +65,9 @@ import math
 from ..charts import *
 
 from repz import cache
+from repz.cache_helper import CacheHelper
 import hashlib
+
 from sqlalchemy import create_engine
 
 
@@ -102,8 +104,7 @@ def homepage():
     """Homepage."""
     if current_user.is_authenticated:
         # Render a homepage for authenticated users
-        UID1 = g._login_user.id
-        UID = copy.copy(UID1)
+        UID = g._login_user.id
         
         user_qry = select(users).where(users.id == UID)
         
@@ -172,8 +173,7 @@ def homepage():
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
 @login_required
 def addcontent():
-    UID1 = g._login_user.id
-    UID = copy.copy(UID1)
+    UID = g._login_user.id
     form = questionForm()
     category_list = get_all_categories()
     # cleaned_cat_list = list(map(lambda x: clean_for_html(x), category_list))
@@ -266,11 +266,7 @@ def addcontent():
 @home.route("/quiz", methods=["GET", "POST"], endpoint="quiz")
 @login_required
 def quiz():
-    # Redundant
-    # user_id_no = current_user.get_id()
-    # UIDa = current_user.id
     UID = g._login_user.id
-    #UID = copy.copy(UID1)
     cats_due = []
 
     category_list = get_all_categories()
@@ -292,16 +288,9 @@ def quiz():
     else:
         selected_categories = request.form.getlist("category_name")
 
-# implement caching
-    # first hash the user & categories selected
-    #firstly sort category list
-    sorted_cats = sorted(selected_categories)
-    cats_string = ''.join(sorted_cats)
-    cat_hash = hashlib.md5(cats_string.encode()).hexdigest()
-    que_cache_key = f"que_user_{UID}_cats_{cat_hash}"
-    que_list = cache.get(que_cache_key)
-    if que_list is None:
-        que_list = []
+    cache_helper = CacheHelper(UID)
+    que_list, que_cache_key = cache_helper.get_cached_questions(selected_categories)
+   #que_list = cache_cats(selected_categories, UID)
 
     if request.method == "POST":
         incorrect_submit = request.form.get("incorrect_submit")
@@ -374,15 +363,15 @@ def quiz():
                         if que_list[i]["quizq_id"] == quizq_id:
                             c = que_list.pop(i)
                             break
-                    cache.set(que_cache_key, que_list, timeout=300) 
+                    cache.set(que_cache_key, que_list, timeout=600) 
             elif incorrect_submit == "Wrong!":
                 update_stmt = update_stmt.values(correct=False)
                 new_lvl = 1
                 if len(que_list) > 0:
                     que_list = [q for q in que_list if q["quizq_id"] != quizq_id or (w := q, False)[1]]      
                     cache.set(que_cache_key, que_list, timeout=600) 
-            # Execute the update statement for the answered quiz question
-            session.execute(update_stmt)
+          
+            
             
             # next create a new quizQ Level for that question
             if new_lvl != None:
@@ -392,12 +381,17 @@ def quiz():
                     level_no=new_lvl,
                 )
                 # Create new quiz Q
-                session.add(new_quizq)                
+                session.add(new_quizq)
+                session.commit()                
 
-        # Implement caching - remove answered question from cached Q list  
         # print(str(session.query(quizq).filter_by(user_id=UID, level_no=new_lvl)))
-
-        session.commit()
+        
+              # Execute the update statement for the answered quiz question
+            session.execute(update_stmt)
+            session.commit()
+            
+            # follow PRG Pattern (post redirect get) to prevent double-posting
+            return redirect(url_for("home.quiz"))
      
         if len(selected_categories) < 1:
             # FAILED VALIDATION'
@@ -493,8 +487,7 @@ def quemore():
 @home.route("/editquestions", methods=["GET"], endpoint="editquestions")
 @login_required
 def editquestions():
-    UID1 = g._login_user.id
-    UID = copy.copy(UID1)
+    UID = g._login_user.id
     form = questionForm()
     category_list = get_all_categories()
     question_categories = []

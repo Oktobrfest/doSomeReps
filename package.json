@@ -5,6 +5,9 @@
     "dependencies": {
       "pdfjs-dist": "^4.0.x"
     },
+    "scripts": {
+        "postinstall": "cp -r node_modules/pdfjs-dist ./"
+      },      
     "author": "Oktobrfest",
     "license": "ISC"
   }
