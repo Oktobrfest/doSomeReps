@@ -55,10 +55,10 @@ venv/
 .tox/
 
 # Image files
-*.jpg
-*.png
-*.bmp
-*.svg
+# *.jpg
+# *.png
+# *.bmp
+# *.svg
 
 # Lock files
 *.lock
