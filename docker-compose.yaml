@@ -5,8 +5,8 @@ services:
     depends_on:
       - postgres
     build:
-      context: /home/z/projects/reps-project
-      dockerfile: /home/z/projects/reps-project/Dockerfile
+      context: ./
+      dockerfile: ./Dockerfile
     networks:
       proxy-network:  
         ipv4_address: 10.5.0.4
@@ -24,8 +24,8 @@ services:
  
   reps_dev:
     build:
-      context: /home/z/projects/reps-project
-      dockerfile: /home/z/projects/reps-project/Dockerfile
+      context: ./
+      dockerfile: ./Dockerfile
       args:
        - NODE_ENV=development
     networks:
