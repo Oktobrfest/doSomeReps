@@ -512,7 +512,7 @@ def editquestions():
 @home.route("/studymaterials", methods=["GET", "POST"], endpoint="studymaterials")
 @login_required
 def studymaterials():
-    
+    logging.debug('Rendering studymaterials.html')
     
     return render_template(
         "studymaterials.html",

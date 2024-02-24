@@ -1,21 +1,27 @@
 {% extends "base.html" %}
-{% block head %}
-<script type="module" src="/static/js/pdfviewer.js"></script>
-{% endblock head %}
 
-{% block title %}Study Materials{% endblock title %}
 
+
+{% block title %}
+Study Materials
+{% endblock title %}
 {% block content %}
-<div id="pdf-content-wrapper" class="pdf-content-wrapper">
-  <h2 id="pdf-title">Title: </h2>
-  &nbsp;
-  <div id="pdf-content">
+<!DOCTYPE html>
+<html>
 
-<h1>PDF GOES HERE:</h1>
+<head>
+    <script type="module" src="{{ url_for('static', filename='js/pdfjs-dist/build/pdf.mjs') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/pdfviewer.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/pdfjs-dist/addon/doq.js') }}"></script>
+</head>
 
-<canvas id="the-canvas"></canvas>
+<body>
+    <div>
+        <canvas id="the-canvas" style="border: 1px solid black; direction: ltr;"></canvas>
+    </div>
 
-  </div>  
-</div>
 
+
+  </body>
+  </html> 
 {% endblock content %}

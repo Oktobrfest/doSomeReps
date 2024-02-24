@@ -15,16 +15,10 @@
     crossorigin="anonymous" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   {{ flask_util_js.js }}
-  <script type="text/javascript" src="/static/index.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='prism.css') }}">
+  <script src="{{ url_for('static', filename='prism.js') }}" type="text/javascript"></script>
+  <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
 
-  
-<link href="/static/prism.css" rel="stylesheet" />
-<script  type="text/javascript" src="/static/prism.js"></script>
-{# <script src="/static/prism-autoloader.min.js"></script> DONT HAVE THIS #}
-
-<link href="{{ url_for('static', filename='prism.css') }}" rel="stylesheet" />
-<script src="{{ url_for('static', filename='prism.js') }}"></script>
 
 
 
@@ -76,6 +70,9 @@
     integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
     crossorigin="anonymous"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+
+
  </body>
 
 </html>
