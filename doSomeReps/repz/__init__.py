@@ -29,6 +29,7 @@ from sqlalchemy.orm import Query
 
 from flask_uploads import configure_uploads, IMAGES, UploadSet
 from . import ajax
+import logging
 
 #makes this globaly available
 cache = Cache(config={'CACHE_TYPE': 'simple'})
@@ -46,7 +47,10 @@ def init_app():
     app.config['UPLOADED_IMAGES_DEST'] = Config.UPLOADED_IMAGES_DEST
         
     app.config['SECRET_KEY'] = Config.SECRET_KEY
-      
+    
+    if Config.FLASK_ENV == 'development':
+       logging.basicConfig(level=logging.DEBUG) 
+        
     # lets you reference url_for in .js files
     fujs = FlaskUtilJs(app)    
 
@@ -105,5 +109,5 @@ def init_app():
             return flask.redirect(flask.url_for('auth.login', user=current_user))
             
     Base.metadata.create_all(engine)
-       
+               
     return app
