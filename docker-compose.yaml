@@ -43,7 +43,7 @@ services:
       - NODE_ENV=development
     volumes:
       - ./doSomeReps:/app
-    command: python -m debugpy --wait-for-client --listen 0.0.0.0:5678 -m flask run --host=0.0.0.0 #--debugger
+    command: python -m debugpy --wait-for-client --listen 0.0.0.0:5678 -m flask run --host=0.0.0.0  --port=5001 --debugger
 
   # mssql:
   #   image: mcr.microsoft.com/mssql/server:2022-latest

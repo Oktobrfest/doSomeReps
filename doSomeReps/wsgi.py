@@ -15,7 +15,7 @@ app = init_app()
 # sys.path.insert(0,"/var/www/html/repz/")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80, use_reloader=True)
+    app.run(host="0.0.0.0", port=5001, use_reloader=True)
     
     
     # redundant- delete this? ,debug=True, in the above .run
