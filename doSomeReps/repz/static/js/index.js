@@ -59,10 +59,10 @@ window.onload = (event) => {
 
         function handleSelectAllClick() {
             event.preventDefault();
-            var checkboxes = document.querySelectorAll('#search-filters-form input[type="checkbox"]#category_name');
-            var allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+            let checkboxes = document.querySelectorAll('#search-filters-form input[type="checkbox"]#category_name');
+            let allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
 
-            for (var checkbox of checkboxes) {
+            for (let checkbox of checkboxes) {
                 checkbox.checked = !allChecked;
             }
             this.textContent = allChecked ? 'Select All' : 'Uncheck All';
@@ -81,16 +81,16 @@ window.onload = (event) => {
         }
         if (window.location.pathname === '/addcontent') {
             // make sure checkboxes are selected before submitting
-            var form = document.getElementById('add_question');
+            let form = document.getElementById('add_question');
             document.getElementById("select-all-btn").classList.add("hidden");
 
             // Add a 'submit' event listener to the form
             form.addEventListener('submit', function (event) {
                 // Select all checkboxes
-                var checkboxes = document.getElementsByClassName('custom-checkbox');
+                let checkboxes = document.getElementsByClassName('custom-checkbox');
 
                 // Check if at least one checkbox is checked
-                var atLeastOneChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+                let atLeastOneChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
 
                 // If no checkboxes are checked, prevent the form from being submitted and display an alert
                 if (!atLeastOneChecked) {
@@ -166,19 +166,15 @@ window.onload = (event) => {
     if ((window.location.pathname === '/quiz') || (window.location.pathname === '/quemore') || (window.location.pathname === '/editquestions')) {
         document.getElementById("select-all-btn").addEventListener("click", function () {
             event.preventDefault();
-            var checkboxes = document.querySelectorAll('input[type="checkbox"]#category_name');
-            var allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+            let checkboxes = document.querySelectorAll('input[type="checkbox"]#category_name');
+            let allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
 
-            for (var checkbox of checkboxes) {
+            for (let checkbox of checkboxes) {
                 checkbox.checked = !allChecked;
             }
             this.textContent = allChecked ? 'Select All' : 'Uncheck All';
         });
     }
-
-
-
-
 
     if (window.location.pathname === '/topiclist') {
         const table = document.getElementById('topic-table');
@@ -219,30 +215,8 @@ const toggleSortIndicator = (header) => {
       header.classList.add('sorted');
     }
   };
-
-       
-
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  }
 }
-
-
-
-
 
 function submit_rating(rating) {
     const quizq = document.getElementById('quizq-id');
@@ -262,19 +236,6 @@ function submit_rating(rating) {
         console.error('Error: ', error);
     })
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function highlight(x) {
     x.style.borderStyle = "dotted solid double dashed";
@@ -456,7 +417,6 @@ function getSearchData(filterform) {
                 });
                 li.appendChild(ul);
                 var hidden = document.createElement('input');
-                hidden_name = item.question_id;
                 hidden.type = "hidden";
                 hidden.name = item.question_id;
                 hidden.value = item.question_id;
@@ -482,7 +442,7 @@ function getSearchData(filterform) {
 
                 li.addEventListener('click', clearMsgArea);
                 li.addEventListener('click', populateQuestion);
-                n = document.getElementById("search-results-list-unstyled").appendChild(li);
+                let result_list_div = document.getElementById("search-results-list-unstyled").appendChild(li);
             });
         })
         .catch(error => {
@@ -643,12 +603,12 @@ function hideShowChange(button) {
 var saveq = flask_util.url_for('quest_ajx.saveq');
 
 function saveQuestion(ev) {
-    q = {};
+    let q = {};
     q.question_text = document.getElementById("question_text").value;
     q.hint = document.getElementById("hint").value;
     q.answer = document.getElementById("answer").value;
     q.id = document.getElementById("question-id").value;
-    var checkBox = document.getElementById("privacy-checkbox");
+    let checkBox = document.getElementById("privacy-checkbox");
     if (checkBox.checked) {
         q.privacy = true;
     } else {
@@ -1014,7 +974,7 @@ function unFavoriteUser(ev) {
 }
 
 function removeBlocked(row, created_by) {
-    row_creator = row.getAttribute('created-by');
+    let row_creator = row.getAttribute('created-by');
     if (row_creator == created_by) {
         row.remove();
     };
@@ -1029,7 +989,7 @@ function clearBlockedUsers(created_by) {
     let i = 0;
     while (i < rows.length) {
         for (var r of rows) {
-            row_creator = r.getAttribute('created-by');
+            let row_creator = r.getAttribute('created-by');
             if (row_creator == created_by) {
                 r.remove();
                 i--;

@@ -54,3 +54,5 @@ class Config:
 
         # Redirect SQLAlchemy logs to stdout
         logging.getLogger('sqlalchemy.engine').addHandler(logging.StreamHandler(sys.stdout))
+        
+        CACHE_TYPE = "null" 

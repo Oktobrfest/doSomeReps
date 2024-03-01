@@ -5,7 +5,7 @@
 <div id="site-format-container" class="centering-container">
 
   <div id="site-format-img-container" class="image-container">
-    <img id="site-format-image" class="image" type="image" src="/static/brain.jpg" alt="Site Format Image">
+    <img id="site-format-image" class="image" type="image" src="{{ url_for('static', filename='images/brain.jpg') }}" alt="Site Format Image">
   </div>
 
 
@@ -31,14 +31,14 @@
   </div>
 
   <div id="active-vs-passive-image-container" class="image-container">
-    <img id="active-v-passive-img" class="active-v-passive-img" src="/static/black-board.jpg" type="image"
+    <img id="active-v-passive-img" class="active-v-passive-img" src="{{ url_for('static', filename='images/black-board.jpg') }}" type="image"
       alt="Black Board">
   </div>
 </div>
 
 <div id="community-container" class="centering-container">
   <div id="community-image-container" class="image-container">
-    <img id="community-image" class="image" type="image" src="/static/pcb-brain.jpg" alt="pcb-brain">
+    <img id="community-image" class="image" type="image" src="{{ url_for('static', filename='images/pcb-brain.jpg') }}" alt="pcb-brain">
   </div>
 
   <div id="community-text-container" class="community-text-container text-container">
@@ -62,7 +62,7 @@
 <div id="repetition-days-conatiner"  class="centering-container">
 
 <div id="hourglass-container" class="image-container">
-        <img id="hourglass" src="/static/hourglass.png" type="image" class="hourglass-img" alt="hour glass">
+        <img id="hourglass" src="{{ url_for('static', filename='images/hourglass.png') }}" type="image" class="hourglass-img" alt="hour glass">
       </div>
 
 

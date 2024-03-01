@@ -13,7 +13,7 @@
 <div id="sign-up-call-to-action" class="sign-up-call-to-action centering-container">
 
   <div id="image-container" class="image-container">
-    <img id="graduation-hat" src="/static/graduation-hat.png" type="image" alt="Graduation Cap">
+    <img id="graduation-hat" src="{{ url_for('static', filename='images/graduation-hat.png') }}" type="image" alt="Graduation Cap">
   </div>
   <h3 id="sign-up-title">Sign up now to get started:</h3>
   <a href="{{ url_for('auth.signup') }}" id="sign-up-link" class="link-button-href">
@@ -38,7 +38,7 @@
 
 <div class="centering-container">
     <div class="image-container">
-      <img id="edu-tree" src="/static/edu-tree.jpg" type="image" alt="education tree">
+      <img id="edu-tree" src="{{ url_for('static', filename='images/edu-tree.jpg') }}" type="image" alt="education tree">
   </div>
   <div class="login-section-field">
       <div class="login-button-container">

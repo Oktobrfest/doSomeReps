@@ -11,5 +11,5 @@
 </div>
 <script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
 {{ flask_util_js.js }}
-<script type="text/javascript" src="/static/index.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/index.js') }}"></script>
 {% endblock new_cat %}
