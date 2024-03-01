@@ -2,17 +2,9 @@
 {% block editquestionform %}
 
 {{ flask_util_js.js }}
-<script type="text/javascript" src="/static/index.js"></script>
-
-
-<link href="/static/prism.css" rel="stylesheet" />
-<script type="text/javascript" src="/static/prism.js"></script>
-{#
-<script src="/static/prism-autoloader.min.js"></script> DONT HAVE THIS #}
-
-<link href="{{ url_for('static', filename='prism.css') }}" rel="stylesheet" />
-<script src="{{ url_for('static', filename='prism.js') }}"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='prism.css') }}">
+<script type="text/javascript" src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/prism.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/prism.css') }}">
 
 
 <script>
@@ -80,5 +72,5 @@
 
 
 {{ flask_util_js.js }}
-<script type="text/javascript" src="/static/index.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/index.js') }}"></script>
 {% endblock editquestionform %}

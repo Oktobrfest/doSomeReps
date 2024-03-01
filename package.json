@@ -6,7 +6,7 @@
       "pdfjs-dist": "^4.0.x"
     },
     "scripts": {
-        "postinstall": "cp -r node_modules/pdfjs-dist ./ && cp -r ./samples/doq ./static/js/"
+        "postinstall": "cp -r node_modules/pdfjs-dist ./"
       },      
     "author": "Oktobrfest",
     "license": "ISC"
