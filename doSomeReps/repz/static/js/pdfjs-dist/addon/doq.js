@@ -1,4 +1,7 @@
 /* Initialisation */
+import {Color} from "./lib/color.js";
+
+window.onload = (event) => {
 if (document.readyState === "interactive" || document.readyState === "complete") {
   doqInit();
 } else {
@@ -29,7 +32,7 @@ async function doqInit() {
     document.head.appendChild(link);
   }
 }
-import {Color} from "./lib/color.js";
+
 const newColor = (arg) => new Color(arg);
 
 const DOQReader = {
@@ -461,4 +464,5 @@ const DOQReader = {
     const offset = docWidth - Math.ceil(window.pageXOffset + btnRight);
     this.config.readerToolbar.style.right = `${offset + 2}px`;
   }
+}
 }
