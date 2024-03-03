@@ -4518,7 +4518,7 @@ const defaultOptions = {
 };
 {
   defaultOptions.defaultUrl = {
-    value: "compressed.tracemonkey-pldi-09.pdf",
+    value: "/static/js/receipt.pdf",
     kind: OptionKind.VIEWER
   };
   defaultOptions.sandboxBundleSrc = {
