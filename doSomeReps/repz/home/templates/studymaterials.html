@@ -13,8 +13,9 @@ Study Materials
     <script type="module" src="{{ url_for('static', filename='js/pdfviewer.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/viewer.mjs') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/pdfjs-dist/addon/doq.js') }}"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/viewer.css') }}"> 
-   
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/viewer.css') }}">
+
+    <link rel="resource" type="application/l10n" href="{{ url_for('static', filename='js/pdfjs-dist/web/locale/locale.json') }}"> 
 
     <script type="module" src="{{ url_for('static', filename='js/customToolbar.js') }}"></script>
 </head>
@@ -60,6 +61,8 @@ See https://github.com/adobe-type-tools/cmap-resources
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <meta name="google" content="notranslate">
     <title>PDF.js viewer</title>
+
+  
 
 
   </head>
