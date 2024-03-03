@@ -4512,13 +4512,14 @@ const defaultOptions = {
     kind: OptionKind.WORKER
   },
   workerSrc: {
-    value: "../build/pdf.worker.mjs",
+    value: "/static/js/pdfjs-dist/build/pdf.worker.mjs",
+    // value: "../build/pdf.worker.mjs",
     kind: OptionKind.WORKER
   }
 };
 {
   defaultOptions.defaultUrl = {
-    value: "/static/js/receipt.pdf",
+    value: "/static/js/helloworld.pdf",
     kind: OptionKind.VIEWER
   };
   defaultOptions.sandboxBundleSrc = {
