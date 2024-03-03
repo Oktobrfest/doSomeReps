@@ -20,6 +20,14 @@
  * JavaScript code in this page
  */
 
+
+document.addEventListener('DOMContentLoaded', async (event) => {
+  // var url = '/static/js/helloworld.pdf';
+  
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/js/pdfjs-dist/build/pdf.worker.mjs';
+
+})
+
 /******/ var __webpack_modules__ = ({
 
 /***/ 8759:
