@@ -1,0 +1,7 @@
+{
+    "name": "Python Development Container",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "reps_dev",
+    "extensions": ["ms-python.python"]
+}
+  
