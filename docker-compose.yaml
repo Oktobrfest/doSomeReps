@@ -3,10 +3,11 @@ services:
   reps:
     restart: on-failure:5
     depends_on:
-      - postgres
+      - reps_postgres
     build:
       context: ./
       dockerfile: ./Dockerfile
+    image: reps-img:1.0.0 
     networks:
       proxy-network:  
         ipv4_address: 10.5.0.4
@@ -28,14 +29,17 @@ services:
       dockerfile: ./Dockerfile
       args:
        - NODE_ENV=development
+    image: reps-dev-img:1.0.0
     networks:
       proxy-network:
         ipv4_address: 10.5.0.5
       rep-network:
         ipv4_address: 10.10.0.5     
     ports:
-      - '5001:5001'
-      - '5678:5678'
+      - '5553:5553' #debugger port
+      - '5554:5554' #app port
+#    expose:
+#      - '5551'
     environment:
       - FLASK_ENV=development
       - FLASK_APP=wsgi.py
@@ -43,22 +47,10 @@ services:
       - NODE_ENV=development
     volumes:
       - ./doSomeReps:/app
-    command: python -m debugpy --wait-for-client --listen 0.0.0.0:5678 -m flask run --host=0.0.0.0  --port=5001 --debugger
+ # UNCOMMENT THIS FOR VS-CODE:
+ # command: python -m debugpy --wait-for-client --listen 0.0.0.0:5552 -m flask run --host=0.0.0.0  --port=5551 --debugger
 
-  # mssql:
-  #   image: mcr.microsoft.com/mssql/server:2022-latest
-  #   environment:
-  #     SA_PASSWORD: ${SQL_SERVER_SA_PASSWORD}
-  #     ACCEPT_EULA: "Y"
-  #   networks:
-  #     rep-network:
-  #       ipv4_address: 10.5.0.16
-  #   ports:
-  #     - "1433:1433"
-  #   volumes:
-  #     - mssql_data:/var/opt/mssql
-
-  postgres:
+  reps_postgres:
     image: postgres:latest
     restart: on-failure:5
     environment:
@@ -75,8 +67,6 @@ services:
 
 
 volumes:
-  mssql_data:
-    name: "reps-db"
   rep_pg_data:
     name: "rep"
 

@@ -42,6 +42,8 @@ class Config:
     DB_USERNAME=environ.get("DB_USERNAME")
     DB_PASSWORD=environ.get("DB_PASSWORD")
     
+    IDE=environ.get("IDE")
+    
     # These are the allowed file types, edit this part to fit your needs
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'svg'}
 

@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Flask",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "/app/wsgi.py",
+                "FLASK_DEBUG": "1"
+            },
+            "args": [
+                "run",
+                "--no-reload"
+            ],
+            "jinja": true,
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Remote Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 5551,
+            "host": "0.0.0.0",
+            "pathMappings": [
+              {
+                "localRoot": "${workspaceFolder}",
+              //  "remoteRoot": "/usr/src/app"
+                "remoteRoot": "/app"  
+            }
+            ]
+          }
+    ]
+}

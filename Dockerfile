@@ -17,6 +17,7 @@ COPY requirements.txt requirements.txt
 
 RUN pip install -r requirements.txt
 RUN pip install debugpy
+RUN pip install pydevd-pycharm==242.10180.30
 
 FROM stage1 AS stage2
 
