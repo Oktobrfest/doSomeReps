@@ -49,7 +49,12 @@ def init_app():
     app.config['SECRET_KEY'] = Config.SECRET_KEY
     
     if Config.FLASK_ENV == 'development':
-       logging.basicConfig(level=logging.DEBUG) 
+        logging.basicConfig(level=logging.DEBUG)
+        
+        if Config.IDE == "pycharm":
+            import pycharm
+            
+
         
     # lets you reference url_for in .js files
     fujs = FlaskUtilJs(app)    
