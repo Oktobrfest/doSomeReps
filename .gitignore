@@ -34,8 +34,6 @@ venv/
 .yarn/
 
 # IDEs and Editors
-.idea/
-.vscode/
 *.sublime-project
 *.sublime-workspace
 
