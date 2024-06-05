@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/doSomeReps/repz/static/js/doq" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/samples/doq" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/samples/pdf.js" vcs="Git" />
+  </component>
+</project>
