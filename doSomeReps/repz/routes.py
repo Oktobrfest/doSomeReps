@@ -24,29 +24,6 @@ home = Blueprint('home', __name__,
 @routes.route('/', methods=['GET', 'POST'], endpoint='home1')
 @login_required
 def home1():
-    # if request.method == 'POST':
-    #     username = request.form.get('username')
-    #     # new_user = UserModel(id='SET IDENTITY_INSERT', first_name=first_name)
-    #     new_user = UserModel(username=username, created_on=func.now() )
-    #     print(new_user)
-    #     session.add(new_user)
-    #     session.commit()
-    #     flash('Account created!', category='success')
-
     return render_template( 'home.html' )
     
-    
-    
-
-
-# @views.route("/login", endpoint= 'login')
-# def login():
-#     return render_template( 'login.html' )
-    
-#         Blueprint Configuration
-# home_bp = Blueprint(
-#     'home_bp', __name__,
-#     template_folder='templates',
-#     static_folder='static'
-# )
-
+### IS THIS PAGE EVEN USED???????

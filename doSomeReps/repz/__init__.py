@@ -110,7 +110,7 @@ def init_app():
         def unauthorized():
             """Redirect unauthorized users to Login page."""
             flash('You must be logged in to view that page.')
-            # return render_template(url_for('homo.home1'))
+            
             return flask.redirect(flask.url_for('auth.login', user=current_user))
             
     Base.metadata.create_all(engine)
