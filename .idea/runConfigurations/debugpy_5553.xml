@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="debugpy-5553" type="PyRemoteDebugConfigurationType" factoryName="Python Remote Debug">
+    <module name="reps-project" />
+    <option name="PORT" value="5556" />
+    <option name="HOST" value="host.docker.internal" />
+    <PathMappingSettings>
+      <option name="pathMappings">
+        <list>
+          <mapping local-root="$PROJECT_DIR$/doSomeReps" remote-root="/app" />
+        </list>
+      </option>
+    </PathMappingSettings>
+    <option name="REDIRECT_OUTPUT" value="true" />
+    <option name="SUSPEND_AFTER_CONNECT" value="true" />
+    <method v="2" />
+  </configuration>
+</component>
