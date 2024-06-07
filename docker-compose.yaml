@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   reps:
-    restart: on-failure:5
+    restart: on-failure:2
     depends_on:
       - reps_postgres
     build:
@@ -19,11 +19,14 @@ services:
     environment:
       - FLASK_ENV=production
       - FLASK_APP=wsgi.py
+      - FLASK_DEBUG=0
     volumes:
       - ./doSomeReps:/app
     command: flask run --host=0.0.0.0 --port=5000
  
   reps_dev:
+    depends_on:
+      - reps_postgres
     build:
       context: ./
       dockerfile: ./Dockerfile
@@ -36,8 +39,8 @@ services:
       rep-network:
         ipv4_address: 10.10.0.5     
     ports:
-      - '5553:5553' #debugger port
-      - '5554:5554' #app port
+      - '5554:5554' #debugger port
+      - '5553:5553' #app port
 #    expose:
 #      - '5551'
     environment:
@@ -45,8 +48,11 @@ services:
       - FLASK_APP=wsgi.py
       - FLASK_DEBUG=1
       - NODE_ENV=development
+      - IDE=${IDE}
     volumes:
       - ./doSomeReps:/app
+    command: sh entrypoint.sh
+ 
  # UNCOMMENT THIS FOR VS-CODE:
  # command: python -m debugpy --wait-for-client --listen 0.0.0.0:5552 -m flask run --host=0.0.0.0  --port=5551 --debugger
 
