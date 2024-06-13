@@ -14,7 +14,9 @@ class Config:
 
     SECRET_KEY = environ.get("SECRET_KEY")
     FLASK_ENV = environ.get("FLASK_ENV")
-    FLASK_APP = "wsgi.py"
+    
+    DB_HOST = environ.get("DB_HOST")
+    DB_PORT = environ.get("DB_PORT")
     
     #included to be able to step into other modules
    # set in docker-compose or .env DEBUG = True
@@ -23,7 +25,9 @@ class Config:
     # Static Assets
     STATIC_FOLDER = "static"
     TEMPLATES_FOLDER = "templates"
-    COMPRESSOR_DEBUG = True
+    COMPRESSOR_DEBUG = environ.get("COMPRESSOR_DEBUG")
+    # is this even needed?
+    PORT = environ.get("PORT")
     
     # file uploads
     UPLOADS_DEFAULT_DEST = 'repz/home/static' 
@@ -41,8 +45,6 @@ class Config:
     DB_NAME=environ.get("DB_NAME")
     DB_USERNAME=environ.get("DB_USERNAME")
     DB_PASSWORD=environ.get("DB_PASSWORD")
-    
-    IDE=environ.get("IDE")
     
     # These are the allowed file types, edit this part to fit your needs
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'svg'}

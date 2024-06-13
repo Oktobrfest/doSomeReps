@@ -7,17 +7,16 @@ from setuptools import setup, find_packages
 
 from config import Config
 
-server = Config.DB_ADDRESS
-database = Config.DB_NAME  
-username = Config.DB_USERNAME
-password = quote(Config.DB_PASSWORD)
-driver = 'psycopg2'
+DB_HOST = Config.DB_HOST
+DB_PORT = Config.DB_PORT
+SERVER = f'{DB_HOST}:{DB_PORT}'
 
-# driver = 'ODBC Driver 18 for SQL Server'
-# SQLALCHEMY_DATABASE_URL = f'mssql://{username}:{password}@{server}/{database}?driver={driver}&encrypt=no'
-# SQLALCHEMY_DATABASE_URL = f'postgresql+psycopg2://scott:tiger@host/dbname
+DATABASE = Config.DB_NAME  
+USERNAME = Config.DB_USERNAME
+PASSWORD = quote(Config.DB_PASSWORD)
+DRIVER = 'psycopg2'
 
-SQLALCHEMY_DATABASE_URL = f'postgresql+{driver}://{username}:{password}@{server}/{database}'
+SQLALCHEMY_DATABASE_URL = f'postgresql+{DRIVER}://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}'
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, echo=False, future=True)

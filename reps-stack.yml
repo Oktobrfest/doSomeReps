@@ -1,0 +1,52 @@
+version: '3.8'
+services:
+  reps:
+    build:
+      context: doSomeReps
+      dockerfile: /var/reps-project/Dockerfile
+    networks:
+      - portainer_agent_network
+    ports:
+      - '${PORT}:${PORT}'
+    environment:
+      - FLASK_ENV=${FLASK_ENV}
+      - FLASK_DEBUG=${FLASK_DEBUG}
+      - FLASK_APP=${FLASK_APP}
+      - IDE=${IDE}
+    volumes:
+      - ./doSomeReps:/app
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+          - node.hostname == kremlin
+    command: sh entrypoint.sh
+    
+
+  reps_postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: ${REPS_POSTGRES_PASSWORD}
+      POSTGRES_USER: ${REPS_POSTGRES_USER}
+      POSTGRES_DB: ${REPS_POSTGRES_DB}
+    networks:
+      - portainer_agent_network
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - rep_pg_data:/var/lib/postgresql/data
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+          - node.hostname == kremlin
+
+
+volumes:
+  rep_pg_data:
+    name: "rep"
+
+networks:
+  portainer_agent_network:
+    driver: overlay
+    external: true
