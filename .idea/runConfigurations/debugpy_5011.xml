@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="debugpy-5553" type="PyRemoteDebugConfigurationType" factoryName="Python Remote Debug">
+  <configuration default="false" name="debugpy-5011" type="PyRemoteDebugConfigurationType" factoryName="Python Remote Debug">
     <module name="reps-project" />
-    <option name="PORT" value="5556" />
+    <option name="PORT" value="5011" />
     <option name="HOST" value="host.docker.internal" />
     <PathMappingSettings>
       <option name="pathMappings">
