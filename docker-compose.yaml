@@ -7,9 +7,9 @@ services:
     build:
       context: ./
       dockerfile: ./Dockerfile
-    image: reps-img:1.0.0 
+    image: reps-img:1.0.0
     networks:
-      proxy-network:  
+      proxy-network:
         ipv4_address: 10.5.0.4
       rep-network:
         ipv4_address: 10.10.0.4
@@ -23,7 +23,7 @@ services:
     volumes:
       - ./doSomeReps:/app
     command: flask run --host=0.0.0.0 --port=5000
- 
+
   reps_dev:
     depends_on:
       - reps_postgres
@@ -31,18 +31,18 @@ services:
       context: ./
       dockerfile: ./Dockerfile
       args:
-       - NODE_ENV=development
+        - NODE_ENV=development
     image: reps-dev-img:1.0.0
     networks:
       proxy-network:
         ipv4_address: 10.5.0.5
       rep-network:
-        ipv4_address: 10.10.0.5     
+        ipv4_address: 10.10.0.5
     ports:
       - '5554:5554' #debugger port
       - '5553:5553' #app port
-#    expose:
-#      - '5551'
+    #    expose:
+    #      - '5551'
     environment:
       - FLASK_ENV=development
       - FLASK_APP=wsgi.py
@@ -52,9 +52,9 @@ services:
     volumes:
       - ./doSomeReps:/app
     command: sh entrypoint.sh
- 
- # UNCOMMENT THIS FOR VS-CODE:
- # command: python -m debugpy --wait-for-client --listen 0.0.0.0:5552 -m flask run --host=0.0.0.0  --port=5551 --debugger
+
+  # UNCOMMENT THIS FOR VS-CODE:
+  # command: python -m debugpy --wait-for-client --listen 0.0.0.0:5552 -m flask run --host=0.0.0.0  --port=5551 --debugger
 
   reps_postgres:
     image: postgres:latest
@@ -70,7 +70,6 @@ services:
       - "5432:5432"
     volumes:
       - rep_pg_data:/var/lib/postgresql/data
-
 
 volumes:
   rep_pg_data:
