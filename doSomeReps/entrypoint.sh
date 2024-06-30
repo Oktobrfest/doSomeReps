@@ -4,6 +4,9 @@ echo "ENTRYPOINT SCRIPT STARTED..."
 echo "pwd is: "
 echo $(pwd)
 
+PORT=5554
+
+
 # try to get other .env file into here to consolidate some shit: source doSomeReps/.env
 
 echo "IDE IS: "

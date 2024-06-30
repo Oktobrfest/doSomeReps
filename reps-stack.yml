@@ -1,41 +1,40 @@
 version: '3.8'
 services:
   reps:
-    build:
-      context: doSomeReps
-      dockerfile: /var/reps-project/Dockerfile
+    image: dosomereps/dosomereps:1.0.0
     networks:
-      - portainer_agent_network
+      - portainer_agent_network  
     ports:
-      - '${PORT}:${PORT}'
+      - 5554:5554
     environment:
-      - FLASK_ENV=${FLASK_ENV}
-      - FLASK_DEBUG=${FLASK_DEBUG}
-      - FLASK_APP=${FLASK_APP}
-      - IDE=${IDE}
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - FLASK_APP=wsgi.py
     volumes:
       - ./doSomeReps:/app
     deploy:
+      replicas: 1
       placement:
         constraints:
           - node.role == manager
           - node.hostname == kremlin
-    command: sh entrypoint.sh
-    
+    command: sh entrypoint.sh    
 
   reps_postgres:
     image: postgres:latest
     environment:
-      POSTGRES_PASSWORD: ${REPS_POSTGRES_PASSWORD}
-      POSTGRES_USER: ${REPS_POSTGRES_USER}
-      POSTGRES_DB: ${REPS_POSTGRES_DB}
+      POSTGRES_PASSWORD: Fhd83@aVvaD33h
+      POSTGRES_USER: ninjapanda
+      POSTGRES_DB: rep
     networks:
       - portainer_agent_network
-    ports:
-      - "${DB_PORT}:5432"
     volumes:
-      - rep_pg_data:/var/lib/postgresql/data
+      - rep_pg_vol:/var/lib/postgresql/data
+      # - type: bind
+      #   source: /var/reps-project/backup
+      #   target: /backup
     deploy:
+      replicas: 1
       placement:
         constraints:
           - node.role == manager
@@ -43,10 +42,8 @@ services:
 
 
 volumes:
-  rep_pg_data:
-    name: "rep"
+  rep_pg_vol: {}
 
 networks:
   portainer_agent_network:
-    driver: overlay
     external: true

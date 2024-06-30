@@ -17,7 +17,7 @@ PASSWORD = quote(Config.DB_PASSWORD)
 DRIVER = 'psycopg2'
 
 SQLALCHEMY_DATABASE_URL = f'postgresql+{DRIVER}://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}'
-
+print('connection to: ' + SQLALCHEMY_DATABASE_URL)
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, echo=False, future=True)
 
