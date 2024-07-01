@@ -52,11 +52,15 @@ class Config:
     # Configure SQLAlchemy logging
     if FLASK_ENV == 'development':
         logging.basicConfig()
-        logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+        logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
         logging.getLogger('sqlalchemy.pool').setLevel(logging.DEBUG)
         logging.getLogger('sqlalchemy.orm').setLevel(logging.DEBUG)
 
         # Redirect SQLAlchemy logs to stdout
         logging.getLogger('sqlalchemy.engine').addHandler(logging.StreamHandler(sys.stdout))
+        
+        logging.getLogger('sqlalchemy.pool').addHandler(logging.StreamHandler(sys.stdout))
+        logging.getLogger('sqlalchemy.orm').addHandler(logging.StreamHandler(sys.stdout))
+
         
         CACHE_TYPE = "null" 

@@ -409,6 +409,7 @@ def save_pictures(question, request):
 
   # get all questions that are public
 def cat_questions_count(qty):
+    session.expire_all()
     questions_qry = select(question).where(question.privacy==False)
     questions_sql_models = session.execute(questions_qry).scalars().all()
     questions_list = listify_sql(questions_sql_models)
