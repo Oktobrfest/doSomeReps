@@ -26,6 +26,10 @@ services:
       POSTGRES_PASSWORD: Fhd83@aVvaD33h
       POSTGRES_USER: ninjapanda
       POSTGRES_DB: rep
+      POSTGRES_LOG_MIN_ERROR_STATEMENT: error
+      POSTGRES_LOG_STATEMENT: all
+    ports:
+      - 5558:5558
     networks:
       - portainer_agent_network
     volumes:
