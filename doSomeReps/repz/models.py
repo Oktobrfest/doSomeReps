@@ -1,13 +1,13 @@
 from xmlrpc.client import Boolean
 from sqlalchemy.types import Date, Integer, String, Boolean as Bool
-from .database import Base
-from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declarative_base
 import sqlalchemy as sa
-from sqlalchemy import Identity, ForeignKey, Table, Column, PrimaryKeyConstraint
+from sqlalchemy import Identity, ForeignKey, Table, Column, PrimaryKeyConstraint, orm
 from sqlalchemy.orm import relationship, Mapped
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
+
+Base = declarative_base()
 
 question_categories = Table(
     "association",

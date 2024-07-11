@@ -10,7 +10,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.sql import func, exists, distinct
 from sqlalchemy.sql.expression import bindparam
 from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_, func, text
-from .database import Base, engine, session
+from .database import session
 from .models import category, question, q_pic, quizq, level, rating, users, question_categories
 
 import re
