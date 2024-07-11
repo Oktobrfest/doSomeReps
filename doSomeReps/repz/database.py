@@ -1,5 +1,4 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from urllib.parse import quote
 
@@ -28,8 +27,3 @@ session = scoped_session(sessionmaker(autocommit=False,
                                          bind=engine,
                                          future=True))
 
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    if exception:
-        session.rollback()
-    session.remove()

@@ -8,8 +8,8 @@ services:
       - 5554:5554
       - 5553:5553 # debugger (turn off for prod)
     environment:
-      - FLASK_ENV=development
-      - FLASK_DEBUG=1
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
       - FLASK_APP=wsgi.py
       - IDE=vscode
       - DEBUG_PORT=5553 

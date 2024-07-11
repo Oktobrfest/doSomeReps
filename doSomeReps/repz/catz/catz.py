@@ -1,48 +1,16 @@
 from flask import (
     Blueprint,
     render_template,
-    request,
-    jsonify,
-    flash,
-    Flask,
-    flash,
-    redirect,
-    url_for,
     session as local_session,
 )
 
-from flask import jsonify, make_response, g, send_from_directory, current_app as app
+from flask import send_from_directory
 
-from sqlalchemy.orm import (
-    Query,
-    selectinload,
-    joinedload,
-    aliased,
-    subqueryload,
-    with_parent,
-    contains_eager,
-)
-from sqlalchemy.sql import func, exists, distinct
-from sqlalchemy.sql.expression import bindparam, ColumnOperators
-from sqlalchemy import (
-    select,
-    Interval,
-    join,
-    intersect,
-    update,
-    not_,
-    except_,
-    and_,
-    or_,
-    text,
-    
-)
-from ..database import Base, engine, session
-from ..models import category, question, q_pic, quizq, level, users, rating, excluded_questions
+
+from ..database import session
 
 from ..bluehelpers import *
-from flask_login import current_user, login_required
-
+from flask_login import current_user
 
 catz = Blueprint(
     'catz', __name__,

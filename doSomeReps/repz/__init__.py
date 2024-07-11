@@ -1,10 +1,8 @@
 """Initialize Flask app."""
-from flask import Flask, g
-import os, sys
-from .database import Base, engine, session
+from flask import Flask, g, flash, redirect, url_for
+from .database import session
 from flask_login import LoginManager, current_user
 from config import Config
-from flask import render_template, Blueprint, request, flash, redirect, url_for
 from flask_caching import Cache
 
 
@@ -14,21 +12,13 @@ from .models import users
 import sqlalchemy as sa
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
-from flask_login import UserMixin
 import flask_login
 import flask
-from werkzeug.utils import secure_filename
 
 from os import environ
 
-import boto3
-
 from .flask_util_js import FlaskUtilJs
 
-from sqlalchemy.orm import Query
-
-from flask_uploads import configure_uploads, IMAGES, UploadSet
-from . import ajax
 import logging
 
 #makes this globaly available
@@ -112,7 +102,11 @@ def init_app():
             flash('You must be logged in to view that page.')
             
             return flask.redirect(flask.url_for('auth.login', user=current_user))
-            
-    Base.metadata.create_all(engine)
-               
+        
+        @app.teardown_appcontext
+        def shutdown_session(exception=None):
+            if exception:
+                session.rollback()
+            session.remove()
+                  
     return app

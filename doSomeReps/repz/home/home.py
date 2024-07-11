@@ -39,7 +39,7 @@ from sqlalchemy import (
     text,
     
 )
-from ..database import Base, engine, session
+from ..database import session
 from ..models import category, question, q_pic, quizq, level, users, rating, excluded_questions
 import re
 import copy
