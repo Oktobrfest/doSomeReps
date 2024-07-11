@@ -14,7 +14,7 @@ services:
       - IDE=vscode
       - DEBUG_PORT=5553 
     volumes:
-      - ./doSomeReps:/app
+      - /var/reps-project/doSomeReps:/app
     deploy:
       replicas: 1
       placement:
@@ -33,19 +33,41 @@ services:
       - portainer_agent_network
     volumes:
       - rep_pg_vol:/var/lib/postgresql/data
-      # - type: bind
-      #   source: /var/reps-project/backup
-      #   target: /backup
+      - logs_vol:/var/lib/postgresql/logs
+      - type: bind
+        source: /var/reps-project/postgresql
+        target: /etc/postgresql
+      - type: bind
+        source: /var/reps-project/postgresql/docker-entrypoint-initdb.d
+        target: /docker-entrypoint-initdb.d
     deploy:
       replicas: 1
       placement:
         constraints:
           - node.role == manager
           - node.hostname == kremlin
+    command: [
+      "-c", "max_connections=50",
+      "-c", "idle_in_transaction_session_timeout=10min",
+      "-c", "statement_timeout=5min",
+      "-c", "log_statement=all",
+      "-c", "log_connections=on",
+      "-c", "log_disconnections=on",
+      "-c", "log_min_error_statement=error",
+      "-c", "log_destination=csvlog",
+      "-c", "logging_collector=on",
+      "-c", "shared_preload_libraries=pg_stat_statements",
+      "-c", "log_directory=/var/lib/postgresql/logs"
+      ]
+
+    # command: -c config_file=/etc/postgresql/postgresql.conf
+
 
 
 volumes:
   rep_pg_vol: {}
+  logs_vol:
+    external: true
 
 networks:
   portainer_agent_network:
