@@ -18,6 +18,8 @@ class Config:
     DB_HOST = environ.get("DB_HOST")
     DB_PORT = environ.get("DB_PORT")
     
+    IDE = environ.get("IDE")
+    
     #included to be able to step into other modules
    # set in docker-compose or .env DEBUG = True
     DEBUG_TB_INTERCEPT_REDIRECTS = False
@@ -51,7 +53,9 @@ class Config:
 
     # Configure SQLAlchemy logging
     if FLASK_ENV == 'development':
-        logging.basicConfig()
+        # logging.basicConfig()
+        logging.basicConfig(level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
+ 
         logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
         logging.getLogger('sqlalchemy.pool').setLevel(logging.DEBUG)
         logging.getLogger('sqlalchemy.orm').setLevel(logging.DEBUG)

@@ -68,9 +68,6 @@ from repz import cache
 from repz.cache_helper import CacheHelper
 import hashlib
 
-from sqlalchemy import create_engine
-
-
 # Blueprint Configuration
 home = Blueprint("home", __name__, template_folder="templates", static_folder="static")
 @home.route("/favicon.ico")
@@ -287,10 +284,10 @@ def quiz():
             )
     else:
         selected_categories = request.form.getlist("category_name")
+        set_session("quiz_category_names", selected_categories)
 
     cache_helper = CacheHelper(UID)
     que_list, que_cache_key = cache_helper.get_cached_questions(selected_categories)
-   #que_list = cache_cats(selected_categories, UID)
 
     if request.method == "POST":
         incorrect_submit = request.form.get("incorrect_submit")
@@ -406,8 +403,7 @@ def quiz():
                 q=""
                 # form=form,
             )
-        else:
-            set_session("quiz_category_names", selected_categories)
+            
 
     if len(que_list) < 1:
         selected_cats = [ remove_underscore(x) for x in selected_categories ]
