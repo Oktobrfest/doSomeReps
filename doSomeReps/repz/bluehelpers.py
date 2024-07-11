@@ -31,7 +31,6 @@ from repz import cache
 import time
 
 
-
 def clean_for_html(unclean: str) -> str:
     unclean = re.sub(r"[^\w\s]", "", unclean)
     # Replace all runs of whitespace with a single dash
@@ -407,14 +406,48 @@ def save_pictures(question, request):
     session.commit()                
     return question
 
+
+from sqlalchemy.exc import OperationalError
+import logging
+
+
+
   # get all questions that are public
 def cat_questions_count(qty):
     session.expire_all()
     questions_qry = select(question).where(question.privacy==False)
-    questions_sql_models = session.execute(questions_qry).scalars().all()
-    questions_list = listify_sql(questions_sql_models)
-    questions_dict = tally_catz(questions_list)
-    # Limited 10 categories.
-    sorted_ques_cat_count = sorted(questions_dict.items(), key = lambda x: x[1], reverse = True)
-    return sorted_ques_cat_count[:qty]
+    try:
+        questions_sql_models = session.execute(questions_qry).scalars().all()
+        questions_list = listify_sql(questions_sql_models)
+        questions_dict = tally_catz(questions_list)
+        # Limited 10 categories.
+        sorted_ques_cat_count = sorted(questions_dict.items(), key = lambda x: x[1], reverse = True)
+        return sorted_ques_cat_count[:qty]
+    except OperationalError as e:
+        app.logger.error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA, DB Error:' + str(e))
+        session.close()
+        raise 
+    
+
+# def cat_questions_count(qty, session):  # Pass session as an argument
+#     with session.begin():  # Use a context manager for session handling
+#         questions_qry = select(question).where(question.privacy == False)
+#         try:
+#             questions_sql_models = session.execute(questions_qry).scalars().all()
+#             questions_list = listify_sql(questions_sql_models)
+#             questions_dict = tally_catz(questions_list)
+#             sorted_ques_cat_count = sorted(questions_dict.items(), key=lambda x: x[1], reverse=True)
+#             return sorted_ques_cat_count[:qty]
+#         except OperationalError as e:
+#             # Check for timeout errors and retry (optional)
+#             if "server closed the connection unexpectedly" in str(e):
+#                 # Log the timeout error
+#                 logger.error("Database connection timeout. Retrying... AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+#                 # Retry logic (e.g., using a loop and a counter)
+#                 # ...
+#             else:
+#                 # Log other OperationalErrors
+#                 logger.error("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA Database connection error: %s", e)
+#                 raise  # Re-raise the exception after handling
+
    

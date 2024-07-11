@@ -1,11 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from urllib.parse import quote
 
 from setuptools import setup, find_packages
 
 from config import Config
+
+from flask import current_app as app
 
 DB_HOST = Config.DB_HOST
 DB_PORT = Config.DB_PORT
@@ -17,17 +19,17 @@ PASSWORD = quote(Config.DB_PASSWORD)
 DRIVER = 'psycopg2'
 
 SQLALCHEMY_DATABASE_URL = f'postgresql+{DRIVER}://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}'
-print('connection to: ' + SQLALCHEMY_DATABASE_URL)
+
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, echo=False, future=True)
+    SQLALCHEMY_DATABASE_URL, echo=False, future=True, pool_recycle=1800, pool_pre_ping=True)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush = False, bind=engine)
+session = scoped_session(sessionmaker(autocommit=False,
+                                         autoflush=False,
+                                         bind=engine,
+                                         future=True))
 
-Base = declarative_base()
-# other guys recomendeation on stack ov
-
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
-Session.configure(bind=engine)
-session = Session(future=True)
-
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    if exception:
+        session.rollback()
+    session.remove()
