@@ -71,3 +71,8 @@ samples/
 
 /logs/
 *.log
+rep_pg_data_backup.tar.gz
+rep_pg_data1_backup.tar.gz
+rep_pg_dump.dump
+rep_vol_backup.tar.gz
+db.dump
