@@ -19,19 +19,12 @@ auth = Blueprint(
     template_folder='templates',
     static_folder='static'
 )
-# routes = Blueprint('routes', __name__,
-#     template_folder='templates',
-#     static_folder='static'
-#     )
     
 @auth.route('/login', methods=['GET', 'POST'], endpoint='login')
 def login():
-    # return render_template( 'login.html' )
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        # user = Base.users.query.filter_by(username=username).first() didnt work
-        # works!!
         query = Query([users]).filter(users.username == username)
         current_user1 = query.with_session(session).first()
         if current_user1 == 'None': 
@@ -68,13 +61,7 @@ def signup():
         password = request.form.get('password1')
         password2 = request.form.get('password2')
         email= request.form.get('email')
-        # existing_user = users.query.filter_by(username=username).first()
-        # existing_user = sa.session.query(users).query.all()
-        # existing_user = Base.users.query.filter_by(username=username).first()
-        # try this too
-        # result1 = session.get(users.username, username) #not correct way to use it. need to use key
         existing_user = session.execute(select(users).where(users.username == username)).first()
-        # Alternate way to do it is: session.query(func.count(users.id))
                 
         # Validation
         if password != password2:
@@ -99,7 +86,6 @@ def signup():
             return redirect( url_for('auth.login', user=current_user ))
         else:
             flash('That username already exists. Please choose a different one.', category='error')
-            # return render_template(url_for('auth.signup', user=current_user ))
 
     return render_template('signup.html', user=current_user )
     

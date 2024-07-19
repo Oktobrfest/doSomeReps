@@ -68,6 +68,7 @@ from repz import cache
 from repz.cache_helper import CacheHelper
 import hashlib
 
+
 # Blueprint Configuration
 home = Blueprint("home", __name__, template_folder="templates", static_folder="static")
 @home.route("/favicon.ico")
@@ -77,6 +78,7 @@ def favicon():
         "favicon.ico",
         mimetype="image/vnd.microsoft.icon",
     )
+    
 
 @home.route("/about", methods=["GET", "POST"], endpoint="about")
 @cache.cached(timeout=500000)
@@ -95,6 +97,7 @@ def about():
         description="About us page.",
         #catz_chart=catz_chart,
     )
+
 
 @home.route("/", methods=["GET", "POST"], endpoint="homepage")
 def homepage():
@@ -169,6 +172,7 @@ def homepage():
 # creates a new question
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
 @login_required
+@cache.cached(timeout=500000)
 def addcontent():
     UID = g._login_user.id
     form = questionForm()
@@ -203,17 +207,17 @@ def addcontent():
     if form.validate_on_submit():
         fail = False
         if len(question_text) < 3 or len(answer) < 1:
-            flash("Question text is too short!", category="failure")
+            flash("Question text is too short!", category="error")
             fail = True
         existing_q_text = session.execute(
             select(question).where(question.question_text == question_text)
         ).first()
         if existing_q_text is not None:
-            flash("question already exists!", category="failure")
+            flash("question already exists!", category="error")
             fail = True
         if len(category_names) < 1:
             fail = True
-            flash("You must select at least one category!", category="failure")
+            flash("You must select at least one category!", category="error")
         if fail == True:
             return redirect(url_for("home.addcontent"))
 
@@ -259,6 +263,7 @@ def addcontent():
             selected_categories=selected_categories,
             form=form,
         )
+        
 
 @home.route("/quiz", methods=["GET", "POST"], endpoint="quiz")
 @login_required
@@ -366,9 +371,7 @@ def quiz():
                 new_lvl = 1
                 if len(que_list) > 0:
                     que_list = [q for q in que_list if q["quizq_id"] != quizq_id or (w := q, False)[1]]      
-                    cache.set(que_cache_key, que_list, timeout=600) 
-          
-            
+                    cache.set(que_cache_key, que_list, timeout=600)     
             
             # next create a new quizQ Level for that question
             if new_lvl != None:
@@ -457,6 +460,7 @@ def quiz():
         selected_categories=selected_categories,
         cats_due=cats_due
     )
+    
 
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
 @login_required
@@ -474,6 +478,7 @@ def quemore():
         selected_categories = []
     else:
         selected_categories = search_que_filters['catz']
+
     return render_template(
         "quemore.html",
         title="Que More Questions",
@@ -483,9 +488,11 @@ def quemore():
         category_list=category_list,
         selected_categories=selected_categories,
     )
+    
 
 @home.route("/editquestions", methods=["GET"], endpoint="editquestions")
 @login_required
+@cache.cached(timeout=500000)
 def editquestions():
     UID = g._login_user.id
     form = questionForm()
@@ -508,6 +515,7 @@ def editquestions():
         form=form,
         q=q,
     )
+    
 
 @home.route("/studymaterials", methods=["GET", "POST"], endpoint="studymaterials")
 @login_required

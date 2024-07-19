@@ -33,6 +33,13 @@ window.onload = (event) => {
 
         const save_to_que_button = document.querySelector("#save-to-que");
         save_to_que_button.addEventListener('click', saveToQue);
+
+        // Check for post-reload messages
+        let msg = sessionStorage.getItem('postReloadMsg');
+        if (msg) {
+            setMsg(msg);
+            sessionStorage.removeItem('postReloadMsg');
+        }
     }
 
     // exclude other pages from loading this
@@ -762,10 +769,40 @@ function clearMsgArea() {
     msgArea.style.display = "none";
 }
 
-function setMsg(message) {
+function setMsg(msg, msg_category = 'success', fadeout_secs = null) {
     let msgArea = document.getElementById("my-message-area");
-    msgArea.innerHTML = message;
+    let msgDiv = document.createElement('div');
+    msgDiv.setAttribute('class', `alert alert-${msg_category === 'error' ? 'danger' : 'success'} alert-dismissible fade show`);
+    msgDiv.innerHTML = msg;  
+   
+    let msgButton = document.createElement('button');
+    msgButton.className = 'close';
+    msgButton.setAttribute('data-dismiss', 'alert');
+    msgButton.innerHTML = '<span aria-hidden="true">&times;</span>';
+    msgDiv.appendChild(msgButton);
+
+    msgArea.appendChild(msgDiv);
     msgArea.style.display = "block";
+
+    if (fadeout_secs) {
+        setTimeout(() => {            
+            fadeOutEffect(msgDiv);
+         }, fadeout_secs * 1000);
+    }
+}
+
+function fadeOutEffect(fadeTarget) {
+    var fadeEffect = setInterval(function () {
+        if (!fadeTarget.style.opacity) {
+            fadeTarget.style.opacity = 1;
+        }
+        if (fadeTarget.style.opacity > 0) {
+            fadeTarget.style.opacity -= 0.1;
+        } else {
+            fadeTarget.remove(); 
+            clearInterval(fadeEffect);
+        }
+    }, 200);
 }
 
 function hideQuestionArea() {
@@ -807,17 +844,16 @@ function queMoreSearch(ev) {
             return response.json();
         })
         .then(data => {
-            if (data.length == 0) {
-                let msg = "No questions found.";
-                setMsg(msg);
-                alert(msg);
+            if (data.data.length == 0) {
+                clearMsgArea();
+                setMsg("No questions found.", 'success', 4);
                 return;
             } else {
-                if ( data.message ) {
-                    setMsg(data.message);
+                if ( data.msg ) {
+                    setMsg(data.msg, data.msg_category, 4);
                 }
 
-                if ( data.validated == 'False' ) {
+                if ( data.status !== 'ok' ) {
                     return;
                 }
 
@@ -827,7 +863,7 @@ function queMoreSearch(ev) {
 
                 // populate the que search results list
                 let table_body = document.getElementById("que-more-search-results-body");
-                data.forEach(q => {
+                data.data.forEach(q => {
                     let row = document.createElement("tr");
                     row.className = "que-more-search-results-row";
                     row.setAttribute('question-id', q.question_id);
@@ -1118,17 +1154,18 @@ function saveToQue(ev) {
         body: que_arry
     })
         .then(response => {
-            if (!response.ok) {
+                  if (!response.ok) {
                 console.log(response);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            if (data == 'ok') {
+            if (data.status == 'ok') {
                 (function () {
+                    sessionStorage.setItem('postReloadMsg', data.msg);
                     location.reload();
-                })();
+                    })();
             } else {
                 alert("Error Queing Questions");
             }

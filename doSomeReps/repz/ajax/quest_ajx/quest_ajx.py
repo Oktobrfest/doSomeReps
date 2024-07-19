@@ -24,7 +24,7 @@ def addcat():
     er = False
     htl = ""
     if len(newCategory) < 3:
-        flash("too short bro!", category="failure")
+        flash("too short bro!", category="error")
         er = True
     else:
         query = Query([category])
