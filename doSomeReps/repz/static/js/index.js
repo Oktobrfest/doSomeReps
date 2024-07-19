@@ -772,7 +772,7 @@ function clearMsgArea() {
 function setMsg(msg, msg_category = 'success', fadeout_secs = null) {
     let msgArea = document.getElementById("my-message-area");
     let msgDiv = document.createElement('div');
-    msgDiv.setAttribute('class', `alert alert-${msg_category === 'error' ? 'danger' : 'success'} alert-dismissible fade show`);
+    msgDiv.setAttribute('class', `alert alert-${msg_category === 'error' ? 'danger' : msg_category} alert-dismissible fade show`);
     msgDiv.innerHTML = msg;  
    
     let msgButton = document.createElement('button');
@@ -844,19 +844,13 @@ function queMoreSearch(ev) {
             return response.json();
         })
         .then(data => {
-            if (data.data.length == 0) {
-                clearMsgArea();
-                setMsg("No questions found.", 'success', 4);
+            clearMsgArea();
+            if ( data.msg ) {
+                setMsg(data.msg, data.msg_category, 5);
+            }
+            if (data.status != 'ok') {
                 return;
-            } else {
-                if ( data.msg ) {
-                    setMsg(data.msg, data.msg_category, 4);
-                }
-
-                if ( data.status !== 'ok' ) {
-                    return;
-                }
-
+            } else {      
                 // qty to add counter
                 const qty_field = document.getElementById("qty_to_que");
                 let que_count = qty_field.value;

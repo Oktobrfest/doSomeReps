@@ -172,7 +172,6 @@ def homepage():
 # creates a new question
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
 @login_required
-@cache.cached(timeout=500000)
 def addcontent():
     UID = g._login_user.id
     form = questionForm()
@@ -492,7 +491,6 @@ def quemore():
 
 @home.route("/editquestions", methods=["GET"], endpoint="editquestions")
 @login_required
-@cache.cached(timeout=500000)
 def editquestions():
     UID = g._login_user.id
     form = questionForm()

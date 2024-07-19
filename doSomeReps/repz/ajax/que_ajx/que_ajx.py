@@ -27,11 +27,10 @@ def searchquefilters():
     
     if len(filters['catz']) < 1:
         # FAILED VALIDATION'
-        res.msg = "You didn't select any question categories! Try again."
-        r = res.create_response()
-        return {}
-    
-    
+        response.msg = "You didn't select any question categories! Try again."
+        response.msg_category = 'error'
+        response.status = 'nogo'        
+        return response.create_response()
     
     cleaned_cats = list(map(lambda x: remove_underscore(x), filters['catz']))
     filters['catz'] = cleaned_cats
@@ -87,8 +86,7 @@ def searchquefilters():
         public_user_qry = select(users.id).where(users.id != UID).filter(users.id.not_in(fav_list)).filter(users.id.not_in(block_list))
         
         res = session.execute(public_user_qry).all()   
-         
-          
+                   
         for r in res:
             user_list.append(r[0])
     
@@ -202,8 +200,12 @@ def searchquefilters():
     print("total rating runtimes:", rating_runtime, " seconds")
 
     response.msg = "Search Completed"
-    response.data = search_results    
-    
+    if len(search_results) > 0:
+        response.data = search_results    
+    else:
+        response.msg += " No Questions Found. Try selecting more categories you're interested in."
+        response.msg_category = 'warning'
+        response.status = 'nogo'
     return response.create_response()
 
 
@@ -236,9 +238,11 @@ def save_to_que():
                 unexclude_count += 1
         msg = msg + "Un-Excluded " + str(unexclude_count) + ' questions.'
     
+    response = AjaxResponse()
     if msg == '':
         msg = 'Nothing Saved.'
-    response = AjaxResponse()
+        response.msg_category = 'warning'
+
     response.msg = msg
     response.status = 'ok'
     
