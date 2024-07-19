@@ -9,6 +9,7 @@ from ...database import *
 from ...models import *
 from repz.routes import *
 from ...bluehelpers import *
+from ..ajax_response import AjaxResponse
 
 
 # Blueprint Configuration
@@ -21,6 +22,17 @@ que_ajx = Blueprint("que_ajx", __name__)
 def searchquefilters():
     UID = g._login_user.id
     filters = request.get_json()
+    
+    response = AjaxResponse()
+    
+    if len(filters['catz']) < 1:
+        # FAILED VALIDATION'
+        res.msg = "You didn't select any question categories! Try again."
+        r = res.create_response()
+        return {}
+    
+    
+    
     cleaned_cats = list(map(lambda x: remove_underscore(x), filters['catz']))
     filters['catz'] = cleaned_cats
 
@@ -186,15 +198,13 @@ def searchquefilters():
 
     e_time = time.time() - s_tim
     print("append loop run duration: ", e_time, " seconds")
-
     print("total favorite user runtimes:", fav_user_runtime, " seconds")
-
     print("total rating runtimes:", rating_runtime, " seconds")
 
-    search_response = jsonify(search_results)
-    msg = "Search Completed"
-    flash(msg, category="success")
-    return search_response
+    response.msg = "Search Completed"
+    response.data = search_results    
+    
+    return response.create_response()
 
 
 @que_ajx.route("/save_to_que", methods=["POST"], endpoint="save_to_que")

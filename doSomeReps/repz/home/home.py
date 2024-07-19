@@ -6,13 +6,15 @@ from flask import (
     request,
     jsonify,
     flash,
-    Flask,
     flash,
     redirect,
     url_for,
     session as local_session,
+    g,
+    current_app as app,
+    send_from_directory
 )
-from flask import jsonify, make_response, g, current_app as app
+
 from flask_login import current_user, login_required, logout_user
 
 from sqlalchemy.orm import (
@@ -56,8 +58,6 @@ from ..aws_s3 import *
 import random
 
 import os
-from flask import send_from_directory
-
 from ..homeforms import *
 from ..bluehelpers import *
 import json
@@ -461,6 +461,10 @@ def quiz():
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
 @login_required
 def quemore():
+    # local_session['_flashes'].clear()
+    zz = 'z'
+    x = local_session
+    # x.clear()
     form = QueAdditionForm()
     UID = g._login_user.id
     category_list = get_all_categories()

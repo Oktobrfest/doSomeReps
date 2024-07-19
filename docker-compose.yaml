@@ -1,110 +1,23 @@
 services:
-  # reps:
-  #   restart: on-failure:2
-  #   depends_on:
-  #     - reps_postgres
-  #   build:
-  #     context: ./
-  #     dockerfile: ./Dockerfile
-  #   image: reps-img:1.0.0
-  #   networks:
-  #     proxy-network:
-  #       ipv4_address: 10.5.0.4
-  #     rep-network:
-  #       ipv4_address: 10.10.0.4
-  #   ports:
-  #     - '5000:5000'
-  #     - '6001:6001'
-  #   environment:
-  #     - FLASK_ENV=production
-  #     - FLASK_APP=wsgi.py
-  #     - FLASK_DEBUG=0
-  #   volumes:
-  #     - ./doSomeReps:/app
-  #   command: flask run --host=0.0.0.0 --port=5000
-
-  # reps_dev:
-  #   # depends_on:
-  #   #   - reps_postgres
-  #   build:
-  #     context: ./
-  #     dockerfile: ./Dockerfile
-  #     args:
-  #       - NODE_ENV=development
-  #   image: reps-dev-img:1.0.0
-  #   networks:
-  #     portainer_agent_network:
-  #     # proxy-network:
-  #     #   ipv4_address: 10.5.0.5
-  #     # rep-network:
-  #     #   ipv4_address: 10.10.0.5
-  #   ports:
-  #     - '5554:5554' #debugger port
-  #     - '5553:5553' #app port
-  #   #    expose:
-  #   #      - '5551'
-  #   environment:
-  #     - FLASK_ENV=development
-  #     - FLASK_APP=wsgi.py
-  #     - FLASK_DEBUG=1
-  #     - NODE_ENV=development
-  #     - IDE=${IDE}
-  #   volumes:
-  #     - ./doSomeReps:/app
-  #   command: sh entrypoint.sh
-
-  # UNCOMMENT THIS FOR VS-CODE:
-  # command: python -m debugpy --wait-for-client --listen 0.0.0.0:5552 -m flask run --host=0.0.0.0  --port=5551 --debugger
-
-#   reps_postgres:
-#     image: postgres:latest
-#     restart: on-failure:5
-#     environment:
-#       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#       POSTGRES_USER: ${POSTGRES_USER}
-#       POSTGRES_DB: ${POSTGRES_DB}
-#     networks:
-#       rep-network:
-#         ipv4_address: 10.10.0.2
-#     # ports:
-#     #   - "5432:5432"
-#     volumes:
-#       - rep_pg_data:/var/lib/postgresql/data
-
-# volumes:
-#   rep_pg_data:
-#     name: "rep"
-
-# networks:
-#   rep-network:
-#     driver: bridge
-#     name: rep-network
-#     ipam:
-#       config:
-#         - subnet: 10.10.0.0/16
-#           gateway: 10.10.0.1
-  # proxy-network:
-  #   external: true
-
-
-# networks:
-#   portainer_agent_network:
-#     external: true
-
-
-
   reps_dev:
+    restart: on-failure:2
+    depends_on:
+      - reps_postgres
     build:
       context: ./
       dockerfile: ./Dockerfile
       args:
         - NODE_ENV=development
-    image: reps-dev-img:1.0.0
+    # image: reps-dev-img:1.0.0
+    networks:
+      rep-network:
+        ipv4_address: 10.10.0.5
     ports:
-      - '5554:5554' #debugger port
-      - '5553:5553' #app port
-
+      - '5557:5557'  # app port
+      - '5558:5558' # debugger port
     environment:
+      - APP_PORT=5557
+      - DEBUG_PORT=5558
       - FLASK_ENV=development
       - FLASK_APP=wsgi.py
       - FLASK_DEBUG=1
@@ -113,4 +26,37 @@ services:
     volumes:
       - ./doSomeReps:/app
     command: sh entrypoint.sh
+
+  # UNCOMMENT THIS FOR VS-CODE:
+  # command: python -m debugpy --wait-for-client --listen 0.0.0.0:5553 -m flask run --host=0.0.0.0  --port=5554 --debugger
+
+  reps_postgres:
+    image: postgres:latest
+    restart: on-failure:5
+    environment:
+      POSTGRES_PASSWORD: ${REPS_POSTGRES_PASSWORD}
+      POSTGRES_USER: ${REPS_POSTGRES_USER}
+      POSTGRES_DB: ${REPS_POSTGRES_DB}
+    networks:
+      rep-network:
+        ipv4_address: 10.10.0.2
+    # ports:
+    #   - "5432:5432"
+    volumes:
+      - rep_pg_data:/var/lib/postgresql/data
+
+volumes:
+  rep_pg_data:
+    name: "rep"
+
+networks:
+  rep-network:
+    driver: bridge
+    name: rep-network
+    ipam:
+      config:
+        - subnet: 10.10.0.0/16
+          gateway: 10.10.0.1
+  # proxy-network:
+  #   external: true
 
