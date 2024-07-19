@@ -235,11 +235,14 @@ def save_to_que():
             if 'success' in res_msg:
                 unexclude_count += 1
         msg = msg + "Un-Excluded " + str(unexclude_count) + ' questions.'
-    flash(msg, category="success")
     
-    response_msg = jsonify('ok')
+    if msg == '':
+        msg = 'Nothing Saved.'
+    response = AjaxResponse()
+    response.msg = msg
+    response.status = 'ok'
     
-    return response_msg          
+    return response.create_response()          
 
 
 @que_ajx.route("/unexclude_q", methods=["POST"], endpoint="unexclude_q")
@@ -254,7 +257,7 @@ def unexclude_q():
     if 'success' in enexclude_result:
         flash(enexclude_result['success'], category="success")
     else:
-        flash(enexclude_result['failure'], category="failure")
+        flash(enexclude_result['failure'], category="error")
         # impliment logging in future #todo
     
     response_msg = jsonify('ok')

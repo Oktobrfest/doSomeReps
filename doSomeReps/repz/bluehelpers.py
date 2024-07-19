@@ -352,7 +352,7 @@ def delete_pic(pic):
             # else:
             #     print("No objects found in bucket")
         else:
-            flash('Failed to delete picture from S3 Bucket!', category="failure")     
+            flash('Failed to delete picture from S3 Bucket!', category="error")     
 
 def allowed_file(filename):
     return (

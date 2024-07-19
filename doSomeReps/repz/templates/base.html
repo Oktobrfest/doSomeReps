@@ -25,7 +25,7 @@
 {% include 'navigation.html' %}
 
 <body tabindex="1">
-
+<div id="my-message-area">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       {% for category, message in messages %}
@@ -47,6 +47,7 @@
       {% endfor %}
     {% endif %}
   {% endwith %}
+</div>
 
   <div class="container">
     {% block content %}{% endblock %}
