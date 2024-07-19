@@ -40,6 +40,7 @@ def init_app():
     
     if Config.FLASK_ENV == 'development':
         logging.basicConfig(level=logging.DEBUG)
+        app.config['TEMPLATES_AUTO_RELOAD'] = True
         
         if Config.IDE == "pycharm":
             import pycharm
@@ -73,10 +74,6 @@ def init_app():
        # redundant- delete this? app.config['DEBUG'] = True
         app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
         
-        ACCESS_KEY_ID = environ.get("ACCESS_KEY_ID")
-        SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
-        bucket = environ.get("BUCKET")
-      
         g.user = current_user
         
         login_manager = LoginManager(app)

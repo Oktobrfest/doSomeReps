@@ -41,21 +41,6 @@ def remove_underscore(html_string: str) -> str:
     spaced_string = re.sub(r"_" ," ", html_string)
     return spaced_string
 
-# OLD WAY. DELETE THIS?
-#def new_q_lookup(UID, selected_categories, qty_to_que):
-    # subquery = select(question).join(question.categories).where(category.category_name.in_(selected_categories)).join(quizq, question.question_id == quizq.question_id)
-    # subq = session.execute(subquery.distinct()).all()
-    # allocatted_question_ids = []
-    # for s in subq:
-    #     allocatted_question_ids.append(s.question.question_id)
-    # new_q_query = select(question).where(not_(question.question_id.in_(allocatted_question_ids))).join(question.categories).where(category.category_name.in_(selected_categories)).limit(qty_to_que)
-    # new_questions = session.execute(new_q_query)
-    # question_ids = []
-    # for new_question in new_questions:
-    #     question_ids.append(new_question.question.question_id)
-    # qty_added = new_quizq(question_ids, UID)   
-    # return qty_added
-
 def set_session(key, value):
     # Set a value in the session
     local_session[key] = value
@@ -108,11 +93,6 @@ def score(question_id):
         final_score = 0
     else:
         final_score = score / count
-
-    # if len(score) == 0:
-    #     final_score = 0
-    # else:
-    #     final_score = sum(score) / len(score)
     
     return final_score
         
@@ -147,7 +127,7 @@ def get_quizes(selected_cats, UID):
     # print(str("============================================================================================================"))
     # print(str(quest_wCats_qry))
   
-    # works- but added distinct anyway -maybe do speed test- result = session.execute(quest_wCats_qry).all()
+
     result = session.execute(quest_wCats_qry.distinct()).all()
 
     que_list = []
@@ -428,26 +408,3 @@ def cat_questions_count(qty):
         session.close()
         raise 
     
-
-# def cat_questions_count(qty, session):  # Pass session as an argument
-#     with session.begin():  # Use a context manager for session handling
-#         questions_qry = select(question).where(question.privacy == False)
-#         try:
-#             questions_sql_models = session.execute(questions_qry).scalars().all()
-#             questions_list = listify_sql(questions_sql_models)
-#             questions_dict = tally_catz(questions_list)
-#             sorted_ques_cat_count = sorted(questions_dict.items(), key=lambda x: x[1], reverse=True)
-#             return sorted_ques_cat_count[:qty]
-#         except OperationalError as e:
-#             # Check for timeout errors and retry (optional)
-#             if "server closed the connection unexpectedly" in str(e):
-#                 # Log the timeout error
-#                 logger.error("Database connection timeout. Retrying... AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-#                 # Retry logic (e.g., using a loop and a counter)
-#                 # ...
-#             else:
-#                 # Log other OperationalErrors
-#                 logger.error("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA Database connection error: %s", e)
-#                 raise  # Re-raise the exception after handling
-
-   

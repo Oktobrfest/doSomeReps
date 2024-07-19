@@ -53,6 +53,7 @@ class Config:
 
     # Configure SQLAlchemy logging
     if FLASK_ENV == 'development':
+        DB_PORT = environ.get("DEV_DB_PORT")
         # logging.basicConfig()
         logging.basicConfig(level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
  

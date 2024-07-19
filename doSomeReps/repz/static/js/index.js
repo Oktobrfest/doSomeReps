@@ -314,7 +314,6 @@ function start_qz(ev) {
     ev.preventDefault();
     // Get the checkbox elements
     const checkboxes = document.querySelectorAll('input[type=checkbox]');
-    // Create a JavaScript object to store the data
     const selected_boxes = [];
     // Iterate over the checkboxes and add the checked ones to the object
     checkboxes.forEach(checkbox => {
@@ -324,7 +323,7 @@ function start_qz(ev) {
     });
     // Convert the JavaScript object to a JSON string
     const selected_catz = JSON.stringify(selected_boxes);
-    // console.log(ev);
+
     fetch(quiz_page, {
         method: 'POST',
         headers: {
@@ -332,7 +331,11 @@ function start_qz(ev) {
         },
         body: selected_catz
     })
+    .catch(error => {
+        console.log(error);
+    });
 }
+
 var searchq = flask_util.url_for('quest_ajx.searchq');
 
 // submit search form data via json to backend
@@ -401,7 +404,6 @@ function getSearchData(filterform) {
                 let li = document.createElement('li');
                 li.className = 'question-result-list-item list-group-item list-group-item-action list-group-item-light'
                 let text = document.createTextNode(item.question_text);
-                // Append the text to <div>
                 li.appendChild(text);
                 let ul = document.createElement('ul');
                 ul.className = "list-inline";
@@ -574,11 +576,10 @@ function createImgContainer(pic_id) {
     div.setAttribute('data-pic-id', pic_id);
     // make close image button
     var button = document.createElement('input');
-    button_name = 'pic-' + pic_id + '-close-button';
+    button.name = 'pic-' + pic_id + '-close-button';
     button.type = "button";
-    button.name = button_name;
     button.value = 'X';
-    button.id = button_name;
+    button.id = button.name;
     button.setAttribute('data-value', pic_id);
     button.className = "image-close-button";
     button.addEventListener('click', eliminateImage);
@@ -812,6 +813,14 @@ function queMoreSearch(ev) {
                 alert(msg);
                 return;
             } else {
+                if ( data.message ) {
+                    setMsg(data.message);
+                }
+
+                if ( data.validated == 'False' ) {
+                    return;
+                }
+
                 // qty to add counter
                 const qty_field = document.getElementById("qty_to_que");
                 let que_count = qty_field.value;
@@ -824,16 +833,14 @@ function queMoreSearch(ev) {
                     row.setAttribute('question-id', q.question_id);
                     row.setAttribute('created-by', q.created_by);
                     table_body.appendChild(row);
-                    // make cells
-                    // que checkbox
+
+                    // make cells & que checkbox
                     let que_cell = document.createElement("td");
                     let que_checkbox = document.createElement('input');
-                    chkbox_name = 'que-question-' + q.question_id + '-chkbox';
                     que_checkbox.type = "checkbox";
-                    que_checkbox.name = chkbox_name;
-                    //que_checkbox.value = "True";
+                    que_checkbox.name  = 'que-question-' + q.question_id + '-chkbox';
                     que_checkbox.className = "que-question-chkbox question-chkbox";
-                    que_checkbox.id = chkbox_name;
+                    que_checkbox.id = que_checkbox.name;
                     que_cell.appendChild(que_checkbox);
                     row.appendChild(que_cell);
 
@@ -847,12 +854,10 @@ function queMoreSearch(ev) {
                     // exclude checkbox
                     let exclude_cell = document.createElement("td");
                     let ex_checkbox = document.createElement('input');
-                    ex_chkbox_name = 'exclude-question-' + q.question_id + '-chkbox';
                     ex_checkbox.type = "checkbox";
-                    ex_checkbox.name = chkbox_name;
-                    //ex_checkbox.value = "True";
+                    ex_checkbox.name = 'exclude-question-' + q.question_id + '-chkbox';
                     ex_checkbox.className = "exclude-question-chkbox question-chkbox";
-                    ex_checkbox.id = chkbox_name;
+                    ex_checkbox.id = ex_checkbox.name;
                     exclude_cell.appendChild(ex_checkbox);
                     row.appendChild(exclude_cell);
 
@@ -862,10 +867,9 @@ function queMoreSearch(ev) {
                     }
 
                     let hidden_exc = document.createElement('input');
-                    hidden_ex_name = 'excluded-q-' + q.question_id;
                     hidden_exc.type = 'hidden';
-                    hidden_exc.name = hidden_ex_name;
-                    hidden_exc.value = hidden_ex_name;
+                    hidden_exc.name = 'excluded-q-' + q.question_id;
+                    hidden_exc.value = hidden_exc.name;
                     row.setAttribute('data-excluded-q', q.excluded);
                     row.appendChild(hidden_exc);
 
