@@ -15,9 +15,6 @@ class Config:
     SECRET_KEY = environ.get("SECRET_KEY")
     FLASK_ENV = environ.get("FLASK_ENV")
     
-    DB_HOST = environ.get("DB_HOST")
-    DB_PORT = environ.get("DB_PORT")
-    
     IDE = environ.get("IDE")
     
     #included to be able to step into other modules
@@ -43,10 +40,11 @@ class Config:
     S3_LOCATION = f"http://{BUCKET}.s3.amazonaws.com/"
 
     # database
-    DB_ADDRESS=environ.get("DB_ADDRESS")
-    DB_NAME=environ.get("DB_NAME")
-    DB_USERNAME=environ.get("DB_USERNAME")
-    DB_PASSWORD=environ.get("DB_PASSWORD")
+    DB_PORT = environ.get("DB_PORT")
+    DB_HOST = environ.get("DB_HOST")
+    DB_NAME = environ.get("DB_NAME")
+    DB_USERNAME = environ.get("DB_USERNAME")
+    DB_PASSWORD = environ.get("DB_PASSWORD")
     
     # These are the allowed file types, edit this part to fit your needs
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'svg'}

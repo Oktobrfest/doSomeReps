@@ -53,8 +53,6 @@ from wtforms.validators import DataRequired, NumberRange
 
 from werkzeug.utils import secure_filename
 
-# from ..s3upload import upload_file
-from ..aws_s3 import *
 import random
 
 import os
