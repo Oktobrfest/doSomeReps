@@ -13,7 +13,7 @@ services:
       rep-network:
         ipv4_address: 10.10.0.5
     ports:
-      - '5557:5557'  # app port
+      - '5557:5557' # app port
       - '5558:5558' # debugger port
     environment:
       - APP_PORT=5557

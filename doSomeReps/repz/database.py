@@ -2,8 +2,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from urllib.parse import quote
 
-from setuptools import setup, find_packages
-
 from config import Config
 
 from flask import current_app as app
