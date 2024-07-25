@@ -40,11 +40,10 @@ venv/
 # Build and Distribution
 /dist/
 /build/
-/docs/_build/
 /htmlcov/
 /coverage/
 *.cover
-*.mjs
+
 
 # Test and Coverage Reports
 .pytest_cache/
@@ -72,7 +71,6 @@ samples/
 backup/
 
 logs/
-*.log
 *.tar.gz
 .dump
 
@@ -81,3 +79,11 @@ locale/
 LICENSE.txt
 screenshots/
 samples/
+
+static/css/images/
+*.map
+
+prism.js
+Flash.js
+debugger.mjs
+viewer.mjs
