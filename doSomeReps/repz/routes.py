@@ -1,29 +1,27 @@
 """Route declaration."""
-from flask import current_app as app
-from flask import render_template, Blueprint, request, flash, redirect, url_for
-from .models import users
-import sqlalchemy as sa
-from . import *
-from sqlalchemy import *
-from .database import session
-from sqlalchemy.sql import func
-from flask_login import current_user, login_required, logout_user
-from flask_login import *
+from flask import Blueprint, url_for
 
-routes = Blueprint('routes', __name__)
+#  consider eliminating this and making the directories packages with __init__ files. Especially for auth!!
 auth = Blueprint(
     'auth', __name__,
-    template_folder='templates',
-    static_folder='static'
-)
-home = Blueprint('home', __name__,
-    template_folder='templates',
-    static_folder='static'
+    template_folder='auth/templates',
+    static_folder='auth/static'
 )
 
-@routes.route('/', methods=['GET', 'POST'], endpoint='home1')
-@login_required
-def home1():
-    return render_template( 'home.html' )
-    
-### IS THIS PAGE EVEN USED???????
+home = Blueprint('home', __name__,
+    template_folder='home/templates',
+    static_folder='home/static'
+)
+
+quest_ajx = Blueprint("quest_ajx", __name__)
+
+catz = Blueprint(
+    'catz', __name__,
+    template_folder='catz/templates',
+)
+
+catz_static = Blueprint(
+    'catz_static', __name__,
+    static_folder='catz/static'
+)
+

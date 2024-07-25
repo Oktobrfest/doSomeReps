@@ -2,14 +2,12 @@ FROM python:3.9-alpine AS stage1
 
 WORKDIR /app
 
-# Install system dependencies for pyodbc and PDF.js
 RUN apk --no-cache add \
     g++ \
     unixodbc-dev \
     gnupg \
     nodejs \
     npm \
-    # Add build dependencies for psycopg2-binary or other packages requiring compilation
     build-base \
     postgresql-dev
 

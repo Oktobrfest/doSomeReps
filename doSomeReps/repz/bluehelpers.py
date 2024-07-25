@@ -14,6 +14,7 @@ from .database import session
 from .models import category, question, q_pic, quizq, level, rating, users, question_categories
 
 import re
+import os
 from flask import jsonify, make_response, g, current_app as app
 
 from werkzeug.utils import secure_filename
@@ -26,7 +27,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from io import BytesIO
 import base64
-from .aws_s3 import *
+from .aws_s3 import delete_s3_object, upload_file_to_s3
 from repz import cache
 import time
 
