@@ -1,21 +1,16 @@
-from flask import Blueprint, redirect, render_template, flash, request, session, url_for, jsonify
-from flask_login import login_required, logout_user, current_user, login_user
-from flask import current_app as app
-from ...models import users
-from ...bluehelpers import *
+from flask import g, flash, request, session, jsonify
+from flask_login import login_required
+from ...models import users, question, category, quizq, rating
 import json
 
-from ...database import *
-from ...models import *
-from repz.routes import *
-from ...bluehelpers import *
+from ...database import session
+from repz.routes import que_ajx
+from ...bluehelpers import exclude, new_quizq, remove_underscore, set_session, get_user, time, unexclude
 from ..ajax_response import AjaxResponse
 
+from sqlalchemy import select
 
-# Blueprint Configuration
-que_ajx = Blueprint("que_ajx", __name__)
-
-                        
+                       
             # In the quemore page
 @que_ajx.route("/searchquefilters", methods=["POST"], endpoint="searchquefilters")
 @login_required

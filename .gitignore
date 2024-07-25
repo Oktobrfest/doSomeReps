@@ -44,6 +44,7 @@ venv/
 /htmlcov/
 /coverage/
 *.cover
+*.mjs
 
 # Test and Coverage Reports
 .pytest_cache/
@@ -57,22 +58,26 @@ venv/
 # *.png
 # *.bmp
 # *.svg
+*.pdf
 
 # Lock files
 *.lock
 
 # Documentation
-/docs/_build/
+docs/_build/
 
 # Exclude samples dir
 samples/
 *-stack.yml
-/backup/
+backup/
 
-/logs/
+logs/
 *.log
-rep_pg_data_backup.tar.gz
-rep_pg_data1_backup.tar.gz
-rep_pg_dump.dump
-rep_vol_backup.tar.gz
-db.dump
+*.tar.gz
+.dump
+
+pdfjs-dist/
+locale/
+LICENSE.txt
+screenshots/
+samples/

@@ -1,3 +1,4 @@
+import logging
 from re import A
 from typing import final
 from flask import (
@@ -56,11 +57,11 @@ from werkzeug.utils import secure_filename
 import random
 
 import os
-from ..homeforms import *
-from ..bluehelpers import *
+from ..homeforms import QueAdditionForm, QuestionForm
+from ..bluehelpers import cat_questions_count, clean_for_html, get_all_categories, get_quizes, get_session, get_user, new_quizq, remove_underscore, save_pictures, set_session, split_dict, tally_que_catz
 import json
 import math
-from ..charts import *
+from ..charts import rep_vs_forget, render_chart
 
 from repz import cache
 from repz.cache_helper import CacheHelper
@@ -171,7 +172,7 @@ def homepage():
 @login_required
 def addcontent():
     UID = g._login_user.id
-    form = questionForm()
+    form = QuestionForm()
     category_list = get_all_categories()
     # cleaned_cat_list = list(map(lambda x: clean_for_html(x), category_list))
     if request.method == "GET":
@@ -461,10 +462,6 @@ def quiz():
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
 @login_required
 def quemore():
-    # local_session['_flashes'].clear()
-    zz = 'z'
-    x = local_session
-    # x.clear()
     form = QueAdditionForm()
     UID = g._login_user.id
     category_list = get_all_categories()
@@ -490,7 +487,7 @@ def quemore():
 @login_required
 def editquestions():
     UID = g._login_user.id
-    form = questionForm()
+    form = QuestionForm()
     category_list = get_all_categories()
     question_categories = []
     filter_categories = []
