@@ -4,7 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired, NumberRange
 from flask import current_app as app
 
-class questionForm(FlaskForm):
+class QuestionForm(FlaskForm):
     question_image = FileField("question_image")
     hint_image = FileField("hint_image")
 

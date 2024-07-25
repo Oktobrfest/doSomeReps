@@ -1,25 +1,13 @@
-from sqlalchemy.orm import (
-    Query,
-    selectinload,
-    joinedload,
-    aliased,
-    subqueryload,
-    with_parent,
-    contains_eager
-   )
-from sqlalchemy.sql import func, exists, distinct
-from sqlalchemy.sql.expression import bindparam
-from sqlalchemy import select, Interval, join, intersect, update, not_, except_, and_, func, text
+from sqlalchemy import select, and_, text
 from .database import session
 from .models import category, question, q_pic, quizq, level, rating, users, question_categories
-
+from config import Config
 import re
 import os
-from flask import jsonify, make_response, g, current_app as app
 
 from werkzeug.utils import secure_filename
 
-from flask import session as local_session,flash
+from flask import session as local_session, flash, app
 
 from datetime import datetime, timedelta
 
@@ -31,6 +19,9 @@ from .aws_s3 import delete_s3_object, upload_file_to_s3
 from repz import cache
 import time
 
+from sqlalchemy.exc import OperationalError
+import logging
+
 
 def clean_for_html(unclean: str) -> str:
     unclean = re.sub(r"[^\w\s]", "", unclean)
@@ -38,13 +29,16 @@ def clean_for_html(unclean: str) -> str:
     clean = re.sub(r"\s+", "_", unclean)
     return clean.lower()
 
+
 def remove_underscore(html_string: str) -> str:
     spaced_string = re.sub(r"_" ," ", html_string)
     return spaced_string
 
+
 def set_session(key, value):
     # Set a value in the session
     local_session[key] = value
+    
     
 def new_quizq(question_ids, UID):
     new_q_quiz_list = []
@@ -61,16 +55,19 @@ def new_quizq(question_ids, UID):
     qty_added = len(new_q_quiz_list)
     return qty_added
     
+    
 def get_session(key):
     # Get the value from the session
     value = local_session.get(key, 'Not set')
     return value
+
 
 def get_all_db_categories():
     category_list = []
     result = session.execute(select(category))
     category_list.extend(cat.category_name for cat in result.scalars())
     return category_list
+
 
 def get_all_categories():
     category_list = cache.get('category_list')
@@ -107,19 +104,19 @@ def get_quizes(selected_cats, UID):
     excluded_question_ids = [q.question_id for q in user.excluded_questions]
    
     quest_wCats_qry = (
-    select(question, text("STRING_AGG(category.category_name, ',')"), quizq, level.days_hence)   
-    .join(question.categories)
-    .join(
-        quizq,
-        and_(
-            question.question_id == quizq.question_id,
-            quizq.user_id == UID,
-            quizq.answered_on.is_(None),
-        ),
+        select(question, text("STRING_AGG(category.category_name, ',')"), quizq, level.days_hence)   
+        .join(question.categories)
+        .join(
+            quizq,
+            and_(
+                question.question_id == quizq.question_id,
+                quizq.user_id == UID,
+                quizq.answered_on.is_(None),
+            ),
+        )
+        .join(level, quizq.level_no == level.level_no)
+        .group_by(question, quizq, level.days_hence)
     )
-    .join(level, quizq.level_no == level.level_no)
-    .group_by(question, quizq, level.days_hence)
-)
 
         # update query to omit 'excluded questions'
     quest_wCats_qry = quest_wCats_qry.filter(~question.question_id.in_(excluded_question_ids))
@@ -127,7 +124,6 @@ def get_quizes(selected_cats, UID):
     #Print the SQL query
     # print(str("============================================================================================================"))
     # print(str(quest_wCats_qry))
-  
 
     result = session.execute(quest_wCats_qry.distinct()).all()
 
@@ -199,6 +195,7 @@ def get_quizes(selected_cats, UID):
 
     return que_list        
 
+
 def get_user(user_id):
     if not isinstance(user_id, int):
         try:
@@ -216,58 +213,11 @@ def get_user(user_id):
 
     return user
 
-# cache.set(get_users_cache_key(user_id), user) 
-# def get_users_cache_key(uid) -> str:
-#     key = 'user_' + str(uid)
-#     return key  
-
-# also works- ie. another way of doing same thing
-# def listify_sql(models):
-#     obj_list = []
-#     obj_list.extend(o for o in models)
-#     return obj_list
-
-# def remove_cache_q(q_id, que_list, que_cache_key) -> list:
-#     q_id_int = int(q_id)
-#     # index = None
-#     extracted_q = ""
-#     # for q in que_list:
-#     #     if q['quizq_id'] == q_id_int: # data types are off string vs int
-#     #         extracted_q = q
-
-#     # list_comprehended_que_list = [q for q in que_list if q["quizq_id"] != q_id_int]
-
-#    # filtered_que_list = list(filter(lambda q: q["quizq_id"] != q_id, q_id_int))
-
-#     reverse_list = que_list
-#     for i in range(len(reverse_list) - 1, -1, -1):
-#         if reverse_list[i]["quizq_id"] == q_id_int:
-#             extracted_q = reverse_list[i]
-#             del reverse_list[i]
-
-#     que_list2 = que_list
-#     extracted_q2 = None
-#     for i in range(len(que_list2) - 1, -1, -1):
-#         if que_list2[i]["quizq_id"] == q_id_int:
-#             extracted_q2 = que_list2.pop(i)
-       
-
-#     extracted_q3 = None
-#     list_comprehended_que_list2 = [q for q in que_list if q["quizq_id"] != q_id_int or (extracted_q3 := q, False)[1]]
-
-#    # for lists withn lists: que_list = [q for i, q in enumerate(que_list) if q.quizq_id != q_id]
-
-
-#     # for i,q in que_list:
-#     #     if q.quizq_id == q_id:
-#     #     #    index = i
-#     #         que_list.remove(q)
-#     cache.set(que_cache_key, que_list, timeout=600) 
-#     return que_list
 
 def listify_sql(models):
     obj_list = list(models)
     return obj_list
+
 
 #list of dicts of lists
 def tally_que_catz(quizq_list):
@@ -291,6 +241,7 @@ def tally_catz(questions_list):
             else:
                 category_count[cat] = 1       
     return category_count
+
 
 def split_dict(dict):        
     x_arr = []
@@ -318,6 +269,7 @@ def unexclude(question_id, UID):
 
     return msg
 
+
 def exclude(exclusion_ids, UID):
     user = get_user(UID)
 
@@ -331,6 +283,7 @@ def exclude(exclusion_ids, UID):
     session.commit()
 
     return exclude_count
+
 
 def delete_pic(pic):
         file_key = os.path.basename(pic.pic_string)
@@ -354,6 +307,7 @@ def delete_pic(pic):
             #     print("No objects found in bucket")
         else:
             flash('Failed to delete picture from S3 Bucket!', category="error")     
+
 
 def allowed_file(filename):
     return (
@@ -386,11 +340,6 @@ def save_pictures(question, request):
                     )
     session.commit()                
     return question
-
-
-from sqlalchemy.exc import OperationalError
-import logging
-
 
 
   # get all questions that are public

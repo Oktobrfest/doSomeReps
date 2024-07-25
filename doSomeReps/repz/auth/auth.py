@@ -1,24 +1,21 @@
-from flask import Blueprint, redirect, render_template, flash, request, session, url_for
+from flask import Blueprint, redirect, render_template, flash, request, url_for
 from flask_login import login_required, logout_user, current_user, login_user
-from flask import current_app as app
 from ..models import users
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Query
 from sqlalchemy import select
 
-from ..database import *
-from ..models import *
-from repz.routes import auth
-from ..bluehelpers import get_user
+from ..database import session
+from ..models import users
 
 
-# Blueprint Configuration
 auth = Blueprint(
     'auth', __name__,
     template_folder='templates',
     static_folder='static'
 )
+
     
 @auth.route('/login', methods=['GET', 'POST'], endpoint='login')
 def login():
@@ -50,6 +47,7 @@ def logout():
     logout_user()
     flash('Logged Out.', category='success')
     return redirect(url_for('auth.login'))
+
 
 @auth.route('/signup', methods=['GET', 'POST'])
 def signup():

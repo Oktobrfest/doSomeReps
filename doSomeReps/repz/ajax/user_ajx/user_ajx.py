@@ -1,18 +1,10 @@
-from flask import Blueprint, redirect, render_template, flash, request, session, url_for, jsonify
-from flask_login import login_required, logout_user, current_user, login_user
-from flask import current_app as app
-from ...models import users
-from ...bluehelpers import *
-import json
+from flask import flash, request, jsonify
+from flask_login import login_required
+from flask import g
 
-from ...database import *
-from ...models import *
-from repz.routes import *
-from ...bluehelpers import *
-
-
-# Blueprint Configuration
-user_ajx = Blueprint("user_ajx", __name__)
+from ...bluehelpers import get_user
+from ...database import session
+from repz.routes import user_ajx
 
 
 
@@ -45,7 +37,7 @@ def fav_user():
 def unfavorite_user():
     UID = g._login_user.id
    
-    data = request.get_json()  # This will give you a Python dictionary
+    data = request.get_json() 
     user_id = data['user_id']
 
     unfav_user = get_user(user_id)
@@ -93,7 +85,6 @@ def unblock_user():
     usr = get_user(UID)
     
     usr.blocked_users.remove(blocked_user)
-
     session.commit() 
         
     msg = "Unblocked User"

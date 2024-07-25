@@ -1,15 +1,16 @@
-from flask import Blueprint, redirect, render_template, flash, request, session, url_for, jsonify
-from flask_login import login_required, logout_user, current_user, login_user
-from flask import current_app as app
-from ...models import users
-from ...bluehelpers import *
+from flask import flash, request, session, jsonify
+from flask_login import login_required
+from flask import g, make_response
+from ...models import q_pic, users, question, quizq, category, rating
 import json
 
 from ...database import session
-from ...models import category
 from repz.routes import quest_ajx
-from ...bluehelpers import clean_for_html, remove_underscore, set_session
+from ...bluehelpers import clean_for_html, get_all_db_categories, get_user, remove_underscore, set_session, delete_pic, save_pictures
 import copy
+from repz import cache
+from sqlalchemy import or_, select, Query
+from sqlalchemy.orm import joinedload
 
 
 # adds a new category
@@ -45,6 +46,7 @@ def addcat():
         data = "error"
         htl = "error"
     return jsonify({'data': data, 'htl': htl})
+
 
 #save question changes within edit questions page
 @quest_ajx.route("/saveq", methods=["POST"], endpoint="saveq")
@@ -99,13 +101,11 @@ def saveq():
     return msg
 
 
-
 # not quemore search button
 @quest_ajx.route("/searchq", methods=["POST"], endpoint="searchq")
 @login_required
 def searchq():
-    UID1 = g._login_user.id
-    UID = copy.copy(UID1)
+    UID = g._login_user.id
     # get The submitted Json values
     filters = request.get_json()
         
@@ -167,7 +167,6 @@ def searchq():
     return search_response
 
 
-
 @quest_ajx.route("/getq", methods=["POST"], endpoint="getq")
 @login_required
 def getq():
@@ -208,6 +207,7 @@ def getq():
     response = make_response(res_q)
     # response.headers['Access-Control-Allow-Origin'] = '*'
     return response
+
 
 @quest_ajx.route("/deleteq", methods=["POST"], endpoint="deleteq")
 @login_required
