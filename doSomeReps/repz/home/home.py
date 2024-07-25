@@ -65,10 +65,9 @@ from ..charts import *
 from repz import cache
 from repz.cache_helper import CacheHelper
 import hashlib
+from repz.routes import home
 
 
-# Blueprint Configuration
-home = Blueprint("home", __name__, template_folder="templates", static_folder="static")
 @home.route("/favicon.ico")
 def favicon():
     return send_from_directory(

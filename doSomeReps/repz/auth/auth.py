@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from ..database import *
 from ..models import *
-from repz.routes import *
+from repz.routes import auth
 from ..bluehelpers import get_user
 
 

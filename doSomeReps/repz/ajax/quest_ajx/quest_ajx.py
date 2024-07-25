@@ -5,14 +5,11 @@ from ...models import users
 from ...bluehelpers import *
 import json
 
-from ...database import *
-from ...models import *
-from repz.routes import *
-from ...bluehelpers import *
+from ...database import session
+from ...models import category
+from repz.routes import quest_ajx
+from ...bluehelpers import clean_for_html, remove_underscore, set_session
 import copy
-
-# Blueprint Configuration
-quest_ajx = Blueprint("quest_ajx", __name__)
 
 
 # adds a new category
