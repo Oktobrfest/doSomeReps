@@ -4,31 +4,37 @@ from io import BytesIO
 import base64
 
 def rep_vs_forget(repetition_days_real):
-    repetition_days = [round(day) for day in repetition_days_real]
+    repetition_days = [round(day) for day in repetition_days_real[:10]]
     
     # Starting decay rate
-    decay_rate = 0.05
+    decay_rate = 0.06
 
     # Reduction in decay rate after each repetition
     decay_reduction = 0.009
-
+    
     # Assuming that x values are in days and y values are in percentages
-    x_values = np.arange(0.0, 91.0) 
+    # x_values = np.arange(0.0, 91.0) 
+    x_values = np.arange(0.0, repetition_days[-1] + 1) 
    
     # Exponential decay function (less steep.
-    # y_values_forgetting_curve = 100 * np.exp(-decay_rate * x_values) # 
-   
+    # y_values_forgetting_curve = 100 * np.exp(-decay_rate * x_values + 1) # 
+    base_value = 60 
     # Ebbinghaus forgetting curve
-    y_values_forgetting_curve = 100 - (100 * np.log10(x_values + 1) / np.log10(60 + 1))
+    y_values_forgetting_curve = 100 - (100 * (np.log10(x_values + 1) / np.log10(base_value + 1) - np.log10(1 + 1) / np.log10(base_value + 1)))
+   
+    # y_values_forgetting_curve = 100 - (100 * np.log10(x_values + 1) / np.log10(base_value + 1))
+    y_values_forgetting_curve = np.maximum(y_values_forgetting_curve, 10)
+    y_values_forgetting_curve = np.minimum(y_values_forgetting_curve, 100)
 
     # Adjust forgetting curve for spaced repetition
     y_values_spaced_repetition = np.copy(y_values_forgetting_curve)
-    for i, interval in enumerate(repetition_days):
-        current_decay_rate = max(decay_rate - i * decay_reduction, 0.005)
+    for i, interval in enumerate(repetition_days[3:], start = 4):
+        current_decay_rate = max(min(decay_rate - i * decay_reduction, decay_rate), 0.002)
         # Calculate the new values after repetition
         new_values = 100 * np.exp(-current_decay_rate * np.arange(len(x_values) - (interval)))
         # Take the maximum of the current and new values, capped at 100
         y_values_spaced_repetition[(interval):] = np.minimum(np.maximum(y_values_spaced_repetition[(interval):], new_values), 100)
+        y_values_spaced_repetition[interval] = 100
 
     plt.figure(figsize=(10,6))
 
@@ -37,6 +43,7 @@ def rep_vs_forget(repetition_days_real):
             
     # Add horizontal lines along the labels
     ax = plt.gca()
+    ax.set_xscale('log')
     ax.yaxis.grid(True, linestyle='--', linewidth=0.5, color='gray')
 
     font_sizes = {

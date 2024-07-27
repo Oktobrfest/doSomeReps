@@ -9,8 +9,8 @@ from repz.routes import quest_ajx
 from ...bluehelpers import clean_for_html, get_all_db_categories, get_user, remove_underscore, set_session, delete_pic, save_pictures
 import copy
 from repz import cache
-from sqlalchemy import or_, select, Query
-from sqlalchemy.orm import joinedload
+from sqlalchemy import or_, select
+from sqlalchemy.orm import joinedload, Query
 
 
 # adds a new category
