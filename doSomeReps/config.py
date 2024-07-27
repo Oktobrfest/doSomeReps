@@ -17,6 +17,8 @@ class Config:
     
     IDE = environ.get("IDE")
     
+    SESSION_LIFETIME = environ.get("SESSION_LIFETIME")
+    
     #included to be able to step into other modules
    # set in docker-compose or .env DEBUG = True
     DEBUG_TB_INTERCEPT_REDIRECTS = False
