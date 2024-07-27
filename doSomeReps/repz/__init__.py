@@ -1,24 +1,17 @@
 """Initialize Flask app."""
-from flask import Flask, g, flash, redirect, url_for
+import flask_login
+import flask
+from flask import Flask, g, flash
 from .database import session
 from flask_login import LoginManager, current_user
 from config import Config
 from flask_caching import Cache
-
-
-import os
-import sys
 from .models import users
-import sqlalchemy as sa
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
-import flask_login
-import flask
-
+import timedelta
 from os import environ
-
 from .flask_util_js import FlaskUtilJs
-
 import logging
 
 #makes this globaly available
@@ -38,6 +31,8 @@ def init_app():
         
     app.config['SECRET_KEY'] = Config.SECRET_KEY
     
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=Config.SESSION_LIFETIME)
+    
     if Config.FLASK_ENV == 'development':
         logging.basicConfig(level=logging.DEBUG)
         app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -45,7 +40,6 @@ def init_app():
         if Config.IDE == "pycharm":
             import pycharm
             
-
         
     # lets you reference url_for in .js files
     fujs = FlaskUtilJs(app)    
