@@ -10,6 +10,8 @@ home = Blueprint('home', __name__,
 
 quest_ajx = Blueprint("quest_ajx", __name__)
 
+que_ajx = Blueprint("que_ajx", __name__)
+
 catz = Blueprint(
     'catz', __name__,
     template_folder='catz/templates',
