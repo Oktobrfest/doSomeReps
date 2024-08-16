@@ -9,7 +9,7 @@ if [ -z "$APP_PORT" ]; then
     APP_PORT=5554      
 fi
 # better way to set defaults:
-APP_PORT=${APP_PORT:-5554}
+APP_PORT=${APP_PORT:-5557}
 DEBUG_PORT=${DEBUG_PORT:-5558}
 
 
@@ -21,7 +21,7 @@ if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
     pip install debugpy
     if [ "$IDE" = "vscode" ]; then
         echo "VSCODE DEBUGGING:::::: Starting the application with: python -m debugpy --wait-for-client --listen 0.0.0.0:${DEBUG_PORT} -m flask run --host=0.0.0.0 --port=${APP_PORT} --debugger ;;; the debugger is ${DEBUG_PORT}  and app port is ${APP_PORT} "
-
+        # IF PROBLEMS WITH DEBUGGER SURFACE- GET RID OF "--debugger"
         python -m debugpy --wait-for-client --listen 0.0.0.0:${DEBUG_PORT} -m flask run --host=0.0.0.0 --port=${APP_PORT} --debugger
     fi
     if [ "$IDE" = "pycharm" ]; then
