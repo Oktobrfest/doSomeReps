@@ -9,7 +9,7 @@ from flask_caching import Cache
 from .models import users
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
-import timedelta
+from datetime import timedelta
 from os import environ
 from .flask_util_js import FlaskUtilJs
 import logging
@@ -31,7 +31,7 @@ def init_app():
         
     app.config['SECRET_KEY'] = Config.SECRET_KEY
     
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=Config.SESSION_LIFETIME)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=int(Config.SESSION_LIFETIME))
     
     if Config.FLASK_ENV == 'development':
         logging.basicConfig(level=logging.DEBUG)
