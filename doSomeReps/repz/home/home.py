@@ -217,6 +217,11 @@ def addcontent():
             flash("You must select at least one category!", category="error")
         if fail == True:
             return redirect(url_for("home.addcontent"))
+        
+        if len(answer) > 3999:
+            # THROW/LOG error here because client isn't validating form lenght properly!
+            answer = answer[:3999]
+
 
         selected_categories = []
 
