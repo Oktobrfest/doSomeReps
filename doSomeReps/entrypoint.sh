@@ -9,7 +9,7 @@ if [ -z "$APP_PORT" ]; then
     APP_PORT=5554      
 fi
 # better way to set defaults:
-APP_PORT=${APP_PORT:-5557}
+APP_PORT=${APP_PORT:-5554}
 DEBUG_PORT=${DEBUG_PORT:-5558}
 
 
