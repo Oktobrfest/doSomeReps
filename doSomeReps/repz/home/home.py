@@ -185,21 +185,21 @@ def addcontent():
             form=form,
         )
 
-    if request.method == "POST":
-        question_text = request.form.get("question_text")
-        hint = request.form.get("hint")
-        answer = request.form.get("answer")
-        privacy_chkbox = request.form.get("privacy-checkbox")
-        if privacy_chkbox == "on":
-            privacy = True
-        else:
-            privacy = False        
+    selected_categories = []
+    question_text = request.form.get("question_text")
+    hint = request.form.get("hint")
+    answer = request.form.get("answer")
+    privacy_chkbox = request.form.get("privacy-checkbox")
+    if privacy_chkbox == "on":
+        privacy = True
+    else:
+        privacy = False        
 
-        category_names = request.form.getlist("category_name")
+    category_names = request.form.getlist("category_name")
 
-        #remove the html versions underscores
-        spaced_cats = list(map(lambda x: remove_underscore(x), category_names))
-
+    #remove the html versions underscores
+    spaced_cats = list(map(lambda x: remove_underscore(x), category_names))
+    selected_categories = category_names
     #  TEESTING MULTIPLE IMAGE UPLOADS
     if form.validate_on_submit():
         fail = False
@@ -215,15 +215,24 @@ def addcontent():
         if len(category_names) < 1:
             fail = True
             flash("You must select at least one category!", category="error")
-        if fail == True:
-            return redirect(url_for("home.addcontent"))
+        # if fail == True:
+        #     return redirect(url_for("home.addcontent"))
         
         if len(answer) > 3999:
             # THROW/LOG error here because client isn't validating form lenght properly!
             answer = answer[:3999]
-
-
-        selected_categories = []
+                 
+        if fail:
+            flash("Failed Validation!", category="error")
+            return render_template(
+                "addcontent.html",
+                title="Add content",
+                description=".",
+                user=current_user,
+                category_list=category_list,
+                selected_categories=selected_categories,
+                form=form, # possibly replace this with QuestionForm()
+            )    
 
         # create new question!
         new_question = question(
@@ -255,16 +264,16 @@ def addcontent():
 
         flash("New question created!", category="success")
 
-        selected_categories = category_names
-        return render_template(
-            "addcontent.html",
-            title="Add content",
-            description=".",
-            user=current_user,
-            category_list=category_list,
-            selected_categories=selected_categories,
-            form=form,
-        )
+        
+    return render_template(
+        "addcontent.html",
+        title="Add content",
+        description=".",
+        user=current_user,
+        category_list=category_list,
+        selected_categories=selected_categories,
+        form=form,
+    )
         
 
 @home.route("/quiz", methods=["GET", "POST"], endpoint="quiz")
