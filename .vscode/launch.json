@@ -12,7 +12,21 @@
             "pathMappings": [
                 {
                     "localRoot": "${workspaceFolder}/doSomeReps",
-                    "remoteRoot": "/app"  
+                    "remoteRoot": "/app"
+                }
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Attach to Flask",
+            "type": "python",
+            "request": "attach",
+            "port": 5678,
+            "host": "localhost",
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/doSomeReps",
+                    "remoteRoot": "/app"
                 }
             ],
             "justMyCode": false
