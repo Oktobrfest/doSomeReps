@@ -1,18 +1,21 @@
+import logging
+import os
+
 import boto3
 import botocore
-from config import Config
-import logging
 from botocore.exceptions import ClientError
-import os
+
+from flask import current_app
+
 
 s3_client = boto3.client(
    "s3",
-   region_name='us-west-2', 
-   aws_access_key_id=Config.ACCESS_KEY_ID,
-   aws_secret_access_key=Config.SECRET_ACCESS_KEY
+   region_name = current_app.config.get('REGION_NAME', 'us-west-2'),
+   aws_access_key_id = current_app.config['ACCESS_KEY_ID'],
+   aws_secret_access_key = current_app.config['SECRET_ACCESS_KEY']
 )
 
-def upload_file_to_s3(file_name, ExtraArgs, bucket=Config.BUCKET, object_name=None):
+def upload_file_to_s3(file_name, ExtraArgs, bucket = current_app.config['BUCKET'], object_name = None):
     """Upload a file to an S3 bucket
 
     :param file_name: File to upload
@@ -29,9 +32,8 @@ def upload_file_to_s3(file_name, ExtraArgs, bucket=Config.BUCKET, object_name=No
     except ClientError as e:
         logging.error(e)
         return False
-    # return True
 
-    return f"{Config.S3_LOCATION}{object_name}"
+    return f"{current_app.config['S3_LOCATION']}{object_name}"
     
 def delete_s3_object(object_name):
     """Delete an object from an S3 bucket
@@ -41,7 +43,7 @@ def delete_s3_object(object_name):
     """
 
     try:
-        response = s3_client.delete_object(Bucket=Config.BUCKET, Key=object_name)
+        response = s3_client.delete_object(Bucket = current_app.config['BUCKET'], Key = object_name)
     except ClientError as e:
         logging.error(e)
         return False
