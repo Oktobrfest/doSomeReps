@@ -10,7 +10,7 @@ BASE_DIR = path.abspath(path.join(path.dirname(__file__), '..', '..'))
 class DevConfig(Config):
     """Development Configuration from dev.env environment variables."""
     
-    load_dotenv(path.join(BASE_DIR, "dev.env"))
+    load_dotenv(path.join(BASE_DIR, "dev.env"), override=True)
     
     SECRET_KEY = environ.get("SECRET_KEY")
     FLASK_ENV = environ.get("FLASK_ENV", "development")
@@ -57,9 +57,6 @@ class DevConfig(Config):
     IDE = environ.get("IDE")    
     
     TEMPLATES_AUTO_RELOAD = True
-    
-    # logging.basicConfig(level=logging.DEBUG)
-
 
     if IDE == "pycharm":
         from . import pycharm
