@@ -1,18 +1,21 @@
 """Initialize Flask app."""
-import flask_login
-import flask
-from flask import Flask, g, flash
-from .database import session
-from flask_login import LoginManager, current_user
-from config import Config
-from flask_caching import Cache
-from .models import users
-from sqlalchemy import select, update
-from sqlalchemy.sql import func
+import logging
+import os
 from datetime import timedelta
 from os import environ
+
+import flask
+import flask_login
+from flask import Flask, g, flash
+from flask_caching import Cache
+from flask_login import LoginManager, current_user
+from sqlalchemy import select, update
+from sqlalchemy.sql import func
+
+from .database import session
+from .models import users
 from .flask_util_js import FlaskUtilJs
-import logging
+
 
 #makes this globaly available
 cache = Cache(config={'CACHE_TYPE': 'simple'})
@@ -24,15 +27,7 @@ def init_app():
     
     login_manager = LoginManager()
     login_manager.init_app(app)
-    
-    app.config['UPLOADS_DEFAULT_DEST'] = Config.UPLOADS_DEFAULT_DEST
-    app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
-    app.config['UPLOADED_IMAGES_DEST'] = Config.UPLOADED_IMAGES_DEST
-        
-    app.config['SECRET_KEY'] = Config.SECRET_KEY
-    
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=int(Config.SESSION_LIFETIME))
-    
+
     if Config.FLASK_ENV == 'development':
         logging.basicConfig(level=logging.DEBUG)
         app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -47,7 +42,31 @@ def init_app():
     cache.init_app(app)
 
     with app.app_context():
-        # Blueprint Shit
+        
+        env = os.getenv('FLASK_ENV', 'production')
+        
+        from .configs.config import Config
+        
+        try:
+            app.config.from_object(Config)
+        except Exception as e:
+            print(f"Failed to load configuration: {e}")
+            raise
+        
+        # Load the appropriate configuration
+        if env == 'development':
+            from .configs.dev import DevConfig as Conf
+        else:  # Defaults to production
+            from .configs.prod import ProdConfig as Conf    
+        
+        try:
+            app.config.from_object(Conf)
+        except Exception as e:
+            print(f"Failed to load Dev or Prod Configuration: {e}")
+            raise     
+                 
+    
+        # Blueprints
         # Import parts of our application
         from repz.home.home import home
         from repz.auth.auth import auth
@@ -63,10 +82,7 @@ def init_app():
         app.register_blueprint(catz_static, url_prefix='/catz')
         app.register_blueprint(quest_ajx)
         app.register_blueprint(user_ajx)
-        app.register_blueprint(que_ajx)
-    
-       # redundant- delete this? app.config['DEBUG'] = True
-        app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+        app.register_blueprint(que_ajx)     
         
         g.user = current_user
         

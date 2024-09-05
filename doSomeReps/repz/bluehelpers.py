@@ -1,13 +1,12 @@
 from sqlalchemy import select, and_, text
 from .database import session
 from .models import category, question, q_pic, quizq, level, rating, users, question_categories
-from config import Config
 import re
 import os
 
 from werkzeug.utils import secure_filename
 
-from flask import session as local_session, flash, app
+from flask import session as local_session, flash, app, current_app
 
 from datetime import datetime, timedelta
 
@@ -291,7 +290,7 @@ def delete_pic(pic):
         if is_delete_success:
             session.delete(pic)
             # try:
-            #     s3_client.head_object(Bucket=Config.BUCKET, Key=file_key)
+            #     s3_client.head_object(Bucket=current_app.config['BUCKET'], Key=file_key)
             #     exists = True
             # except botocore.exceptions.ClientError as e:
             #     if e.response['Error']['Code'] == "404":
@@ -299,7 +298,7 @@ def delete_pic(pic):
             #     else:
             #         raise
             # print(f"Object exists in bucket: {exists}")
-            # resp = s3_client.list_objects_v2(Bucket=Config.BUCKET, Prefix=file_key)
+            # resp = s3_client.list_objects_v2(Bucket=current_app.config['BUCKET'], Prefix=file_key)
             # if 'Contents' in resp:
             #     for obj in resp['Contents']:
             #         print(f"Object key: {obj['Key']}")
@@ -312,7 +311,7 @@ def delete_pic(pic):
 def allowed_file(filename):
     return (
         "." in filename
-        and filename.split(".", 1)[1].lower() in Config.ALLOWED_EXTENSIONS
+        and filename.split(".", 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
     )
             
 
