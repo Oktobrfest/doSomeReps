@@ -12,8 +12,6 @@ from flask_login import LoginManager, current_user
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
 
-from .database import session
-from .models import users
 from .flask_util_js import FlaskUtilJs
 
 
@@ -23,18 +21,9 @@ cache = Cache(config={'CACHE_TYPE': 'simple'})
 def init_app():
     """Create Flask application."""
     app = Flask(__name__, instance_relative_config=False)
-    app.config.from_object("config.Config")
-    
-    login_manager = LoginManager()
-    login_manager.init_app(app)
-
-    if Config.FLASK_ENV == 'development':
-        logging.basicConfig(level=logging.DEBUG)
-        app.config['TEMPLATES_AUTO_RELOAD'] = True
         
-        if Config.IDE == "pycharm":
-            import pycharm
-            
+    # login_manager = LoginManager()
+    # login_manager.init_app(app)            
         
     # lets you reference url_for in .js files
     fujs = FlaskUtilJs(app)    
@@ -47,11 +36,11 @@ def init_app():
         
         from .configs.config import Config
         
-        try:
-            app.config.from_object(Config)
-        except Exception as e:
-            print(f"Failed to load configuration: {e}")
-            raise
+        # try:
+        #     app.config.from_object(Config)
+        # except Exception as e:
+        #     print(f"Failed to load configuration: {e}")
+        #     raise
         
         # Load the appropriate configuration
         if env == 'development':
@@ -65,7 +54,9 @@ def init_app():
             print(f"Failed to load Dev or Prod Configuration: {e}")
             raise     
                  
-    
+        from .database import session
+        from .models import users
+        
         # Blueprints
         # Import parts of our application
         from repz.home.home import home

@@ -10,7 +10,7 @@ BASE_DIR = path.abspath(path.join(path.dirname(__file__), '..', '..'))
 
 class ProdConfig(Config):
     
-    load_dotenv(path.join(BASE_DIR, "prod.env"))
+    load_dotenv(path.join(BASE_DIR, "prod.env"), override=True)
     
     SECRET_KEY = environ.get("SECRET_KEY")
     FLASK_ENV = environ.get("FLASK_ENV", "production")
