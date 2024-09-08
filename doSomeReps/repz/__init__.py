@@ -53,6 +53,11 @@ def init_app():
         except Exception as e:
             print(f"Failed to load Dev or Prod Configuration: {e}")
             raise     
+        
+            # Initialize image paths
+        image_paths = Conf.initialize_image_paths()
+        for path in image_paths:
+            Config.setup_image_paths(path)
                  
         from .database import session
         from .models import users

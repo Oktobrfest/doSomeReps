@@ -6,7 +6,7 @@ import os
 
 from werkzeug.utils import secure_filename
 
-from flask import session as local_session, flash, app, current_app
+from flask import session as local_session, flash, current_app
 
 from datetime import datetime, timedelta
 
@@ -317,14 +317,15 @@ def allowed_file(filename):
 
 def save_pictures(question, request):
     pic_types = {"answer_pics", "hint_image", "question_image"}
+    file_directory = current_app.config['UPLOADED_IMAGES_DEST']
     for pic_type in pic_types:
         if pic_type in request.files:
             pictures = request.files.getlist(pic_type)
             for pic in pictures:
                 if pic and allowed_file(pic.filename):
                     picname = secure_filename(pic.filename)
-                    pic.save(os.path.join(app.config["UPLOAD_FOLDER"], picname))
-                    file_directory = "repz/home/static/"
+                    full_filename = os.path.join(file_directory, picname)
+                    pic.save(os.path.join(file_directory, picname))
                     file_name = file_directory + picname
                     Metadata = {
                         # "x-amz-meta-question": question.question_id,
@@ -353,7 +354,7 @@ def cat_questions_count(qty):
         sorted_ques_cat_count = sorted(questions_dict.items(), key = lambda x: x[1], reverse = True)
         return sorted_ques_cat_count[:qty]
     except OperationalError as e:
-        app.logger.error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA, DB Error:' + str(e))
+        current_app.logger.error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA, DB Error:' + str(e))
         session.close()
         raise 
     

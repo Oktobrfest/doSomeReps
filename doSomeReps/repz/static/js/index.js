@@ -105,6 +105,17 @@ window.onload = (event) => {
                     alert('Please select at least one category before submitting the form.');
                 }
             });
+
+            // Timeout Flash alert messages
+                function dismissAlert(alert) {
+                    alert.classList.remove('show');
+                    alert.classList.add('hide');
+                    setTimeout(() => alert.remove(), 250);
+                }
+        
+                document.querySelectorAll('.alert').forEach(alert => {
+                    setTimeout(() => dismissAlert(alert), 15000);
+                 });
         }
     }
 
