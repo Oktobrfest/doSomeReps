@@ -171,6 +171,10 @@ def homepage():
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
 @login_required
 def addcontent():
+    
+    flash("BS DELETE ME!", category="success")
+    
+    
     UID = g._login_user.id
     form = QuestionForm()
     category_list = get_all_categories()

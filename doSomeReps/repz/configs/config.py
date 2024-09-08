@@ -19,3 +19,18 @@ class Config:
     
     IDE = environ.get("IDE")    
     SESSION_LIFETIME = environ.get("SESSION_LIFETIME")
+
+    @staticmethod
+    def setup_image_paths(path):
+        """Define the output directory for images & set permissions."""
+        if not os.path.exists(path):
+            os.makedirs(path)
+            os.chmod(path, 0o775)
+
+    @classmethod
+    def initialize_image_paths(cls):
+        image_paths = set(filter(None, [
+            cls.UPLOADED_IMAGES_DEST, 
+            cls.UPLOAD_FOLDER
+        ]))        
+        return image_paths

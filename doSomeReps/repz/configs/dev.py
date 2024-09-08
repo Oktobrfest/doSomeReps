@@ -5,10 +5,12 @@ from dotenv import load_dotenv
 
 from os import environ, path
 
-BASE_DIR = path.abspath(path.join(path.dirname(__file__), '..', '..'))
+
 
 class DevConfig(Config):
     """Development Configuration from dev.env environment variables."""
+    
+    BASE_DIR = path.abspath(path.join(path.dirname(__file__), '..', '..'))
     
     load_dotenv(path.join(BASE_DIR, "dev.env"), override=True)
     
@@ -17,7 +19,9 @@ class DevConfig(Config):
     
     # THIS NEEDS DOUBLE CHECKING!!
     APP_DIR = environ.get('APP_DIR', 'repz')
+    
     # Static Assets
+    HOME_STATIC_FOLDER = environ.get("HOME_STATIC_FOLDER", "static")
     STATIC_FOLDER = environ.get("STATIC_FOLDER", "static")
     TEMPLATES_FOLDER = environ.get('TEMPLATES_FOLDER', 'templates')
     COMPRESSOR_DEBUG = environ.get("COMPRESSOR_DEBUG", False)
@@ -52,8 +56,7 @@ class DevConfig(Config):
     logging.getLogger('sqlalchemy.orm').addHandler(
         logging.StreamHandler(sys.stdout))
 
-    CACHE_TYPE = "null"
-    
+    CACHE_TYPE = environ.get("PORT", "null")
     IDE = environ.get("IDE")    
     
     TEMPLATES_AUTO_RELOAD = True
@@ -73,6 +76,7 @@ class DevConfig(Config):
     SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
     BUCKET = environ.get("BUCKET")
     S3_LOCATION = f"http://{BUCKET}.s3.amazonaws.com/"
+    REGION_NAME = environ.get("REGION_NAME")
     
     
     # included to be able to step into other modules

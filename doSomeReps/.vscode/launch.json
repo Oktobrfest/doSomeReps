@@ -15,7 +15,7 @@
                 "--no-reload"
             ],
             "jinja": true,
-            "justMyCode": true
+            "justMyCode": false
         },
         {
             "name": "Python: Remote Attach",
@@ -24,12 +24,12 @@
             "port": 5551,
             "host": "0.0.0.0",
             "pathMappings": [
-              {
-                "localRoot": "${workspaceFolder}",
-              //  "remoteRoot": "/usr/src/app"
-                "remoteRoot": "/app"  
-            }
+                {
+                    "localRoot": "${workspaceFolder}",
+                    //  "remoteRoot": "/usr/src/app"
+                    "remoteRoot": "/app"
+                }
             ]
-          }
+        }
     ]
 }
