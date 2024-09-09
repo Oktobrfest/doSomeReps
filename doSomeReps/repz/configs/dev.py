@@ -14,11 +14,12 @@ class DevConfig(Config):
     
     load_dotenv(path.join(BASE_DIR, "dev.env"), override=True)
     
+    # THIS NEEDS DOUBLE CHECKING!!
+    APP_DIR = environ.get('APP_DIR', 'repz')
+    
     SECRET_KEY = environ.get("SECRET_KEY")
     FLASK_ENV = environ.get("FLASK_ENV", "development")
     
-    # THIS NEEDS DOUBLE CHECKING!!
-    APP_DIR = environ.get('APP_DIR', 'repz')
     
     # Static Assets
     HOME_STATIC_FOLDER = environ.get("HOME_STATIC_FOLDER", "static")
@@ -64,14 +65,14 @@ class DevConfig(Config):
     if IDE == "pycharm":
         from . import pycharm
         
-            # database
+    # database
     DB_PORT = environ.get("DB_PORT")
     DB_HOST = environ.get("DB_HOST")
     DB_NAME = environ.get("DB_NAME")
     DB_USERNAME = environ.get("DB_USERNAME")
     DB_PASSWORD = environ.get("DB_PASSWORD")
 
-        # s3
+    # s3
     ACCESS_KEY_ID = environ.get("ACCESS_KEY_ID")
     SECRET_ACCESS_KEY = environ.get("SECRET_ACCESS_KEY")
     BUCKET = environ.get("BUCKET")

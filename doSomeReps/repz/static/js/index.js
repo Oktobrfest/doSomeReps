@@ -568,7 +568,7 @@ function populateQuestion(event) {
                     img.alt = picType; // add the picType as the alt text
                     var pic_id = data.pics_by_type[picType][i].pic_id;
                     img.id = pic_id;
-                    img.baseURI = "https://reppics.s3.us-west-2.amazonaws.com"
+                    // img.baseURI = "https://reppics.s3.us-west-2.amazonaws.com"
                     let imgContainer = createImgContainer(pic_id);
                     imgContainer.appendChild(img);
 
