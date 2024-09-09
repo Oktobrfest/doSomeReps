@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from io import BytesIO
 import base64
-from .aws_s3 import delete_s3_object, upload_file_to_s3
 from repz import cache
 import time
 
@@ -286,7 +285,7 @@ def exclude(exclusion_ids, UID):
 
 def delete_pic(pic):
         file_key = os.path.basename(pic.pic_string)
-        is_delete_success = delete_s3_object(file_key)
+        is_delete_success = current_app.s3.delete_s3_object(object_name = file_key)
         if is_delete_success:
             session.delete(pic)
             # try:
@@ -315,7 +314,8 @@ def allowed_file(filename):
     )
             
 
-def save_pictures(question, request):
+def save_pictures(question, request) -> question:
+    """Saves picture to UPLOADED_IMAGES_DEST & S3 Bucket! & adds that URL to q_pic model, but doesn't commit that final part. Need to commit it to save the pic to the question. """
     pic_types = {"answer_pics", "hint_image", "question_image"}
     file_directory = current_app.config['UPLOADED_IMAGES_DEST']
     for pic_type in pic_types:
@@ -324,21 +324,22 @@ def save_pictures(question, request):
             for pic in pictures:
                 if pic and allowed_file(pic.filename):
                     picname = secure_filename(pic.filename)
-                    full_filename = os.path.join(file_directory, picname)
+                    file_path = os.path.join(file_directory, picname)
                     pic.save(os.path.join(file_directory, picname))
-                    file_name = file_directory + picname
                     Metadata = {
                         # "x-amz-meta-question": question.question_id,
                         "x-amz-meta-pic_type": pic_type,
                     }
                     ExtraArgs = {"Metadata": Metadata}
-                    location_string = upload_file_to_s3(
-                        file_name, ExtraArgs, object_name=picname
+                    location_string = current_app.s3.upload_file_to_s3(
+                        file_name = file_path,
+                        ExtraArgs = ExtraArgs, 
+                        object_name = picname
                     )
                     question.pics.append(
                         q_pic(pic_string=location_string, pic_type=pic_type)
                     )
-    session.commit()                
+       
     return question
 
 

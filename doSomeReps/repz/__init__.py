@@ -13,6 +13,7 @@ from sqlalchemy import select, update
 from sqlalchemy.sql import func
 
 from .flask_util_js import FlaskUtilJs
+from .aws_s3 import S3
 
 
 #makes this globaly available
@@ -81,6 +82,8 @@ def init_app():
         app.register_blueprint(que_ajx)     
         
         g.user = current_user
+        
+        app.s3 = S3(app)
         
         login_manager = LoginManager(app)
         login_manager.login_view = "login"

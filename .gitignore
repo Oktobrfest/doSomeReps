@@ -90,3 +90,5 @@ viewer.mjs
 dev.env
 prod.env
 *.env
+
+static/uploads/images/
