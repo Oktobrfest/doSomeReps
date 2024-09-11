@@ -11,6 +11,19 @@ window.onload = (event) => {
         });
     });
 
+    // Clear Flash messages
+    function dismissAlert(alert) {
+        alert.classList.remove('show');
+        alert.classList.add('hide');
+        setTimeout(() => alert.remove(), 250);
+    }   
+    // Timeout Flash alert messages
+    function timeoutAlerts() {
+         document.querySelectorAll('.alert').forEach(alert => {
+            setTimeout(() => dismissAlert(alert), 8000);
+        });
+    }
+
     if (window.location.pathname === '/') {
         // unfavorate button
         const unfavorite_button = document.querySelectorAll(".unfavorite-user-button");
@@ -106,16 +119,7 @@ window.onload = (event) => {
                 }
             });
 
-            // Timeout Flash alert messages
-                function dismissAlert(alert) {
-                    alert.classList.remove('show');
-                    alert.classList.add('hide');
-                    setTimeout(() => alert.remove(), 250);
-                }
-        
-                document.querySelectorAll('.alert').forEach(alert => {
-                    setTimeout(() => dismissAlert(alert), 15000);
-                 });
+            timeoutAlerts();
         }
     }
 

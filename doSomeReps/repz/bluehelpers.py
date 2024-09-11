@@ -285,27 +285,25 @@ def exclude(exclusion_ids, UID):
 
 def delete_pic(pic):
         file_key = os.path.basename(pic.pic_string)
-        is_delete_success = current_app.s3.delete_s3_object(object_name = file_key)
-        if is_delete_success:
-            session.delete(pic)
-            # try:
-            #     s3_client.head_object(Bucket=current_app.config['BUCKET'], Key=file_key)
-            #     exists = True
-            # except botocore.exceptions.ClientError as e:
-            #     if e.response['Error']['Code'] == "404":
-            #         exists = False
-            #     else:
-            #         raise
-            # print(f"Object exists in bucket: {exists}")
-            # resp = s3_client.list_objects_v2(Bucket=current_app.config['BUCKET'], Prefix=file_key)
-            # if 'Contents' in resp:
-            #     for obj in resp['Contents']:
-            #         print(f"Object key: {obj['Key']}")
-            # else:
-            #     print("No objects found in bucket")
-        else:
-            flash('Failed to delete picture from S3 Bucket!', category="error")     
+        
+        s3_obj_exists = current_app.s3.lookup_object(object_name = file_key)
+        if s3_obj_exists:
+            is_delete_success = current_app.s3.delete_s3_object(object_name = file_key)
+            if is_delete_success:
+                logging.debug(f"Deleting question pic with pic_string: {pic.pic_string} and with id: {pic.pic_id}")
+    
+            # MAY OR MAY NOT NEED THIS, TEST FURTHER:
+            # # session.commit()
+            
+            
 
+            else:
+                flash('Failed to delete picture from S3 Bucket!', category="error")
+                logging.debug(f"ERROR- FAILED TO DELETE PICTURE FROM S3 BUCKET HERE: {file_key} . Next, trying: Deleting question pic with pic_string: {pic.pic_string} and with id: {pic.pic_id}")  
+                   
+        session.delete(pic)
+        session.commit()
+        
 
 def allowed_file(filename):
     return (
@@ -339,7 +337,8 @@ def save_pictures(question, request) -> question:
                     question.pics.append(
                         q_pic(pic_string=location_string, pic_type=pic_type)
                     )
-       
+  
+    session.commit()  
     return question
 
 

@@ -84,7 +84,7 @@ def saveq():
             "answer": updated_question['answer'],
             "privacy": privacy,
         },
-        synchronize_session=False,
+        synchronize_session='fetch',
     )
     
     # update question categories
