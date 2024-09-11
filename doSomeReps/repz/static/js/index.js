@@ -24,6 +24,34 @@ window.onload = (event) => {
         });
     }
 
+    document.querySelector('input[type="file"]').addEventListener('change', function(event) {
+        const fileInput = event.target;
+        const files = fileInput.files;
+        const invalidFiles = [];
+    
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const filename = file.name;
+    
+            // Regex to check for filenames starting with a period or invalid characters
+            const invalidCharRegex = /[^a-zA-Z0-9_.-]/;
+            const startsWithDot = filename.startsWith('.');
+            const hasExtension = filename.includes('.');
+    
+            if (startsWithDot && !hasExtension) {
+                invalidFiles.push(filename);
+            } else if (invalidCharRegex.test(filename)) {
+                invalidFiles.push(filename);
+            }
+        }
+    
+        if (invalidFiles.length > 0) {
+            alert("The following filenames are invalid: " + invalidFiles.join(', '));
+            fileInput.value = ''; // Clear the invalid files
+        }
+    });
+    
+
     if (window.location.pathname === '/') {
         // unfavorate button
         const unfavorite_button = document.querySelectorAll(".unfavorite-user-button");

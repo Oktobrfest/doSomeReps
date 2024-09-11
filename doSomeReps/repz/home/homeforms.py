@@ -4,14 +4,15 @@ from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired, NumberRange
 from flask import current_app as app
 
+from .form_validation import wtforms_filename_validator 
+
 class QuestionForm(FlaskForm):
-    question_image = FileField("question_image")
-    hint_image = FileField("hint_image")
+    question_image = FileField("question_image", validators=[wtforms_filename_validator])
+    hint_image = FileField("hint_image", validators=[wtforms_filename_validator])
 
     # question2 = StringField(u'Question text', validators=[validators.input_required()])
 
-images = UploadSet("images", IMAGES)
-configure_uploads(app, images)
+
 
 
 class QueAdditionForm(FlaskForm):
@@ -20,7 +21,8 @@ class QueAdditionForm(FlaskForm):
     qty_to_que.data = 10
 
 
-    
+images = UploadSet("images", IMAGES)
+configure_uploads(app, images)
     
     
     
