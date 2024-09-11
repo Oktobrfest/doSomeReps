@@ -44,7 +44,6 @@ venv/
 **/coverage/
 *.cover
 
-
 # Test and Coverage Reports
 .pytest_cache/
 .cache/
@@ -92,7 +91,6 @@ debugger.mjs
 viewer.mjs
 dev.env
 prod.env
-
 
 # Ignore uploads folder
 **/static/uploads/

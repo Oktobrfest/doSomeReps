@@ -45,6 +45,7 @@ question_sources = Table(
     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
 )
 
+
 class question(Base):
     __tablename__ = "question"
     question_id = sa.Column(
@@ -70,6 +71,7 @@ class question(Base):
     pics = relationship("q_pic", back_populates="parent_question", cascade="all, delete")
     quizqs = relationship("quizq", back_populates="referenced_question", cascade="all, delete")
 
+
 class source(Base):
     __tablename__ = "source"
     source_id = sa.Column(
@@ -82,6 +84,7 @@ class source(Base):
     sources_questions = relationship(
         "question", secondary=question_sources, back_populates="sources"
     )
+    
 
 class users(UserMixin, Base):
     __tablename__ = "users" 
@@ -153,6 +156,7 @@ class category(Base):
         "question", secondary=question_categories, back_populates="categories"
     )
     
+    
 class level(Base):
     __tablename__ = "level"
     level_no = sa.Column(
@@ -160,7 +164,6 @@ class level(Base):
     )
     days_hence = sa.Column(sa.Float, nullable=False)
     quizqs = relationship("quizq")
-
 
          
 class q_pic(Base):
@@ -175,6 +178,7 @@ class q_pic(Base):
     # parent_question = relationship("question", back_populates="pics", cascade="all, delete-orphan", single_parent=True)
     parent_question = relationship("question", back_populates="pics", single_parent=True)
  
+ 
 class quizq(Base):
     __tablename__ = "quizq"
     quizq_id = sa.Column(
@@ -188,6 +192,7 @@ class quizq(Base):
     provided_answer = sa.Column(sa.String(600), primary_key=False, unique=False, nullable=True)
     
     referenced_question = relationship("question", back_populates="quizqs")
+    
     
 class rating(Base):
     __tablename__ = "rating"

@@ -1,24 +1,22 @@
-from sqlalchemy import select, and_, text
-from .database import session
-from .models import category, question, q_pic, quizq, level, rating, users, question_categories
-import re
+import base64
+import logging
 import os
-
-from werkzeug.utils import secure_filename
-
-from flask import session as local_session, flash, current_app
-
+import re
+import time
 from datetime import datetime, timedelta
+from io import BytesIO
 
 import matplotlib.pyplot as plt
 import numpy as np
-from io import BytesIO
-import base64
-from repz import cache
-import time
-
+from flask import current_app, flash, session as local_session
+from sqlalchemy import and_, select, text
 from sqlalchemy.exc import OperationalError
-import logging
+from werkzeug.utils import secure_filename
+
+from .database import session
+from .models import category, level, q_pic, question, question_categories, quizq, rating, users
+from repz import cache
+
 
 
 def clean_for_html(unclean: str) -> str:
@@ -291,18 +289,12 @@ def delete_pic(pic):
             is_delete_success = current_app.s3.delete_s3_object(object_name = file_key)
             if is_delete_success:
                 logging.debug(f"Deleting question pic with pic_string: {pic.pic_string} and with id: {pic.pic_id}")
-    
-            # MAY OR MAY NOT NEED THIS, TEST FURTHER:
-            # # session.commit()
-            
-            
-
             else:
                 flash('Failed to delete picture from S3 Bucket!', category="error")
                 logging.debug(f"ERROR- FAILED TO DELETE PICTURE FROM S3 BUCKET HERE: {file_key} . Next, trying: Deleting question pic with pic_string: {pic.pic_string} and with id: {pic.pic_id}")  
                    
         session.delete(pic)
-        session.commit()
+        # session.commit()
         
 
 def allowed_file(filename):
@@ -338,7 +330,7 @@ def save_pictures(question, request) -> question:
                         q_pic(pic_string=location_string, pic_type=pic_type)
                     )
   
-    session.commit()  
+    # session.commit()  
     return question
 
 
