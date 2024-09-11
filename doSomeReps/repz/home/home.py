@@ -39,8 +39,7 @@ from sqlalchemy import (
     except_,
     and_,
     or_,
-    text,
-    
+    text,    
 )
 from ..database import session
 from ..models import category, question, q_pic, quizq, level, users, rating, excluded_questions
@@ -57,7 +56,7 @@ from werkzeug.utils import secure_filename
 import random
 
 import os
-from ..homeforms import QueAdditionForm, QuestionForm
+from .homeforms import QueAdditionForm, QuestionForm
 from ..bluehelpers import cat_questions_count, clean_for_html, get_all_categories, get_quizes, get_session, get_user, new_quizq, remove_underscore, save_pictures, set_session, split_dict, tally_que_catz
 import json
 import math
@@ -164,7 +163,6 @@ def homepage():
                                user=current_user,
                                forgetting_chart = forgetting_chart,
                                categories_graph = categories_graph)
-
     
 
 # creates a new question
