@@ -2,12 +2,12 @@
 *.log
 *.csv
 *.dat
-.DS_Store
+**/*.DS_Store
 Thumbs.db
 
 # Environment files
-.env
-.flaskenv
+*.env
+*.flaskenv
 
 # Python
 *.pyc
@@ -28,7 +28,7 @@ venv/
 # Docker
 .dockerignore
 
-# Node (if using Node.js in your project)
+# Node
 /node_modules/
 .npm/
 .yarn/
@@ -38,10 +38,10 @@ venv/
 *.sublime-workspace
 
 # Build and Distribution
-/dist/
-/build/
-/htmlcov/
-/coverage/
+**/dist/
+**/build/
+**/htmlcov/
+**/coverage/
 *.cover
 
 
@@ -53,11 +53,13 @@ venv/
 .tox/
 
 # Image files
-# *.jpg
-# *.png
-# *.bmp
-# *.svg
-*.pdf
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.bmp
+**/*.svg
+**/*.pdf
 
 # Lock files
 *.lock
@@ -70,18 +72,19 @@ samples/
 *-stack.yml
 backup/
 
-logs/
+**/*.log
+**/logs/
 *.tar.gz
 .dump
 
 pdfjs-dist/
 locale/
 LICENSE.txt
-screenshots/
+**/screenshots/
 samples/
 
 static/css/images/
-*.map
+**/*.map
 
 prism.js
 Flash.js
@@ -89,6 +92,7 @@ debugger.mjs
 viewer.mjs
 dev.env
 prod.env
-*.env
 
-static/uploads/images/
+
+# Ignore uploads folder
+**/static/uploads/

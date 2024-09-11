@@ -48,7 +48,7 @@ question_sources = Table(
 class question(Base):
     __tablename__ = "question"
     question_id = sa.Column(
-        sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
+        sa.Integer, Identity(), primary_key=True, autoincrement=True
     )
     created_on = sa.Column(sa.DateTime, index=False, unique=False, nullable=True)
     question_text = sa.Column(
@@ -73,7 +73,7 @@ class question(Base):
 class source(Base):
     __tablename__ = "source"
     source_id = sa.Column(
-        sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
+        sa.Integer, Identity(), primary_key=True, autoincrement=True
     )
     url_string = Column(sa.String(400), nullable=False, unique=True, primary_key=False)
     shortcut = sa.Column(
@@ -86,7 +86,7 @@ class source(Base):
 class users(UserMixin, Base):
     __tablename__ = "users" 
     id = sa.Column(
-        sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
+        sa.Integer, Identity(), primary_key=True, autoincrement=True
     )
     username = sa.Column(sa.String(255), nullable=False)
     last_login = sa.Column(sa.DateTime, index=False, unique=False, nullable=True)
@@ -156,7 +156,7 @@ class category(Base):
 class level(Base):
     __tablename__ = "level"
     level_no = sa.Column(
-        sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
+        sa.Integer, Identity(), primary_key=True, autoincrement=True
     )
     days_hence = sa.Column(sa.Float, nullable=False)
     quizqs = relationship("quizq")
@@ -166,18 +166,19 @@ class level(Base):
 class q_pic(Base):
     __tablename__ = "q_pic"
     pic_id = sa.Column(
-        sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
+        sa.Integer, Identity(), primary_key=True, autoincrement=True
     )
     pic_string = Column(sa.String(600))
     question_id = Column(Integer, ForeignKey("question.question_id", ondelete="CASCADE"))
     pic_type = Column(sa.String(25))
     
-    parent_question = relationship("question", back_populates="pics", cascade="all, delete")
+    # parent_question = relationship("question", back_populates="pics", cascade="all, delete-orphan", single_parent=True)
+    parent_question = relationship("question", back_populates="pics", single_parent=True)
  
 class quizq(Base):
     __tablename__ = "quizq"
     quizq_id = sa.Column(
-        sa.Integer, Identity(start=1, cycle=True), primary_key=True, autoincrement=True
+        sa.Integer, Identity(), primary_key=True, autoincrement=True
     )
     question_id = sa.Column(Integer, ForeignKey("question.question_id", ondelete="CASCADE"), nullable=False)
     user_id = sa.Column(Integer, ForeignKey("users.id"), nullable=False)

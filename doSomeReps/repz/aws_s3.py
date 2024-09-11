@@ -79,3 +79,45 @@ class S3:
             logging.error(e)
             return False
         return True
+    
+    
+    def lookup_object(self, object_name, bucket = None):
+        """Lookup an object in the S3 bucket to see if it exists"""
+
+        if bucket == None:
+            bucket = self.default_bucket            
+
+        response = self.client.list_objects_v2(
+            Bucket=bucket,
+            Prefix=object_name,
+        )
+
+        try:            
+            for obj in response.get('Contents', []):
+                if obj['Key'] == object_name:
+                    # return obj['Size']
+                    return True            
+        except ClientError as e:
+            logging.error(e)
+            raise
+        
+        return False               
+    
+
+                
+                # UGLY WAY:
+                            # try:
+            #     s3_client.head_object(Bucket=current_app.config['BUCKET'], Key=file_key)
+            #     exists = True
+            # except botocore.exceptions.ClientError as e:
+            #     if e.response['Error']['Code'] == "404":
+            #         exists = False
+            #     else:
+            #         raise
+            # print(f"Object exists in bucket: {exists}")
+            # resp = s3_client.list_objects_v2(Bucket=current_app.config['BUCKET'], Prefix=file_key)
+            # if 'Contents' in resp:
+            #     for obj in resp['Contents']:
+            #         print(f"Object key: {obj['Key']}")
+            # else:
+            #     print("No objects found in bucket")
