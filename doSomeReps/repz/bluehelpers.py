@@ -12,7 +12,6 @@ from flask import current_app, flash, session as local_session
 from sqlalchemy import and_, select, text
 from sqlalchemy.exc import OperationalError
 
-
 from .database import session
 from .models import category, level, q_pic, question, question_categories, quizq, rating, users
 from repz import cache
