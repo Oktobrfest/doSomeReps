@@ -1,7 +1,7 @@
 import datetime
 import os
 
-from flask import current_app
+from flask import current_app, logging
 from werkzeug.utils import secure_filename
 
 from .form_validation import allowed_file, validate_filename
@@ -10,7 +10,8 @@ from ..models import q_pic, question
 
 def gen_unique_filename(filename):
     base_name, extension = os.path.splitext(filename)
-    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d__T%H-%M-%S__MS%f')
+    # STILL NEED TO ADD A RANDOM NUMBER IN CASE THEY USE MULTI-SAME NAMES IN SAME REQUEST!
     return f"{base_name}__{timestamp}{extension}"
 
 
@@ -23,8 +24,13 @@ def save_pictures(question, request) -> question:
             pictures = request.files.getlist(pic_type)
             for pic in pictures:
                 if pic and allowed_file(pic.filename):
-                    unvalidated_picname = secure_filename(pic.filename)
-                    picname = validate_filename(unvalidated_picname)
+                    filename = secure_filename(pic.filename) 
+                    val, err = validate_filename(filename)                   
+                    if val == False:
+                        logging.error(err) 
+                        raise ValueError(err)
+                        
+                    picname = gen_unique_filename(filename)
                     file_path = os.path.join(file_directory, picname)
                     pic.save(os.path.join(file_directory, picname))
                     Metadata = {

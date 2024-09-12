@@ -57,7 +57,7 @@ import random
 
 import os
 from .homeforms import QueAdditionForm, QuestionForm
-from ..bluehelpers import cat_questions_count, clean_for_html, get_all_categories, get_quizes, get_session, get_user, new_quizq, remove_underscore, save_pictures, set_session, split_dict, tally_que_catz
+from ..bluehelpers import cat_questions_count, clean_for_html, get_all_categories, get_quizes, get_session, get_user, new_quizq, remove_underscore, set_session, split_dict, tally_que_catz
 import json
 import math
 from ..charts import rep_vs_forget, render_chart
@@ -66,6 +66,7 @@ from repz import cache
 from repz.cache_helper import CacheHelper
 import hashlib
 from repz.routes import home
+from .form_helpers import save_pictures
 
 
 @home.route("/favicon.ico")
@@ -301,7 +302,6 @@ def quiz():
         else:
             quizq_id = ""
 
-
         # exclude question                                    
         if ((start_quiz == None) and 
             (exclude_question == "exclude")):
@@ -337,7 +337,6 @@ def quiz():
                 .where(quizq.quizq_id == quizq_id)
             )
             current_quiz = session.execute(qry).scalars().all()
-            # print(qry)
 
             # set fields applicable to both possibilities (completed date & by whom)
             update_stmt = (

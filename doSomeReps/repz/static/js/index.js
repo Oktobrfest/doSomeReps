@@ -34,7 +34,7 @@ window.onload = (event) => {
             const filename = file.name;
     
             // Regex to check for filenames starting with a period or invalid characters
-            const invalidCharRegex = /[^a-zA-Z0-9_.-]/;
+            const invalidCharRegex = /[^a-zA-Z0-9_. !@#$%^&()\-]/;
             const startsWithDot = filename.startsWith('.');
             const hasExtension = filename.includes('.');
     
