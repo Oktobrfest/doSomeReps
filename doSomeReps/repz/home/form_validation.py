@@ -1,7 +1,7 @@
 import re
 import os
-from wtforms import ValidationError
 
+from wtforms import ValidationError
 from flask import current_app
 
 
