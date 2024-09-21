@@ -8,6 +8,7 @@ class AjaxResponse:
         self.msg_category = msg_category
         self.status = status
 
+
     def create_response(self):
         return jsonify({
             "data": self.data or [],

@@ -6,7 +6,7 @@
 {{ super() }}
 {% endblock head %}
 {% block content %}
-<div>
+<!-- <div>
   <div>
     <table id="topic-table">
       <tr>
@@ -29,7 +29,56 @@
       {% endfor %}
     </table>
   </div>
+</div> -->
+
+
+
+<div class="topic-container"></div>
+<!-- Column 1 -->
+<div class="topic-column">
+  <table id="topic-table">
+    <tr>
+      <th id="sort-by-topic" class="heading topic-heading-title">
+        <h1 class="topic-heading-title underline">Topic List <span class="sort-indicator"></span></h1>
+      </th>
+      <th id="sort-by-count" class="heading topic-question-count-title">
+        <h1 class="topic-question-count-title underline">Question Count <span class="sort-indicator"></span></h1>
+    </tr>
+    {% for topic, count in topics.items()|slice(0, (topics|length//2)) %}
+    <tr>
+      <td class="topic">
+        <a class="topic" href="/topic/{{ topic }}">{{ topic }}</a>
+      </td>
+      <td class="topic-question-count">
+        <h3 class="topic-question-count">{{ count }}</h3>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
 </div>
 
+<!-- Column 2 -->
+<div class="topic-column">
+  <table id="topic-table">
+    <tr>
+      <th id="sort-by-topic" class="heading topic-heading-title">
+        <h1 class="topic-heading-title underline">Topic List <span class="sort-indicator"></span></h1>
+      </th>
+      <th id="sort-by-count" class="heading topic-question-count-title">
+        <h1 class="topic-question-count-title underline">Question Count <span class="sort-indicator"></span></h1>
+    </tr>
+    {% for topic, count in topics.items()|slice((topics|length//2), topics|length) %}
+    <tr>
+      <td class="topic">
+        <a class="topic" href="/topic/{{ topic }}">{{ topic }}</a>
+      </td>
+      <td class="topic-question-count">
+        <h3 class="topic-question-count">{{ count }}</h3>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+</div>
 
 {% endblock content %}
