@@ -96,5 +96,3 @@ prod.env
 **/static/uploads/
 
 **/css/viewer.css
-**/css/prism.css
-**/css/debugger.css
