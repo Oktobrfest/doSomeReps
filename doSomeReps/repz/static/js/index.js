@@ -11,6 +11,47 @@ window.onload = (event) => {
         });
     });
 
+    // Clear Flash messages
+    function dismissAlert(alert) {
+        alert.classList.remove('show');
+        alert.classList.add('hide');
+        setTimeout(() => alert.remove(), 250);
+    }   
+    // Timeout Flash alert messages
+    function timeoutAlerts() {
+         document.querySelectorAll('.alert').forEach(alert => {
+            setTimeout(() => dismissAlert(alert), 8000);
+        });
+    }
+
+    document.querySelector('input[type="file"]').addEventListener('change', function(event) {
+        const fileInput = event.target;
+        const files = fileInput.files;
+        const invalidFiles = [];
+    
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const filename = file.name;
+    
+            // Regex to check for filenames starting with a period or invalid characters
+            const invalidCharRegex = /[^a-zA-Z0-9_. !@#$%^&()\-]/;
+            const startsWithDot = filename.startsWith('.');
+            const hasExtension = filename.includes('.');
+    
+            if (startsWithDot && !hasExtension) {
+                invalidFiles.push(filename);
+            } else if (invalidCharRegex.test(filename)) {
+                invalidFiles.push(filename);
+            }
+        }
+    
+        if (invalidFiles.length > 0) {
+            alert("The following filenames are invalid: " + invalidFiles.join(', '));
+            fileInput.value = ''; // Clear the invalid files
+        }
+    });
+    
+
     if (window.location.pathname === '/') {
         // unfavorate button
         const unfavorite_button = document.querySelectorAll(".unfavorite-user-button");
@@ -105,6 +146,8 @@ window.onload = (event) => {
                     alert('Please select at least one category before submitting the form.');
                 }
             });
+
+            timeoutAlerts();
         }
     }
 
@@ -557,7 +600,7 @@ function populateQuestion(event) {
                     img.alt = picType; // add the picType as the alt text
                     var pic_id = data.pics_by_type[picType][i].pic_id;
                     img.id = pic_id;
-                    img.baseURI = "https://reppics.s3.us-west-2.amazonaws.com"
+                    // img.baseURI = "https://reppics.s3.us-west-2.amazonaws.com"
                     let imgContainer = createImgContainer(pic_id);
                     imgContainer.appendChild(img);
 

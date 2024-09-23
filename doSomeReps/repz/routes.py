@@ -1,11 +1,11 @@
 """Route declaration."""
-from flask import Blueprint, url_for
+from flask import Blueprint, url_for, current_app
 
 #auth left in auth.py
 
 home = Blueprint('home', __name__,
     template_folder='home/templates',
-    static_folder='home/static'
+    static_folder='home/' + current_app.config['HOME_STATIC_FOLDER']
 )
 
 quest_ajx = Blueprint("quest_ajx", __name__)

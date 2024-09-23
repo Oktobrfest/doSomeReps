@@ -1,72 +1,91 @@
+import copy
+import hashlib
+import json
 import logging
+import math
+import os
+import random
+import re
+
 from re import A
 from typing import final
+
 from flask import (
     Blueprint,
+    current_app as app,
+    flash,
+    g,
+    jsonify,
+    redirect,
     render_template,
     request,
-    jsonify,
-    flash,
-    flash,
-    redirect,
-    url_for,
+    send_from_directory,
     session as local_session,
-    g,
-    current_app as app,
-    send_from_directory
+    url_for
 )
-
 from flask_login import current_user, login_required, logout_user
-
+from flask_uploads import IMAGES, UploadSet, configure_uploads
+from flask_wtf import FlaskForm
+from sqlalchemy import (
+    Interval,
+    and_,
+    except_,
+    intersect,
+    join,
+    not_,
+    or_,
+    select,
+    text,
+    update
+)
 from sqlalchemy.orm import (
     Query,
-    selectinload,
-    joinedload,
     aliased,
-    subqueryload,
-    with_parent,
     contains_eager,
+    joinedload,
+    selectinload,
+    subqueryload,
+    with_parent
 )
-from sqlalchemy.sql import func, exists, distinct
-from sqlalchemy.sql.expression import bindparam, ColumnOperators
-from sqlalchemy import (
-    select,
-    Interval,
-    join,
-    intersect,
-    update,
-    not_,
-    except_,
-    and_,
-    or_,
-    text,
-    
-)
-from ..database import session
-from ..models import category, question, q_pic, quizq, level, users, rating, excluded_questions
-import re
-import copy
-
-from flask_uploads import configure_uploads, IMAGES, UploadSet
-from wtforms import FileField, StringField, validators, SubmitField, IntegerField
-from flask_wtf import FlaskForm
-from wtforms.validators import DataRequired, NumberRange
+from sqlalchemy.sql import ColumnOperators, func, exists, distinct
+from sqlalchemy.sql.expression import bindparam
 
 from werkzeug.utils import secure_filename
-
-import random
-
-import os
-from ..homeforms import QueAdditionForm, QuestionForm
-from ..bluehelpers import cat_questions_count, clean_for_html, get_all_categories, get_quizes, get_session, get_user, new_quizq, remove_underscore, save_pictures, set_session, split_dict, tally_que_catz
-import json
-import math
-from ..charts import rep_vs_forget, render_chart
+from wtforms import FileField, IntegerField, StringField, SubmitField, validators  # Re-added validators
+from wtforms.validators import DataRequired, NumberRange
 
 from repz import cache
 from repz.cache_helper import CacheHelper
-import hashlib
 from repz.routes import home
+
+from ..bluehelpers import (
+    cat_questions_count,
+    clean_for_html,
+    get_all_categories,
+    get_quizes,
+    get_session,
+    get_user,
+    new_quizq,
+    remove_underscore,
+    set_session,
+    split_dict,
+    tally_que_catz
+)
+from ..charts import rep_vs_forget, render_chart
+from ..database import session
+from ..models import (
+    category,
+    excluded_questions,
+    level,
+    q_pic,
+    question,
+    quizq,
+    rating,
+    users
+)
+from .form_helpers import save_pictures
+from .homeforms import QueAdditionForm, QuestionForm
+
 
 
 @home.route("/favicon.ico")
@@ -164,7 +183,6 @@ def homepage():
                                user=current_user,
                                forgetting_chart = forgetting_chart,
                                categories_graph = categories_graph)
-
     
 
 # creates a new question
@@ -317,7 +335,6 @@ def quiz():
         else:
             quizq_id = ""
 
-
         # exclude question                                    
         if ((start_quiz == None) and 
             (exclude_question == "exclude")):
@@ -353,7 +370,6 @@ def quiz():
                 .where(quizq.quizq_id == quizq_id)
             )
             current_quiz = session.execute(qry).scalars().all()
-            # print(qry)
 
             # set fields applicable to both possibilities (completed date & by whom)
             update_stmt = (

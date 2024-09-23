@@ -2,9 +2,9 @@ from flask import (
     render_template,
     send_from_directory
 )
+from flask_login import current_user
 
 from ..bluehelpers import cat_questions_count
-from flask_login import current_user
 from repz.routes import catz, catz_static
 
 
