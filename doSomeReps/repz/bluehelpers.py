@@ -1,26 +1,22 @@
-from sqlalchemy import select, and_, text
-from .database import session
-from .models import category, question, q_pic, quizq, level, rating, users, question_categories
-from config import Config
-import re
+import base64
+import logging
 import os
-
-from werkzeug.utils import secure_filename
-
-from flask import session as local_session, flash, app
-
+import re
+import time
 from datetime import datetime, timedelta
+from io import BytesIO
 
 import matplotlib.pyplot as plt
 import numpy as np
-from io import BytesIO
-import base64
-from .aws_s3 import delete_s3_object, upload_file_to_s3
-from repz import cache
-import time
-
+from flask import current_app, flash, session as local_session
+from sqlalchemy import and_, select, text
 from sqlalchemy.exc import OperationalError
-import logging
+
+from .database import session
+from .models import category, level, q_pic, question, question_categories, quizq, rating, users
+from repz import cache
+from .home.form_validation import validate_filename, allowed_file
+
 
 
 def clean_for_html(unclean: str) -> str:
@@ -287,59 +283,18 @@ def exclude(exclusion_ids, UID):
 
 def delete_pic(pic):
         file_key = os.path.basename(pic.pic_string)
-        is_delete_success = delete_s3_object(file_key)
-        if is_delete_success:
-            session.delete(pic)
-            # try:
-            #     s3_client.head_object(Bucket=Config.BUCKET, Key=file_key)
-            #     exists = True
-            # except botocore.exceptions.ClientError as e:
-            #     if e.response['Error']['Code'] == "404":
-            #         exists = False
-            #     else:
-            #         raise
-            # print(f"Object exists in bucket: {exists}")
-            # resp = s3_client.list_objects_v2(Bucket=Config.BUCKET, Prefix=file_key)
-            # if 'Contents' in resp:
-            #     for obj in resp['Contents']:
-            #         print(f"Object key: {obj['Key']}")
-            # else:
-            #     print("No objects found in bucket")
-        else:
-            flash('Failed to delete picture from S3 Bucket!', category="error")     
-
-
-def allowed_file(filename):
-    return (
-        "." in filename
-        and filename.split(".", 1)[1].lower() in Config.ALLOWED_EXTENSIONS
-    )
-            
-
-def save_pictures(question, request):
-    pic_types = {"answer_pics", "hint_image", "question_image"}
-    for pic_type in pic_types:
-        if pic_type in request.files:
-            pictures = request.files.getlist(pic_type)
-            for pic in pictures:
-                if pic and allowed_file(pic.filename):
-                    picname = secure_filename(pic.filename)
-                    pic.save(os.path.join(app.config["UPLOAD_FOLDER"], picname))
-                    file_directory = "repz/home/static/"
-                    file_name = file_directory + picname
-                    Metadata = {
-                        # "x-amz-meta-question": question.question_id,
-                        "x-amz-meta-pic_type": pic_type,
-                    }
-                    ExtraArgs = {"Metadata": Metadata}
-                    location_string = upload_file_to_s3(
-                        file_name, ExtraArgs, object_name=picname
-                    )
-                    question.pics.append(
-                        q_pic(pic_string=location_string, pic_type=pic_type)
-                    )
-    session.commit()                
-    return question
+        
+        s3_obj_exists = current_app.s3.lookup_object(object_name = file_key)
+        if s3_obj_exists:
+            is_delete_success = current_app.s3.delete_s3_object(object_name = file_key)
+            if is_delete_success:
+                logging.debug(f"Deleting question pic with pic_string: {pic.pic_string} and with id: {pic.pic_id}")
+            else:
+                flash('Failed to delete picture from S3 Bucket!', category="error")
+                logging.debug(f"ERROR- FAILED TO DELETE PICTURE FROM S3 BUCKET HERE: {file_key} . Next, trying: Deleting question pic with pic_string: {pic.pic_string} and with id: {pic.pic_id}")  
+                   
+        session.delete(pic)
+        # session.commit()
 
 
   # get all questions that are public
@@ -354,7 +309,10 @@ def cat_questions_count(qty):
         sorted_ques_cat_count = sorted(questions_dict.items(), key = lambda x: x[1], reverse = True)
         return sorted_ques_cat_count[:qty]
     except OperationalError as e:
-        app.logger.error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA, DB Error:' + str(e))
+        current_app.logger.error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA, DB Error:' + str(e))
         session.close()
         raise 
+    
+
+    
     

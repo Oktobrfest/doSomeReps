@@ -1,7 +1,9 @@
-import matplotlib.pyplot as plt
-import numpy as np
 from io import BytesIO
 import base64
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 def rep_vs_forget(repetition_days_real):
     repetition_days = [round(day) for day in repetition_days_real[:10]]
@@ -86,6 +88,7 @@ def rep_vs_forget(repetition_days_real):
     chart_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
     return chart_image
+
 
 def render_chart(x_arr, y_arr, x_label, y_label):
     # Create sample data

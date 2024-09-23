@@ -4,13 +4,16 @@ from flask import g, make_response
 from ...models import q_pic, users, question, quizq, category, rating
 import json
 
-from ...database import session
-from repz.routes import quest_ajx
-from ...bluehelpers import clean_for_html, get_all_db_categories, get_user, remove_underscore, set_session, delete_pic, save_pictures
+
 import copy
 from repz import cache
 from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload, Query
+
+from ...database import session
+from repz.routes import quest_ajx
+from ...bluehelpers import clean_for_html, get_all_db_categories, get_user, remove_underscore, set_session, delete_pic
+from ...home.form_helpers import save_pictures
 
 
 # adds a new category
@@ -84,7 +87,7 @@ def saveq():
             "answer": updated_question['answer'],
             "privacy": privacy,
         },
-        synchronize_session=False,
+        synchronize_session='fetch',
     )
     
     # update question categories

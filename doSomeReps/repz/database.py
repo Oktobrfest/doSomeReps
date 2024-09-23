@@ -2,18 +2,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from urllib.parse import quote
 
-from config import Config
+from flask import current_app
 
-from flask import current_app as app
-
-DB_HOST = Config.DB_HOST
-DB_PORT = Config.DB_PORT
+DB_HOST = current_app.config['DB_HOST']
+DB_PORT = current_app.config['DB_PORT']
 SERVER = f'{DB_HOST}:{DB_PORT}'
 
-DATABASE = Config.DB_NAME  
-USERNAME = Config.DB_USERNAME
-PASSWORD = quote(Config.DB_PASSWORD)
-DRIVER = 'psycopg2'
+DATABASE = current_app.config['DB_NAME']
+USERNAME = current_app.config['DB_USERNAME']
+PASSWORD = quote(current_app.config['DB_PASSWORD'])
+DRIVER = current_app.config.get('DRIVER', 'psycopg2')
 
 SQLALCHEMY_DATABASE_URL = f'postgresql+{DRIVER}://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}'
 
