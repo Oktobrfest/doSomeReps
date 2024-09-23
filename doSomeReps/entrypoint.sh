@@ -4,16 +4,10 @@ echo "ENTRYPOINT SCRIPT STARTED..."
 echo "pwd is: "
 echo $(pwd)
 
-
-if [ -z "$APP_PORT" ]; then  
-    APP_PORT=5554      
-fi
-# better way to set defaults:
 APP_PORT=${APP_PORT:-5554}
 DEBUG_PORT=${DEBUG_PORT:-5558}
 
 USER z
-# try to get other .env file into here to consolidate some shit: source doSomeReps/.env
 
 echo "IDE IS: ${IDE}"
 if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
@@ -27,7 +21,7 @@ if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
     fi
     if [ "$IDE" = "pycharm" ]; then
         pip install pydevd-pycharm==242.10180.30
-        echo "PYCHARM DEBUGGING::::::: NEEDS MORE TESTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TRYING: nothing right now... next try flask run"
+        echo "PYCHARM DEBUGGING::::::: NOT IMPLIMENTED!!! TODO: THIS!"
     fi
     if [ "$IDE" = "vsdev" ]; then
      echo "STARTING DEVELOPMENT USING: ${IDE} ; EXCECUTED: flask run --host=0.0.0.0 --port=${APP_PORT} --debugger --reload"
@@ -37,8 +31,3 @@ else
     echo "Starting the application without debugger..."
     flask run --host=0.0.0.0 --port=${APP_PORT}
 fi
-
-
-
-# Execute the CMD from the Dockerfile or docker-compose file
-# exec "$@"
