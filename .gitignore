@@ -94,3 +94,7 @@ prod.env
 
 # Ignore uploads folder
 **/static/uploads/
+
+**/css/viewer.css
+**/css/prism.css
+**/css/debugger.css
