@@ -7,10 +7,14 @@ echo $(pwd)
 APP_PORT=${APP_PORT:-5554}
 DEBUG_PORT=${DEBUG_PORT:-5558}
 
-USER z
+
 
 echo "IDE IS: ${IDE}"
 if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
+
+    # This is for dev apparently only for now
+    USER z
+
     echo "Development environment detected, installing debugpy..."
     pip install debugpy
     if [ "$IDE" = "vscode" ]; then

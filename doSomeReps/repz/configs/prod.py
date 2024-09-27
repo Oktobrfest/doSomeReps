@@ -16,10 +16,13 @@ class ProdConfig(Config):
     FLASK_ENV = environ.get("FLASK_ENV", "production")
     
     APP_DIR = environ.get('APP_DIR', 'repz')
+    
     # Static Assets
+    HOME_STATIC_FOLDER = environ.get("HOME_STATIC_FOLDER", "static")
     STATIC_FOLDER = environ.get("STATIC_FOLDER", "static")
     TEMPLATES_FOLDER = environ.get('TEMPLATES_FOLDER', 'templates')
     COMPRESSOR_DEBUG = environ.get("COMPRESSOR_DEBUG", False)
+    
     # file uploads
     UPLOADS_DEFAULT_DEST = environ.get("UPLOADS_DEFAULT_DEST", f'{APP_DIR}/{STATIC_FOLDER}') 
     UPLOAD_FOLDER = environ.get("UPLOAD_FOLDER", UPLOADS_DEFAULT_DEST) 

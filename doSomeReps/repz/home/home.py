@@ -47,7 +47,8 @@ from sqlalchemy.orm import (
     subqueryload,
     with_parent
 )
-from sqlalchemy.sql import ColumnOperators, func, exists, distinct
+from sqlalchemy.sql import func, exists, distinct
+
 from sqlalchemy.sql.expression import bindparam
 
 from werkzeug.utils import secure_filename
