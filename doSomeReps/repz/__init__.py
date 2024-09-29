@@ -47,13 +47,13 @@ def init_app():
         if env == 'development':
             from .configs.dev import DevConfig as Conf
         else:  # Defaults to production
-            from .configs.prod import ProdConfig as Conf    
+            from .configs.prod import ProdConfig as Conf
         
         try:
             app.config.from_object(Conf)
         except Exception as e:
             print(f"Failed to load Dev or Prod Configuration: {e}")
-            raise     
+            raise
         
             # Initialize image paths
         image_paths = Conf.initialize_image_paths()
