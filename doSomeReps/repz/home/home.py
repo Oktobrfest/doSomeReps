@@ -204,7 +204,6 @@ def addcontent():
             form=form,
         )
 
-    selected_categories = []
     question_text = request.form.get("question_text")
     hint = request.form.get("hint")
     answer = request.form.get("answer")
@@ -214,11 +213,11 @@ def addcontent():
     else:
         privacy = False        
 
-    category_names = request.form.getlist("category_name")
+    selected_categories = request.form.getlist("category_name")
 
     #remove the html versions underscores
-    spaced_cats = list(map(lambda x: remove_underscore(x), category_names))
-    selected_categories = category_names
+    spaced_cats = list(map(lambda x: remove_underscore(x), selected_categories))
+
     #  TEESTING MULTIPLE IMAGE UPLOADS
     if form.validate_on_submit():
         fail = False
@@ -231,7 +230,7 @@ def addcontent():
         if existing_q_text is not None:
             flash("question already exists!", category="error")
             fail = True
-        if len(category_names) < 1:
+        if len(selected_categories) < 1:
             fail = True
             flash("You must select at least one category!", category="error")
         # if fail == True:
@@ -259,7 +258,6 @@ def addcontent():
             hint=hint,
             created_on=func.now(),
             answer=answer,
-            categories=selected_categories,
             created_by=UID,
             privacy=privacy
         )
