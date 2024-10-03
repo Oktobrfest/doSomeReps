@@ -1,0 +1,81 @@
+{% extends "base.html" %} {% block title %}Login{% endblock %}
+{% block content %}
+
+<div class="site-advertisement" id="title-container">
+
+  <head>
+    <h2 class="about-page-heading">
+      DoSomeReps is a 100% free spaced repetition learning platform you can use to study any subject matter!
+    </h2>
+  </head>
+</div>
+
+<div id="sign-up-call-to-action" class="sign-up-call-to-action centering-container">
+
+  <div id="image-container" class="image-container">
+    <img id="graduation-hat" src="{{ url_for('static', filename='images/graduation-hat.png') }}" type="image" alt="Graduation Cap">
+  </div>
+  <h3 id="sign-up-title">Sign up now to get started:</h3>
+  <a href="{{ url_for('auth.signup') }}" id="sign-up-link" class="link-button-href">
+    <button id="sign-up-button" class="bigbtn btn btn-secondary btn3d redbtn">
+      <h1 class="button-inner-text">Sign Up!</h1>
+    </button>
+  </a>
+</div>
+
+
+<div class="login-advertizing-row">
+  <div class="login-description-text">
+    <h3>How this helps you?</h3>
+    <h5>
+      Take the guess work out of having to worry about how often you should review study material! We automatically presents you with questions at key intervals right before your brain begins to forget the facts, thus challenging you to recall those near faded memories at just the right time. Our experimentally derived time gaps have
+      been shown to maximize the retention of information with the fewest quantity of repetitions, thus saving you time
+      studying.
+    </h5>
+  </div>
+
+</div>
+
+<div class="centering-container">
+    <div class="image-container">
+      <img id="edu-tree" src="{{ url_for('static', filename='images/edu-tree.jpg') }}" type="image" alt="education tree">
+  </div>
+  <div class="login-section-field">
+      <div class="login-button-container">
+        <h3 class="login-button-helper-text">Start Learning Properly:</h3>
+        <a href="{{ url_for('auth.login') }}">
+          <button id="login-link-button" class="btn btn-secondary bigbtn btn3d redbtn">
+            <h1 class="button-inner-text">Login!</h1>
+          </button>
+        </a>
+      </div>
+  
+  </div>
+</div>
+
+<h5 class="seeking-help">I am looking for partners to help me finish the website faster to make it more appealing and
+  convenient to use. Join me by messaging me on github or sending me an email if interested. daveemail@gmx.com</h5>
+
+<div id="chart-area" class="chart-area">
+  <h3 id="chart-title" class="chart-title">
+  </h3>
+  <div id="chart-container" class="chart-container">
+
+    <body>
+      <img src="data:image/png;base64,{{ forgetting_chart }}" />
+    </body>
+  </div>
+</div>
+
+<div id="chart-area" class="chart-area">
+  <h3 id="chart-title" class="chart-title">Top category questions
+  </h3>
+  <div id="chart-container" class="chart-container">
+
+    <body>
+      <img src="data:image/png;base64,{{ categories_graph }}" />
+    </body>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}
+Add Content
+{% endblock title %}
+{% block content %}
+{{ form.hidden_tag() }}
+<h1 align="center">{{ description }}</h1>
+
+<div>
+    <form id="que-more-questions" class="que-more-questions form-inline" method="POST">
+        {% include "categories.html" %}
+        {% include "quefilters.html" %}
+        <div class="form-group m-5">
+           
+            <input type="button" class="btn btn-primary font-weight-bold typical-spacing" value="&nbsp Search &nbsp" id="que-more-search-button">
+
+            {{ form.csrf_token }}
+            {{ form.qty_to_que.label("Quantity to Add:") }}
+            {{ form.qty_to_que(class="form-control qty-to-que-number-form", placeholder="Number of questions to add") }}
+            {# form.que_more_submit(class="btn btn-primary font-weight-bold", value="OLDBSSave") #}
+
+            <input type="button" class="btn btn-primary save-to-que font-weight-bold typical-spacing" value="Save" id="save-to-que">
+
+            
+
+            {# results found integer field 
+            <p class="results-found" id="results-founnd">Results Found:  </p>#}            
+
+        </div>
+    </form>
+
+<div id="container que-more-search-results-container" class="que-more-search-results">
+     <div class="panel-group">
+        <h1><center>Que Search Results</center></h1>
+        <table class="que-more-search-results-table" id="que-more-search-results-table">
+            <thead>
+            <th class="checkbox-heading">Que</th>
+            <th class="exclude-heading">Exclude</th>
+            <th class="username-heading">Username</th>
+            <th class="rating-heading">Rating</th>
+            <th class="question-text-heading">Question</th>
+            <th class="category-heading">Categories</th>
+        </thead>
+        <tbody id="que-more-search-results-body">
+        </tbody>
+        </table>
+        <div class="que-more-search-results-list">
+            <ul>
+
+
+            </ul>
+        </div>
+     </div>
+</div>
+
+
+</div>
+
+
+
+
+
+{% endblock content %}
