@@ -4,30 +4,6 @@ echo "ENTRYPOINT SCRIPT STARTED..."
 echo "pwd is: "
 echo $(pwd)
 
-if [ -d "node_modules" ]; then
-    echo "Contents of node_modules before move:"
-    ls node_modules
-fi
-
-#echo "Checking if node_modules/pdfjs-dist exists..."
-#if [ -d "node_modules/pdfjs-dist" ]; then
-#    echo "pdfjs-dist found, proceeding to move it..."
-#
-#    # Ensure the destination directory exists
-#    # mkdir -p /app/repz/static/js/
-#
-#    # Move the directory
-#    mv node_modules/pdfjs-dist /app/repz/static/js/
-#
-#    # Print the contents of the destination directory after the move
-#    # echo "Contents of /app/repz/static/js/ after move:"
-#    # ls /app/repz/static/js/
-#
-#    echo "Move operation completed."
-#else
-#    echo "Error: pdfjs-dist not found in node_modules."
-#fi
-
 APP_PORT=${APP_PORT:-5554}
 DEBUG_PORT=${DEBUG_PORT:-5558}
 
@@ -50,22 +26,10 @@ if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
     fi
     if [ "$IDE" = "pycharm" ]; then
         pip install pydevd-pycharm==242.10180.30
-        echo "PYCHARM DEBUGGING::::::: NOT tested!! TODO: THIS!"
-
-#         ONLY WORKS UPON STARTUP JUST LIKE OTHER APP!
-#        echo "Starting Flask like this: /n flask run --host=0.0.0.0
-#        --port=${APP_PORT} --debugger --reload"
-#        flask run --host=0.0.0.0 --port=${APP_PORT} --debugger --reload
-
-
+        echo "PYCHARM DEBUGGING:::::::"
         echo "Starting Flask like this: /n flask run --host=0.0.0.0
-        --port=${APP_PORT}"
+        --port=${APP_PORT} --no-reload"
         flask run --host=0.0.0.0 --port=${APP_PORT} --no-reload
-
-
-#        python -m pydevd_pycharm --port ${DEBUG_PORT} --client 0.0.0.0 --wait \
-#    --file app/wsgi.py
-
     fi
     if [ "$IDE" = "vsdev" ]; then
      echo "STARTING DEVELOPMENT USING: ${IDE} ; EXCECUTED: flask run --host=0.0.0.0 --port=${APP_PORT} --debugger --reload"

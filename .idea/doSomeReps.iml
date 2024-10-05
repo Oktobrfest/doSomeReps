@@ -19,7 +19,10 @@
     <option name="TEMPLATE_CONFIGURATION" value="Jinja2" />
     <option name="TEMPLATE_FOLDERS">
       <list>
-        <option value="$MODULE_DIR$/doSomeReps/repz/templates" />
+        <option value="$MODULE_DIR$/app/repz/templates" />
+        <option value="$MODULE_DIR$/app/repz/home/templates" />
+        <option value="$MODULE_DIR$/app/repz/catz/templates" />
+        <option value="$MODULE_DIR$/app/repz/auth/templates" />
       </list>
     </option>
   </component>

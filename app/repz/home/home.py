@@ -70,7 +70,8 @@ from ..bluehelpers import (
     remove_underscore,
     set_session,
     split_dict,
-    tally_que_catz
+    tally_que_catz,
+    get_categories_questions
 )
 from ..charts import rep_vs_forget, render_chart
 from ..database import session
@@ -564,6 +565,22 @@ def studymaterials():
 #     return response_msg
 
 
+@home.route("/topics/<selected_topic>", methods=["GET"], endpoint="topic_questions")
+@login_required
+def topic_questions(selected_topic):
+    # Fetch the list of all topics with their question counts
+    category_list = get_all_categories()
+
+    # Fetch the questions for the selected topic
+    questions = get_categories_questions(selected_topic)
+
+    return render_template(
+        "topic_questions.html",
+        title=f"Questions for {selected_topic}",
+        selected_topic=selected_topic,
+        topics=topics,
+        questions=questions
+    )
 
 
 
