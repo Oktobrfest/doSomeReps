@@ -5,62 +5,33 @@
 
 {% block content %}
 
+<!-- Container for the questions -->
+<div class="questions-container">
+    <h2 class="section-title">Questions for {{ selected_topic }}</h2>
 
-	<div class="topics-scrollable"
-						id="topics-list">
-		<ul>
-			{% for topic, count in topics.items() %}
-				{% if loop.index <= 5 or request.args.get('expand')=='true' %}
-					<li class="topic-item">
-						<a href="{{ url_for('topic_questions', selected_topic=topic) }}"
-									class="{% if topic == selected_topic %}selected{% endif %}">
-							{{ topic }} ({{ count }} questions)
-						</a>
-					</li>
-				{% endif %}
-			{% endfor %}
-		</ul>
-	</div>
+    <table class="questions-table">
+        <thead>
+            <tr>
+                <th>Question</th>
+                <th>Answer</th>
+                <th>Rating</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for question in questions %}
+                <tr>
+                    <td>{{ question.question_text }}</td>
+                    <td>{{ question.answer }}</td>
+                    <td class="rating-column">{{ question.rating }}</td>
+                </tr>
+            {% endfor %}
+            {% if questions|length == 0 %}
+                <tr>
+                    <td colspan="3" class="no-questions-message">No questions found for this topic.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
 
-	<!-- Expand button -->
-	<a href="?expand=true"
-				id="expand-button">Expand Topics</a>
-
-
-	<!-- Display the questions for the selected topic -->
-	<div class="questions-container">
-		<h2>Questions for {{ selected_topic }}</h2>
-		<table>
-			<thead>
-			<tr>
-				<th>Que</th>
-				<th>Username</th>
-				<th>Rating</th>
-				<th>Question</th>
-				<th>Categories</th>
-			</tr>
-			</thead>
-			<tbody>
-			{% for question in questions %}
-				<tr>
-					<td><input type="checkbox"
-																name="que-question-{{ question.id }}"></td>
-					<td>{{ question.username }}</td>
-					<td>{{ question.rating }}</td>
-					<td>{{ question.text }}</td>
-					<td>
-						{% for category in question.categories %}
-							<span class="badge">{{ category }}</span>
-						{% endfor %}
-					</td>
-				</tr>
-			{% endfor %}
-			{% if questions|length == 0 %}
-				<tr>
-					<td colspan="5">No questions found for this topic.</td>
-				</tr>
-			{% endif %}
-			</tbody>
-		</table>
-	</div>
 {% endblock content %}
