@@ -5,18 +5,22 @@ import re
 import time
 from datetime import datetime, timedelta
 from io import BytesIO
+import unicodedata
+import urllib
+
 
 import matplotlib.pyplot as plt
 import numpy as np
 from flask import current_app, flash, session as local_session
 from sqlalchemy import and_, select, text
 from sqlalchemy.exc import OperationalError
+from werkzeug.utils import secure_filename
+
 
 from .database import session
 from .models import category, level, q_pic, question, question_categories, quizq, rating, users
 from repz import cache
 from .home.form_validation import validate_filename, allowed_file
-
 
 
 def clean_for_html(unclean: str) -> str:
@@ -324,3 +328,41 @@ def get_categories_questions(cat):
     questions = session.execute(questions_qry.distinct()).scalars().all()
 
     return questions
+
+
+def get_rating(question_id):
+    """Calculate the questions rating"""
+    rate_qry = select(rating.rating).where(rating.question_id == question_id)
+    rates = session.execute(rate_qry).scalars().all()
+
+    rating_total = [x for x in rates]
+    if len(rating_total) == 0:
+        rate = 0
+    else:
+        rate = sum(rating_total) / len(rating_total)
+
+    return rate
+
+
+def slugify(text):
+    """
+    Reversible slugify with better readability.
+    """
+    # Replace spaces with hyphens for readability
+    text = text.replace(' ', '-')
+
+    # Replace other characters with URL encoding
+    return urllib.parse.quote(text, safe='-')
+
+def unslugify(slug):
+    """
+    Reverse the slug back to the original text.
+    """
+    # Decode the URL encoding
+    text = urllib.parse.unquote(slug)
+
+    # Replace hyphens back to spaces
+    return text.replace('-', ' ')
+
+
+

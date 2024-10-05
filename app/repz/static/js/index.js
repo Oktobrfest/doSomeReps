@@ -24,9 +24,6 @@ window.onload = (event) => {
         });
     }
 
-
-    
-
     if (window.location.pathname === '/') {
         // unfavorate button
         const unfavorite_button = document.querySelectorAll(".unfavorite-user-button");
@@ -50,13 +47,25 @@ window.onload = (event) => {
         const save_to_que_button = document.querySelector("#save-to-que");
         save_to_que_button.addEventListener('click', saveToQue);
 
-        // Check for post-reload messages
+        postReloadMsg();
+    }
+    //   ADD FEATURE EVENTUALLY.
+    // if (window.location.pathname.startsWith('/topic/')) {
+    //     const save_to_que_button = document.querySelector("#save-to-que");
+    //     save_to_que_button.addEventListener('click', saveToQue);
+    //
+    //     postReloadMsg();
+    // }
+
+    // Check for post-reload messages
+    function postReloadMsg() {
         let msg = sessionStorage.getItem('postReloadMsg');
         if (msg) {
             setMsg(msg);
             sessionStorage.removeItem('postReloadMsg');
         }
     }
+
 
     // exclude other pages from loading this
     if (window.location.pathname === '/editquestions') {

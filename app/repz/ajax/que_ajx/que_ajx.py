@@ -5,7 +5,8 @@ import json
 
 from ...database import session
 from repz.routes import que_ajx
-from ...bluehelpers import exclude, new_quizq, remove_underscore, set_session, get_user, time, unexclude
+from ...bluehelpers import (exclude, new_quizq, remove_underscore,
+                            set_session, get_user, time, unexclude, get_rating)
 from ..ajax_response import AjaxResponse
 
 from sqlalchemy import select
@@ -34,9 +35,7 @@ def searchquefilters():
 
     cur_user = get_user(UID)  
     excluded_question_ids = [q.question_id for q in cur_user.excluded_questions]
-    # Start the timer (to time excecution speed for development)
-    start_time = time.time()
-        
+
     question_que = []
     if filters['personal'] == True:
    
@@ -59,11 +58,6 @@ def searchquefilters():
         for r in dif:
             question_que.append(r)
             
-            # Calculate the elapsed time of function excecution for Development ONLY
-    elapsed_time = time.time() - start_time
-    print("personal Elapsed time:", elapsed_time, "seconds")   
-    
-     #get users specified by the filters
     user_list = []
     # fav_qry = select(users.favorates).where(users.id == UID)
     user1 = select(users).where(users.id == UID)
@@ -85,9 +79,6 @@ def searchquefilters():
         for r in res:
             user_list.append(r[0])
     
-    elapsed_time = time.time() - elapsed_time - start_time
-    print("public Elapsed time:", elapsed_time, "seconds") 
-    
     if filters['favorate'] == True:
         user_list += fav_list
        
@@ -100,13 +91,8 @@ def searchquefilters():
     # questions to exclude from all questions list(filtered_users_qs_qry)
     exclusion_qry = select(question.question_id).join(question.categories).where(category.category_name.in_(filters['catz'])).join(quizq, quizq.question_id == question.question_id).where(quizq.user_id == UID)
 
-    elapstime = time.time()
-     
     exclusion_objs = session.execute(exclusion_qry.distinct()).scalars().all()
-    elapsed_time = time.time() - elapstime
-    print("exclusion_objs (line 102) runtime:", elapsed_time, "seconds")        
-    # not needed! exclusion_tuple = tuple([ x for x in exclusion_objs ])
-    
+
     # all questions list - exclusion_qry = final_query
     final_query = filtered_users_qs_qry.filter(question.question_id.not_in(exclusion_objs))
 
@@ -115,23 +101,12 @@ def searchquefilters():
         # update query to exclude them
         final_query = final_query.filter(~question.question_id.in_(excluded_question_ids))
 
-    sst = time.time()
-
-
     filtered_questions = session.execute(final_query.distinct()).scalars().all()    
-    # filtered_questions = session.execute(final_query.distinct()).scalars().all()    
-    
-    elapsed_time = time.time() - sst
-    print("line 116 filtered_questions.all(): ", elapsed_time, "seconds")      
-        
+
     for r in filtered_questions:
         question_que.append(r)
      
-    s_tim = time.time() 
-    fav_user_runtime = 0.0
-    rating_runtime = 0.0
-
-    search_results = []          
+    search_results = []
     for r in question_que:
         catz = []
         for c in r.categories:
@@ -152,21 +127,7 @@ def searchquefilters():
         fav_user_single_runtime = time.time() - fav_user_start_time
         fav_user_runtime = fav_user_runtime + fav_user_single_runtime
 
-        st_time = time.time()
-        # get rating
-        rate_qry = select(rating.rating).where(rating.question_id == r.question_id)
-        rates = session.execute(rate_qry).scalars().all()    
-        
-        el_time = time.time() - st_time
-        rating_runtime = rating_runtime + el_time
-        
-        rating_total = [ x for x in rates ]
-        if len(rating_total) == 0:
-            rate = 0
-        else:
-            rate = sum(rating_total) / len(rating_total)
-        
-        # see if in excluded list
+         # see if in excluded list
         if filters['excluded'] == False:
             excluded = False
         else:
@@ -182,17 +143,13 @@ def searchquefilters():
             "username": username,
             "created_by": r.created_by,
             "favorite": fav,
-            "rating": rate,
+            "rating": get_rating(question.question_id),
             "excluded": excluded,
         }
         search_results.append(q)
     # add selected categories to the session
    #   set_session("quiz_category_names", filters['catz'])
 
-    e_time = time.time() - s_tim
-    print("append loop run duration: ", e_time, " seconds")
-    print("total favorite user runtimes:", fav_user_runtime, " seconds")
-    print("total rating runtimes:", rating_runtime, " seconds")
 
     response.msg = "Search Completed"
     if len(search_results) > 0:

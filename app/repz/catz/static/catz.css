@@ -9,19 +9,27 @@
   text-decoration: underline;
 }
 
+/* Sort Indicator Default (Descending) */
 .sort-indicator {
   display: inline-block;
   width: 0;
   height: 0;
   border: solid;
-  border-width: 0 11px 11px 11px;
+  border-width: 0 6px 6px 6px;
   border-color: transparent transparent #000000 transparent;
   margin-left: 5px;
   vertical-align: middle;
 }
 
-.sorted .sort-indicator {
-  display: inline-block;
+/* Ascending Sort */
+.sort-indicator.asc {
+  border-width: 6px 6px 0 6px;
+  border-color: #000000 transparent transparent transparent;
+}
+
+/* Descending Sort */
+.sort-indicator.desc {
+  border-width: 0 6px 6px 6px;
 }
 
 .topics-bar {
@@ -185,3 +193,94 @@
 .no-border {
   border: none;
 }
+
+
+/* topic_questions page */
+
+/* Main container for the questions section */
+.questions-container {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Section title */
+.section-title {
+    font-size: 2em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #343a40;
+    text-transform: uppercase;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 0.5rem;
+}
+
+/* Table styles for questions */
+.questions-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Table headers */
+.questions-table th {
+    background-color: #007bff;
+    color: #ffffff;
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Table rows */
+.questions-table td {
+    padding: 15px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* Alternating row background for readability */
+.questions-table tr:nth-child(even) {
+    background-color: #f8f8f8;
+}
+
+/* Hover effect on rows */
+.questions-table tr:hover {
+    background-color: #e0e0e0;
+}
+
+/* Rating column styles */
+.rating-column {
+    text-align: center;
+    font-weight: bold;
+    color: #ff9933;
+}
+
+/* No questions message */
+.no-questions-message {
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+    color: #666;
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 768px) {
+    .questions-container {
+        padding: 10px;
+    }
+
+    .section-title {
+        font-size: 1.5em;
+    }
+
+    .questions-table th, .questions-table td {
+        padding: 10px;
+    }
+}
+
