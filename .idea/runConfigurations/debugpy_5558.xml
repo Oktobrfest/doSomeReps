@@ -6,7 +6,7 @@
     <PathMappingSettings>
       <option name="pathMappings">
         <list>
-          <mapping local-root="$PROJECT_DIR$/doSomeReps" remote-root="/app" />
+          <mapping local-root="$PROJECT_DIR$/app" remote-root="/app" />
         </list>
       </option>
     </PathMappingSettings>

@@ -1,6 +1,3 @@
-import 'prismjs';
-
-
 var RATEQ = flask_util.url_for('quest_ajx.rateq');
 //  ACTUALLY RUNS JUST ONCE!!! 
 window.onload = (event) => {

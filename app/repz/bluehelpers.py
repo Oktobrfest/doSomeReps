@@ -314,5 +314,13 @@ def cat_questions_count(qty):
         raise 
     
 
-    
-    
+def get_categories_questions(cat):
+    """Fetch all public questions for the selected category"""
+    questions_qry = select(question).join(question.categories).where(
+        category.category_name == cat,
+        question.privacy == False      
+    )
+
+    questions = session.execute(questions_qry.distinct()).scalars().all()
+
+    return questions

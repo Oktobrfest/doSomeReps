@@ -1,38 +1,187 @@
-
-
 .heading {
-    font-size: 2em;
-    font-weight: bold;
-    text-align: center;
-    margin: 0.67em 0;
+  font-size: 2em;
+  font-weight: bold;
+  text-align: center;
+  margin: 0.67em 0;
 }
 
 .underline {
+  text-decoration: underline;
+}
+
+.sort-indicator {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border: solid;
+  border-width: 0 11px 11px 11px;
+  border-color: transparent transparent #000000 transparent;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.sorted .sort-indicator {
+  display: inline-block;
+}
+
+.topics-bar {
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-bottom: 2px solid #ccc;
+}
+
+.topics-container {
+  position: relative;
+}
+
+.topics-scrollable {
+  white-space: nowrap;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+
+.topics-scrollable ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+}
+
+.topic-item {
+  margin-right: 20px;
+}
+
+.topic-item a {
+  text-decoration: none;
+  padding: 10px;
+  background-color: #ddd;
+  border-radius: 5px;
+  color: black;
+  font-weight: bold;
+}
+
+.topic-item a.selected {
+  background-color: #007bff;
+  color: white;
+}
+
+#expand-button {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Style for the questions table */
+.questions-container {
+  padding: 20px;
+}
+
+.questions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.questions-table th,
+.questions-table td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: left;
+}
+
+.questions-table th {
+  background-color: #007bff;
+  color: white;
+}
+
+.questions-table td {
+  vertical-align: top;
+}
+
+.badge {
+  background-color: #007bff;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  margin-right: 5px;
+}
+
+.topic-columns-container {
+  display: flex;
+  justify-content: space-around;
+}
+
+#topic-table {
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+#topic-table th,
+#topic-table td {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+#topic-table th {
+  background-color: #f2f2f2;
+  /* Light gray background for headers */
+}
+
+.topic-heading-title,
+.topic-question-count-title {
+  font-size: 1.2em;
+  margin-top: .3em;
+  margin-left: 1em;
+  margin-right: 1em;
+  margin-bottom: .3em
+}
+
+.underline {
+  text-decoration: underline;
+}
+
+.topic-question-count {
+  text-align: center;
+}
+
+#topic-table tr:hover {
+  background-color: #f5f5f5;
+  /* Slightly darker background on hover */
+}
+
+.topic-category-list-item {
+  padding: 10px !important;
+  margin: 10px !important;
+  background-color: #ff9933;
+  border-radius: 15px !important;
+  padding-right: 25px !important;
+  padding-left: 25px !important;
+}
+
+.outlined-text {
+    color: #3b3bb7;
+    /*text-shadow:*/
+    /*    -1px -1px 0 #000,*/
+    /*     1px -1px 0 #000,*/
+    /*    -1px  1px 0 #000,*/
+    /*     1px  1px 0 #000;*/
     text-decoration: underline;
-  }
-  
-  .sort-indicator {
-    display: inline-block;
-    width: 0;
-    height: 0;
-    border: solid;
-    border-width: 0 11px 11px 11px;
-    border-color: transparent transparent #000000 transparent;
-    margin-left: 5px; /* Adjust the margin as needed */
-    vertical-align: middle;
-  }
-  
+    -webkit-text-stroke: thick;
+    font-size: large;
+}
 
+.outlined-text:hover {
+    color: blue;
+}
 
-  .sort-indicator {
-    display: none;
-    /* Styles for the sort indicator when not sorted */
-  }
-  
-  .sorted .sort-indicator {
-    display: inline-block;
-    /* Styles for the sort indicator when sorted */
-  }
-
-  
-  
+.no-border {
+  border: none;
+}
