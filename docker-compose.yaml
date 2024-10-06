@@ -14,7 +14,7 @@ services:
         ipv4_address: 10.10.0.5
     ports:
       - '5557:5557' # app port
-      - '5558:5558' # debugger port
+#      - '5558:5558' # debugger port
     environment:
       - APP_PORT=5557
       - DEBUG_PORT=5558
@@ -24,7 +24,8 @@ services:
       - NODE_ENV=development
       - IDE=${IDE}
     volumes:
-      - ./doSomeReps:/app
+      - ./app:/app
+      - "/app/node_modules"
     command: sh entrypoint.sh
 
   # UNCOMMENT THIS FOR VS-CODE:
@@ -48,11 +49,13 @@ services:
 volumes:
   rep_pg_data:
     name: "rep"
+    external: true
 
 networks:
   rep-network:
     driver: bridge
     name: rep-network
+    external: true
     ipam:
       config:
         - subnet: 10.10.0.0/16
