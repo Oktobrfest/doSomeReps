@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}
+Add Content
+{% endblock title %}
+{% block content %}
+<h1 align="center">New Question</h1>
+{% include "new_cat.html" %}
+<form id="add_question" enctype="multipart/form-data" method="post">
+    <div class="form-group">
+        {% include "categories.html" %}
+        <script src="https://unpkg.com/promise-polyfill@7.1.2/dist/polyfill.min.js"></script>
+        <script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
+
+        {% include "editquestionform.html" %}
+
+
+    </div>
+
+</form>
+{% endblock content %}

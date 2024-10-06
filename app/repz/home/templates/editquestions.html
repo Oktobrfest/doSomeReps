@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}
+Edit Questions
+{% endblock title %}
+{% block content %}
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  {{ flask_util_js.js }}
+  <script type="text/javascript" src="{{ url_for('static', filename='js/index.js') }}"></script>
+</head>
+
+<body>
+  <div id="edit-question-page-wrapper" class="container-fluid">
+
+    <div id="search-filters" class="search-filters">
+
+      <div id="title-filter-button-section">
+        <span>
+          <h2 class="search-filters-title">Search Filters</h2>
+        </span>
+        <span> <button id="collapse-search-filters-container-button" class="btn btn-secondary" data-toggle="collapse"
+            data-target="#search-filters-category-section">Hide
+									Filters</button></span>
+      </div>
+
+      <div id="search-filters-container" class="collapse show">
+
+        <div class="form-group">
+          <form id="search-filters-form">
+            <input type="hidden" id="question-id" name="question-id" value="">
+
+            <ul class="form-group inline border">
+              <label for="search-terms">Search Terms:</label><br>
+              <input type="text" id="search-terms" name="search-terms"><br>
+              Search Within:
+              <ul class="list-group list-group-flush form-group search-within-categories" id="search-within-categories">
+
+                <li class="list-group-item filter-item border">
+                  <label for="question-filter-checkbox" class="checkbox-inline"></label>
+                  <input type="checkbox" value="question_text" id="question-filter-checkbox"
+                    name="question-filter-checkbox" class="custom-checkbox" />
+                  &nbsp Question
+                </li>
+
+                <li class="list-group-item filter-item border">
+                  <label for="hint-filter-checkbox" class="checkbox-inline"></label>
+                  <input type="checkbox" value="hint" id="hint-filter-checkbox" name="hint-filter-checkbox"
+                    class="custom-checkbox" />
+                  &nbsp Hint
+                </li>
+
+                <li class="list-group-item filter-item border">
+                  <label for="answer-filter-checkbox" class="checkbox-inline"></label>
+                  <input type="checkbox" value="answer" id="answer-filter-checkbox" name="answer-filter-checkbox"
+                    class="custom-checkbox" />
+                  &nbsp Answer
+                </li>
+              
+              </ul>
+                <li class="list-group-item filter-item border">
+                <label for="excluded-filter-checkbox" class="checkbox-inline"></label>
+                <input type="checkbox" value="excluded" id="excluded-filter-checkbox" name="excluded-filter-checkbox"
+                  class="custom-checkbox" />
+                &nbsp Excluded Questions
+              </li>
+            </ul>
+            {# SET SOMETHING TO CAT!! #}
+            <ul class="form-group inline border">
+              <div id="search-filters-category-section" class="collapse show">
+                <ul class="list-group list-group-flush form-group search-filter-categories" id="categories">
+                  {% for category in category_list %}
+                  {% set cat = (category|replace( " ", "_" ))|trim %}
+                  <li class="list-group-item category-item border">
+                    <label for="category_name" class="checkbox-inline"></label>
+                    <input type="checkbox" value={{ cat }}
+																					class="category_name" name="category_name"
+                      class="custom-checkbox" {% if cat in filter_categories %}checked{% endif %} />
+                    &nbsp {{ category }}
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </ul>
+          </form>
+        </div>
+      </div>
+
+      <button id="search-button" class="btn btn-primary">Search</button>
+
+    </div>
+
+    <!-- Sidebar  -->
+    <div class="col-md-3 col-sm-12" id="sidebar">
+      <div class="sidebar-header">
+        <h3>Select a Question</h3>
+      </div>
+      <p>Search Results</p>
+      <div class="search-results-list-unstyled" id="search-results-list-unstyled">
+      </div>
+    </div>
+
+    <!-- Page Content  -->
+    <div id="edit-question-content" class="col-md-8 col-sm-12 container">
+      <div id="edit-question-header">
+        <h2 class="edit-question-title">Edit Question: <p id="edit-question-title-heading" class="text-normal"></p>
+        </h2>
+        <button id="delete-question-button" class="btn btn-primary">Delete Question</button>
+      </div>
+
+      <div id="editquestionform-area" class="form-group editquestionform-area">
+
+        {% include "categories.html" %}
+        {% include "editquestionform.html" %}
+        <button id="save-question-button" class="btn btn-primary" data-question-id="">Save Question</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>
+{{ flask_util_js.js }}
+{% endblock content %}

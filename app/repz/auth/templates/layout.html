@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>{{ title }}</title>
+    <meta charset="utf-8">
+    <meta name="description" content="{{ description }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}"/>
+    <meta name="HandheldFriendly" content="True"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+    <meta name="theme-color" content="#5eb9d7"/>
+
+    {% block css %}{% endblock %}
+</head>
+
+<div id="msg-area">
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+</div>
+
+<body>
+{% include 'navigation.html' %}
+{% block content %}{% endblock %}
+</body>
+
+</html>
