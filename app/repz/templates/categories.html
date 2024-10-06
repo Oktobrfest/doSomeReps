@@ -14,7 +14,7 @@
         {% set cat = (category|replace( " ", "_" ))|trim %}
         <li class="list-group-item category-item border">
           <label for="category_name" class="checkbox-inline"></label>
-          <input type="checkbox" value={{ cat }} id="category_name" name="category_name" class="custom-checkbox" {% if
+          <input type="checkbox" value={{ cat }} name="category_name" class="category_name custom-checkbox" {% if
             cat in selected_categories or (cats_due is defined and cat in cats_due) %} checked="checked" {% endif %}>
           &nbsp {{ category }}
         </li>
