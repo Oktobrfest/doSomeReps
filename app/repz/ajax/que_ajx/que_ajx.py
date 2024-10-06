@@ -116,7 +116,6 @@ def searchquefilters():
         usr_qry = select(users.username).where(users.id == r.created_by)
         username = session.execute(usr_qry).scalar()
         
-        fav_user_start_time = time.time()
         # see if user is a favorate
         fav_qry = select(users).where(users.id == UID)
         user = session.execute(fav_qry).scalars().first()
@@ -124,8 +123,6 @@ def searchquefilters():
         for u in user.favorates:
                 if u.id == r.created_by:
                     fav = True    
-        fav_user_single_runtime = time.time() - fav_user_start_time
-        fav_user_runtime = fav_user_runtime + fav_user_single_runtime
 
          # see if in excluded list
         if filters['excluded'] == False:
