@@ -23,11 +23,12 @@ Edit Questions
         <span>
           <h2 class="search-filters-title">Search Filters</h2>
         </span>
-        <span> <button id="collapse-categories-button" class="btn btn-secondary" data-toggle="collapse"
-            data-target="#category-section">Hide Filters</button></span>
+        <span> <button id="collapse-search-filters-container-button" class="btn btn-secondary" data-toggle="collapse"
+            data-target="#search-filters-category-section">Hide
+									Filters</button></span>
       </div>
 
-      <div id="category-section" class="collapse show">
+      <div id="search-filters-container" class="collapse show">
 
         <div class="form-group">
           <form id="search-filters-form">
@@ -70,13 +71,14 @@ Edit Questions
             </ul>
             {# SET SOMETHING TO CAT!! #}
             <ul class="form-group inline border">
-              <div id="category-section" class="collapse show">
+              <div id="search-filters-category-section" class="collapse show">
                 <ul class="list-group list-group-flush form-group search-filter-categories" id="categories">
                   {% for category in category_list %}
                   {% set cat = (category|replace( " ", "_" ))|trim %}
                   <li class="list-group-item category-item border">
                     <label for="category_name" class="checkbox-inline"></label>
-                    <input type="checkbox" value={{ cat }} id="category_name" name="category_name"
+                    <input type="checkbox" value={{ cat }}
+																					class="category_name" name="category_name"
                       class="custom-checkbox" {% if cat in filter_categories %}checked{% endif %} />
                     &nbsp {{ category }}
                   </li>

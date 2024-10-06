@@ -16,7 +16,7 @@ window.onload = (event) => {
         alert.classList.remove('show');
         alert.classList.add('hide');
         setTimeout(() => alert.remove(), 250);
-    }   
+    }
     // Timeout Flash alert messages
     function timeoutAlerts() {
          document.querySelectorAll('.alert').forEach(alert => {
@@ -89,9 +89,13 @@ window.onload = (event) => {
 
         insert_into_div.append(select_all_btn);
 
+        const edit_q_sel_all_btn = document.querySelector("[type=Button]#select-all-btn");
+        edit_q_sel_all_btn.style.display = 'none';
+
         function handleSelectAllClick() {
             event.preventDefault();
-            let checkboxes = document.querySelectorAll('#search-filters-form input[type="checkbox"]#category_name');
+            let checkboxes = document.querySelectorAll('#search-filters-form' +
+             ' input[type="checkbox"].category_name');
             let allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
 
             for (let checkbox of checkboxes) {
@@ -138,29 +142,29 @@ window.onload = (event) => {
             const fileInput = event.target;
             const files = fileInput.files;
             const invalidFiles = [];
-        
+
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 const filename = file.name;
-        
+
                 // Regex to check for filenames starting with a period or invalid characters
                 const invalidCharRegex = /[^a-zA-Z0-9_. !@#$%^&()\-]/;
                 const startsWithDot = filename.startsWith('.');
                 const hasExtension = filename.includes('.');
-        
+
                 if (startsWithDot && !hasExtension) {
                     invalidFiles.push(filename);
                 } else if (invalidCharRegex.test(filename)) {
                     invalidFiles.push(filename);
                 }
             }
-        
+
             if (invalidFiles.length > 0) {
                 alert("The following filenames are invalid: " + invalidFiles.join(', '));
                 fileInput.value = ''; // Clear the invalid files
             }
         });
-        
+
     }
 
     if (window.location.pathname === '/quiz') {
@@ -228,7 +232,7 @@ window.onload = (event) => {
     if ((window.location.pathname === '/quiz') || (window.location.pathname === '/quemore') || (window.location.pathname === '/editquestions')) {
         document.getElementById("select-all-btn").addEventListener("click", function () {
             event.preventDefault();
-            let checkboxes = document.querySelectorAll('input[type="checkbox"]#category_name');
+            let checkboxes = document.querySelectorAll('input[type="checkbox"].category_name');
             let allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
 
             for (let checkbox of checkboxes) {
@@ -310,8 +314,22 @@ function unhighlight(x) {
 // add a new category
 var ADD_CAT = flask_util.url_for('quest_ajx.addcat');
 
-function addSubmit(ev) {
+function addNewCategory(ev) {
     ev.preventDefault();
+
+    // If this submission is already in progress, ignore the click
+    if (this.dataset.submitting === 'true') {
+        return;
+    }
+
+    // Mark as submitting
+    this.dataset.submitting = 'true';
+
+    const submitButton = this.querySelector('input[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
+
     fetch(ADD_CAT, {
         method: 'POST',
         body: new FormData(this)
@@ -320,9 +338,21 @@ function addSubmit(ev) {
         .then(res => {
             if (res.data !== 'error') {
                 addCatHtml(res.data, res.htl)
-            };
+            } else {
+            console.error('Server error:', res.htl);
+            alert('fail, try again.');
+        }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => console.error('Error:', error))
+        .finally(() => {
+            // Reset submission state
+            this.dataset.submitting = 'false';
+            if (submitButton) {
+                submitButton.disabled = false;
+                this.elements["0"].value = ""
+            }
+            // this.querySelector('#add_category_field').value = "";
+        });
 }
 
 function addCatHtml(data, htl) {
@@ -352,7 +382,7 @@ function addCatHtml(data, htl) {
 // bind only once attempt#1
 //  didnt work : document.onload = runOnce(document);
 document.addEventListener('readystatechange', event => {
-    // When window loaded ( external resources are loaded too- `css`,`src`, etc...) 
+    // When window loaded ( external resources are loaded too- `css`,`src`, etc...)
     if (event.target.readyState === "complete") {
         runOnce(document);
     }
@@ -361,12 +391,11 @@ document.addEventListener('readystatechange', event => {
 function runOnce(document) {
     var form = document.getElementById('new_cat');
     if (form) {
-        form.addEventListener('submit', addSubmit, {
-            once: true,
-        });
+        // Initialize the submitting state
+        form.dataset.submitting = 'false';
+        form.addEventListener('submit', addNewCategory);
     }
 };
-
 
 // get quiz page url VIA url_for
 var quiz_page = flask_util.url_for('home.quiz');
@@ -828,8 +857,8 @@ function setMsg(msg, msg_category = 'success', fadeout_secs = null) {
     let msgArea = document.getElementById("my-message-area");
     let msgDiv = document.createElement('div');
     msgDiv.setAttribute('class', `alert alert-${msg_category === 'error' ? 'danger' : msg_category} alert-dismissible fade show`);
-    msgDiv.innerHTML = msg;  
-   
+    msgDiv.innerHTML = msg;
+
     let msgButton = document.createElement('button');
     msgButton.className = 'close';
     msgButton.setAttribute('data-dismiss', 'alert');
@@ -840,7 +869,7 @@ function setMsg(msg, msg_category = 'success', fadeout_secs = null) {
     msgArea.style.display = "block";
 
     if (fadeout_secs) {
-        setTimeout(() => {            
+        setTimeout(() => {
             fadeOutEffect(msgDiv);
          }, fadeout_secs * 1000);
     }
@@ -854,7 +883,7 @@ function fadeOutEffect(fadeTarget) {
         if (fadeTarget.style.opacity > 0) {
             fadeTarget.style.opacity -= 0.1;
         } else {
-            fadeTarget.remove(); 
+            fadeTarget.remove();
             clearInterval(fadeEffect);
         }
     }, 200);
@@ -905,7 +934,7 @@ function queMoreSearch(ev) {
             }
             if (data.status != 'ok') {
                 return;
-            } else {      
+            } else {
                 // qty to add counter
                 const qty_field = document.getElementById("qty_to_que");
                 let que_count = qty_field.value;

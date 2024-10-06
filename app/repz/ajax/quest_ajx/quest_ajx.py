@@ -21,34 +21,45 @@ from ...home.form_helpers import save_pictures
 @login_required
 def addcat():
     newCategory = request.form.get("add_category_field", type=str)
+
     # validation
     er = False
     htl = ""
-    if len(newCategory) < 3:
-        flash("too short bro!", category="error")
-        er = True
-    else:
-        query = Query([category])
-        result = query.with_session(session)
-        for c in result:
-            if newCategory == c.category_name:
-                flash("category already exists")
-                er = True
-    data = "start val"
-    if er == False:
-        new_cat = category(category_name=newCategory)
-        session.add(new_cat)
-        session.commit()
-        flash("Category created!", category="success")
-        category_list = get_all_db_categories()
-        cache.set('category_list', category_list, timeout=60*60*24) # a day
-        # clean up the string
-        data = newCategory
-        htl = clean_for_html(newCategory)
-    else:
-        data = "error"
-        htl = "error"
-    return jsonify({'data': data, 'htl': htl})
+    data = ""
+    try:
+        if len(newCategory) < 3:
+            data = "too short bro!"
+            flash(data, category="error")
+            er = True
+        else:
+            query = Query([category])
+            result = query.with_session(session)
+            for c in result:
+                if newCategory == c.category_name:
+                    data = "category already exists"
+                    flash(data)
+                    er = True
+
+        if not er:
+            new_cat = category(category_name=newCategory)
+            session.add(new_cat)
+            session.commit()
+            flash("Category created!", category="success")
+            category_list = get_all_db_categories()
+            cache.set('category_list', category_list, timeout=60*60*24) # a day
+            # clean up the string
+            data = newCategory
+            htl = clean_for_html(newCategory)
+        else:
+            htl = "error"
+            print("Error occured while trying to create a new category! ",
+                  data)
+        return jsonify({'data': data, 'htl': htl})
+
+    except Exception as e:
+        print("Error occured creating a new category! ", data)
+        return jsonify({'data': 'error', 'htl': data + str(e), 'error':
+            True}), 500
 
 
 #save question changes within edit questions page
