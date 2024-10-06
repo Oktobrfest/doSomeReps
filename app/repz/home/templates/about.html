@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}About us{% endblock title %}
+{% block content %}
+
+<div id="site-format-container" class="centering-container">
+
+  <div id="site-format-img-container" class="image-container">
+    <img id="site-format-image" class="image" type="image" src="{{ url_for('static', filename='images/brain.jpg') }}" alt="Site Format Image">
+  </div>
+
+
+  <div id="site-format-text-container" class="site-format-text-container text-container">
+    <h3 id="site-format-heading" class="section-title">Site Format</h3>
+    <p>
+      This site uses a question/answer format of learning which has been shown to help activate your brain on a deeper
+      level than by other methodologies like passively reading notes or watching videos. In order to optimally learn you
+      need to engauge your brain! Sorry, I know it hurts sometimes, but no pain no gain!
+    </p>
+  </div>
+</div>
+
+
+<div id="active-vs-passive" class="centering-container">
+  <div id="active-v-passive-text" class="text-container">
+    <h3>Active vs. Passive Learning</h3>
+    <p>Spaced repetition is considered an active form of learning. Because you're forced to recall material you're more
+      "actiively" using your brain, as opposed to jusst passively feeding yourself information andd hoping it sticks.
+      Active learning hass been shown to be far more effective studying strategy enhances the retention of studied
+      material.
+    </p>
+  </div>
+
+  <div id="active-vs-passive-image-container" class="image-container">
+    <img id="active-v-passive-img" class="active-v-passive-img" src="{{ url_for('static', filename='images/black-board.jpg') }}" type="image"
+      alt="Black Board">
+  </div>
+</div>
+
+<div id="community-container" class="centering-container">
+  <div id="community-image-container" class="image-container">
+    <img id="community-image" class="image" type="image" src="{{ url_for('static', filename='images/pcb-brain.jpg') }}" alt="pcb-brain">
+  </div>
+
+  <div id="community-text-container" class="community-text-container text-container">
+    <h3 class="title" id="community-text-heading">Community</h3>
+    <p class="about-page-comunity-text">
+      There is some pre-existing material that you may be interested in studying on this site, however it is intended
+      that you upload materials your interested in studying and share it with the community. Shared material gets rated
+      by the community and you could choose to block users or follow others to learn from their uploaded content. You
+      can also choose to keep everything you upload completely private. If some days you only want to study some
+      categories instead of others, just unselect those categories in the take quiz page.
+    </p>
+
+
+  </div>
+
+</div>
+
+
+
+
+<div id="repetition-days-conatiner"  class="centering-container">
+
+<div id="hourglass-container" class="image-container">
+        <img id="hourglass" src="{{ url_for('static', filename='images/hourglass.png') }}" type="image" class="hourglass-img" alt="hour glass">
+      </div>
+
+
+  <div id="about-reps-container" class="about-reps-container text-container">
+  <div class="spaced-repetition-durations-title">
+    <h3 id="spaced-repetition-duration-title-text" class="title">
+      Our spaced intervals:
+    </h3>
+  </div>
+    
+    <div id="repetition-days-list" class="repetition-list-container">
+      <ul>
+        {% for day in days %}
+        <li class="rep-duration" id="rep-{{ day[0] }}">{{ day[1] }}
+        </li>
+        {% endfor %}
+      </ul>
+
+      
+    </div>
+  </div>
+
+</div>
+
+<div id="why-bother-container" class="width-spaning-text-area typical-spacing">
+
+<h3 id="why-spaced-reps-title" class="title">Why bother with spaced repetition?</h3>
+<p id="why-spaced-reps-text" class="text-container">Ultimately, spaced repetition helps you permanantly retain what you're studying! By exposing yourself to the same material a few
+  more times, you can hold onto the knowledge you teach yourself forever! Don't fool yourself into thinking you'll
+  remember everything from one study session.</p>
+</div>
+
+
+
+{% endblock content %}

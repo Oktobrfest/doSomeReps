@@ -1,0 +1,91 @@
+{% block topic_table %}
+
+{% set total_topics = topics|length %}
+{% set midpoint = (total_topics + 1) // 2 %}
+
+<div class="topic-columns-container">
+    <!-- Column 1 -->
+    <div class="topic-column">
+        <table id="topic-table" class="no-border">
+            <tr>
+                <!-- Topics Header -->
+                <th id="sort-by-topic" class="heading topic-heading-title">
+                    <h1 class="topic-heading-title underline">
+                        <a href="{{ url_for('catz.topiclist', sort='topic', direction='desc' if sort_column == 'topic' and sort_direction == 'asc' else 'asc') }}">
+                            Topics
+                        </a>
+                        <span class="sort-indicator {% if sort_column == 'topic' and sort_direction == 'asc' %}asc{% elif sort_column == 'topic' and sort_direction == 'desc' %}desc{% endif %}"></span>
+                    </h1>
+                </th>
+
+                <!-- Questions Header -->
+                <th id="sort-by-count" class="heading topic-question-count-title">
+                    <h1 class="topic-question-count-title underline">
+                        <a href="{{ url_for('catz.topiclist', sort='count', direction='desc' if sort_column == 'count' and sort_direction == 'asc' else 'asc') }}">
+                            Questions
+                        </a>
+                        <span class="sort-indicator {% if sort_column == 'count' and sort_direction == 'asc' %}asc{% elif sort_column == 'count' and sort_direction == 'desc' %}desc{% endif %}"></span>
+                    </h1>
+                </th>
+            </tr>
+
+            {% for html_topic, topic, count in topics[:midpoint] %}
+                <tr>
+                    <td class="topic">
+                        <a class="topic topic-category-list-item outlined-text"
+                           href="{{ url_for('catz.topic_questions',
+                           selected_topic=html_topic) }}">
+                           {{ topic }}
+                        </a>
+                    </td>
+                    <td class="topic-question-count">
+                        <h3 class="topic-question-count">{{ count }}</h3>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <!-- Column 2 -->
+    <div class="topic-column">
+        <table id="topic-table">
+            <tr>
+                <!-- Topics Header -->
+                <th id="sort-by-topic" class="heading topic-heading-title">
+                    <h1 class="topic-heading-title underline">
+                        <a href="{{ url_for('catz.topiclist', sort='topic', direction='desc' if sort_column == 'topic' and sort_direction == 'asc' else 'asc') }}">
+                            Topics
+                        </a>
+                        <span class="sort-indicator {% if sort_column == 'topic' and sort_direction == 'asc' %}asc{% elif sort_column == 'topic' and sort_direction == 'desc' %}desc{% endif %}"></span>
+                    </h1>
+                </th>
+
+                <!-- Questions Header -->
+                <th id="sort-by-count" class="heading topic-question-count-title">
+                    <h1 class="topic-question-count-title underline">
+                        <a href="{{ url_for('catz.topiclist', sort='count', direction='desc' if sort_column == 'count' and sort_direction == 'asc' else 'asc') }}">
+                            Questions
+                        </a>
+                        <span class="sort-indicator {% if sort_column == 'count' and sort_direction == 'asc' %}asc{% elif sort_column == 'count' and sort_direction == 'desc' %}desc{% endif %}"></span>
+                    </h1>
+                </th>
+            </tr>
+
+             {% for html_topic, topic, count in topics[midpoint:] %}
+                <tr>
+                    <td class="topic">
+                        <a class="topic topic-category-list-item outlined-text"
+                           href="{{ url_for('catz.topic_questions', selected_topic=html_topic) }}">
+                           {{ topic }}
+                        </a>
+                    </td>
+                    <td class="topic-question-count">
+                        <h3 class="topic-question-count">{{ count }}</h3>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% endblock %}
