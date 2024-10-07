@@ -98,3 +98,5 @@ prod.env
 **/static/uploads/
 
 **/css/viewer.css
+
+!/app/repz/static/images/*
