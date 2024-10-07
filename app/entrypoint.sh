@@ -5,16 +5,14 @@ echo "pwd is: "
 echo $(pwd)
 
 APP_PORT=${APP_PORT:-5554}
-DEBUG_PORT=${DEBUG_PORT:-5558}
-
-echo "Running Webpack build..."
-npm run build
 
 echo "IDE IS: ${IDE}"
 if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
-
+    DEBUG_PORT=${DEBUG_PORT:-5558}
     # This is for dev apparently only for now:::: NOT WORKING, FAILS!
 #    USER z
+    echo "Running Webpack build..."
+    npm run build
 
     echo "Development environment detected, installing debugpy..."
     pip install debugpy
