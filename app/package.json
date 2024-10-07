@@ -5,15 +5,15 @@
   "dependencies": {
     "pdfjs-dist": "^4.0.x",
     "prismjs": "^1.0.0",
-    "doq": "github:shivaprsd/doq"
-  },
-  "devDependencies": {
+    "doq": "github:shivaprsd/doq",
     "webpack": "latest",
     "webpack-cli": "latest",
-    "webpack-dev-server": "latest",
     "babel-loader": "^8.0.0",
     "@babel/core": "^7.0.0",
     "@babel/preset-env": "^7.0.0"
+  },
+  "devDependencies": {
+    "webpack-dev-server": "latest"
   },
   "scripts": {
     "build": "webpack --config webpack.config.js"
