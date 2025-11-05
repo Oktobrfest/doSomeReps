@@ -94,9 +94,18 @@ debugger.mjs
 dev.env
 prod.env
 
+*secret.yaml
+
 # Ignore uploads folder
 **/static/uploads/
 
 **/css/viewer.css
 
 !/app/repz/static/images/*
+coll.py
+OUTPUT_FILE.yaml
+coll_usage_scripts.txt
+
+**/temp
+/temp
+temp

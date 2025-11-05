@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reps-prod-config
+  namespace: reps-prod
+data:
+  # Non-secret environment for DevConfig
+  IDE: "vscode"
+  FLASK_ENV: "prod"
+  FLASK_DEBUG: "0"
+  NODE_ENV: "prod"
+
+  # Your app defaults (safe to be public)
+  APP_DIR: "repz"
+  STATIC_FOLDER: "static"
+  HOME_STATIC_FOLDER: "static"
+  TEMPLATES_FOLDER: "templates"
+  UPLOADS_DEFAULT_DEST: "repz/static"
+  UPLOAD_FOLDER: "repz/static"
+  UPLOADED_IMAGES_DEST: "repz/static"
+  ALLOWED_EXTENSIONS: "png,jpg,jpeg,svg"
+
+  # Networking
+  APP_PORT: "5554"
+  PORT: "5554"
+
+  TEMPLATES_AUTO_RELOAD: "False"
+  COMPRESSOR_DEBUG: "False"
+  CACHE_TYPE: "simple"
+
+  SESSION_LIFETIME: "5555"
+

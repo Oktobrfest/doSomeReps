@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reps-prod
+  namespace: reps-prod
+  labels:
+    app: reps-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reps-prod
+  template:
+    metadata:
+      labels:
+        app: reps-prod
+    spec:
+      imagePullSecrets:
+        - name: regcred
+
+      containers:
+        - name: reps
+        #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
+          image: docker.io/oktobrfest/reps:latest
+          imagePullPolicy: Always
+          # imagePullPolicy: IfNotPresent
+
+          # Your compose used "command: sh entrypoint.sh"
+          # Use the full path that exists in your image:
+          command: ["/bin/sh","/app/entrypoint.sh"]
+
+          env:
+            - name: APP_PORT
+              value: "5554"
+            - name: FLASK_ENV
+              value: "production"
+            - name: FLASK_DEBUG
+              value: "0"
+            - name: FLASK_APP
+              value: "wsgi.py"
+            - name: NODE_ENV
+              value: "production"
+            - name: IDE
+              value: "vscode"
+
+          ports:
+            - containerPort: 5554
+              name: http
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
