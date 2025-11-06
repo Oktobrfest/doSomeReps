@@ -22,8 +22,8 @@ spec:
         - name: reps
         #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
           image: docker.io/oktobrfest/reps:latest
-          imagePullPolicy: Always
-          # imagePullPolicy: IfNotPresent
+          # imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
 
           # Your compose used "command: sh entrypoint.sh"
           # Use the full path that exists in your image:
@@ -42,6 +42,12 @@ spec:
               value: "production"
             - name: IDE
               value: "vscode"
+          
+          envFrom:
+            - secretRef:
+                name: reps-prod-secrets
+            - configMapRef:
+                name: reps-prod-config
 
           ports:
             - containerPort: 5554

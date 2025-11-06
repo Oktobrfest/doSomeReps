@@ -1,4 +1,3 @@
-# /home/x/repos/doSomeReps/k3/prod/db/rep-db-statefulset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
