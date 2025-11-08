@@ -1,8 +1,8 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kaniko-build-reps-prod
-  namespace: reps-prod
+  name: kaniko-build-reps-dev
+  namespace: reps-dev
 spec:
   backoffLimit: 0
   template:
@@ -32,19 +32,17 @@ spec:
             # - --context=git://github.com/Oktobrfest/doSomeReps.git#master
             #  - --context=https://github.com/Oktobrfest/doSomeReps.git try next  
             - --dockerfile=Dockerfile
-            # - --target=prod
-            - --build-arg=NODE_ENV=prod
-            # - --skip-unused-stages
+            - --target=dev
             - --context-sub-path=doSomeReps-master
             # --destination=docker.io/YOUR_DH_USER/YOUR_IMAGE_NAME:YOUR_TAG
-            - --destination=docker.io/oktobrfest/reps:latest
+            - --destination=docker.io/oktobrfest/reps:11-8-25
             # - --destination=docker.io/oktobrfest/reps=$(IMAGE_TAG) 
             # Optional caching:
             - --cache=true            
             - --cache-repo=docker.io/oktobrfest/reps-cache
             - --compressed-caching=true
             - --snapshotMode=full #redo
-            - --verbosity=debug
+            - --verbosity=trace
             - --log-format=text
             - --log-timestamp
             - --push-retry=5 

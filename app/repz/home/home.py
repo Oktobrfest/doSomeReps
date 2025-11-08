@@ -89,7 +89,6 @@ from .form_helpers import save_pictures
 from .homeforms import QueAdditionForm, QuestionForm
 
 
-
 @home.route("/favicon.ico")
 def favicon():
     return send_from_directory(
