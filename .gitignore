@@ -109,3 +109,5 @@ coll_usage_scripts.txt
 **/temp
 /temp
 temp
+.vscode/settings.json
+.vscode/launch.json
