@@ -28,7 +28,7 @@ spec:
 # HANDLED IN DOCKER IMAGE NOW:
           # Your compose used "command: sh entrypoint.sh"
           # Use the full path that exists in your image:
-          # command: ["/bin/sh","/app/entrypoint.sh"]
+          command: ["/bin/sh","/app/entrypoint.sh"]
 
 # UNTESTED:
           # securityContext:
@@ -65,6 +65,8 @@ spec:
                 name: reps-prod-secrets
             - configMapRef:
                 name: reps-prod-config
+            - configMapRef:
+                name: reps-oidc-config
 
           ports:
             - containerPort: 5554
@@ -72,7 +74,7 @@ spec:
 
           resources:
             requests:
-              cpu: "100m"
+              cpu: "110m"
               memory: "256Mi"
             limits:
               cpu: "500m"

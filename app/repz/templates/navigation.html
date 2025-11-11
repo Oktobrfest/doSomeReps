@@ -32,10 +32,6 @@
             {% else %}
             <a class="nav-item nav-link {% if request.path == url_for('auth.login') %}active{% endif %}" id="login"
               href="/login">Login</a>
-            <a class="nav-item nav-link {% if request.path == url_for('auth.signup') %}active{% endif %}" id="signUp"
-              href="/signup">Sign Up</a>
-
-
             {% endif %}
           </div>
         </div>

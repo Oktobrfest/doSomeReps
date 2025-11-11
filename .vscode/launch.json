@@ -1,6 +1,27 @@
 {
     "version": "0.2.0",
     "configurations": [
+          {
+      "name": "Python: Remote Attach (K8s reps-dev)",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": { "host": "127.0.0.1", "port": 5558 },
+
+      // Map your local repo folder to the container's /app
+      // Your repo structure looks like: ~/repos/doSomeReps/app
+      // The container uses /app (mounted hostPath).
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/app",
+          "remoteRoot": "/app"
+        }
+      ],
+
+      "justMyCode": false,
+      "subProcess": true,           // important: Flask --reload spawns
+      "redirectOutput": true,       // see server stdout in Debug Console
+      "logToFile": false
+    },
         {
             "name": "Python: Remote Attach",
             "type": "debugpy",

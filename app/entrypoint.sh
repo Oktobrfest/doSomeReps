@@ -6,6 +6,22 @@ echo $(pwd)
 
 APP_PORT=${APP_PORT:-5554}
 
+# FIRST SEE IF IT'S EVEN NEEDED!
+# python -m pip install -v --no-cache-dir -r /app/requirementsTEMP.txt || exit 1
+
+
+# more verbose + explicit exit reporting
+python -m pip install -v --no-cache-dir -r /app/requirementsTEMP.txt
+EC=$?
+echo "[entrypoint] pip exit code = $EC"
+if [ $EC -ne 0 ]; then
+  echo "[entrypoint] pip failed — dumping pip debug:" >&2
+  python -m pip debug || true
+  exit $EC
+fi
+
+
+
 echo "IDE IS: ${IDE}"
 if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
     DEBUG_PORT=${DEBUG_PORT:-5558}

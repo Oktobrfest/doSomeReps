@@ -7,7 +7,7 @@ data:
   # Non-secret environment for DevConfig
   IDE: "vscode"
   FLASK_ENV: "dev"
-  FLASK_DEBUG: "0"
+  FLASK_DEBUG: "1"
   NODE_ENV: "dev"
 
   # Your app defaults (safe to be public)
@@ -23,8 +23,9 @@ data:
   # Networking
   APP_PORT: "5559"
   PORT: "5559"
+  DEBUG_PORT: "5558"
 
-  TEMPLATES_AUTO_RELOAD: "False"
+  TEMPLATES_AUTO_RELOAD: "True"
   COMPRESSOR_DEBUG: "False"
   CACHE_TYPE: "simple"
 
