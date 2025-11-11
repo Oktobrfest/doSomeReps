@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: reps-oidc-config
-  namespace: default
+  namespace: reps-dev
 data:
   OIDC_ISSUER: "http://authentik.local.test"
   OIDC_REDIRECT_URI: "http://reps.local.test/auth/callback"

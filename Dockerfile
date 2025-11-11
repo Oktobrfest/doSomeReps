@@ -67,7 +67,11 @@ RUN apk --no-cache add \
 #       echo "NOT copying app/ into runtime"; \
 #     fi
 
-ENTRYPOINT ["/sbin/tini","--","/app/entrypoint.sh"]
+# ENTRYPOINT ["/sbin/tini","--","/app/entrypoint.sh"]
+# ENTRYPOINT ["/bin/sh","--","/app/entrypoint.sh"]
+
+
+
 
 FROM base-runtime AS dev
 
@@ -76,7 +80,7 @@ COPY app/entrypoint.sh /app/entrypoint.sh
 ENV FLASK_ENV=development \
     FLASK_DEBUG=1
 
-# ENTRYPOINT ["/sbin/tini","--","/opt/entrypoint.sh"]
+
 
 FROM base-runtime AS prod
 

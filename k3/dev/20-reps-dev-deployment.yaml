@@ -16,19 +16,22 @@ spec:
         app: reps-dev
     spec:
       imagePullSecrets:
-        - name: regcred
+        - name: reps-dev-secrets
+
+      nodeSelector:
+        kubernetes.io/hostname: "saron"  
 
       containers:
-        - name: reps
+        - name: app
         #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
-          image: docker.io/oktobrfest/reps:latest
+          image: docker.io/oktobrfest/reps-dev:11-8-25
           imagePullPolicy: Always
           # imagePullPolicy: IfNotPresent
 
 # HANDLED IN DOCKER IMAGE NOW:
           # Your compose used "command: sh entrypoint.sh"
           # Use the full path that exists in your image:
-          # command: ["/bin/sh","/app/entrypoint.sh"]
+          command: ["/bin/sh","/app/entrypoint.sh"]
 
 # UNTESTED:
           # securityContext:
@@ -42,7 +45,7 @@ spec:
             - name: APP_PORT
               value: "5559"
             - name: FLASK_ENV
-              value: "dev"
+              value: "development"
             - name: FLASK_DEBUG
               value: "1"
             - name: FLASK_APP
@@ -51,16 +54,22 @@ spec:
               value: "dev"
             - name: IDE
               value: "vscode"
+            - name: DEBUG_PORT
+              value: "5558"
           
           envFrom:
             - secretRef:
                 name: reps-dev-secrets
             - configMapRef:
                 name: reps-dev-config
+            - configMapRef:
+                name: reps-oidc-config
 
           ports:
-            - containerPort: 5554
+            - containerPort: 5559
               name: http
+            - containerPort: 5558
+              name: debug
 
           resources:
             requests:
@@ -69,3 +78,30 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
+
+          volumeMounts:
+            - name: app-src
+              mountPath: /app
+              # We mount the entire repo's app dir so entrypoint.sh and code are present
+              readOnly: false
+
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          #   initialDelaySeconds: 20
+          #   periodSeconds: 30
+          #   failureThreshold: 2
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 15
+
+      volumes:
+        - name: app-src
+          hostPath:
+            path: /home/x/repos/doSomeReps/app   
+            type: Directory
+

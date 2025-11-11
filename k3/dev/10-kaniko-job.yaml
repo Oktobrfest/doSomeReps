@@ -1,23 +1,13 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kaniko-build-reps-dev
+  name: reps-build
   namespace: reps-dev
 spec:
   backoffLimit: 0
   template:
     spec:
       restartPolicy: Never
-      # hostAliases:
-      #   - ip: "54.162.114.244"
-      #     hostnames: ["registry-1.docker.io"]
-      #   - ip: "3.218.189.4"
-      #     hostnames: ["registry-1.docker.io"]
-      #   - ip: "54.87.19.38"
-      #     hostnames: ["auth.docker.io"]
-      #   - ip: "34.199.40.143"
-      #     hostnames: ["auth.docker.io"]
-
       containers:
         - name: kaniko
           # image: gcr.io/kaniko-project/executor:latest
@@ -32,17 +22,18 @@ spec:
             # - --context=git://github.com/Oktobrfest/doSomeReps.git#master
             #  - --context=https://github.com/Oktobrfest/doSomeReps.git try next  
             - --dockerfile=Dockerfile
-            - --target=dev
+            - --build-arg=NODE_ENV=dev
+            - --skip-unused-stages
             - --context-sub-path=doSomeReps-master
             # --destination=docker.io/YOUR_DH_USER/YOUR_IMAGE_NAME:YOUR_TAG
-            - --destination=docker.io/oktobrfest/reps:11-8-25
+            - --destination=docker.io/oktobrfest/reps-dev:11-9-25
             # - --destination=docker.io/oktobrfest/reps=$(IMAGE_TAG) 
             # Optional caching:
-            - --cache=true            
-            - --cache-repo=docker.io/oktobrfest/reps-cache
+            - --cache=false            
+            - --cache-repo=docker.io/oktobrfest/reps-dev-cache
             - --compressed-caching=true
             - --snapshotMode=full #redo
-            - --verbosity=trace
+            - --verbosity=info
             - --log-format=text
             - --log-timestamp
             - --push-retry=5 
@@ -51,11 +42,11 @@ spec:
           # - --context=https://github.com/Oktobrfest/doSomeReps.git#master # failed
           resources:
             requests:
-              cpu: "2000m"            # 2 vCPU requested for scheduling
+              cpu: "2000m"            
               memory: "4Gi"
               ephemeral-storage: "8Gi"
             limits:
-              cpu: "4000m"            # cap at 4 vCPU
+              cpu: "4000m"            
               memory: "8Gi"
               ephemeral-storage: "15Gi"
 
@@ -68,7 +59,7 @@ spec:
       volumes:
         - name: docker-config
           secret:
-            secretName: regcred
+            secretName: docker-hub-secret
             items:
               - key: .dockerconfigjson
                 path: config.json

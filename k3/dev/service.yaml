@@ -1,13 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: reps-prod
-  namespace: reps-prod
+  name: reps-dev
+  namespace: reps-dev
 spec:
   selector:
-    app: reps-prod
+    app: reps-dev
   ports:
     - name: http
       port: 80
-      targetPort: 5554
+      targetPort: 5559
+      # use port-forward for this debug port
+    # - name: debug
+    #   port: 5558        # Cluster port for debugpy
+    #   targetPort: 5558 
   type: ClusterIP

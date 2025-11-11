@@ -4,32 +4,28 @@ from flask import Blueprint, redirect, url_for, session, current_app, request, a
 from flask_login import login_user, logout_user
 from authlib.integrations.flask_client import OAuth
 from urllib.parse import urljoin
+from sqlalchemy.sql import func
+from sqlalchemy.orm import Query
+from sqlalchemy import select
+from urllib.parse import urlencode
 
-from ..database import session as dbsession, select
+from ..database import session as dbsession
 from ..models import users as Users
 from ..configs.oidc import OIDCConfig
+
+# Use the shared OAuth extension that the factory initialized.
+from .oidc import oauth
+from ..configs.oidc import OIDCConfig
+
 
 auth = Blueprint(
     'auth', __name__,
     template_folder='templates',
     static_folder='static',
-    url_prefix="",
+    url_prefix="", # not sure about this?
 )
 oauth = OAuth()
 
-def _init_oidc(app):
-    issuer = OIDCConfig.OIDC_ISSUER.rstrip("/")
-    oauth.register(
-        name="authentik",
-        client_id=OIDCConfig.OIDC_CLIENT_ID,
-        client_secret=OIDCConfig.OIDC_CLIENT_SECRET,
-        server_metadata_url=urljoin(issuer + "/", ".well-known/openid-configuration"),
-        client_kwargs={"scope": OIDCConfig.OIDC_SCOPE},
-    )
-
-@auth.before_app_first_request
-def setup():
-    _init_oidc(current_app)
 
 @auth.route("/login")
 def login():
@@ -37,12 +33,23 @@ def login():
     redirect_uri = OIDCConfig.OIDC_REDIRECT_URI
     return oauth.authentik.authorize_redirect(redirect_uri)
 
+
+@auth.route("/signup")
+def signup():
+    # Adjust this to your actual flow slug if customized.
+    # Default public enrollment is typically available under /if/flow/enrollment/
+    base = OIDCConfig.OIDC_ISSUER.rstrip("/")
+    params = urlencode({"next": OIDCConfig.OIDC_REDIRECT_URI})
+    return redirect(f"{base}/if/flow/enrollment/?{params}")
+
+
 @auth.route("/auth/callback")
 def sso_callback():
  # Why: complete the OIDC flow, exchange code for tokens, fetch user info/claims.
     token = oauth.authentik.authorize_access_token()
     if not token:
         abort(401)
+
     userinfo = oauth.authentik.userinfo()
 
     email = userinfo.get("email") or ""
@@ -85,8 +92,17 @@ def sso_callback():
 def logout():
     # End local session
     logout_user()
+
     # Optionally, hit Authentik end_session_endpoint
-    end_session = oauth.authentik.load_server_metadata().get("end_session_endpoint")
+    try:
+        meta = oauth.authentik.load_server_metadata()
+        end_session = (meta or {}).get("end_session_endpoint")
+    except Exception:
+        end_session = None
+
+    # end_session = oauth.authentik.load_server_metadata().get("end_session_endpoint")
+
+
     if end_session:
         # best-effort local redirect, without ID token hint for simplicity
         return redirect(end_session)

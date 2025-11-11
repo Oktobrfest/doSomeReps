@@ -40,7 +40,7 @@ spec:
             - --destination=docker.io/oktobrfest/reps:latest
             # - --destination=docker.io/oktobrfest/reps=$(IMAGE_TAG) 
             # Optional caching:
-            - --cache=true            
+            - --cache=false # TEMP- TURN BACK ON MAYBE? it's slow already as hell!            
             - --cache-repo=docker.io/oktobrfest/reps-cache
             - --compressed-caching=true
             - --snapshotMode=full #redo
