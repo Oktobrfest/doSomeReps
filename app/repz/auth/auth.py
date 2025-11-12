@@ -24,7 +24,6 @@ auth = Blueprint(
     static_folder='static',
     url_prefix="", # not sure about this?
 )
-oauth = OAuth()
 
 
 @auth.route("/login")
