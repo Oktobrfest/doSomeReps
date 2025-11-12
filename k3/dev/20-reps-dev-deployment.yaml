@@ -1,107 +1,55 @@
-apiVersion: apps/v1
-kind: Deployment
+# yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+version: 1
 metadata:
-  name: reps-dev
-  namespace: reps-dev
+  name: reps-oidc
   labels:
-    app: reps-dev
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: reps-dev
-  template:
-    metadata:
-      labels:
-        app: reps-dev
-    spec:
-      imagePullSecrets:
-        - name: reps-dev-secrets
+    app: reps
+entries:
+  - model: authentik_core.group
+    id: reps_admin_group
+    state: present
+    identifiers:
+      name: "reps-admin"
+    attrs:
+      name: "reps-admin"
 
-      nodeSelector:
-        kubernetes.io/hostname: "saron"  
+  - model: authentik_core.group
+    id: reps_user_group
+    state: present
+    identifiers:
+      name: "reps-user"
+    attrs:
+      name: "reps-user"
 
-      containers:
-        - name: app
-        #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
-          image: docker.io/oktobrfest/reps-dev:11-8-25
-          imagePullPolicy: Always
-          # imagePullPolicy: IfNotPresent
+  - model: authentik_providers_oauth2.oauth2provider
+    id: reps_oidc_provider
+    state: present
+    identifiers:
+      name: "reps-oidc"
+    attrs:
+      name: "reps-oidc"
+      client_type: public
+      response_types: [code]
+      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
+      redirect_uris:
+        - "https://dev.reps.local.test/auth/callback"
+        - "http://dev.reps.local.test/auth/callback"
+      signing_key: !Find [authentik_crypto.certificatekey, [name, authentik Self-signed Certificate]]
+      include_claims_in_id_token: true
+      access_token_validity: 3600
+      id_token_validity: 3600
+      refresh_token_validity: 2592000
+      scopes: [openid, profile, email, offline_access]
+      # 👇 reference the pre-created mapping by name
+      property_mappings:
+        - !Find [authentik_providers_oauth2.propertymapping, [name, reps-roles-claim]]
 
-# HANDLED IN DOCKER IMAGE NOW:
-          # Your compose used "command: sh entrypoint.sh"
-          # Use the full path that exists in your image:
-          command: ["/bin/sh","/app/entrypoint.sh"]
-
-# UNTESTED:
-          # securityContext:
-          #   allowPrivilegeEscalation: false
-          #   runAsNonRoot: true
-          #   runAsUser: 10001
-          #   runAsGroup: 10001
-          #   readOnlyRootFilesystem: true
-
-          env:
-            - name: APP_PORT
-              value: "5559"
-            - name: FLASK_ENV
-              value: "development"
-            - name: FLASK_DEBUG
-              value: "1"
-            - name: FLASK_APP
-              value: "wsgi.py"
-            - name: NODE_ENV
-              value: "dev"
-            - name: IDE
-              value: "vscode"
-            - name: DEBUG_PORT
-              value: "5558"
-          
-          envFrom:
-            - secretRef:
-                name: reps-dev-secrets
-            - configMapRef:
-                name: reps-dev-config
-            - configMapRef:
-                name: reps-oidc-config
-
-          ports:
-            - containerPort: 5559
-              name: http
-            - containerPort: 5558
-              name: debug
-
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "256Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-
-          volumeMounts:
-            - name: app-src
-              mountPath: /app
-              # We mount the entire repo's app dir so entrypoint.sh and code are present
-              readOnly: false
-
-          # livenessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: http
-          #   initialDelaySeconds: 20
-          #   periodSeconds: 30
-          #   failureThreshold: 2
-          # readinessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: http
-          #   initialDelaySeconds: 10
-          #   periodSeconds: 15
-
-      volumes:
-        - name: app-src
-          hostPath:
-            path: /home/x/repos/doSomeReps/app   
-            type: Directory
-
+  - model: authentik_core.application
+    id: reps_application
+    state: present
+    identifiers:
+      slug: "reps"
+    attrs:
+      name: "Reps"
+      slug: "reps"
+      provider: !KeyOf reps_oidc_provider
