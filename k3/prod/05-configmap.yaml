@@ -6,7 +6,7 @@ metadata:
 data:
   # Non-secret environment for DevConfig
   IDE: "vscode"
-  FLASK_ENV: "prod"
+  FLASK_ENV: "production"
   FLASK_DEBUG: "0"
   NODE_ENV: "prod"
 

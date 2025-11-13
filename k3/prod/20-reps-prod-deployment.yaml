@@ -58,7 +58,7 @@ spec:
 # ###### IMPT TO-DO ######
 # CHANGE PRODUCTION TO 'PROD'
             - name: NODE_ENV
-              value: "production"
+              value: "prod"
             - name: IDE
               value: "vscode"
           
