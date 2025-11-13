@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: reps-prod
+data:
+  postgresql.conf: |
+    # --- Core settings (match Swarm) ---
+    max_connections = 50
+    idle_in_transaction_session_timeout = '10min'
+    statement_timeout = '5min'
+    log_statement = 'all'
+    log_connections = on
+    log_disconnections = on
+    log_min_error_statement = error
+
+    # --- Logging for future Fluentd/ELK ---
+    # Use csvlog so a log shipper can parse fields reliably.
+    log_destination = 'csvlog'
+    logging_collector = on
+    # Write logs to a dedicated writable directory we mount.
+    log_directory = '/var/lib/postgresql/logs'
+    
+    # Optional: rotate reasonably (safe defaults)
+    log_filename = 'postgresql-%Y-%m-%d_%H%M%S.csv'
+    log_rotation_age = '1d'
+    log_rotation_size = '100MB'
+
+    # --- Networking ---
+    listen_addresses = '*'
+
+    # --- Extensions that must preload ---
+    shared_preload_libraries = 'pg_stat_statements'
+
+  00-init-extensions.sql: |
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;

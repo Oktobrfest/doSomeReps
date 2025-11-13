@@ -96,7 +96,7 @@ class users(UserMixin, Base):
     email = sa.Column(sa.String(60), unique=True, nullable=False)
     created_on = sa.Column(sa.DateTime, index=False, unique=False, nullable=True)
     password = sa.Column(
-        sa.String(200), primary_key=False, unique=False, nullable=False
+        sa.String(200), primary_key=False, unique=False, nullable=True
     )
     role = sa.Column(sa.Integer, index=False, nullable=False, default=1)
     email_verified = sa.Column(sa.Boolean, index=False, nullable=False, default=False)
@@ -128,22 +128,7 @@ class users(UserMixin, Base):
     #   cascade="all, delete",
     
     quizqs = relationship("quizq")
-    
-    def set_password(self, password):
-        """Create hashed password."""
-        self.password = generate_password_hash(password, method="sha256")
 
-    def check_password(self, password):
-        """Check hashed password."""
-        return check_password_hash(self.password, password)
-    
-
-    # def __repr__(self):
-    #     return f"User(id={self.id!r}, username={self.username!r}, pass={self.password}, created on={self.created_on}, email={self.email}, last_login={self.last_login})"
-    # def is_active(self):
-    #     return True
-    # def is_authenticated(self):
-    #     return True
 
 class category(Base):
     __tablename__ = "category"
