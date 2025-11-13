@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: reps-build
+  namespace: reps-dev
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: kaniko
+          # image: gcr.io/kaniko-project/executor:latest
+          image: gcr.io/kaniko-project/executor:debug
+          env:
+            - name: DOCKER_CONFIG
+              value: /kaniko/.docker
+          args:
+            - --context=https://codeload.github.com/Oktobrfest/doSomeReps/tar.gz/refs/heads/master          
+            
+              # fails:- --context=https://github.com/Oktobrfest/doSomeReps.git#refs/heads/master
+            # - --context=git://github.com/Oktobrfest/doSomeReps.git#master
+            #  - --context=https://github.com/Oktobrfest/doSomeReps.git try next  
+            - --dockerfile=Dockerfile
+            - --build-arg=NODE_ENV=dev
+            - --skip-unused-stages
+            - --context-sub-path=doSomeReps-master
+            - --destination=docker.io/oktobrfest/reps-dev:11-9-25
+            # - --destination=docker.io/oktobrfest/reps=$(IMAGE_TAG) 
+            # Optional caching:
+            - --cache=true            
+            - --cache-repo=docker.io/oktobrfest/reps-dev-cache
+            - --compressed-caching=true
+            - --snapshot-mode=time #redo #full #time is fastest, redo is experimental, full is most accurate.
+            - --verbosity=info
+            - --log-format=text
+            - --log-timestamp
+            - --push-retry=5 
+            # - --registry-mirror=https://mirror.gcr.io
+            - --registry-mirror=mirror.gcr.io
+
+
+          # - --context=https://github.com/Oktobrfest/doSomeReps.git#master # failed
+          resources:
+            requests:
+              cpu: "2000m"            
+              memory: "4Gi"
+              ephemeral-storage: "8Gi"
+            limits:
+              cpu: "4000m"            
+              memory: "8Gi"
+              ephemeral-storage: "15Gi"
+
+          volumeMounts:
+            - name: docker-config
+              mountPath: /kaniko/.docker/
+            - name: kaniko-cache
+              mountPath: /kaniko/cache
+              
+      volumes:
+        - name: docker-config
+          secret:
+            secretName: docker-hub-secret
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+        - name: kaniko-cache
+          emptyDir:
+            sizeLimit: 15Gi

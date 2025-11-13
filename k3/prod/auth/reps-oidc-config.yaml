@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reps-oidc-config
+  namespace: reps-prod
+data:
+  OIDC_ISSUER: "http://authentik.authentik.svc.cluster.local" # works for DEV
+  OIDC_ISSUER_EXTERNAL: "https://authentik.dosomereps.com"
+  OIDC_REDIRECT_URI: "https://dosomereps.com/auth/callback"
