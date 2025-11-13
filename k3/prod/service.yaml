@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: reps-prod
+  namespace: reps-prod
+spec:
+  selector:
+    app: reps-prod
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5554
+  type: ClusterIP

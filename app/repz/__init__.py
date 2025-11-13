@@ -54,7 +54,11 @@ def init_app():
         except Exception as e:
             print(f"Failed to load Dev or Prod Configuration: {e}")
             raise
-        
+    
+        from .configs.oidc import OIDCConfig
+        from .auth.oidc import register_oidc
+        register_oidc(app, OIDCConfig)
+
             # Initialize image paths
         image_paths = Conf.initialize_image_paths()
         for path in image_paths:
@@ -86,7 +90,7 @@ def init_app():
         app.s3 = S3(app)
         
         login_manager = LoginManager(app)
-        login_manager.login_view = "login"
+        login_manager.login_view = "auth.login"
                        
         @login_manager.user_loader
         def load_user(user_id):

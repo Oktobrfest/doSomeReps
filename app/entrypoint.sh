@@ -6,6 +6,22 @@ echo $(pwd)
 
 APP_PORT=${APP_PORT:-5554}
 
+# FIRST SEE IF IT'S EVEN NEEDED!
+# python -m pip install -v --no-cache-dir -r /app/requirementsTEMP.txt || exit 1
+
+
+# more verbose + explicit exit reporting
+# python -m pip install -v --no-cache-dir -r /app/requirementsTEMP.txt
+# EC=$?
+# echo "[entrypoint] pip exit code = $EC"
+# if [ $EC -ne 0 ]; then
+#   echo "[entrypoint] pip failed — dumping pip debug:" >&2
+#   python -m pip debug || true
+#   exit $EC
+# fi
+
+
+
 echo "IDE IS: ${IDE}"
 if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
     DEBUG_PORT=${DEBUG_PORT:-5558}
@@ -36,4 +52,21 @@ if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
 else
     echo "Starting the application without debugger..."
     flask run --host=0.0.0.0 --port=${APP_PORT}
+# TODO: USE THIS INSTEAD:
+    # gunicorn --workers 2 --threads 2 --bind 0.0.0.0:${APP_PORT} "app:create_app()"
+
+# Production Gunicorn configuration
+# exec gunicorn \
+#   --worker-class gevent \  # Remove if not using gevent
+#   --workers 2 \  
+#   --threads 2 \
+#   --timeout 30 \
+#   --keep-alive 5 \
+#   --bind 0.0.0.0:${APP_PORT} \
+#   --worker-tmp-dir /dev/shm \  # Prevents Docker filesystem issues
+#   --access-logfile - \
+#   --error-logfile - \
+#   --log-level info \
+#   "app:create_app()"
+
 fi

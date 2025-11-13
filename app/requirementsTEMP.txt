@@ -1,0 +1,4 @@
+Authlib==1.3.1
+Flask-Session==0.8.0
+requests
+cffi>=1.15.0,<2
