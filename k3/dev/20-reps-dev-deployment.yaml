@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reps-dev
+  namespace: reps-dev
+  labels:
+    app: reps-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reps-dev
+  template:
+    metadata:
+      labels:
+        app: reps-dev
+    spec:
+      imagePullSecrets:
+        - name: reps-dev-secrets
+
+      nodeSelector:
+        kubernetes.io/hostname: "saron"  
+
+      containers:
+        - name: app
+        #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
+          image: docker.io/oktobrfest/reps-dev:11-8-25
+          # imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
+
+# HANDLED IN DOCKER IMAGE NOW:
+          # Your compose used "command: sh entrypoint.sh"
+          # Use the full path that exists in your image:
+          command: ["/bin/sh","/app/entrypoint.sh"]
+
+# UNTESTED:
+          # securityContext:
+          #   allowPrivilegeEscalation: false
+          #   runAsNonRoot: true
+          #   runAsUser: 10001
+          #   runAsGroup: 10001
+          #   readOnlyRootFilesystem: true
+
+          env:
+            - name: APP_PORT
+              value: "5559"
+            - name: FLASK_ENV
+              value: "development"
+            - name: FLASK_DEBUG
+              value: "1"
+            - name: FLASK_APP
+              value: "wsgi.py"
+            - name: NODE_ENV
+              value: "dev"
+            - name: IDE
+              value: "vscode"
+            - name: DEBUG_PORT
+              value: "5558"
+          
+          envFrom:
+            - secretRef:
+                name: reps-dev-secrets
+            - secretRef:
+                name: reps-oidc
+            - configMapRef:
+                name: reps-dev-config
+            - configMapRef:
+                name: reps-oidc-config
+
+          ports:
+            - containerPort: 5559
+              name: http
+            - containerPort: 5558
+              name: debug
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          volumeMounts:
+            - name: app-src
+              mountPath: /app
+              # We mount the entire repo's app dir so entrypoint.sh and code are present
+              readOnly: false
+
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          #   initialDelaySeconds: 20
+          #   periodSeconds: 30
+          #   failureThreshold: 2
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 15
+
+      volumes:
+        - name: app-src
+          hostPath:
+            path: /home/x/repos/doSomeReps/app   
+            type: Directory
+

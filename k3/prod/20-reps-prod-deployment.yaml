@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reps-prod
+  namespace: reps-prod
+  labels:
+    app: reps-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reps-prod
+  template:
+    metadata:
+      labels:
+        app: reps-prod
+    spec:
+      imagePullSecrets:
+        - name: regcred
+
+      nodeSelector:
+        kubernetes.io/hostname: "saron"  
+
+      containers:
+        - name: reps
+        #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
+          image: docker.io/oktobrfest/reps:latest
+          imagePullPolicy: Always
+          # imagePullPolicy: IfNotPresent
+
+# HANDLED IN DOCKER IMAGE NOW:
+          # Your compose used "command: sh entrypoint.sh"
+          # Use the full path that exists in your image:
+          command: ["/bin/sh","/app/entrypoint.sh"]
+
+# UNTESTED:
+          # securityContext:
+          #   allowPrivilegeEscalation: false
+          #   runAsNonRoot: true
+          #   runAsUser: 10001
+          #   runAsGroup: 10001
+          #   readOnlyRootFilesystem: true
+
+
+# ###### IMPT TO-DO ######
+# CHANGE PRODUCTION TO 'PROD'
+
+          env:
+            - name: APP_PORT
+              value: "5554"
+            - name: FLASK_ENV
+              value: "production"
+            - name: FLASK_DEBUG
+              value: "0"
+            - name: FLASK_APP
+              value: "wsgi.py"
+
+# ###### IMPT TO-DO ######
+# CHANGE PRODUCTION TO 'PROD'
+            - name: NODE_ENV
+              value: "prod"
+            - name: IDE
+              value: "vscode"
+          
+          envFrom:
+            - secretRef:
+                name: reps-prod-secrets
+            - secretRef:
+                name: reps-oidc
+            - configMapRef:
+                name: reps-prod-config
+            - configMapRef:
+                name: reps-oidc-config
+
+          ports:
+            - containerPort: 5554
+              name: http
+
+          resources:
+            requests:
+              cpu: "110m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
