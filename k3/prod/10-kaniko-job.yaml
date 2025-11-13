@@ -1,56 +1,39 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kaniko-build-reps-prod
+  name: reps-build
   namespace: reps-prod
 spec:
   backoffLimit: 0
   template:
     spec:
       restartPolicy: Never
-      # hostAliases:
-      #   - ip: "54.162.114.244"
-      #     hostnames: ["registry-1.docker.io"]
-      #   - ip: "3.218.189.4"
-      #     hostnames: ["registry-1.docker.io"]
-      #   - ip: "54.87.19.38"
-      #     hostnames: ["auth.docker.io"]
-      #   - ip: "34.199.40.143"
-      #     hostnames: ["auth.docker.io"]
-
       containers:
         - name: kaniko
-          # image: gcr.io/kaniko-project/executor:latest
-          image: gcr.io/kaniko-project/executor:debug
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          # image: gcr.io/kaniko-project/executor:debug
           env:
             - name: DOCKER_CONFIG
               value: /kaniko/.docker
           args:
             - --context=https://codeload.github.com/Oktobrfest/doSomeReps/tar.gz/refs/heads/master          
-            
-              # fails:- --context=https://github.com/Oktobrfest/doSomeReps.git#refs/heads/master
-            # - --context=git://github.com/Oktobrfest/doSomeReps.git#master
-            #  - --context=https://github.com/Oktobrfest/doSomeReps.git try next  
             - --dockerfile=Dockerfile
-            # - --target=prod
             - --build-arg=NODE_ENV=prod
-            # - --skip-unused-stages
+            - --skip-unused-stages
             - --context-sub-path=doSomeReps-master
-            # --destination=docker.io/YOUR_DH_USER/YOUR_IMAGE_NAME:YOUR_TAG
             - --destination=docker.io/oktobrfest/reps:latest
-            # - --destination=docker.io/oktobrfest/reps=$(IMAGE_TAG) 
             # Optional caching:
-            - --cache=false # TEMP- TURN BACK ON MAYBE? it's slow already as hell!            
+            - --cache=true         
             - --cache-repo=docker.io/oktobrfest/reps-cache
-            - --compressed-caching=true
-            - --snapshotMode=full #redo
-            - --verbosity=debug
+            - --compressed-caching=false # for low RAM PCs this is actually faster as 'false'
+            - --snapshot-mode=time #redo #full #time is fastest, redo is experimental
+            - --verbosity=info
             - --log-format=text
             - --log-timestamp
             - --push-retry=5 
-            - --registry-mirror=https://mirror.gcr.io
+            # - --registry-mirror=https://mirror.gcr.io
+            - --registry-mirror=mirror.gcr.io
 
-          # - --context=https://github.com/Oktobrfest/doSomeReps.git#master # failed
           resources:
             requests:
               cpu: "2000m"            # 2 vCPU requested for scheduling

@@ -25,19 +25,20 @@ spec:
             - --build-arg=NODE_ENV=dev
             - --skip-unused-stages
             - --context-sub-path=doSomeReps-master
-            # --destination=docker.io/YOUR_DH_USER/YOUR_IMAGE_NAME:YOUR_TAG
             - --destination=docker.io/oktobrfest/reps-dev:11-9-25
             # - --destination=docker.io/oktobrfest/reps=$(IMAGE_TAG) 
             # Optional caching:
-            - --cache=false            
+            - --cache=true            
             - --cache-repo=docker.io/oktobrfest/reps-dev-cache
             - --compressed-caching=true
-            - --snapshotMode=full #redo
+            - --snapshot-mode=time #redo #full #time is fastest, redo is experimental, full is most accurate.
             - --verbosity=info
             - --log-format=text
             - --log-timestamp
             - --push-retry=5 
-            - --registry-mirror=https://mirror.gcr.io
+            # - --registry-mirror=https://mirror.gcr.io
+            - --registry-mirror=mirror.gcr.io
+
 
           # - --context=https://github.com/Oktobrfest/doSomeReps.git#master # failed
           resources:
