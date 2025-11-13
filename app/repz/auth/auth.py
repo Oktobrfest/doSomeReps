@@ -100,8 +100,6 @@ def logout():
         end_session = None
 
     # end_session = oauth.authentik.load_server_metadata().get("end_session_endpoint")
-
-
     if end_session:
         # best-effort local redirect, without ID token hint for simplicity
         return redirect(end_session)
