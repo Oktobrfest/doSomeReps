@@ -18,6 +18,9 @@ spec:
       imagePullSecrets:
         - name: regcred
 
+      nodeSelector:
+        kubernetes.io/hostname: "saron"  
+
       containers:
         - name: reps
         #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
@@ -37,7 +40,6 @@ spec:
           #   runAsUser: 10001
           #   runAsGroup: 10001
           #   readOnlyRootFilesystem: true
-
 
 
 # ###### IMPT TO-DO ######
@@ -63,6 +65,8 @@ spec:
           envFrom:
             - secretRef:
                 name: reps-prod-secrets
+            - secretRef:
+                name: reps-oidc
             - configMapRef:
                 name: reps-prod-config
             - configMapRef:

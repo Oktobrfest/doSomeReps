@@ -25,3 +25,5 @@ class OIDCConfig:
 
     # Include 'groups' so we can do role mapping (admin/user)
     OIDC_SCOPE = os.environ.get("OIDC_SCOPE", "openid email profile groups")
+
+    OIDC_PROVIDER_SLUG = os.environ.get("OIDC_PROVIDER_SLUG", "reps").strip().strip("/")

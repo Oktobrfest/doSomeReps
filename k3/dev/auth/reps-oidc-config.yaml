@@ -4,12 +4,6 @@ metadata:
   name: reps-oidc-config
   namespace: reps-dev
 data:
-  # OIDC_ISSUER: "http://authentik.local.test"
-  # OIDC_ISSUER: "http://authentik.authentik.svc.cluster.local"
-  # OIDC_REDIRECT_URI: "http://127.0.0.1:5559/auth/callback"
-
-  # OIDC_REDIRECT_URI: "http://dev.reps.local.test/auth/callback"
-
   OIDC_ISSUER: "http://authentik.authentik.svc.cluster.local"
   OIDC_ISSUER_EXTERNAL: "http://authentik.local.test"
   OIDC_REDIRECT_URI: "http://127.0.0.1:5559/auth/callback"

@@ -17,13 +17,13 @@ def register_oidc(app, cfg):
     
     # External hostname for browser redirects
     issuer_external = cfg.OIDC_ISSUER_EXTERNAL.rstrip("/")
- 
+    slug = cfg.OIDC_PROVIDER_SLUG  
 
     oauth.register(
             name="authentik",
             client_id=cfg.OIDC_CLIENT_ID,
             client_secret=cfg.OIDC_CLIENT_SECRET,
-            server_metadata_url=f"{issuer_internal}/application/o/reps/.well-known/openid-configuration",
+            server_metadata_url=f"{issuer_internal}/application/o/{slug}/.well-known/openid-configuration",
             client_kwargs={
                 "scope": cfg.OIDC_SCOPE,
             },
