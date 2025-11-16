@@ -45,7 +45,8 @@ FROM python:3.12-alpine AS base-runtime
 # Copy only runtime dependencies and built assets from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
-COPY --from=builder /app/repz/static/dist ./repz/static/dist
+# NOT SURE IF YOU WANT THIS:
+# COPY --from=builder /app/repz/static/dist ./repz/static/dist
 
 # Install only required runtime dependencies
 # TODO: LOOK THRU THESE AND MAKE SURE THEIR ALL EVEN NEEDED!
