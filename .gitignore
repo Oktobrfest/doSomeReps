@@ -32,6 +32,8 @@ venv/
 /node_modules/
 .npm/
 .yarn/
+# in case you put it here
+app/node_modules/
 
 # IDEs and Editors
 *.sublime-project

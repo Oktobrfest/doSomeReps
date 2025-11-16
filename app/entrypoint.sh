@@ -51,22 +51,23 @@ if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
     fi
 else
     echo "Starting the application without debugger..."
-    flask run --host=0.0.0.0 --port=${APP_PORT}
-# TODO: USE THIS INSTEAD:
+    # flask run --host=0.0.0.0 --port=${APP_PORT}
+
     # gunicorn --workers 2 --threads 2 --bind 0.0.0.0:${APP_PORT} "app:create_app()"
 
-# Production Gunicorn configuration
-# exec gunicorn \
-#   --worker-class gevent \  # Remove if not using gevent
-#   --workers 2 \  
-#   --threads 2 \
-#   --timeout 30 \
-#   --keep-alive 5 \
-#   --bind 0.0.0.0:${APP_PORT} \
-#   --worker-tmp-dir /dev/shm \  # Prevents Docker filesystem issues
-#   --access-logfile - \
-#   --error-logfile - \
-#   --log-level info \
-#   "app:create_app()"
+    # Production Gunicorn configuration
+    exec gunicorn \
+    --workers 2 \  
+    --threads 2 \
+    --timeout 30 \
+    --keep-alive 5 \
+    --bind 0.0.0.0:${APP_PORT} \
+    --worker-tmp-dir /dev/shm \ 
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info \
+    "wsgi:app"
+    
+    # "app:create_app()"
 
 fi
