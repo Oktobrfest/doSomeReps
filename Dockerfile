@@ -86,7 +86,9 @@ ENV FLASK_ENV=development \
 FROM base-runtime AS prod
 
 COPY app /app
-WORKDIR /app
+
 
 
 FROM ${NODE_ENV} AS final
+
+WORKDIR /app
