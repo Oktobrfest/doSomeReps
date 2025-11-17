@@ -1,26 +1,32 @@
 #!/bin/bash
 echo "ENTRYPOINT SCRIPT STARTED..."
 
-echo "pwd is: "
-echo $(pwd)
+echo "Initial pwd: $(pwd)"
+
+set -e
+
 
 APP_PORT=${APP_PORT:-5554}
 
-# FIRST SEE IF IT'S EVEN NEEDED!
-# python -m pip install -v --no-cache-dir -r /app/requirementsTEMP.txt || exit 1
+# echo "Initial ls:"
+# ls
 
+# If we're not already in the /app directory that contains wsgi.py,
+# try /app as a fallback.
+if [ ! -f "wsgi.py" ]; then
+  echo "wsgi.py not found in $(pwd). Checking /app..."
+  if [ -f "/app/wsgi.py" ]; then
+    echo "Found /app/wsgi.py, cd /app"
+    cd /app
+  else
+    echo "ERROR: wsgi.py not found in $(pwd) or /app"
+    echo "Contents of /app (if it exists):"
+    ls -al /app || echo "/app not accessible"
+    exit 1
+  fi
+fi
 
-# more verbose + explicit exit reporting
-# python -m pip install -v --no-cache-dir -r /app/requirementsTEMP.txt
-# EC=$?
-# echo "[entrypoint] pip exit code = $EC"
-# if [ $EC -ne 0 ]; then
-#   echo "[entrypoint] pip failed — dumping pip debug:" >&2
-#   python -m pip debug || true
-#   exit $EC
-# fi
-
-
+echo "Using app directory: $(pwd)"
 
 echo "IDE IS: ${IDE}"
 if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
@@ -50,24 +56,9 @@ if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
      flask run --host=0.0.0.0 --port=${APP_PORT} --debugger --reload
     fi
 else
-    echo "Starting the application without debugger..."
-    # flask run --host=0.0.0.0 --port=${APP_PORT}
+#     # flask run --host=0.0.0.0 --port=${APP_PORT}
 
-    # gunicorn --workers 2 --threads 2 --bind 0.0.0.0:${APP_PORT} "app:create_app()"
-
-    # Production Gunicorn configuration
-    exec gunicorn \
-    --workers 2 \  
-    --threads 2 \
-    --timeout 30 \
-    --keep-alive 5 \
-    --bind 0.0.0.0:${APP_PORT} \
-    --worker-tmp-dir /dev/shm \ 
-    --access-logfile - \
-    --error-logfile - \
-    --log-level info \
-    "wsgi:app"
-    
-    # "app:create_app()"
+    echo "Starting the application using Gunicorn..."
+    exec gunicorn --workers 2 --threads 2 --keep-alive 5 --bind 0.0.0.0:${APP_PORT} --worker-tmp-dir /dev/shm --access-logfile - --error-logfile - --log-level info "wsgi:app"
 
 fi
