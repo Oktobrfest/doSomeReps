@@ -25,9 +25,6 @@ venv/
 .env/
 .venv/
 
-# Docker
-.dockerignore
-
 # Node
 /node_modules/
 .npm/
@@ -38,6 +35,9 @@ app/node_modules/
 # IDEs and Editors
 *.sublime-project
 *.sublime-workspace
+.idea/
+/.idea
+
 
 # Build and Distribution
 **/dist/
