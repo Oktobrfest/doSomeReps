@@ -1,0 +1,80 @@
+############################
+# VCS / Repo metadata
+############################
+.git
+.git/
+.gitignore
+.gitattributes
+.github/
+.idea/
+.vscode/
+
+############################
+# Python artifacts
+############################
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+.eggs/**
+dist/
+build/
+develop-eggs/
+.mypy_cache/
+.pytest_cache/
+.tox/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+ENV/
+
+############################
+# Node / JS artifacts
+############################
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# Local built JS bundles (prod builds inside Docker)
+app/repz/static/dist/
+
+############################
+# OS / Editor cruft
+############################
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+############################
+# Logs & temp files
+############################
+logs/
+*.log
+*.tmp
+*.bak
+/temp
+/temp/*.**
+
+############################
+# Local tooling / misc
+############################
+.env
+*.env
+*.local
+*.secret
+*.bak
+
+# k3s manifests, CI configs, etc. not needed in runtime image
+k3/
+.gitlab-ci.yml
+.github/
