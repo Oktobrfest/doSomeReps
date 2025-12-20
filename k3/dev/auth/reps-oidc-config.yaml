@@ -7,3 +7,5 @@ data:
   OIDC_ISSUER: "http://authentik.authentik.svc.cluster.local"
   OIDC_ISSUER_EXTERNAL: "http://authentik.local.test"
   OIDC_REDIRECT_URI: "http://127.0.0.1:5559/auth/callback"
+  OIDC_ENROLLMENT_FLOW_SLUG: "default-enrollment-flow"
+  
