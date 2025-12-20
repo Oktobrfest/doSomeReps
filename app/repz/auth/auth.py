@@ -37,9 +37,14 @@ def login():
 def signup():
     # Adjust this to your actual flow slug if customized.
     # Default public enrollment is typically available under /if/flow/enrollment/
-    base = OIDCConfig.OIDC_ISSUER.rstrip("/")
-    params = urlencode({"next": OIDCConfig.OIDC_REDIRECT_URI})
-    return redirect(f"{base}/if/flow/enrollment/?{params}")
+    base = OIDCConfig.OIDC_ISSUER_EXTERNAL.rstrip("/")
+
+    flow_slug = OIDCConfig.OIDC_ENROLLMENT_FLOW_SLUG or "default-enrollment-flow"
+
+    target_next = f"/application/launch/{OIDCConfig.OIDC_PROVIDER_SLUG}/"
+    
+    params = urlencode({"next": target_next})
+    return redirect(f"{base}/if/flow/{flow_slug}/?{params}")
 
 
 @auth.route("/auth/callback")
@@ -87,20 +92,23 @@ def sso_callback():
     return redirect(next_url)
 
 
-@auth.route("/auth/logout")
+@auth.route("/logout")
 def logout():
     # End local session
     logout_user()
+    flash('Logged Out.', category='success')
+    return redirect(url_for("home.homepage"))
 
+    # looks pointless
     # Optionally, hit Authentik end_session_endpoint
-    try:
-        meta = oauth.authentik.load_server_metadata()
-        end_session = (meta or {}).get("end_session_endpoint")
-    except Exception:
-        end_session = None
+    # try:
+    #     meta = oauth.authentik.load_server_metadata()
+    #     end_session = (meta or {}).get("end_session_endpoint")
+    # except Exception:
+    #     end_session = None
 
-    # end_session = oauth.authentik.load_server_metadata().get("end_session_endpoint")
-    if end_session:
-        # best-effort local redirect, without ID token hint for simplicity
-        return redirect(end_session)
-    return redirect(url_for("auth.login"))
+    # # end_session = oauth.authentik.load_server_metadata().get("end_session_endpoint")
+    # if end_session:
+    #     # best-effort local redirect, without ID token hint for simplicity
+    #     return redirect(end_session)
+    # return redirect(url_for("auth.login"))
