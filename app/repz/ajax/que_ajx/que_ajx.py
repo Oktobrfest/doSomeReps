@@ -5,7 +5,7 @@ import json
 
 from ...database import session
 from repz.routes import que_ajx
-from ...bluehelpers import (exclude, new_quizq, remove_underscore,
+from ...bluehelpers import (exclude, create_brand_new_quizq, remove_underscore,
                             set_session, get_user, time, unexclude, get_rating)
 from ..ajax_response import AjaxResponse
 
@@ -170,7 +170,7 @@ def save_to_que():
     msg = ""
 
     if len(que) > 0:
-        qty_added = new_quizq(que, UID)  
+        qty_added = create_brand_new_quizq(que, UID)  
         msg = "Saved " + str(qty_added) + " questions to your que. "
     else:
         qty_added = 0

@@ -25,10 +25,10 @@ spec:
             - --build-arg=NODE_ENV=dev
             - --skip-unused-stages
             - --context-sub-path=doSomeReps-dev
-            - --destination=docker.io/oktobrfest/reps-dev:11-17-25
+            - --destination=docker.io/oktobrfest/reps-dev:12-21-25
             # - --destination=docker.io/oktobrfest/reps=$(IMAGE_TAG) 
             # Optional caching:
-            - --cache=true            
+            - --cache=false            
             - --cache-repo=docker.io/oktobrfest/reps-dev-cache
             - --compressed-caching=true
             - --snapshot-mode=time #redo #full #time is fastest, redo is experimental, full is most accurate.

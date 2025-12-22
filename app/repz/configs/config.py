@@ -5,7 +5,7 @@ import logging
 import sys
 
 from dotenv import load_dotenv
-
+import redis
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
@@ -33,6 +33,20 @@ class Config:
     UPLOAD_FOLDER = environ.get("UPLOAD_FOLDER", UPLOADS_DEFAULT_DEST) 
     UPLOADED_IMAGES_DEST = environ.get("UPLOADED_IMAGES_DEST", UPLOADS_DEFAULT_DEST) 
     ALLOWED_EXTENSIONS = environ.get("ALLOWED_EXTENSIONS", {'png', 'jpg', 'jpeg', 'svg'})
+
+    # Redis Cache 
+    CACHE_TYPE = "RedisCache"
+    CACHE_DEFAULT_TIMEOUT = 300
+    CACHE_REDIS_HOST = environ.get('CACHE_REDIS_HOST', 'localhost')
+    CACHE_REDIS_PORT = int(environ.get('CACHE_REDIS_PORT', 6379))
+    CACHE_REDIS_DB = int(environ.get('CACHE_REDIS_DB', 0))
+
+    # SESSION
+    SESSION_TYPE = "redis"
+    SESSION_PERMANENT = False
+    SESSION_USE_SIGNER = True
+    # Use the same Redis params you set for Cache
+    SESSION_REDIS = redis.from_url(f"redis://{CACHE_REDIS_HOST}:{CACHE_REDIS_PORT}/{CACHE_REDIS_DB}")
 
     @staticmethod
     def setup_image_paths(path):

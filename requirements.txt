@@ -52,3 +52,4 @@ requests==2.32
 # sub-dep that hangs often
 cffi>=1.15.0,<2
 gunicorn
+redis

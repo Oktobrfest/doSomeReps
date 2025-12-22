@@ -11,13 +11,15 @@ from flask_caching import Cache
 from flask_login import LoginManager, current_user
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
+from flask_session import Session
 
 from .flask_util_js import FlaskUtilJs
 from .aws_s3 import S3
 
 
 #makes this globaly available
-cache = Cache(config={'CACHE_TYPE': 'simple'})
+cache = Cache()
+sess = Session()
 
 def init_app():
     """Create Flask application."""
@@ -28,8 +30,6 @@ def init_app():
         
     # lets you reference url_for in .js files
     fujs = FlaskUtilJs(app)    
-
-    cache.init_app(app)
 
     with app.app_context():
         
@@ -55,6 +55,9 @@ def init_app():
             print(f"Failed to load Dev or Prod Configuration: {e}")
             raise
     
+        cache.init_app(app)
+        sess.init_app(app)
+
         from .configs.oidc import OIDCConfig
         from .auth.oidc import register_oidc
         register_oidc(app, OIDCConfig)
