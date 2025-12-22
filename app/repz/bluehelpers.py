@@ -40,7 +40,7 @@ def set_session(key, value):
     local_session[key] = value
     
     
-def new_quizq(question_ids, UID):
+def create_brand_new_quizq(question_ids, UID):
     new_q_quiz_list = []
     for question_id in question_ids:
         new_quizq = quizq(
