@@ -66,7 +66,7 @@ from ..bluehelpers import (
     get_quizes,
     get_session,
     get_user,
-    new_quizq,
+    create_brand_new_quizq,
     remove_underscore,
     set_session,
     split_dict,
@@ -277,7 +277,7 @@ def addcontent():
 
         if auto_que == "on":
             question_ids = [new_question.question_id]
-            new_quizq(question_ids, current_user.id)
+            create_brand_new_quizq(question_ids, current_user.id)
 
         flash("New question created!", category="success")
 
@@ -369,6 +369,17 @@ def quiz():
                 .where(quizq.quizq_id == quizq_id)
             )
             current_quiz = session.execute(qry).scalars().all()
+
+            if not current_quiz:
+                # Race condition detected: Question was already answered by a previous request
+                logging.warning(f"Race condition caught for user {UID}, quizq_id {quizq_id}")
+                
+                # Force a cache clear for this user so they get fresh data next time
+                # (You might need to regenerate the key or just let it expire naturally)
+                
+                flash("This question was already submitted!", category="warning")
+                return redirect(url_for("home.quiz"))
+
 
             # set fields applicable to both possibilities (completed date & by whom)
             update_stmt = (
