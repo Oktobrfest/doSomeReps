@@ -24,9 +24,9 @@ spec:
       containers:
         - name: app
         #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
-          image: docker.io/oktobrfest/reps-dev:12-21-25
-          # imagePullPolicy: Always
-          imagePullPolicy: IfNotPresent
+          image: docker.io/oktobrfest/reps-dev:12-22-25
+          imagePullPolicy: Always
+          # imagePullPolicy: IfNotPresent
 
 # HANDLED IN DOCKER IMAGE NOW:
           # Your compose used "command: sh entrypoint.sh"
