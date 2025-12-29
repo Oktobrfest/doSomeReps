@@ -27,7 +27,7 @@ data:
 
   TEMPLATES_AUTO_RELOAD: "True"
   COMPRESSOR_DEBUG: "False"
-  CACHE_TYPE: "simple"
+  CACHE_TYPE: "RedisCache"
 
   SESSION_LIFETIME: "5555"
 
