@@ -18,8 +18,19 @@ spec:
       imagePullSecrets:
         - name: reps-dev-secrets
 
-      nodeSelector:
-        kubernetes.io/hostname: "saron"  
+      # nodeSelector:
+      #   kubernetes.io/hostname: "saron"  
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - asus
+
 
       containers:
         - name: app
