@@ -297,6 +297,42 @@ def addcontent():
 @login_required
 def quiz():
     UID = g._login_user.id
+
+    
+
+    # DIAGNOSTIC LOGGING START
+    logging.info(f"--- QUIZ REQUEST START ({request.method}) ---")
+    if request.method == "POST":
+        req_cats = request.form.getlist("category_name")
+        logging.info(f"POST Categories from Form: {req_cats}")
+    else:
+        sess_cats = get_session("quiz_category_names")
+        logging.info(f"GET Categories from Session: {sess_cats}")
+    
+    # Check the generated key
+    temp_helper = CacheHelper(UID)
+    # We need to know exactly what categories are being passed to the helper right now
+    current_cats_for_key = request.form.getlist("category_name") if request.method == "POST" else get_session("quiz_category_names")
+    if current_cats_for_key == "Not set": 
+        current_cats_for_key = []
+        
+    generated_key = temp_helper.generate_cache_key(current_cats_for_key)
+    logging.info(f"Generated Cache Key: {generated_key}")
+    
+    # Verify Cache Backend (Answer to 'How to verify which cache type')
+    try:
+        cache_backend = app.extensions['cache'].cache
+        logging.info(f"Current Cache Backend Object: {cache_backend}")
+        if 'Redis' in str(cache_backend):
+            logging.info("VERIFIED: Using Redis Cache.")
+        else:
+            logging.warning(f"WARNING: NOT using Redis. Using: {type(cache_backend)}")
+    except Exception as e:
+        logging.error(f"Could not verify cache backend: {e}")
+    # DIAGNOSTIC LOGGING END
+
+
+    
     cats_due = []
 
     category_list = get_all_categories()
@@ -399,10 +435,19 @@ def quiz():
             #remove from cache
                 if que_list is not None:    
                     for i in range(len(que_list) - 1, -1, -1):
-                        if que_list[i]["quizq_id"] == quizq_id:
+                        if str(que_list[i].get("quizq_id")) == str(quizq_id): 
+                            logging.info(f"Successfully popped quizq_id {quizq_id} from list index {i}")
                             c = que_list.pop(i)
                             break
+                        
+                        # Log if we finished the loop without popping anything
+                    else:
+                        logging.warning(f"FAILED to find quizq_id {quizq_id} in que_list during success update!")
+
+
                     cache.set(que_cache_key, que_list, timeout=600) 
+
+
             elif incorrect_submit == "Wrong!":
                 update_stmt = update_stmt.values(correct=False)
                 new_lvl = 1
