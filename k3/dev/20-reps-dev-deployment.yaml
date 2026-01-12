@@ -115,6 +115,6 @@ spec:
       volumes:
         - name: app-src
           hostPath:
-            path: /home/x/repos/doSomeReps/app   
+            path: /home/a/repos/doSomeReps/app   
             type: Directory
 
