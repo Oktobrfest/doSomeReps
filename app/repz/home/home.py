@@ -298,40 +298,39 @@ def addcontent():
 def quiz():
     UID = g._login_user.id
 
-    
 
-    # DIAGNOSTIC LOGGING START
+
+    # --- DIAGNOSTIC LOGGING START ---
     logging.info(f"--- QUIZ REQUEST START ({request.method}) ---")
+    
+    # 1. Check Session vs Form Data consistency
     if request.method == "POST":
         req_cats = request.form.getlist("category_name")
-        logging.info(f"POST Categories from Form: {req_cats}")
+        logging.info(f"DIAGNOSTIC - POST Categories from Form: {req_cats}")
     else:
         sess_cats = get_session("quiz_category_names")
-        logging.info(f"GET Categories from Session: {sess_cats}")
+        logging.info(f"DIAGNOSTIC - GET Categories from Session: {sess_cats}")
     
-    # Check the generated key
-    temp_helper = CacheHelper(UID)
-    # We need to know exactly what categories are being passed to the helper right now
-    current_cats_for_key = request.form.getlist("category_name") if request.method == "POST" else get_session("quiz_category_names")
-    if current_cats_for_key == "Not set": 
-        current_cats_for_key = []
-        
-    generated_key = temp_helper.generate_cache_key(current_cats_for_key)
-    logging.info(f"Generated Cache Key: {generated_key}")
-    
-    # Verify Cache Backend (Answer to 'How to verify which cache type')
+    # 2. Verify Cache Backend (Fixed Approach)
+    # CHANGED THIS - We now use the imported 'cache' object directly and check config, 
+    # instead of app.extensions which was causing the 'dict' error.
     try:
-        cache_backend = app.extensions['cache'].cache
-        logging.info(f"Current Cache Backend Object: {cache_backend}")
-        if 'Redis' in str(cache_backend):
-            logging.info("VERIFIED: Using Redis Cache.")
+        cache_type = app.config.get("CACHE_TYPE")
+        logging.info(f"DIAGNOSTIC - Configured CACHE_TYPE: {cache_type}")
+        
+        # Perform a functional test instead of inspecting objects
+        test_key = f"diag_test_{UID}"
+        cache.set(test_key, "working", timeout=5)
+        test_val = cache.get(test_key)
+        
+        if test_val == "working":
+            logging.info("DIAGNOSTIC - VERIFIED: Redis Cache Read/Write is SUCCESSFUL.")
         else:
-            logging.warning(f"WARNING: NOT using Redis. Using: {type(cache_backend)}")
+            logging.error("DIAGNOSTIC - FAILURE: Cache Read/Write returned None.")
+            
     except Exception as e:
-        logging.error(f"Could not verify cache backend: {e}")
-    # DIAGNOSTIC LOGGING END
-
-
+        logging.error(f"DIAGNOSTIC - Cache check crashed: {e}")
+    # --- DIAGNOSTIC LOGGING END ---
     
     cats_due = []
 
@@ -640,3 +639,72 @@ def topic_questions(selected_topic):
 
 
 
+
+# def log_cache_backend():
+#     # 1) What config says
+#     logging.info(
+#         "CACHE CONFIG pid=%s CACHE_TYPE=%r host=%r port=%r db=%r",
+#         os.getpid(),
+#         current_app.config.get("CACHE_TYPE"),
+#         current_app.config.get("CACHE_REDIS_HOST"),
+#         current_app.config.get("CACHE_REDIS_PORT"),
+#         current_app.config.get("CACHE_REDIS_DB"),
+#     )
+
+#     # 2) What backend object actually is (MOST IMPORTANT)
+#     try:
+#         backend = getattr(cache, "cache", None)   # flask_caching.Cache -> cachelib backend
+#         logging.info(
+#             "CACHE BACKEND pid=%s backend_obj=%r backend_class=%s",
+#             os.getpid(),
+#             backend,
+#             backend.__class__.__name__ if backend else None,
+#         )
+#     except Exception:
+#         logging.exception("CACHE BACKEND INSPECTION FAILED pid=%s", os.getpid())
+
+#     # 3) How it's stored in app.extensions (your error was here)
+#     try:
+#         ext = current_app.extensions.get("cache")
+#         logging.info("app.extensions['cache'] type=%s", type(ext).__name__)
+
+#         if isinstance(ext, dict):
+#             # Flask-Caching often stores: app.extensions['cache'][CacheInstance] = backend
+#             logging.info(
+#                 "cache extension dict key_types=%s value_types=%s",
+#                 [type(k).__name__ for k in ext.keys()],
+#                 [type(v).__name__ for v in ext.values()],
+#             )
+#             logging.info("repz.cache is key in extensions dict? %s", cache in ext)
+
+#             if cache in ext:
+#                 b2 = ext[cache]
+#                 logging.info("EXT BACKEND pid=%s backend_class=%s backend_obj=%r", os.getpid(), type(b2).__name__, b2)
+#             else:
+#                 # fallback: show first value if present
+#                 first_val = next(iter(ext.values()), None)
+#                 logging.info("EXT BACKEND fallback first_val_class=%s first_val_obj=%r",
+#                              type(first_val).__name__ if first_val else None, first_val)
+#         else:
+#             # Some setups store the Cache instance directly
+#             logging.info("cache extension direct obj=%r", ext)
+#     except Exception:
+#         logging.exception("CACHE EXTENSION INSPECTION FAILED pid=%s", os.getpid())
+
+
+# # call it once per request (during debugging)
+# log_cache_backend()
+
+
+
+# @home.route("/__debug/cache_incr")
+# def debug_cache_incr():
+#     import os
+#     key = "__debug_incr__"
+#     val = cache.get(key)
+#     if val is None:
+#         val = 0
+#     val = int(val) + 1
+#     cache.set(key, val, timeout=3600)
+#     backend = getattr(cache, "cache", None)
+#     return {"pid": os.getpid(), "counter": val, "backend": backend.__class__.__name__ if backend else None}
