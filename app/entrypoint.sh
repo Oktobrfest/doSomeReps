@@ -55,6 +55,14 @@ if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
      echo "STARTING DEVELOPMENT USING: ${IDE} ; EXCECUTED: flask run --host=0.0.0.0 --port=${APP_PORT} --debugger --reload"
      flask run --host=0.0.0.0 --port=${APP_PORT} --debugger --reload
     fi
+
+# TESTING GUNICORN
+#  exec gunicorn --workers 2 --threads 2 --keep-alive 5 \
+#     --bind 0.0.0.0:${APP_PORT} --worker-tmp-dir /dev/shm \
+#     --access-logfile - --error-logfile - --log-level info "wsgi:app"
+
+
+
 else
 #     # flask run --host=0.0.0.0 --port=${APP_PORT}
 

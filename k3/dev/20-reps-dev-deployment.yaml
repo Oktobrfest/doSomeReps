@@ -18,13 +18,24 @@ spec:
       imagePullSecrets:
         - name: reps-dev-secrets
 
-      nodeSelector:
-        kubernetes.io/hostname: "saron"  
+      # nodeSelector:
+      #   kubernetes.io/hostname: "saron"  
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - asus
+
 
       containers:
         - name: app
         #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
-          image: docker.io/oktobrfest/reps-dev:12-21-25
+          image: docker.io/oktobrfest/reps-dev:1-12-25
           # imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
 
@@ -104,6 +115,6 @@ spec:
       volumes:
         - name: app-src
           hostPath:
-            path: /home/x/repos/doSomeReps/app   
+            path: /home/a/repos/doSomeReps/app   
             type: Directory
 
