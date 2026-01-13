@@ -297,41 +297,6 @@ def addcontent():
 @login_required
 def quiz():
     UID = g._login_user.id
-
-    
-
-    # DIAGNOSTIC LOGGING START
-    logging.info(f"--- QUIZ REQUEST START ({request.method}) ---")
-    if request.method == "POST":
-        req_cats = request.form.getlist("category_name")
-        logging.info(f"POST Categories from Form: {req_cats}")
-    else:
-        sess_cats = get_session("quiz_category_names")
-        logging.info(f"GET Categories from Session: {sess_cats}")
-    
-    # Check the generated key
-    temp_helper = CacheHelper(UID)
-    # We need to know exactly what categories are being passed to the helper right now
-    current_cats_for_key = request.form.getlist("category_name") if request.method == "POST" else get_session("quiz_category_names")
-    if current_cats_for_key == "Not set": 
-        current_cats_for_key = []
-        
-    generated_key = temp_helper.generate_cache_key(current_cats_for_key)
-    logging.info(f"Generated Cache Key: {generated_key}")
-    
-    # Verify Cache Backend (Answer to 'How to verify which cache type')
-    try:
-        cache_backend = app.extensions['cache'].cache
-        logging.info(f"Current Cache Backend Object: {cache_backend}")
-        if 'Redis' in str(cache_backend):
-            logging.info("VERIFIED: Using Redis Cache.")
-        else:
-            logging.warning(f"WARNING: NOT using Redis. Using: {type(cache_backend)}")
-    except Exception as e:
-        logging.error(f"Could not verify cache backend: {e}")
-    # DIAGNOSTIC LOGGING END
-
-
     
     cats_due = []
 
@@ -407,12 +372,29 @@ def quiz():
             current_quiz = session.execute(qry).scalars().all()
 
             if not current_quiz:
-                # Race condition detected: Question was already answered by a previous request
-                logging.warning(f"Race condition caught for user {UID}, quizq_id {quizq_id}")
+          # --- STALE CACHE DETECTED --- or race condition?
+                # This happens if the DB says "Answered" but Redis still served the question.                
+                # 1. Detailed Logging for Diagnosis
+                logging.warning(f"RACE/STALE DETECTED: User {UID} submitted quizq_id {quizq_id}, but DB says it is already answered.")
+                logging.warning(f"Debug - Active Cache Key: {que_cache_key}")
                 
-                # Force a cache clear for this user so they get fresh data next time
-                # (You might need to regenerate the key or just let it expire naturally)
-                
+                # Log what was actually in the list to see why the app thought it was valid
+                current_ids_in_cache = [q.get('quizq_id') for q in que_list] if que_list else 'List is Empty'
+                logging.warning(f"Debug - IDs currently in this Cache Key: {current_ids_in_cache}")
+
+                # 2. Self-Healing (Force Removal)
+                # We filter the list to remove this specific ID so the user doesn't loop.
+                if que_list:
+                    original_count = len(que_list)
+                    # Use str() comparison to ensure we catch it regardless of type
+                    que_list = [q for q in que_list if str(q.get("quizq_id")) != str(quizq_id)]
+                    
+                    if len(que_list) < original_count:
+                        logging.info(f"SELF-HEAL SUCCESS: Forced removal of stale quizq_id {quizq_id} from Redis.")
+                        cache.set(que_cache_key, que_list, timeout=600)
+                    else:
+                        logging.error(f"SELF-HEAL FAILED: Could not find quizq_id {quizq_id} in the list to remove it.")
+             
                 flash("This question was already submitted!", category="warning")
                 return redirect(url_for("home.quiz"))
 
@@ -636,7 +618,4 @@ def topic_questions(selected_topic):
         topics=topics,
         questions=questions
     )
-
-
-
 
