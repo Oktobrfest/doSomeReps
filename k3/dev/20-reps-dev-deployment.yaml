@@ -35,7 +35,7 @@ spec:
       containers:
         - name: app
         #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
-          image: docker.io/oktobrfest/reps-dev:12-21-25
+          image: docker.io/oktobrfest/reps-dev:1-12-25
           # imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
 

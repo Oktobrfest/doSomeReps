@@ -297,40 +297,6 @@ def addcontent():
 @login_required
 def quiz():
     UID = g._login_user.id
-
-
-
-    # --- DIAGNOSTIC LOGGING START ---
-    logging.info(f"--- QUIZ REQUEST START ({request.method}) ---")
-    
-    # 1. Check Session vs Form Data consistency
-    if request.method == "POST":
-        req_cats = request.form.getlist("category_name")
-        logging.info(f"DIAGNOSTIC - POST Categories from Form: {req_cats}")
-    else:
-        sess_cats = get_session("quiz_category_names")
-        logging.info(f"DIAGNOSTIC - GET Categories from Session: {sess_cats}")
-    
-    # 2. Verify Cache Backend (Fixed Approach)
-    # CHANGED THIS - We now use the imported 'cache' object directly and check config, 
-    # instead of app.extensions which was causing the 'dict' error.
-    try:
-        cache_type = app.config.get("CACHE_TYPE")
-        logging.info(f"DIAGNOSTIC - Configured CACHE_TYPE: {cache_type}")
-        
-        # Perform a functional test instead of inspecting objects
-        test_key = f"diag_test_{UID}"
-        cache.set(test_key, "working", timeout=5)
-        test_val = cache.get(test_key)
-        
-        if test_val == "working":
-            logging.info("DIAGNOSTIC - VERIFIED: Redis Cache Read/Write is SUCCESSFUL.")
-        else:
-            logging.error("DIAGNOSTIC - FAILURE: Cache Read/Write returned None.")
-            
-    except Exception as e:
-        logging.error(f"DIAGNOSTIC - Cache check crashed: {e}")
-    # --- DIAGNOSTIC LOGGING END ---
     
     cats_due = []
 
@@ -406,12 +372,29 @@ def quiz():
             current_quiz = session.execute(qry).scalars().all()
 
             if not current_quiz:
-                # Race condition detected: Question was already answered by a previous request
-                logging.warning(f"Race condition caught for user {UID}, quizq_id {quizq_id}")
+          # --- STALE CACHE DETECTED --- or race condition?
+                # This happens if the DB says "Answered" but Redis still served the question.                
+                # 1. Detailed Logging for Diagnosis
+                logging.warning(f"RACE/STALE DETECTED: User {UID} submitted quizq_id {quizq_id}, but DB says it is already answered.")
+                logging.warning(f"Debug - Active Cache Key: {que_cache_key}")
                 
-                # Force a cache clear for this user so they get fresh data next time
-                # (You might need to regenerate the key or just let it expire naturally)
-                
+                # Log what was actually in the list to see why the app thought it was valid
+                current_ids_in_cache = [q.get('quizq_id') for q in que_list] if que_list else 'List is Empty'
+                logging.warning(f"Debug - IDs currently in this Cache Key: {current_ids_in_cache}")
+
+                # 2. Self-Healing (Force Removal)
+                # We filter the list to remove this specific ID so the user doesn't loop.
+                if que_list:
+                    original_count = len(que_list)
+                    # Use str() comparison to ensure we catch it regardless of type
+                    que_list = [q for q in que_list if str(q.get("quizq_id")) != str(quizq_id)]
+                    
+                    if len(que_list) < original_count:
+                        logging.info(f"SELF-HEAL SUCCESS: Forced removal of stale quizq_id {quizq_id} from Redis.")
+                        cache.set(que_cache_key, que_list, timeout=600)
+                    else:
+                        logging.error(f"SELF-HEAL FAILED: Could not find quizq_id {quizq_id} in the list to remove it.")
+             
                 flash("This question was already submitted!", category="warning")
                 return redirect(url_for("home.quiz"))
 
@@ -636,75 +619,3 @@ def topic_questions(selected_topic):
         questions=questions
     )
 
-
-
-
-
-# def log_cache_backend():
-#     # 1) What config says
-#     logging.info(
-#         "CACHE CONFIG pid=%s CACHE_TYPE=%r host=%r port=%r db=%r",
-#         os.getpid(),
-#         current_app.config.get("CACHE_TYPE"),
-#         current_app.config.get("CACHE_REDIS_HOST"),
-#         current_app.config.get("CACHE_REDIS_PORT"),
-#         current_app.config.get("CACHE_REDIS_DB"),
-#     )
-
-#     # 2) What backend object actually is (MOST IMPORTANT)
-#     try:
-#         backend = getattr(cache, "cache", None)   # flask_caching.Cache -> cachelib backend
-#         logging.info(
-#             "CACHE BACKEND pid=%s backend_obj=%r backend_class=%s",
-#             os.getpid(),
-#             backend,
-#             backend.__class__.__name__ if backend else None,
-#         )
-#     except Exception:
-#         logging.exception("CACHE BACKEND INSPECTION FAILED pid=%s", os.getpid())
-
-#     # 3) How it's stored in app.extensions (your error was here)
-#     try:
-#         ext = current_app.extensions.get("cache")
-#         logging.info("app.extensions['cache'] type=%s", type(ext).__name__)
-
-#         if isinstance(ext, dict):
-#             # Flask-Caching often stores: app.extensions['cache'][CacheInstance] = backend
-#             logging.info(
-#                 "cache extension dict key_types=%s value_types=%s",
-#                 [type(k).__name__ for k in ext.keys()],
-#                 [type(v).__name__ for v in ext.values()],
-#             )
-#             logging.info("repz.cache is key in extensions dict? %s", cache in ext)
-
-#             if cache in ext:
-#                 b2 = ext[cache]
-#                 logging.info("EXT BACKEND pid=%s backend_class=%s backend_obj=%r", os.getpid(), type(b2).__name__, b2)
-#             else:
-#                 # fallback: show first value if present
-#                 first_val = next(iter(ext.values()), None)
-#                 logging.info("EXT BACKEND fallback first_val_class=%s first_val_obj=%r",
-#                              type(first_val).__name__ if first_val else None, first_val)
-#         else:
-#             # Some setups store the Cache instance directly
-#             logging.info("cache extension direct obj=%r", ext)
-#     except Exception:
-#         logging.exception("CACHE EXTENSION INSPECTION FAILED pid=%s", os.getpid())
-
-
-# # call it once per request (during debugging)
-# log_cache_backend()
-
-
-
-# @home.route("/__debug/cache_incr")
-# def debug_cache_incr():
-#     import os
-#     key = "__debug_incr__"
-#     val = cache.get(key)
-#     if val is None:
-#         val = 0
-#     val = int(val) + 1
-#     cache.set(key, val, timeout=3600)
-#     backend = getattr(cache, "cache", None)
-#     return {"pid": os.getpid(), "counter": val, "backend": backend.__class__.__name__ if backend else None}
