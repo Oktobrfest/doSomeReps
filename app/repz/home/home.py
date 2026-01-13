@@ -297,6 +297,7 @@ def addcontent():
 @login_required
 def quiz():
     UID = g._login_user.id
+    
     cats_due = []
 
     category_list = get_all_categories()
@@ -371,12 +372,29 @@ def quiz():
             current_quiz = session.execute(qry).scalars().all()
 
             if not current_quiz:
-                # Race condition detected: Question was already answered by a previous request
-                logging.warning(f"Race condition caught for user {UID}, quizq_id {quizq_id}")
+          # --- STALE CACHE DETECTED --- or race condition?
+                # This happens if the DB says "Answered" but Redis still served the question.                
+                # 1. Detailed Logging for Diagnosis
+                logging.warning(f"RACE/STALE DETECTED: User {UID} submitted quizq_id {quizq_id}, but DB says it is already answered.")
+                logging.warning(f"Debug - Active Cache Key: {que_cache_key}")
                 
-                # Force a cache clear for this user so they get fresh data next time
-                # (You might need to regenerate the key or just let it expire naturally)
-                
+                # Log what was actually in the list to see why the app thought it was valid
+                current_ids_in_cache = [q.get('quizq_id') for q in que_list] if que_list else 'List is Empty'
+                logging.warning(f"Debug - IDs currently in this Cache Key: {current_ids_in_cache}")
+
+                # 2. Self-Healing (Force Removal)
+                # We filter the list to remove this specific ID so the user doesn't loop.
+                if que_list:
+                    original_count = len(que_list)
+                    # Use str() comparison to ensure we catch it regardless of type
+                    que_list = [q for q in que_list if str(q.get("quizq_id")) != str(quizq_id)]
+                    
+                    if len(que_list) < original_count:
+                        logging.info(f"SELF-HEAL SUCCESS: Forced removal of stale quizq_id {quizq_id} from Redis.")
+                        cache.set(que_cache_key, que_list, timeout=600)
+                    else:
+                        logging.error(f"SELF-HEAL FAILED: Could not find quizq_id {quizq_id} in the list to remove it.")
+             
                 flash("This question was already submitted!", category="warning")
                 return redirect(url_for("home.quiz"))
 
@@ -399,10 +417,19 @@ def quiz():
             #remove from cache
                 if que_list is not None:    
                     for i in range(len(que_list) - 1, -1, -1):
-                        if que_list[i]["quizq_id"] == quizq_id:
+                        if str(que_list[i].get("quizq_id")) == str(quizq_id): 
+                            logging.info(f"Successfully popped quizq_id {quizq_id} from list index {i}")
                             c = que_list.pop(i)
                             break
+                        
+                        # Log if we finished the loop without popping anything
+                    else:
+                        logging.warning(f"FAILED to find quizq_id {quizq_id} in que_list during success update!")
+
+
                     cache.set(que_cache_key, que_list, timeout=600) 
+
+
             elif incorrect_submit == "Wrong!":
                 update_stmt = update_stmt.values(correct=False)
                 new_lvl = 1
@@ -591,7 +618,4 @@ def topic_questions(selected_topic):
         topics=topics,
         questions=questions
     )
-
-
-
 
