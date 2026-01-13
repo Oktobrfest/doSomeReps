@@ -57,7 +57,7 @@ class DevConfig(Config):
     # DATABASE RELATED: (EXTREMELY VERBOSE)
     # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
     # logging.getLogger('sqlalchemy.pool').setLevel(logging.DEBUG)
-    logging.getLogger('sqlalchemy.orm').setLevel(logging.DEBUG)
+    # logging.getLogger('sqlalchemy.orm').setLevel(logging.DEBUG)
 
     # Redirect SQLAlchemy logs to stdout
     # logging.getLogger('sqlalchemy.engine').addHandler(
@@ -65,6 +65,6 @@ class DevConfig(Config):
 
     # logging.getLogger('sqlalchemy.pool').addHandler(
         # logging.StreamHandler(sys.stdout))
-    logging.getLogger('sqlalchemy.orm').addHandler(
-        logging.StreamHandler(sys.stdout))
+    # logging.getLogger('sqlalchemy.orm').addHandler(
+    #     logging.StreamHandler(sys.stdout))
     
