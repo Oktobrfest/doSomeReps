@@ -7,6 +7,13 @@ set -e
 
 
 APP_PORT=${APP_PORT:-5554}
+GUNICORN_WORKERS=${GUNICORN_WORKERS:-3}
+GUNICORN_THREADS=${GUNICORN_THREADS:-2}
+
+# unused yet:
+GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-60}
+GUNICORN_MAX_REQUESTS=${GUNICORN_MAX_REQUESTS:-1000}
+GUNICORN_MAX_REQUESTS_JITTER=${GUNICORN_MAX_REQUESTS_JITTER:-50}
 
 # echo "Initial ls:"
 # ls
@@ -67,6 +74,6 @@ else
 #     # flask run --host=0.0.0.0 --port=${APP_PORT}
 
     echo "Starting the application using Gunicorn..."
-    exec gunicorn --workers 2 --threads 2 --keep-alive 5 --bind 0.0.0.0:${APP_PORT} --worker-tmp-dir /dev/shm --access-logfile - --error-logfile - --log-level info "wsgi:app"
+    exec gunicorn --workers "$GUNICORN_WORKERS" --threads "$GUNICORN_THREADS" --keep-alive 5 --bind 0.0.0.0:${APP_PORT} --worker-tmp-dir /dev/shm --access-logfile - --error-logfile - --log-level info "wsgi:app"
 
 fi
