@@ -8,6 +8,18 @@ spec:
   template:
     spec:
       restartPolicy: Never
+
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - jackie
+
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
@@ -36,11 +48,11 @@ spec:
 
           resources:
             requests:
-              cpu: "2000m"            # 2 vCPU requested for scheduling
-              memory: "4Gi"
+              cpu: "500m"            
+              memory: "3Gi"
               ephemeral-storage: "8Gi"
             limits:
-              cpu: "4000m"            # cap at 4 vCPU
+              cpu: "4000m"           
               memory: "8Gi"
               ephemeral-storage: "15Gi"
 

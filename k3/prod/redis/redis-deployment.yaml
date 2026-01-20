@@ -12,6 +12,17 @@ spec:
       labels:
         app: redis
     spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - jackie
+
       containers:
       - name: redis
         image: redis:7-alpine
@@ -20,11 +31,11 @@ spec:
 
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"  # 10% of a CPU core
+            memory: "512Mi"
+            cpu: "250m"  
           limits:
-            memory: "256Mi"
-            cpu: "500m"  # 50% of a CPU core
+            memory: "1Gi"
+            cpu: "1"  
 
         readinessProbe:
           exec:
@@ -38,10 +49,11 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 20
 
-        volumeMounts:
-        - name: redis-data
-          mountPath: /data
-      volumes:
-      - name: redis-data
-        persistentVolumeClaim:
-          claimName: redis-pvc
+# UNNECESSARY!:
+      #   volumeMounts:
+      #   - name: redis-data
+      #     mountPath: /data
+      # volumes:
+      # - name: redis-data
+      #   persistentVolumeClaim:
+      #     claimName: redis-pvc
