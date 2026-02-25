@@ -12,6 +12,12 @@ spec:
       labels:
         app: redis
     spec:
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
