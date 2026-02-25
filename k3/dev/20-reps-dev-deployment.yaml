@@ -15,6 +15,12 @@ spec:
       labels:
         app: reps-dev
     spec:
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+
       imagePullSecrets:
         - name: reps-dev-secrets
 
