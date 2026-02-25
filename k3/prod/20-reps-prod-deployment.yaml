@@ -15,9 +15,15 @@ spec:
       labels:
         app: reps-prod
     spec:
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+            
       imagePullSecrets:
         - name: regcred
-
+        
       # nodeSelector:
       #   kubernetes.io/hostname: "saron"  
 
