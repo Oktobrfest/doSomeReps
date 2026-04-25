@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-jackie-config
+  namespace: reps-prod
+data:
+  postgresql.conf: |
+    listen_addresses = '*'
+    max_connections = 30
+
+    shared_buffers = '128MB'
+    effective_cache_size = '256MB'
+    work_mem = '2MB'
+    maintenance_work_mem = '64MB'
+
+    idle_in_transaction_session_timeout = '10min'
+    statement_timeout = '5min'
+
+    log_destination = 'stderr'
+    logging_collector = off
+    log_connections = on
+    log_disconnections = on
+    log_min_error_statement = error
+    log_statement = 'ddl'
+
+    shared_preload_libraries = 'pg_stat_statements'
+
+  00-init-extensions.sql: |
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
