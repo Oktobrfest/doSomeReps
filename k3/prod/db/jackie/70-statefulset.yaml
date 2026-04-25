@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql-jackie
+  namespace: reps-prod
+spec:
+  serviceName: postgresql-jackie
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql-jackie
+  template:
+    metadata:
+      labels:
+        app: postgresql-jackie
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: jackie
+
+      securityContext:
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+        fsGroupChangePolicy: "OnRootMismatch"
+
+      initContainers:
+        - name: fix-data-perms
+          image: alpine:3.20
+          securityContext:
+            runAsUser: 0
+          command:
+            - sh
+            - -lc
+            - |
+              mkdir -p /var/lib/postgresql/data
+              chown -R 70:70 /var/lib/postgresql/data
+              chmod 0700 /var/lib/postgresql/data
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-c"
+            - "config_file=/etc/postgresql/postgresql.conf"
+
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+
+          ports:
+            - containerPort: 5432
+              name: pg
+
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-config
+              mountPath: /etc/postgresql/postgresql.conf
+              subPath: postgresql.conf
+              readOnly: true
+            - name: postgres-init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -lc
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1 -p 5432
+            failureThreshold: 5
+            periodSeconds: 30
+
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -lc
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1 -p 5432
+            initialDelaySeconds: 45
+            periodSeconds: 100
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-jackie-pvc
+        - name: postgres-config
+          configMap:
+            name: postgres-jackie-config
+            items:
+              - key: postgresql.conf
+                path: postgresql.conf
+        - name: postgres-init
+          configMap:
+            name: postgres-jackie-config
+            items:
+              - key: 00-init-extensions.sql
+                path: 00-init-extensions.sql
