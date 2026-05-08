@@ -113,3 +113,6 @@ coll_usage_scripts.txt
 temp
 .vscode/settings.json
 .vscode/launch.json
+.SCRATCHFILE
+.gitignore
+.rules

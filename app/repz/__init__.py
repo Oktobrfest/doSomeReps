@@ -58,9 +58,10 @@ def init_app():
         cache.init_app(app)
         sess.init_app(app)
 
-        from .configs.oidc import OIDCConfig
-        from .auth.oidc import register_oidc
-        register_oidc(app, OIDCConfig)
+        if env != 'development':
+            from .configs.oidc import OIDCConfig
+            from .auth.oidc import register_oidc
+            register_oidc(app, OIDCConfig)
 
             # Initialize image paths
         image_paths = Conf.initialize_image_paths()
@@ -87,13 +88,17 @@ def init_app():
         app.register_blueprint(quest_ajx)
         app.register_blueprint(user_ajx)
         app.register_blueprint(que_ajx)     
+
+        if env == 'development':
+            from repz.auth.dev_login import dev_auth
+            app.register_blueprint(dev_auth)
         
         g.user = current_user
         
         app.s3 = S3(app)
         
         login_manager = LoginManager(app)
-        login_manager.login_view = "auth.login"
+        login_manager.login_view = "dev_auth.dev_login_index" if env == 'development' else "auth.login"
                        
         @login_manager.user_loader
         def load_user(user_id):
