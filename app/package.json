@@ -1,23 +1,21 @@
 {
-  "name": "reps",
-  "version": "0.1",
-  "description": "",
-  "dependencies": {
-    "pdfjs-dist": "^4.0.x",
-    "prismjs": "^1.0.0",
-    "doq": "github:shivaprsd/doq",
-    "webpack": "latest",
-    "webpack-cli": "latest",
-    "babel-loader": "^8.0.0",
-    "@babel/core": "^7.0.0",
-    "@babel/preset-env": "^7.0.0"
-  },
-  "devDependencies": {
-    "webpack-dev-server": "latest"
-  },
-  "scripts": {
-    "build": "webpack --config webpack.config.js"
-  },
-  "author": "Oktobrfest",
-  "license": "ISC"
+    "name": "reps",
+    "version": "0.1",
+    "description": "",
+    "dependencies": {
+        "prismjs": "^1.0.0",
+        "webpack": "latest",
+        "webpack-cli": "latest",
+        "babel-loader": "^8.0.0",
+        "@babel/core": "^7.0.0",
+        "@babel/preset-env": "^7.0.0"
+    },
+    "devDependencies": {
+        "webpack-dev-server": "latest"
+    },
+    "scripts": {
+        "build": "webpack --config webpack.config.js"
+    },
+    "author": "Oktobrfest",
+    "license": "ISC"
 }
