@@ -101,6 +101,20 @@ class users(UserMixin, Base):
     role = sa.Column(sa.Integer, index=False, nullable=False, default=1)
     email_verified = sa.Column(sa.Boolean, index=False, nullable=False, default=False)
     token = sa.Column(sa.String(60), nullable=True)
+
+    # AI integration (LiteLLM) - per-user provider settings.
+    # ai_provider is a LiteLLM-supported provider id (e.g. "openai",
+    # "anthropic", "gemini", "vertex_ai", "azure", "bedrock", "cohere",
+    # "mistral", "groq", "ollama", "openrouter", etc.). Storing the
+    # provider separately from the model name lets us build the
+    # canonical LiteLLM "<provider>/<model>" identifier at call time
+    # while keeping support open to any LiteLLM-supported provider.
+    ai_provider = sa.Column(sa.String(60), nullable=True)
+    ai_model = sa.Column(sa.String(120), nullable=True)
+    ai_api_key = sa.Column(sa.String(500), nullable=True)
+    # Optional - some providers (Azure/OpenAI-compatible/Ollama/etc.)
+    # need a custom endpoint base URL.
+    ai_api_base = sa.Column(sa.String(400), nullable=True)
     
     favorates = relationship(
         'users', 
