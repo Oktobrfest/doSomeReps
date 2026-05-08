@@ -79,6 +79,10 @@ def init_app():
         from repz.ajax.quest_ajx.quest_ajx import quest_ajx
         from repz.ajax.user_ajx.user_ajx import user_ajx
         from repz.ajax.que_ajx.que_ajx import que_ajx
+        # Importing the profile module attaches its routes to the
+        # `ai` blueprint declared in repz.routes.
+        from repz.ai import profile as _ai_profile  # noqa: F401
+        from repz.routes import ai
 
         # Register Blueprints
         app.register_blueprint(home)
@@ -87,7 +91,8 @@ def init_app():
         app.register_blueprint(catz_static, url_prefix='/catz')
         app.register_blueprint(quest_ajx)
         app.register_blueprint(user_ajx)
-        app.register_blueprint(que_ajx)     
+        app.register_blueprint(que_ajx)
+        app.register_blueprint(ai)     
 
         if env == 'development':
             from repz.auth.dev_login import dev_auth

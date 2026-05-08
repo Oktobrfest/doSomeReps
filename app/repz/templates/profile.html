@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock title %}
+{% block content %}
+
+<div class="centering-container">
+  <div class="text-container" style="max-width: 720px; margin: 0 auto;">
+    <h1>User Profile</h1>
+    <p>Configure your AI provider integration. The app uses
+      <a href="https://docs.litellm.ai/docs/providers" target="_blank" rel="noopener">LiteLLM</a>
+      under the hood, so any provider it supports will work here -
+      common ones are pre-listed below; pick "Other / custom" to type
+      a different provider id.
+    </p>
+
+    <form method="post" autocomplete="off">
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.ai_provider.label }}
+        {{ form.ai_provider(class_="form-control", id="ai_provider_select") }}
+      </div>
+
+      <div class="form-group" id="ai_provider_custom_wrap" style="display:none;">
+        {{ form.ai_provider_custom.label }}
+        {{ form.ai_provider_custom(
+          class_="form-control",
+          placeholder="e.g. deepseek, together_ai, perplexity"
+        ) }}
+        <small class="form-text text-muted">
+          Any
+          <a href="https://docs.litellm.ai/docs/providers" target="_blank" rel="noopener">LiteLLM provider id</a>.
+        </small>
+      </div>
+
+      <div class="form-group">
+        {{ form.ai_model.label }}
+        {{ form.ai_model(
+          class_="form-control",
+          placeholder="e.g. gpt-4o, claude-3-5-sonnet-20240620, gemini-1.5-pro"
+        ) }}
+        <small class="form-text text-muted">
+          The model name as your provider expects it. You don't need
+          to include the provider prefix - we'll combine it with the
+          provider above when calling LiteLLM.
+        </small>
+      </div>
+
+      <div class="form-group">
+        {{ form.ai_api_key.label }}
+        {{ form.ai_api_key(
+          class_="form-control",
+          placeholder=(
+            "Leave blank to keep the saved key" if has_saved_key else "Paste your API key"
+          ),
+          autocomplete="new-password"
+        ) }}
+        {% if has_saved_key %}
+          <small class="form-text text-muted">
+            An API key is currently saved. Leave this field blank to
+            keep it; type a new value to replace it.
+          </small>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.ai_api_base.label }}
+        {{ form.ai_api_base(
+          class_="form-control",
+          placeholder="Optional - only needed for Azure / OpenAI-compatible / self-hosted endpoints"
+        ) }}
+      </div>
+
+      <div class="form-group">
+        {{ form.submit(class_="btn btn-primary") }}
+      </div>
+
+      {% if form.errors %}
+        <div class="alert alert-danger">
+          <ul>
+            {% for field, errs in form.errors.items() %}
+              {% for e in errs %}
+                <li>{{ field }}: {{ e }}</li>
+              {% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<script>
+  // Show the custom-provider text input only when the user picks
+  // "Other / custom" in the dropdown.
+  (function () {
+    var sel = document.getElementById("ai_provider_select");
+    var wrap = document.getElementById("ai_provider_custom_wrap");
+    if (!sel || !wrap) return;
+    function sync() {
+      wrap.style.display = sel.value === "custom" ? "" : "none";
+    }
+    sel.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+
+{% endblock content %}
