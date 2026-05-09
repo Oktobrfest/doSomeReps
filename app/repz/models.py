@@ -7,6 +7,8 @@ from sqlalchemy.orm import relationship, Mapped
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from .ai.crypto import EncryptedString
+
 Base = declarative_base()
 
 question_categories = Table(
@@ -111,7 +113,10 @@ class users(UserMixin, Base):
     # while keeping support open to any LiteLLM-supported provider.
     ai_provider = sa.Column(sa.String(60), nullable=True)
     ai_model = sa.Column(sa.String(120), nullable=True)
-    ai_api_key = sa.Column(sa.String(500), nullable=True)
+    # Encrypted at rest via Fernet (see repz.ai.crypto). The DB still
+    # holds a VARCHAR; the ciphertext is base64 ASCII and fits in 500
+    # chars for any realistic API key length.
+    ai_api_key = sa.Column(EncryptedString(500), nullable=True)
     # Optional - some providers (Azure/OpenAI-compatible/Ollama/etc.)
     # need a custom endpoint base URL.
     ai_api_base = sa.Column(sa.String(400), nullable=True)

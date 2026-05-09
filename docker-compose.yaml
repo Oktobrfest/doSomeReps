@@ -5,7 +5,6 @@ services:
             dockerfile: ./dev.Dockerfile
             args:
                 - NODE_ENV=development
-        container_name: reps_app
         depends_on:
             - reps_postgres
         ports:
@@ -27,6 +26,8 @@ services:
             - CACHE_REDIS_HOST=reps_redis
         volumes:
             - ./app:/app
+            - ./alembic.ini:/app/alembic.ini
+            - ./migrations:/app/migrations
         command: sh entrypoint.sh
 
         # UNCOMMENT THIS FOR VS-CODE:
