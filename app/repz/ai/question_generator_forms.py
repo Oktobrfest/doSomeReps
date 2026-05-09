@@ -1,7 +1,7 @@
 """Form for the AI Question Generator page."""
 
 from flask_wtf import FlaskForm
-from wtforms import IntegerField, SubmitField, TextAreaField
+from wtforms import BooleanField, IntegerField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, NumberRange
 
 
@@ -21,5 +21,12 @@ class AIQuestionGenForm(FlaskForm):
         "To",
         default=10,
         validators=[DataRequired(), NumberRange(min=0, max=50)],
+    )
+    # When checked, a SEPARATE follow-up AI call is made that asks the
+    # model to generate hints for the difficult questions from the
+    # first call. Optional - off by default.
+    try_provide_hints = BooleanField(
+        "Try to provide hints",
+        default=False,
     )
     submit = SubmitField("Get AI Questions!")
