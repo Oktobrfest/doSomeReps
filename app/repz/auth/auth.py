@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 from flask import Blueprint, redirect, url_for, session, current_app, request, abort, flash
@@ -28,6 +29,9 @@ auth = Blueprint(
 
 @auth.route("/login")
 def login():
+    # In dev, OIDC is not registered (see repz/__init__.py). Bypass to dev-login.
+    if os.getenv('FLASK_ENV', 'production') == 'development':
+        return redirect(url_for('dev_auth.dev_login_index'))
     # send user to Authentik
     redirect_uri = OIDCConfig.OIDC_REDIRECT_URI
     return oauth.authentik.authorize_redirect(redirect_uri)
@@ -35,6 +39,9 @@ def login():
 
 @auth.route("/signup")
 def signup():
+    # In dev, no Authentik available; route signup to the dev-login picker too.
+    if os.getenv('FLASK_ENV', 'production') == 'development':
+        return redirect(url_for('dev_auth.dev_login_index'))
     # Adjust this to your actual flow slug if customized.
     # Default public enrollment is typically available under /if/flow/enrollment/
     base = OIDCConfig.OIDC_ISSUER_EXTERNAL.rstrip("/")

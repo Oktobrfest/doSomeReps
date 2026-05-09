@@ -24,3 +24,5 @@ catz_static = Blueprint(
 
 user_ajx = Blueprint("user_ajx", __name__)
 
+
+ai = Blueprint("ai", __name__)
