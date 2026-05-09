@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}AI Question Generator{% endblock title %}
+{% block content %}
+
+<div class="container">
+  <h1 align="center">AI Question Generator</h1>
+  <p align="center">{{ description }}</p>
+
+  <form method="post" autocomplete="off">
+    {{ form.hidden_tag() }}
+
+    <p class="text-muted text-center mb-1">
+      <strong>Categories are required.</strong> Pick one or more below &mdash; the AI will tag each generated question with the relevant ones.
+    </p>
+    {% include "categories.html" %}
+
+    <div class="form-group">
+      {{ form.quiz_content.label(class_="font-weight-bold") }}
+      <small class="form-text text-muted">
+        Have AI create questions for you regarding the following material.
+      </small>
+      {{ form.quiz_content(
+        class_="form-control",
+        rows=10,
+        placeholder="Paste or type the source material you'd like questions generated from..."
+      ) }}
+    </div>
+
+    <fieldset class="border rounded p-3 my-3">
+      <legend class="w-auto px-2 h5">Qty. of Questions to create</legend>
+      <p class="text-muted mb-2">
+        Tell the AI to create <strong>between this many questions</strong>
+        (a minimum and a maximum). Each value must be 0&ndash;50.
+      </p>
+      <div class="form-row align-items-center">
+        <div class="form-group col-auto">
+          {{ form.qty_from.label(class_="font-weight-bold") }}
+          {{ form.qty_from(class_="form-control", min=0, max=50) }}
+          <small class="form-text text-muted">at least this many</small>
+        </div>
+        <div class="form-group col-auto">
+          <span class="font-weight-bold" style="font-size: 1.2em;">&nbsp;&ndash;&nbsp;</span>
+        </div>
+        <div class="form-group col-auto">
+          {{ form.qty_to.label(class_="font-weight-bold") }}
+          {{ form.qty_to(class_="form-control", min=0, max=50) }}
+          <small class="form-text text-muted">up to this many</small>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="form-group">
+      {{ form.submit(class_="btn btn-primary btn-lg") }}
+    </div>
+
+    {% if form.errors %}
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          {% for field, errs in form.errors.items() %}
+            {% for e in errs %}
+              <li>{{ field }}: {{ e }}</li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% if ai_error %}
+      <div class="alert alert-warning">{{ ai_error }}</div>
+    {% endif %}
+  </form>
+
+  <hr>
+
+  {# Placeholder section for AI-generated results. Wiring up the
+     response parsing/display is intentionally deferred to the next
+     task. #}
+  <section id="ai-generated-questions" class="ai-generated-questions">
+    <h2>AI-Generated Questions</h2>
+    <p class="text-muted">
+      <em>Generated questions will appear here.</em>
+    </p>
+  </section>
+</div>
+
+{% endblock content %}

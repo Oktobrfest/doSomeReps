@@ -23,6 +23,8 @@
               id="addcontent" href="/addcontent">Add Content</a>
             <a class="nav-item nav-link {% if request.path == url_for('home.editquestions') %}active{% endif %}"
               id="editquestions" href="/editquestions">Edit Questions</a>
+            <a class="nav-item nav-link {% if request.path == url_for('ai.question_generator') %}active{% endif %}"
+              id="ai-question-generator" href="{{ url_for('ai.question_generator') }}">AI Question Generator</a>
             <a class="nav-item nav-link {% if request.path == url_for('ai.profile') %}active{% endif %}"
               id="profile" href="{{ url_for('ai.profile') }}">Profile</a>
 {#              <a class="nav-item nav-link {% if request.path == url_for('home.studymaterials') %}active{% endif %}"#}

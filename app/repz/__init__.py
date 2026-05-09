@@ -82,6 +82,7 @@ def init_app():
         # Importing the profile module attaches its routes to the
         # `ai` blueprint declared in repz.routes.
         from repz.ai import profile as _ai_profile  # noqa: F401
+        from repz.ai import question_generator as _ai_question_generator  # noqa: F401
         from repz.routes import ai
 
         # Register Blueprints
