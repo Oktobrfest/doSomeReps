@@ -22,7 +22,7 @@ Jinja2
 jmespath
 kiwisolver
 MarkupSafe
-matplotlib
+matplotlib>=3.10.9
 mypy-extensions
 numpy
 packaging
@@ -54,3 +54,4 @@ redis
 litellm
 alembic
 cryptography
+pydantic

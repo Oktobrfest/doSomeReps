@@ -1,6 +1,7 @@
 from .config import Config
 import logging
 import sys
+import redis
 from dotenv import load_dotenv
 
 from os import environ, path
@@ -27,6 +28,16 @@ class DevConfig(Config):
     DB_NAME = environ.get("DB_NAME")
     DB_USERNAME = environ.get("DB_USERNAME")
     DB_PASSWORD = environ.get("DB_PASSWORD")
+
+    # Redis
+    CACHE_REDIS_HOST = environ.get('CACHE_REDIS_HOST')
+    CACHE_REDIS_PORT = int(environ.get('CACHE_REDIS_PORT', 6379))
+    CACHE_REDIS_DB = int(environ.get('CACHE_REDIS_DB', 0))
+    LOCAL_DEV = bool(environ.get('LOCAL_DEV', False))
+    if LOCAL_DEV:
+        CACHE_REDIS_HOST = "127.0.0.1"
+        DB_HOST = "127.0.0.1"
+    SESSION_REDIS = redis.from_url(f"redis://{CACHE_REDIS_HOST}:{CACHE_REDIS_PORT}/{CACHE_REDIS_DB}")
 
     # s3
     ACCESS_KEY_ID = environ.get("ACCESS_KEY_ID")
