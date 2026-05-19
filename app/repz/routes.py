@@ -26,3 +26,5 @@ user_ajx = Blueprint("user_ajx", __name__)
 
 
 ai = Blueprint("ai", __name__)
+
+audio = Blueprint("audio", __name__, template_folder='audio/templates')
