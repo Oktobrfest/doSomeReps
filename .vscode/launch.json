@@ -1,6 +1,36 @@
 {
     "version": "0.2.0",
     "configurations": [
+        {
+            "name": "Flask: .venv",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "flask",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "FLASK_APP": "app/wsgi.py",
+                "FLASK_DEBUG": "1",
+                "FLASK_ENV": "development",
+                "DB_HOST": "127.0.0.1",
+                "CACHE_REDIS_HOST": "127.0.0.1",
+                "CACHE_REDIS_PORT": "6379",
+                "PYDEVD_USE_SYS_MONITORING": "False",
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1",
+                "LOCAL_DEV": "True",
+            },
+            "args": [
+                "run",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "5000",
+                "--no-debugger",
+                "--no-reload"
+            ],
+            "jinja": true,
+            "justMyCode": true
+        },
           {
       "name": "Python: Remote Attach (K8s reps-dev)",
       "type": "debugpy",
@@ -40,10 +70,12 @@
         },
         {
             "name": "Attach to Flask",
-            "type": "python",
+            "type": "debugpy",
             "request": "attach",
-            "port": 6678,
-            "host": "localhost",
+             "connect": {
+                "host": "0.0.0.0",
+                "port": 5558
+            },
             "pathMappings": [
                 {
                     "localRoot": "${workspaceFolder}",
@@ -53,6 +85,10 @@
                 }
             ],
             "justMyCode": false
-        }
+        },
+
+        
     ]
 }
+
+
