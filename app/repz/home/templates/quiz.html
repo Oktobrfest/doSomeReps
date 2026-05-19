@@ -3,6 +3,11 @@
 Quiz
 {% endblock title %}
 {% block content %}
+<div class="text-right mb-2">
+    <a href="{{ url_for('audio.audio_quiz') }}" class="btn btn-dark btn-sm">
+        &#127911;&nbsp; Audio Mode
+    </a>
+</div>
 <form id="answer-result" class="answer-result-submission" method="post">
     {% include "categories.html" %}
     {% if q %}
