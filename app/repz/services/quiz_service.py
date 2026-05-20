@@ -95,26 +95,66 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
 
     if maybe_redirect is not None:
         return maybe_redirect
-
     audio_assets = {}
     if config.mode == "audio" and q and audio_service is not None:
-        audio_assets = audio_service.ensure_audio_for_quiz_question(
-            q=q,
-            language="en-US",
-            parts=("question", "answer", "hint"),
-        )
+        logging.info(f"🎵 Generating audio assets for question {q.get('question_id')}")
+        
+        # Generate audio assets (this creates/ensures the files exist)
+        try:
+            raw_assets = audio_service.ensure_audio_for_quiz_question(
+                q=q,
+                language="en-US",
+                parts=("question", "answer", "hint"),
+            )
+            logging.info(f"📦 Raw assets generated: {list(raw_assets.keys())}")
+        except Exception as e:
+            logging.error(f"❌ Failed to generate audio assets: {e}")
+            raw_assets = {}
+        
+        # Convert to Flask serving URLs using object keys
+        import hashlib
+        from flask import url_for
+        
+        part_to_text = {
+            "question": q.get("question_text"),
+            "answer": q.get("answer"),
+            "hint": q.get("hint"),
+        }
+        
+        for part in ("question", "answer", "hint"):
+            text = part_to_text.get(part)
+            if not text:
+                logging.debug(f"⏭️ Skipping {part} - no text found")
+                continue
+                
+            # Generate the same object key that the service uses
+            text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+            object_key = f"audio/en-US/{q['question_id']}/{part}-{text_hash}.wav"
+            
+            # Generate Flask URL
+            audio_url = url_for("audio.serve_audio_by_key", object_key=object_key)
+            audio_assets[part] = audio_url
+            logging.info(f"🔗 Generated {part} audio URL: {audio_url}")
+            
+        logging.info(f"🎯 Final audio_assets: {audio_assets}")
 
-    return render_template(
-        config.template_name,
-        title=config.title,
-        description=config.description,
-        user=current_user,
-        category_list=category_list,
-        q=q,
-        selected_categories=selected_categories,
-        cats_due=cats_due,
-        audio_assets=audio_assets,
-    )
+    template_vars = {
+        "title": config.title,
+        "description": config.description,
+        "user": current_user,
+        "category_list": category_list,
+        "q": q,
+        "selected_categories": selected_categories,
+        "cats_due": cats_due,
+        "audio_assets": audio_assets,
+    }
+    
+    if config.mode == "audio":
+        logging.info(f"🎨 Rendering audio template with assets: {bool(audio_assets)}")
+        if q:
+            logging.info(f"📄 Question: {q.get('question_text', '')[:50]}...")
+    
+    return render_template(config.template_name, **template_vars)
 
 
 def _get_selected_categories():

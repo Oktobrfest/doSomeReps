@@ -304,12 +304,6 @@
     </div>
 
     <p id="audio-question-text">{{ q.question_text }}</p>
-    {% if audio_assets and audio_assets.question %}
-      <audio id="question-audio-player" preload="auto" style="display: none;">
-        <source src="{{ audio_assets.question }}" type="audio/wav">
-      </audio>
-    {% endif %}
-
 
     {% for pic in q.pics['question_image'] %}
       {% if pic %}
@@ -321,11 +315,6 @@
     <div id="audio-answer-section" class="audio-answer-box" style="display:none;">
       <h5>&#128218; The Answer</h5>
       <pre id="audio-answer-text">{{ q.answer }}</pre>
-      {% if audio_assets and audio_assets.answer %}
-        <audio id="answer-audio-player" preload="auto" style="display: none;">
-          <source src="{{ audio_assets.answer }}" type="audio/wav">
-        </audio>
-      {% endif %}
 
       {% for pic in q.pics['answer_pics'] %}
         {% if pic %}
@@ -365,96 +354,29 @@
 
   /* ── Speak helper ───────────────────────────────────────────── */
   function speak(text, onEnd) {
-    console.log('🎤 speak() called with text:', text.substring(0, 50) + '...');
-    if (!synth) {
-      console.error('❌ Speech synthesis not available');
-      return;
-    }
+    if (!synth) return;
     synth.cancel();
     var utt = new SpeechSynthesisUtterance(text);
-    if (typeof onEnd === 'function') {
-      utt.onend = function() {
-        console.log('✅ Speech synthesis onend fired');
-        onEnd();
-      };
-    }
-    utt.onerror = function(error) {
-      console.error('❌ Speech synthesis error:', error);
-      if (typeof onEnd === 'function') onEnd();
-    };
-    console.log('🎤 Starting speech synthesis...');
+    if (typeof onEnd === 'function') utt.onend = onEnd;
     synth.speak(utt);
   }
+
   /* ── Read Question button ───────────────────────────────────── */
   window.audioReadQuestion = function () {
     var btn = document.getElementById('audio-read-btn');
     var text = document.getElementById('audio-question-text');
-    var audioPlayer = document.getElementById('question-audio-player');
-    
-    console.log('🎵 audioReadQuestion() called');
-    console.log('📝 Question text element:', text);
-    console.log('🔊 Audio player element:', audioPlayer);
-    console.log('🎤 Speech synthesis available:', !!synth);
-    
-    if (!text) {
-      console.error('❌ No question text element found!');
-      return;
-    }
+    if (!text) return;
 
-    // Stop any currently playing audio
-    if (audioPlayer && !audioPlayer.paused) {
-      console.log('⏹️ Stopping currently playing audio');
-      audioPlayer.pause();
-      audioPlayer.currentTime = 0;
-      btn.innerHTML = '<span>&#128266;</span> Read Question';
-      return;
-    }
-
-    // Stop any Web Speech API synthesis
     if (synth && synth.speaking) {
-      console.log('⏹️ Stopping Web Speech synthesis');
       synth.cancel();
       btn.innerHTML = '<span>&#128266;</span> Read Question';
       return;
     }
 
-    btn.innerHTML = '<span>&#128266;</span> Reading…';
-
-    // Try to use generated audio first, fallback to Web Speech API
-    if (audioPlayer && audioPlayer.src) {
-      console.log('🎵 Trying to play generated audio:', audioPlayer.src);
-      audioPlayer.onended = function() {
-        console.log('✅ Audio playback ended');
-        btn.innerHTML = '<span>&#128266;</span> Read Question';
-        audioPlayer.onended = null;
-      };
-      audioPlayer.onerror = function(error) {
-        // Fallback to Web Speech API if audio fails
-        console.warn('❌ Audio playback failed, falling back to Web Speech API:', error);
-        speak(text.innerText, function () {
-          btn.innerHTML = '<span>&#128266;</span> Read Question';
-        });
-        audioPlayer.onerror = null;
-      };
-      
-      audioPlayer.play().then(function() {
-        console.log('✅ Audio play() promise resolved');
-      }).catch(function(error) {
-        console.error('❌ Audio play() promise rejected:', error);
-        // Fallback to Web Speech API
-        speak(text.innerText, function () {
-          btn.innerHTML = '<span>&#128266;</span> Read Question';
-        });
-      });
-    } else {
-      console.log('🎤 No generated audio available, using Web Speech API');
-      console.log('📄 Text to speak:', text.innerText);
-      // Fallback to Web Speech API
-      speak(text.innerText, function () {
-        console.log('✅ Web Speech synthesis ended');
-        btn.innerHTML = '<span>&#128266;</span> Read Question';
-      });
-    }
+    btn.innerHTML = '<span>&#128266;</span> Reading\u2026';
+    speak(text.innerText, function () {
+      btn.innerHTML = '<span>&#128266;</span> Read Question';
+    });
   };
 
   /* ── Get Answer button ──────────────────────────────────────── */
@@ -473,14 +395,10 @@
     setTimeout(function () {
       answerSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 80);
+
     /* Read the answer aloud */
     var answerText = document.getElementById('audio-answer-text');
-    var answerAudioPlayer = document.getElementById('answer-audio-player');
-    
-    // Try to use generated audio first, fallback to Web Speech API
-    if (answerAudioPlayer && answerAudioPlayer.src) {
-      answerAudioPlayer.play();
-    } else if (answerText) {
+    if (answerText) {
       speak(answerText.innerText);
     }
   };

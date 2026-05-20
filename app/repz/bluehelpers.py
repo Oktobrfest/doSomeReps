@@ -175,6 +175,7 @@ def get_quizes(selected_cats, UID):
             
             q = {
                 "quizq_id": r.quizq.quizq_id,
+                "question_id": r.question.question_id,
                 "question_text": r.question.question_text,
                 "hint": r.question.hint,
                 "answer": r.question.answer,

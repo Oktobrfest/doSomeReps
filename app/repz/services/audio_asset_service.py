@@ -63,6 +63,9 @@ class AudioAssetService:
 
     def ensure_audio_for_quiz_question(self, q: dict, language: str, parts=("question", "answer")) -> dict:
         """Audio generation is idempotent and separate from quiz progression"""
+        import logging
+        
+        logging.info(f"🎵 ensure_audio_for_quiz_question called for question_id={q.get('question_id')}, parts={parts}")
         assets = {}
 
         part_to_text = {
@@ -70,69 +73,102 @@ class AudioAssetService:
             "answer": q.get("answer"),
             "hint": q.get("hint"),
         }
+        
+        logging.info(f"📄 Text parts available: {list(part_to_text.keys())}")
 
         for part in parts:
             text = part_to_text.get(part)
             if not text:
+                logging.debug(f"⏭️ Skipping {part} - no text")
                 continue
 
-            assets[part] = self.ensure_audio(
-                question_id=q["question_id"],
-                part=part,
-                text=text,
-                language=language,
-            )
+            logging.info(f"🔊 Ensuring audio for {part}: {text[:50]}...")
+            try:
+                asset_url = self.ensure_audio(
+                    question_id=q["question_id"],
+                    part=part,
+                    text=text,
+                    language=language,
+                )
+                assets[part] = asset_url
+                logging.info(f"✅ Successfully ensured audio for {part}: {asset_url}")
+            except Exception as e:
+                logging.error(f"❌ Failed to ensure audio for {part}: {e}")
+                raise
 
+        logging.info(f"🎧 Final assets: {assets}")
         return assets
 
     def ensure_audio(self, question_id: int, part: str, text: str, language: str) -> str:
         """Ensure audio exists for a given question part, creating if necessary"""
+        import logging
+        
         text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-        object_key = f"audio/{language}/{question_id}/{part}-{text_hash}.mp3"
+        object_key = f"audio/{language}/{question_id}/{part}-{text_hash}.wav"
+        
+        logging.info(f"🔑 Looking for existing audio with object_key: {object_key}")
 
         existing = session.execute(
             select(audio).where(audio.object_key == object_key)
         ).scalar_one_or_none()
 
         if existing is not None:
+            logging.info(f"♾️ Found existing audio, returning: {existing.public_url or existing.object_key}")
             return str(existing.public_url or existing.object_key)
 
-        audio_bytes, metadata = self.tts_client.create_audio(
-            text=text,
-            language=language,
-        )
-
-        public_url = self.storage_client.save(
-            object_key=object_key,
-            content=audio_bytes,
-            content_type="audio/mpeg",
-        )
-
-        row = audio(
-            question_id=question_id,
-            part=part,
-            audio_text=text,
-            object_key=object_key,
-            public_url=public_url,
-            content_type="audio/mpeg",
-            size_bytes=metadata.get("size_bytes"),
-            duration_ms=metadata.get("duration_ms"),
-            tts_engine=metadata.get("tts_engine", "piper"),
-            tts_voice=metadata.get("tts_voice"),
-            language=language,
-        )
-
-        session.add(row)
+        logging.info(f"🎵 No existing audio found, creating new audio for: {text[:30]}...")
+        
+        try:
+            audio_bytes, metadata = self.tts_client.create_audio(
+                text=text,
+                language=language,
+            )
+            logging.info(f"✅ TTS generated {len(audio_bytes)} bytes of audio")
+        except Exception as e:
+            logging.error(f"❌ TTS generation failed: {e}")
+            raise
 
         try:
+            public_url = self.storage_client.save(
+                object_key=object_key,
+                content=audio_bytes,
+                content_type="audio/mpeg",
+            )
+            logging.info(f"☁️ Saved to S3, public URL: {public_url}")
+        except Exception as e:
+            logging.error(f"❌ S3 save failed: {e}")
+            raise
+
+        try:
+            row = audio(
+                question_id=question_id,
+                part=part,
+                audio_text=text,
+                object_key=object_key,
+                public_url=public_url,
+                content_type="audio/mpeg",
+                size_bytes=metadata.get("size_bytes"),
+                duration_ms=metadata.get("duration_ms"),
+                tts_engine=metadata.get("tts_engine", "piper"),
+                tts_voice=metadata.get("tts_voice"),
+                language=language,
+            )
+
+            session.add(row)
             session.commit()
+            logging.info(f"💾 Saved to database successfully")
         except IntegrityError:
             # Handles concurrent requests generating the same audio
+            logging.info(f"🔄 Concurrent creation detected, using existing record")
             session.rollback()
             existing = session.execute(
                 select(audio).where(audio.object_key == object_key)
             ).scalar_one()
             return str(existing.public_url or existing.object_key)
+        except Exception as e:
+            logging.error(f"❌ Database save failed: {e}")
+            session.rollback()
+            raise
 
         return public_url
 
