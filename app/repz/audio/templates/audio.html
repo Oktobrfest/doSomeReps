@@ -306,7 +306,7 @@
     <p id="audio-question-text">{{ q.question_text }}</p>
     {% if audio_assets and audio_assets.question %}
       <audio id="question-audio-player" preload="auto" style="display: none;">
-        <source src="{{ audio_assets.question }}" type="audio/wav">
+        <source src="{{ audio_assets.question }}" type="audio/mpeg">
       </audio>
     {% endif %}
 
@@ -323,7 +323,7 @@
       <pre id="audio-answer-text">{{ q.answer }}</pre>
       {% if audio_assets and audio_assets.answer %}
         <audio id="answer-audio-player" preload="auto" style="display: none;">
-          <source src="{{ audio_assets.answer }}" type="audio/wav">
+          <source src="{{ audio_assets.answer }}" type="audio/mpeg">
         </audio>
       {% endif %}
 
