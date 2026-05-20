@@ -133,22 +133,25 @@ def audio_quiz():
 @login_required
 def serve_audio_file(audio_id):
     """Serve MP3 audio file from S3 by audio ID."""
+    import logging
+    import io
+    from flask import send_file
+    
     storage_client = S3StorageClient()
     audio_service = AudioAssetService(None, storage_client)
 
     result = audio_service.get_audio_content(audio_id)
     if result is None:
+        logging.warning(f"❌ Audio content not found for ID: {audio_id}")
         abort(404)
 
     content, content_type = result
-
-    return Response(
-        content,
+    
+    return send_file(
+        io.BytesIO(content),
         mimetype=str(content_type),
-        headers={
-            "Cache-Control": "public, max-age=3600",
-            "Content-Length": str(len(content)),
-        },
+        as_attachment=False,
+        conditional=True
     )
 
 
@@ -156,20 +159,27 @@ def serve_audio_file(audio_id):
 @login_required
 def serve_audio_by_key(object_key):
     """Serve MP3 audio file from S3 by object key."""
+    import logging
+    import io
+    from flask import send_file
+    
+    logging.info(f"📥 serve_audio_by_key request for: {object_key}")
+    
     storage_client = S3StorageClient()
     audio_service = AudioAssetService(None, storage_client)
 
     result = audio_service.get_audio_by_object_key(object_key)
     if result is None:
+        logging.warning(f"❌ Audio content not found for key: {object_key}")
         abort(404)
 
     content, content_type = result
+    logging.info(f"✅ Serving audio for {object_key}: {len(content)} bytes, type: {content_type}")
 
-    return Response(
-        content,
+    return send_file(
+        io.BytesIO(content),
         mimetype=str(content_type),
-        headers={
-            "Cache-Control": "public, max-age=3600",
-            "Content-Length": str(len(content)),
-        },
+        as_attachment=False,
+        download_name=object_key.split('/')[-1],
+        conditional=True
     )

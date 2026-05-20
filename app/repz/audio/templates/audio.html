@@ -305,8 +305,7 @@
 
     <p id="audio-question-text">{{ q.question_text }}</p>
     {% if audio_assets and audio_assets.question %}
-      <audio id="question-audio-player" preload="auto" style="display: none;">
-        <source src="{{ audio_assets.question }}" type="audio/mpeg">
+      <audio id="question-audio-player" preload="auto" style="display: none;" src="{{ audio_assets.question }}">
       </audio>
     {% endif %}
 
@@ -322,8 +321,7 @@
       <h5>&#128218; The Answer</h5>
       <pre id="audio-answer-text">{{ q.answer }}</pre>
       {% if audio_assets and audio_assets.answer %}
-        <audio id="answer-audio-player" preload="auto" style="display: none;">
-          <source src="{{ audio_assets.answer }}" type="audio/mpeg">
+        <audio id="answer-audio-player" preload="auto" style="display: none;" src="{{ audio_assets.answer }}">
         </audio>
       {% endif %}
 
@@ -421,33 +419,40 @@
     btn.innerHTML = '<span>&#128266;</span> Reading…';
 
     // Try to use generated audio first, fallback to Web Speech API
-    if (audioPlayer && audioPlayer.src) {
-      console.log('🎵 Trying to play generated audio:', audioPlayer.src);
+    var hasAudio = audioPlayer && (audioPlayer.src || (audioPlayer.children && audioPlayer.children.length > 0));
+    
+    if (hasAudio) {
+      console.log('🎵 Trying to play generated audio. Src:', audioPlayer.src || 'from source tag');
+      
       audioPlayer.onended = function() {
         console.log('✅ Audio playback ended');
         btn.innerHTML = '<span>&#128266;</span> Read Question';
         audioPlayer.onended = null;
       };
-      audioPlayer.onerror = function(error) {
+      
+      audioPlayer.onerror = function(e) {
         // Fallback to Web Speech API if audio fails
-        console.warn('❌ Audio playback failed, falling back to Web Speech API:', error);
+        console.warn('❌ Audio playback failed, falling back to Web Speech API. Error:', audioPlayer.error);
         speak(text.innerText, function () {
           btn.innerHTML = '<span>&#128266;</span> Read Question';
         });
         audioPlayer.onerror = null;
       };
       
-      audioPlayer.play().then(function() {
-        console.log('✅ Audio play() promise resolved');
-      }).catch(function(error) {
-        console.error('❌ Audio play() promise rejected:', error);
-        // Fallback to Web Speech API
-        speak(text.innerText, function () {
-          btn.innerHTML = '<span>&#128266;</span> Read Question';
+      var playPromise = audioPlayer.play();
+      if (playPromise !== undefined) {
+        playPromise.then(function() {
+          console.log('✅ Audio play() promise resolved');
+        }).catch(function(error) {
+          console.error('❌ Audio play() promise rejected:', error);
+          // Fallback to Web Speech API
+          speak(text.innerText, function () {
+            btn.innerHTML = '<span>&#128266;</span> Read Question';
+          });
         });
-      });
+      }
     } else {
-      console.log('🎤 No generated audio available, using Web Speech API');
+      console.log('🎤 No generated audio available or source empty, using Web Speech API');
       console.log('📄 Text to speak:', text.innerText);
       // Fallback to Web Speech API
       speak(text.innerText, function () {
@@ -478,8 +483,13 @@
     var answerAudioPlayer = document.getElementById('answer-audio-player');
     
     // Try to use generated audio first, fallback to Web Speech API
-    if (answerAudioPlayer && answerAudioPlayer.src) {
-      answerAudioPlayer.play();
+    var hasAnswerAudio = answerAudioPlayer && (answerAudioPlayer.src || (answerAudioPlayer.children && answerAudioPlayer.children.length > 0));
+
+    if (hasAnswerAudio) {
+      answerAudioPlayer.play().catch(function(err) {
+          console.warn("Answer audio play failed:", err);
+          if (answerText) speak(answerText.innerText);
+      });
     } else if (answerText) {
       speak(answerText.innerText);
     }
