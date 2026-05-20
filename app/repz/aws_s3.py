@@ -10,22 +10,29 @@ from flask import current_app
 class S3:
     _instance = None
 
-    def __new__(cls, current_app=None):
+    def __new__(cls, app=None):
         """Using Singleton pattern."""
         # If no instance exists, create one
         if cls._instance is None:
             cls._instance = super(S3, cls).__new__(cls)
-            cls._instance.default_bucket = current_app.config['BUCKET']
-            cls._instance.region_name = current_app.config.get('REGION_NAME', 'us-west-2')
-            
-            cls._instance.client = boto3.client(
-                "s3",
-                region_name=cls._instance.region_name,
-                aws_access_key_id=current_app.config['ACCESS_KEY_ID'],
-                aws_secret_access_key=current_app.config['SECRET_ACCESS_KEY']
-            )
+            cls._instance._initialize(app)
             
         return cls._instance
+    
+    def _initialize(self, app=None):
+        """Initialize the S3 instance with configuration"""
+        # Use passed app or current_app from Flask context
+        app_to_use = app or current_app
+        
+        self.default_bucket = app_to_use.config['BUCKET']
+        self.region_name = app_to_use.config.get('REGION_NAME', 'us-west-2')
+        
+        self.client = boto3.client(
+            "s3",
+            region_name=self.region_name,
+            aws_access_key_id=app_to_use.config['ACCESS_KEY_ID'],
+            aws_secret_access_key=app_to_use.config['SECRET_ACCESS_KEY']
+        )
     
     
     def base_url(self, bucket = None):
@@ -103,6 +110,51 @@ class S3:
         
         return False               
     
+    def get_object(self, object_name, bucket=None):
+        """Retrieve an object from S3 bucket
+        
+        :param object_name: S3 object name
+        :param bucket: The S3 bucket to retrieve from. Defaults to default_bucket
+        :return: Tuple of (content_bytes, content_type) if successful, None if not found
+        """
+        if bucket is None:
+            bucket = self.default_bucket
+            
+        try:
+            response = self.client.get_object(Bucket=bucket, Key=object_name)
+            content = response['Body'].read()
+            content_type = response.get('ContentType', 'application/octet-stream')
+            return content, content_type
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchKey':
+                logging.warning(f"Object {object_name} not found in bucket {bucket}")
+                return None
+            else:
+                logging.error(f"Failed to retrieve {object_name} from {bucket}. Error: {e}")
+                raise
+    
+    def generate_presigned_url(self, object_name, bucket=None, expiration=3600):
+        """Generate a presigned URL to access S3 object
+        
+        :param object_name: S3 object name
+        :param bucket: The S3 bucket. Defaults to default_bucket
+        :param expiration: Time in seconds for the presigned URL to remain valid
+        :return: Presigned URL as string, None if error
+        """
+        if bucket is None:
+            bucket = self.default_bucket
+            
+        try:
+            response = self.client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': bucket, 'Key': object_name},
+                ExpiresIn=expiration
+            )
+            return response
+        except ClientError as e:
+            logging.error(f"Failed to generate presigned URL for {object_name}. Error: {e}")
+            return None
+
 
                 
                 # UGLY WAY:
