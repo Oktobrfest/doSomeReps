@@ -55,3 +55,4 @@ litellm
 alembic
 cryptography
 pydantic
+piper-tts
