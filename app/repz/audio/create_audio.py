@@ -115,23 +115,25 @@ class create_audio:
         piper_voice = self._load_voice(selected_voice)
         syn_config = self._synthesis_config(speaker_id=speaker_id)
 
-        with tempfile.NamedTemporaryFile(
-            dir=target_path.parent,
-            prefix=f".{target_path.stem}-",
-            suffix=".tmp.wav",
-            delete=False,
-        ) as temp_wav_file:
-            temp_wav_path = Path(temp_wav_file.name)
+        # Create temporary files in system temp directory to avoid leaving WAV files in target directory
+        temp_wav_file = tempfile.NamedTemporaryFile(
+            suffix=".wav",
+            delete=False
+        )
+        temp_wav_path = Path(temp_wav_file.name)
+        temp_wav_file.close()  # Close the file handle so Piper can write to it
+        _LOGGER.debug(f"Created temporary WAV file: {temp_wav_path}")
 
-        with tempfile.NamedTemporaryFile(
-            dir=target_path.parent,
-            prefix=f".{target_path.stem}-",
-            suffix=".tmp.mp3",
-            delete=False,
-        ) as temp_mp3_file:
-            temp_mp3_path = Path(temp_mp3_file.name)
+        temp_mp3_file = tempfile.NamedTemporaryFile(
+            suffix=".mp3",
+            delete=False
+        )
+        temp_mp3_path = Path(temp_mp3_file.name)
+        temp_mp3_file.close()  # Close the file handle so ffmpeg can write to it
+        _LOGGER.debug(f"Created temporary MP3 file: {temp_mp3_path}")
 
         try:
+            # Generate WAV audio using Piper
             with open(os.devnull, "w") as devnull:
                 with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
                     with wave.open(str(temp_wav_path), "wb") as wav_file:
@@ -141,12 +143,24 @@ class create_audio:
                             syn_config=syn_config,
                         )
 
+            # Convert WAV to MP3
             self._convert_wav_to_mp3(temp_wav_path, temp_mp3_path)
+            
+            # Move the final MP3 to the target location
             temp_mp3_path.replace(target_path)
 
+        except Exception:
+            # If anything fails, make sure target file doesn't exist in a partial state
+            target_path.unlink(missing_ok=True)
+            raise
         finally:
-            temp_wav_path.unlink(missing_ok=True)
-            temp_mp3_path.unlink(missing_ok=True)
+            # Always clean up temporary files (both WAV and MP3)
+            if temp_wav_path.exists():
+                temp_wav_path.unlink()
+                _LOGGER.debug(f"Cleaned up temporary WAV file: {temp_wav_path}")
+            if temp_mp3_path.exists():
+                temp_mp3_path.unlink()
+                _LOGGER.debug(f"Cleaned up temporary MP3 file: {temp_mp3_path}")
 
         size_bytes = target_path.stat().st_size
         object_key = None
@@ -422,3 +436,39 @@ class create_audio:
 
         finally:
             temp_path.unlink(missing_ok=True)
+
+    @staticmethod
+    def cleanup_orphaned_temp_files(directory: Optional[PathLike] = None) -> int:
+        """Clean up any orphaned temporary WAV files that may have been left behind.
+        
+        This utility function can be called periodically to ensure no WAV files
+        are left in the filesystem from failed audio generation attempts.
+        
+        :param directory: Directory to clean up (defaults to system temp directory)
+        :return: Number of files cleaned up
+        """
+        import tempfile
+        import glob
+        
+        if directory is None:
+            directory = Path(tempfile.gettempdir())
+        else:
+            directory = Path(directory)
+        
+        # Look for temporary WAV files that might have been left behind
+        temp_wav_pattern = str(directory / "tmp*.wav")
+        wav_files = glob.glob(temp_wav_pattern)
+        
+        cleaned_count = 0
+        for wav_file in wav_files:
+            try:
+                Path(wav_file).unlink()
+                _LOGGER.info(f"Cleaned up orphaned temporary WAV file: {wav_file}")
+                cleaned_count += 1
+            except Exception as e:
+                _LOGGER.warning(f"Failed to clean up temporary WAV file {wav_file}: {e}")
+        
+        if cleaned_count > 0:
+            _LOGGER.info(f"Cleaned up {cleaned_count} orphaned temporary WAV files")
+        
+        return cleaned_count

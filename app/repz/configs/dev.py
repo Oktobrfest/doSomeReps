@@ -68,7 +68,8 @@ class DevConfig(Config):
     logging.getLogger("boto3").setLevel(logging.WARNING)
     logging.getLogger("s3transfer").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
-
+    logging.getLogger("piper").setLevel(logging.WARNING)
+    logging.getLogger("piper.voice").setLevel(logging.WARNING)
     # DATABASE RELATED: (EXTREMELY VERBOSE)
     # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
     # logging.getLogger('sqlalchemy.pool').setLevel(logging.DEBUG)

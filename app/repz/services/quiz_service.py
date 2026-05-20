@@ -106,12 +106,12 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
                 language="en-US",
                 parts=("question", "answer", "hint"),
             )
-            logging.info(f"📦 Raw assets generated: {list(raw_assets.keys())}")
+            logging.info(f"📦 Service returned raw assets: {raw_assets}")
         except Exception as e:
             logging.error(f"❌ Failed to generate audio assets: {e}")
             raw_assets = {}
         
-        # Convert to Flask serving URLs using object keys
+        # We'll use the local proxy URLs for all generated assets
         import hashlib
         from flask import url_for
         
@@ -121,22 +121,22 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
             "hint": q.get("hint"),
         }
         
-        for part in ("question", "answer", "hint"):
-            text = part_to_text.get(part)
+        for part, text in part_to_text.items():
             if not text:
-                logging.debug(f"⏭️ Skipping {part} - no text found")
                 continue
                 
-            # Generate the same object key that the service uses
-            text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-            object_key = f"audio/en-US/{q['question_id']}/{part}-{text_hash}.wav"
+            # If the service successfully ensured the asset, we provide the local proxy URL
+            if part in raw_assets:
+                text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+                object_key = f"audio/en-US/{q['question_id']}/{part}-{text_hash}.mp3"
+                
+                audio_url = url_for("audio.serve_audio_by_key", object_key=object_key)
+                audio_assets[part] = audio_url
+                logging.info(f"🔗 Added {part} audio local URL: {audio_url}")
+            else:
+                logging.warning(f"⚠️ Part {part} not found in raw_assets, skipping URL generation")
             
-            # Generate Flask URL
-            audio_url = url_for("audio.serve_audio_by_key", object_key=object_key)
-            audio_assets[part] = audio_url
-            logging.info(f"🔗 Generated {part} audio URL: {audio_url}")
-            
-        logging.info(f"🎯 Final audio_assets: {audio_assets}")
+        logging.info(f"🎯 Final audio_assets for template: {audio_assets}")
 
     template_vars = {
         "title": config.title,
