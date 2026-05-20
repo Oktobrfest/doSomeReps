@@ -104,7 +104,7 @@ class AudioAssetService:
         import logging
         
         text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-        object_key = f"audio/{language}/{question_id}/{part}-{text_hash}.wav"
+        object_key = f"audio/{language}/{question_id}/{part}-{text_hash}.mp3"
         
         logging.info(f"🔑 Looking for existing audio with object_key: {object_key}")
 
