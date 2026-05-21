@@ -62,7 +62,7 @@ def test_tts_functionality():
     """Simple test function to validate TTS is working - can be called from Flask shell."""
     try:
         adapter = TTSClientAdapter()
-        audio_bytes, metadata = adapter.create_audio("Hello world", "en-US")
+        audio_bytes, metadata = adapter.create_audio("Hello world", "en_US")
         print(f"✅ TTS test successful! Generated {len(audio_bytes)} bytes of MP3 audio")
         print(f"📊 Metadata: {metadata}")
         return True

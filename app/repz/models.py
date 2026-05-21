@@ -248,7 +248,7 @@ class audio(Base):
     tts_engine = sa.Column(sa.String(80), nullable=True, default="piper")
     tts_voice = sa.Column(sa.String(160), nullable=True)
 
-    language = sa.Column(String(35), ForeignKey("languages.language"), nullable=False, default="en-US")
+    language = sa.Column(String(35), ForeignKey("languages.language"), nullable=False, default="en_US")
 
     question = relationship("question", back_populates="audio_files")
 

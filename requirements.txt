@@ -56,3 +56,4 @@ alembic
 cryptography
 pydantic
 piper-tts
+pytest
