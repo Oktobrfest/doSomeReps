@@ -35,24 +35,21 @@ from repz.models import Base  # noqa: E402
 
 target_metadata = Base.metadata
 
-# Build the DB URL from environment variables passed into the container by
-# docker compose. docker compose reads the repository .env file for these
-# substitutions, then exposes them to this Alembic process.
+
 def _get_url() -> str:
     driver = os.environ.get("DRIVER", "").strip() or "psycopg2"
     drivername = driver if driver.startswith("postgresql") else f"postgresql+{driver}"
 
-    return str(
-        URL.create(
-            drivername=drivername,
-            username=os.environ["DB_USERNAME"],
-            password=os.environ["DB_PASSWORD"],
-            host=os.environ["DB_HOST"],
-            port=int(os.environ.get("DB_PORT", "5432")),
-            database=os.environ["DB_NAME"],
-        )
+    url = URL.create(
+        drivername=drivername,
+        username=os.environ["DB_USERNAME"],
+        password=os.environ["DB_PASSWORD"],
+        host=os.environ["DB_HOST"],
+        port=int(os.environ.get("DB_PORT", "5432")),
+        database=os.environ["DB_NAME"],
     )
 
+    return url.render_as_string(hide_password=False)
 
 config.set_main_option("sqlalchemy.url", _get_url())
 

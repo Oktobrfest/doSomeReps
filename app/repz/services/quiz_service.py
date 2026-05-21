@@ -103,7 +103,8 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
         try:
             raw_assets = audio_service.ensure_audio_for_quiz_question(
                 q=q,
-                language="en-US",
+                language="en_US",
+                user=current_user,
                 parts=("question", "answer", "hint"),
             )
             logging.info(f"📦 Service returned raw assets: {raw_assets}")
@@ -128,7 +129,7 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
             # If the service successfully ensured the asset, we provide the local proxy URL
             if part in raw_assets:
                 text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-                object_key = f"audio/en-US/{q['question_id']}/{part}-{text_hash}.mp3"
+                object_key = f"audio/en_US/{q['question_id']}/{part}-{text_hash}.mp3"
                 
                 audio_url = url_for("audio.serve_audio_by_key", object_key=object_key)
                 audio_assets[part] = audio_url

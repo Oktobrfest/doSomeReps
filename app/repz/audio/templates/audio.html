@@ -247,6 +247,15 @@
       <span>&#128266;</span> Read Question
     </button>
 
+    {# ── Pause / Resume ── #}
+    <button type="button"
+            id="audio-pause-btn"
+            class="audio-main-btn btn btn-info"
+            style="display: none;"
+            onclick="audioPauseToggle()">
+      <span>&#9208;</span> Pause
+    </button>
+
     {# ── Middle slot: Get Answer ↔ Correct / Wrong ── #}
     <div class="audio-middle-slot" id="audio-middle-slot">
 
@@ -361,6 +370,16 @@
 
   var synth = window.speechSynthesis || null;
 
+  /* ── UI Helpers ────────────────────────────────────────────── */
+  function updatePauseBtn(visible, isPaused) {
+    var pauseBtn = document.getElementById('audio-pause-btn');
+    if (!pauseBtn) return;
+    pauseBtn.style.display = visible ? 'flex' : 'none';
+    if (visible) {
+      pauseBtn.innerHTML = isPaused ? '<span>&#9654;</span> Resume' : '<span>&#9208;</span> Pause';
+    }
+  }
+
   /* ── Speak helper ───────────────────────────────────────────── */
   function speak(text, onEnd) {
     console.log('🎤 speak() called with text:', text.substring(0, 50) + '...');
@@ -370,14 +389,23 @@
     }
     synth.cancel();
     var utt = new SpeechSynthesisUtterance(text);
+    
+    updatePauseBtn(true, false);
+
     if (typeof onEnd === 'function') {
       utt.onend = function() {
         console.log('✅ Speech synthesis onend fired');
+        updatePauseBtn(false);
         onEnd();
+      };
+    } else {
+      utt.onend = function() {
+        updatePauseBtn(false);
       };
     }
     utt.onerror = function(error) {
       console.error('❌ Speech synthesis error:', error);
+      updatePauseBtn(false);
       if (typeof onEnd === 'function') onEnd();
     };
     console.log('🎤 Starting speech synthesis...');
@@ -405,6 +433,7 @@
       audioPlayer.pause();
       audioPlayer.currentTime = 0;
       btn.innerHTML = '<span>&#128266;</span> Read Question';
+      updatePauseBtn(false);
       return;
     }
 
@@ -413,10 +442,12 @@
       console.log('⏹️ Stopping Web Speech synthesis');
       synth.cancel();
       btn.innerHTML = '<span>&#128266;</span> Read Question';
+      updatePauseBtn(false);
       return;
     }
 
     btn.innerHTML = '<span>&#128266;</span> Reading…';
+    updatePauseBtn(true, false);
 
     // Try to use generated audio first, fallback to Web Speech API
     var hasAudio = audioPlayer && (audioPlayer.src || (audioPlayer.children && audioPlayer.children.length > 0));
@@ -427,6 +458,7 @@
       audioPlayer.onended = function() {
         console.log('✅ Audio playback ended');
         btn.innerHTML = '<span>&#128266;</span> Read Question';
+        updatePauseBtn(false);
         audioPlayer.onended = null;
       };
       
@@ -486,12 +518,58 @@
     var hasAnswerAudio = answerAudioPlayer && (answerAudioPlayer.src || (answerAudioPlayer.children && answerAudioPlayer.children.length > 0));
 
     if (hasAnswerAudio) {
+      updatePauseBtn(true, false);
+      answerAudioPlayer.onended = function() {
+          updatePauseBtn(false);
+          answerAudioPlayer.onended = null;
+      };
       answerAudioPlayer.play().catch(function(err) {
           console.warn("Answer audio play failed:", err);
+          updatePauseBtn(false);
           if (answerText) speak(answerText.innerText);
       });
     } else if (answerText) {
       speak(answerText.innerText);
+    }
+  };
+
+  /* ── Pause/Resume logic ─────────────────────────────────────── */
+  window.audioPauseToggle = function () {
+    var questionAudio = document.getElementById('question-audio-player');
+    var answerAudio = document.getElementById('answer-audio-player');
+
+    // Handle HTML5 Audio
+    var activeAudio = null;
+    if (questionAudio && !questionAudio.paused) activeAudio = questionAudio;
+    else if (answerAudio && !answerAudio.paused) activeAudio = answerAudio;
+    
+    if (activeAudio) {
+      activeAudio.pause();
+      updatePauseBtn(true, true);
+      return;
+    }
+    
+    // Resume HTML5 Audio if paused
+    if (questionAudio && questionAudio.paused && questionAudio.currentTime > 0 && !questionAudio.ended) {
+        questionAudio.play();
+        updatePauseBtn(true, false);
+        return;
+    }
+    if (answerAudio && answerAudio.paused && answerAudio.currentTime > 0 && !answerAudio.ended) {
+        answerAudio.play();
+        updatePauseBtn(true, false);
+        return;
+    }
+
+    // Handle Web Speech API
+    if (synth) {
+      if (synth.speaking && !synth.paused) {
+        synth.pause();
+        updatePauseBtn(true, true);
+      } else if (synth.paused) {
+        synth.resume();
+        updatePauseBtn(true, false);
+      }
     }
   };
 
