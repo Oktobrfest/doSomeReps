@@ -362,13 +362,11 @@
 </form>
 
 {# ══════════════════════════════════════════════════════════════════
-   JAVASCRIPT — Web Speech API  +  button state machine
+   JAVASCRIPT — Audio Playback + button state machine
 ══════════════════════════════════════════════════════════════════ #}
 <script>
 (function () {
   'use strict';
-
-  var synth = window.speechSynthesis || null;
 
   /* ── UI Helpers ────────────────────────────────────────────── */
   function updatePauseBtn(visible, isPaused) {
@@ -380,37 +378,6 @@
     }
   }
 
-  /* ── Speak helper ───────────────────────────────────────────── */
-  function speak(text, onEnd) {
-    console.log('🎤 speak() called with text:', text.substring(0, 50) + '...');
-    if (!synth) {
-      console.error('❌ Speech synthesis not available');
-      return;
-    }
-    synth.cancel();
-    var utt = new SpeechSynthesisUtterance(text);
-    
-    updatePauseBtn(true, false);
-
-    if (typeof onEnd === 'function') {
-      utt.onend = function() {
-        console.log('✅ Speech synthesis onend fired');
-        updatePauseBtn(false);
-        onEnd();
-      };
-    } else {
-      utt.onend = function() {
-        updatePauseBtn(false);
-      };
-    }
-    utt.onerror = function(error) {
-      console.error('❌ Speech synthesis error:', error);
-      updatePauseBtn(false);
-      if (typeof onEnd === 'function') onEnd();
-    };
-    console.log('🎤 Starting speech synthesis...');
-    synth.speak(utt);
-  }
   /* ── Read Question button ───────────────────────────────────── */
   window.audioReadQuestion = function () {
     var btn = document.getElementById('audio-read-btn');
@@ -420,75 +387,72 @@
     console.log('🎵 audioReadQuestion() called');
     console.log('📝 Question text element:', text);
     console.log('🔊 Audio player element:', audioPlayer);
-    console.log('🎤 Speech synthesis available:', !!synth);
     
     if (!text) {
       console.error('❌ No question text element found!');
       return;
     }
 
-    // Stop any currently playing audio
-    if (audioPlayer && !audioPlayer.paused) {
-      console.log('⏹️ Stopping currently playing audio');
-      audioPlayer.pause();
-      audioPlayer.currentTime = 0;
-      btn.innerHTML = '<span>&#128266;</span> Read Question';
-      updatePauseBtn(false);
+    if (!audioPlayer) {
+      console.error('❌ No question audio player found!');
       return;
     }
 
-    // Stop any Web Speech API synthesis
-    if (synth && synth.speaking) {
-      console.log('⏹️ Stopping Web Speech synthesis');
-      synth.cancel();
-      btn.innerHTML = '<span>&#128266;</span> Read Question';
-      updatePauseBtn(false);
-      return;
-    }
-
-    btn.innerHTML = '<span>&#128266;</span> Reading…';
-    updatePauseBtn(true, false);
-
-    // Try to use generated audio first, fallback to Web Speech API
     var hasAudio = audioPlayer && (audioPlayer.src || (audioPlayer.children && audioPlayer.children.length > 0));
-    
-    if (hasAudio) {
-      console.log('🎵 Trying to play generated audio. Src:', audioPlayer.src || 'from source tag');
+    if (!hasAudio) {
+      console.error('❌ No generated audio available or source empty');
+      return;
+    }
+
+    // Stop answer audio if playing
+    var answerAudio = document.getElementById('answer-audio-player');
+    if (answerAudio && !answerAudio.paused) {
+      answerAudio.pause();
+      updatePauseBtn(false);
+    }
+
+    // Case 1: Audio is currently playing -> Pause it
+    if (!audioPlayer.paused) {
+      console.log('⏸️ Pausing question audio');
+      audioPlayer.pause();
+      btn.innerHTML = '<span>&#9654;</span> Resume';
+      return;
+    }
+
+    // Case 2: Audio is paused but in the middle of playback -> Resume it
+    if (audioPlayer.paused && audioPlayer.currentTime > 0 && !audioPlayer.ended) {
+      console.log('▶️ Resuming question audio');
+      btn.innerHTML = '<span>&#9208;</span> Pause';
       
-      audioPlayer.onended = function() {
-        console.log('✅ Audio playback ended');
+      audioPlayer.play().catch(function(error) {
+        console.error('❌ Audio resume failed:', error);
         btn.innerHTML = '<span>&#128266;</span> Read Question';
-        updatePauseBtn(false);
-        audioPlayer.onended = null;
-      };
-      
-      audioPlayer.onerror = function(e) {
-        // Fallback to Web Speech API if audio fails
-        console.warn('❌ Audio playback failed, falling back to Web Speech API. Error:', audioPlayer.error);
-        speak(text.innerText, function () {
-          btn.innerHTML = '<span>&#128266;</span> Read Question';
-        });
-        audioPlayer.onerror = null;
-      };
-      
-      var playPromise = audioPlayer.play();
-      if (playPromise !== undefined) {
-        playPromise.then(function() {
-          console.log('✅ Audio play() promise resolved');
-        }).catch(function(error) {
-          console.error('❌ Audio play() promise rejected:', error);
-          // Fallback to Web Speech API
-          speak(text.innerText, function () {
-            btn.innerHTML = '<span>&#128266;</span> Read Question';
-          });
-        });
-      }
-    } else {
-      console.log('🎤 No generated audio available or source empty, using Web Speech API');
-      console.log('📄 Text to speak:', text.innerText);
-      // Fallback to Web Speech API
-      speak(text.innerText, function () {
-        console.log('✅ Web Speech synthesis ended');
+      });
+      return;
+    }
+
+    // Case 3: Audio is not playing or has ended -> Start playing from beginning
+    console.log('🎵 Starting question audio playback from beginning');
+    btn.innerHTML = '<span>&#9208;</span> Pause';
+
+    audioPlayer.onended = function() {
+      console.log('✅ Question audio playback ended');
+      btn.innerHTML = '<span>&#128266;</span> Read Question';
+      audioPlayer.onended = null;
+    };
+    
+    audioPlayer.onerror = function(e) {
+      console.error('❌ Question audio playback failed. Error:', audioPlayer.error);
+      btn.innerHTML = '<span>&#128266;</span> Read Question';
+      audioPlayer.onerror = null;
+    };
+
+    var playPromise = audioPlayer.play();
+    if (playPromise !== undefined) {
+      playPromise.then(function() {
+        console.log('✅ Question audio play() promise resolved');
+      }).catch(function(error) {
+        console.error('❌ Question audio play() promise rejected:', error);
         btn.innerHTML = '<span>&#128266;</span> Read Question';
       });
     }
@@ -506,15 +470,22 @@
     var answerSection = document.getElementById('audio-answer-section');
     answerSection.style.display = 'block';
 
-    /* Smooth scroll so the answer is visible */
-    setTimeout(function () {
-      answerSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 80);
     /* Read the answer aloud */
     var answerText = document.getElementById('audio-answer-text');
     var answerAudioPlayer = document.getElementById('answer-audio-player');
     
-    // Try to use generated audio first, fallback to Web Speech API
+    // Stop question audio if it is playing/paused, and reset Read Question button
+    var questionAudio = document.getElementById('question-audio-player');
+    if (questionAudio) {
+      questionAudio.pause();
+      questionAudio.currentTime = 0;
+    }
+    var readBtn = document.getElementById('audio-read-btn');
+    if (readBtn) {
+      readBtn.innerHTML = '<span>&#128266;</span> Read Question';
+    }
+
+    // Try to use generated audio first
     var hasAnswerAudio = answerAudioPlayer && (answerAudioPlayer.src || (answerAudioPlayer.children && answerAudioPlayer.children.length > 0));
 
     if (hasAnswerAudio) {
@@ -524,59 +495,32 @@
           answerAudioPlayer.onended = null;
       };
       answerAudioPlayer.play().catch(function(err) {
-          console.warn("Answer audio play failed:", err);
+          console.error("Answer audio play failed:", err);
           updatePauseBtn(false);
-          if (answerText) speak(answerText.innerText);
       });
-    } else if (answerText) {
-      speak(answerText.innerText);
+    } else {
+      console.warn("No answer audio available to play");
     }
   };
 
   /* ── Pause/Resume logic ─────────────────────────────────────── */
   window.audioPauseToggle = function () {
-    var questionAudio = document.getElementById('question-audio-player');
     var answerAudio = document.getElementById('answer-audio-player');
 
     // Handle HTML5 Audio
-    var activeAudio = null;
-    if (questionAudio && !questionAudio.paused) activeAudio = questionAudio;
-    else if (answerAudio && !answerAudio.paused) activeAudio = answerAudio;
-    
-    if (activeAudio) {
-      activeAudio.pause();
+    if (answerAudio && !answerAudio.paused) {
+      answerAudio.pause();
       updatePauseBtn(true, true);
       return;
     }
     
     // Resume HTML5 Audio if paused
-    if (questionAudio && questionAudio.paused && questionAudio.currentTime > 0 && !questionAudio.ended) {
-        questionAudio.play();
-        updatePauseBtn(true, false);
-        return;
-    }
     if (answerAudio && answerAudio.paused && answerAudio.currentTime > 0 && !answerAudio.ended) {
         answerAudio.play();
         updatePauseBtn(true, false);
         return;
     }
-
-    // Handle Web Speech API
-    if (synth) {
-      if (synth.speaking && !synth.paused) {
-        synth.pause();
-        updatePauseBtn(true, true);
-      } else if (synth.paused) {
-        synth.resume();
-        updatePauseBtn(true, false);
-      }
-    }
   };
-
-  /* ── Stop speech when navigating away ──────────────────────── */
-  window.addEventListener('beforeunload', function () {
-    if (synth) synth.cancel();
-  });
 
 })();
 </script>

@@ -10,10 +10,6 @@ import os
 # So we need to add 'app' to the path.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Mock repz.database because it accesses current_app at module level
-mock_db = MagicMock()
-sys.modules['repz.database'] = mock_db
-
 from repz.services.audio_asset_service import AudioAssetService
 
 class TestAudioAssetServiceGenerateTTS(unittest.TestCase):
