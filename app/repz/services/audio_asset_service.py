@@ -77,7 +77,7 @@ class AudioAssetService:
         return 0.35
 
     def _default_tts_texts(self, q: dict) -> dict:
-        """Return the default text used for TTS when AI-generated TTS text is unavailable."""
+        """Return the default source text for each quiz part."""
         return {
             "question": q.get("question_text"),
             "answer": q.get("answer"),
@@ -86,7 +86,16 @@ class AudioAssetService:
 
     def _can_generate_ai_tts_text(self, user) -> bool:
         """Return whether this user has enough AI config to generate TTS-friendly text."""
-        return bool(user.ai_provider and user.ai_model and user.ai_api_key)
+        has_provider = bool(getattr(user, "ai_provider", None))
+        has_model = bool(getattr(user, "ai_model", None))
+        has_key = bool(getattr(user, "ai_api_key", None))
+
+        logging.info(
+            "🤖 AI TTS config check: "
+            f"provider={has_provider}, model={has_model}, api_key={has_key}"
+        )
+
+        return has_provider and has_model and has_key
 
     def _audio_object_key(
         self,
@@ -95,7 +104,13 @@ class AudioAssetService:
         language: str,
         source_text: str,
     ) -> str:
-        """Build the deterministic audio object key."""
+        """
+        Build the deterministic audio object key.
+
+        IMPORTANT:
+        This intentionally keeps the existing cache behavior: the object key is
+        based on the original source text, not the AI-generated TTS text.
+        """
         text_hash = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
         return f"audio/{language}/{question_id}/{part}-{text_hash}.mp3"
 
@@ -112,16 +127,21 @@ class AudioAssetService:
 
     def _language_tts_instruction(self, language: str) -> str:
         """Return language-specific TTS instructions."""
-        lang_text = ""
+        if language == "en_US":
+            return """The target language is English.
+Rewrite the text to sound natural when spoken aloud.
+"""
 
-        if language != "en_US":
-            lang_text = f"""Translate the text into the target language: {language}.
+        lang_text = f"""Translate the text into the target language: {language}.
 Use the normal writing system for that language.
 Make the translated text natural, fluent, and easy to understand when spoken aloud.
+Do not leave the text in English unless the target language is English.
 """
 
         if language in ("es_ES", "es_MX", "en_ES") or language.startswith("es"):
-            lang_text += """Use natural Spanish punctuation and sentence boundaries.
+            lang_text += """The target language is Spanish.
+The output must be Spanish, not English.
+Use natural Spanish punctuation and sentence boundaries.
 Use commas and periods generously where they improve pacing.
 Use opening question and exclamation marks when appropriate, such as ¿ and ¡.
 Avoid overly long sentences.
@@ -142,25 +162,46 @@ Avoid difficult rarely used words and jargon.
         """
         Resolve the final text that should be spoken by TTS for one part.
 
-        This is the only place that decides whether AI TTS text can be created.
-        If AI cannot be used or fails, it falls back to source_text.
+        Rules:
+        - If the user does not have AI config, fall back to source_text.
+        - If the user has AI config, AI generation must succeed.
+        - If AI generation fails, raise. Do not silently create bad audio.
+        - TTS generation should only ever use the returned tts_text.
         """
-        if not self._can_generate_ai_tts_text(user):
+        if not source_text:
             return source_text
 
-        try:
-            return self._generate_tts_text_for_part(
-                part=part,
-                source_text=source_text,
-                language=language,
-                user=user,
-            )
-        except Exception as e:
+        can_use_ai = self._can_generate_ai_tts_text(user)
+
+        if not can_use_ai:
             logging.warning(
-                f"⚠️ Failed to generate TTS friendly text for {part} in {language}: {e}. "
-                f"Falling back to raw text."
+                f"⚠️ AI TTS text generation unavailable for {part} in {language}; "
+                f"falling back to source text because user AI config is incomplete."
             )
             return source_text
+
+        logging.info(f"🤖 Generating TTS text for {part} in {language}")
+
+        tts_text = self._generate_tts_text_for_part(
+            part=part,
+            source_text=source_text,
+            language=language,
+            user=user,
+        )
+
+        self._validate_generated_tts_text(
+            part=part,
+            source_text=source_text,
+            tts_text=tts_text,
+            language=language,
+        )
+
+        logging.info(
+            f"✅ Resolved TTS text for {part} in {language}: "
+            f"{tts_text[:120]}..."
+        )
+
+        return tts_text
 
     def _generate_tts_text_for_part(
         self,
@@ -178,31 +219,33 @@ Avoid difficult rarely used words and jargon.
         language_instruction = self._language_tts_instruction(language)
 
         prompt = f"""
-You are an expert at preparing text for Text-to-Speech systems.
+You are preparing text for a Text-to-Speech system.
 
-Rewrite the following quiz {part} so it is natural, clear, and easy for a TTS engine to read aloud.
+Task:
+Rewrite the quiz {part} below into the final text that should be spoken aloud.
 
+Target language:
+{language}
+
+Language instructions:
 {language_instruction}
 
 Original {part}:
 {source_text}
 
-Guidelines:
-1. Improve flow and naturalness of speech.
-2. Expand abbreviations that might be read incorrectly, such as "eg." to "for example", "st." to "street" or "saint".
-3. Use phonetic spellings for very difficult or ambiguous names if necessary.
-4. Keep the core meaning and facts exactly the same.
-5. If formulas are present and too long or complex, omit or rewrite them so a beginner can follow.
-6. If you use even a single letter, Greek or otherwise, in any part of a formula, repeat the complete formula in full language twice more, for a total of three times.
-7. Omit dashes, formatting marks, section separators, long strings of numbers, and similar text that would make speech awkward.
-8. Correct major factual inaccuracies or falsehoods if present, but do not get nit picky.
-9. Do not include more than three formulas, and only include short formulas.
-10. Completely rewriting the text is acceptable if it improves the listening experience.
-
-Return only the final TTS text.
-Do not return JSON.
-Do not use Markdown.
-Do not include labels like "Question:", "Answer:", or "Hint:".
+Rules:
+1. Return only the final spoken text.
+2. Do not return JSON.
+3. Do not use Markdown.
+4. Do not include labels like "Question:", "Answer:", "Hint:", "Short answer:", or "ANSWER:".
+5. Preserve the meaning and facts.
+6. Make the text natural and easy to understand when spoken aloud.
+7. Expand abbreviations that may be pronounced incorrectly.
+8. Remove formatting marks, section separators, and awkward symbols.
+9. If the target language is not en_US, translate the text into the target language.
+10. If the target language is Spanish, the output must be Spanish, not English.
+11. If formulas are present and too long or complex, omit or rewrite them so a beginner can follow.
+12. Do not include more than three formulas, and only include short formulas.
 """
 
         response: Any = completion_for_user(
@@ -214,20 +257,149 @@ Do not include labels like "Question:", "Answer:", or "Hint:".
         content = response["choices"][0]["message"]["content"]
 
         if content is None:
-            raise ValueError("AI returned no TTS text")
+            raise ValueError(f"AI returned no TTS text for {part} in {language}")
 
         tts_text = content.strip()
 
         if not tts_text:
-            raise ValueError("AI returned empty TTS text")
+            raise ValueError(f"AI returned empty TTS text for {part} in {language}")
 
         return tts_text
+
+    def _validate_generated_tts_text(
+        self,
+        *,
+        part: str,
+        source_text: str,
+        tts_text: str,
+        language: str,
+    ) -> None:
+        """
+        Validate that AI-generated TTS text is usable.
+
+        This intentionally raises for suspicious non-English output instead of
+        silently saving bad audio.
+        """
+        if tts_text is None:
+            raise ValueError(f"AI returned None for {part} in {language}")
+
+        cleaned_tts_text = tts_text.strip()
+
+        if not cleaned_tts_text:
+            raise ValueError(f"AI returned empty TTS text for {part} in {language}")
+
+        if cleaned_tts_text.startswith("{") or cleaned_tts_text.startswith("["):
+            raise ValueError(
+                f"AI returned structured data instead of plain TTS text for "
+                f"{part} in {language}: {cleaned_tts_text[:160]}"
+            )
+
+        source_normalized = " ".join(source_text.lower().split())
+        tts_normalized = " ".join(cleaned_tts_text.lower().split())
+
+        if source_normalized == tts_normalized and language != "en_US":
+            raise ValueError(
+                f"AI returned unchanged source text for non-English TTS generation: "
+                f"part={part}, language={language}, text={cleaned_tts_text[:160]}"
+            )
+
+        if language in ("es_ES", "es_MX", "en_ES") or language.startswith("es"):
+            self._validate_spanish_tts_text(
+                part=part,
+                language=language,
+                tts_text=cleaned_tts_text,
+            )
+
+    def _validate_spanish_tts_text(
+        self,
+        *,
+        part: str,
+        language: str,
+        tts_text: str,
+    ) -> None:
+        """
+        Conservative validation that catches obvious English fallback for Spanish audio.
+
+        This is not pretending to be a full language detector. It catches the exact
+        failure mode where English source text gets spoken with a Spanish voice.
+        """
+        normalized = " ".join(tts_text.lower().split())
+        padded = f" {normalized} "
+
+        common_english_markers = [
+            " what ",
+            " does ",
+            " how ",
+            " why ",
+            " when ",
+            " where ",
+            " which ",
+            " the ",
+            " a ",
+            " an ",
+            " and ",
+            " or ",
+            " model ",
+            " learning ",
+            " curve ",
+            " answer ",
+            " question ",
+            " plots ",
+            " plot ",
+            " data ",
+            " training ",
+            " validation ",
+        ]
+
+        common_spanish_markers = [
+            " qué ",
+            " que ",
+            " cómo ",
+            " como ",
+            " por ",
+            " para ",
+            " una ",
+            " un ",
+            " el ",
+            " la ",
+            " los ",
+            " las ",
+            " y ",
+            " o ",
+            " del ",
+            " de ",
+            " en ",
+            " con ",
+            " respuesta ",
+            " pregunta ",
+            " modelo ",
+            " aprendizaje ",
+            " curva ",
+        ]
+
+        english_hits = [
+            marker for marker in common_english_markers
+            if marker in padded
+        ]
+
+        spanish_hits = [
+            marker for marker in common_spanish_markers
+            if marker in padded
+        ]
+
+        if len(english_hits) >= 3 and len(spanish_hits) == 0:
+            raise ValueError(
+                f"AI output for Spanish TTS still appears to be English: "
+                f"part={part}, language={language}, "
+                f"english_markers={english_hits}, text={tts_text[:200]}"
+            )
 
     def ensure_audio_for_quiz_question(
         self,
         q: dict,
         user,
         parts=("question", "answer"),
+        language: str = "en_US",
     ) -> dict:
         """
         Audio generation is idempotent and separate from quiz progression.
@@ -277,7 +449,7 @@ Do not include labels like "Question:", "Answer:", or "Hint:".
                     user=user,
                 )
 
-                logging.info(f"🔊 Ensuring audio for {part} in {lang}: {source_text[:50]}...")
+                logging.info(f"🔊 Ensuring audio for {part} in {lang}: {source_text[:80]}...")
 
                 try:
                     asset_url = self.ensure_audio(
@@ -336,7 +508,8 @@ Do not include labels like "Question:", "Answer:", or "Hint:".
             )
             return str(existing.public_url or existing.object_key)
 
-        logging.info(f"🎵 No existing audio found, creating new audio for: {source_text[:30]}...")
+        logging.info(f"🎵 No existing audio found, creating new audio for: {source_text[:80]}...")
+        logging.info(f"🗣️ TTS text for {part} in {language}: {tts_text[:200]}...")
 
         sentence_silence = self._sentence_silence_for_language(language)
 
