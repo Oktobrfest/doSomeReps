@@ -10,7 +10,7 @@ const config = {
   mode: NODE_ENV,
   entry: {
     // main: './repz/static/js/index.js',
-    vendor: ['pdfjs-dist', 'prismjs']   
+    vendor: ['prismjs']
   },
   output: {
     path: path.resolve(__dirname, 'repz/static/dist'),

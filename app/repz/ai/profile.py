@@ -1,14 +1,14 @@
 """User profile page - lets a logged-in user save their AI provider
 credentials (used by LiteLLM)."""
 
-from flask import flash, redirect, render_template, url_for
+from flask import flash, redirect, render_template, url_for, request
 from flask_login import current_user, login_required
 from sqlalchemy import select
 
 from repz.routes import ai
 
 from ..database import session
-from ..models import users
+from ..models import users, languages
 from .profile_forms import AIProfileForm
 
 
@@ -31,6 +31,12 @@ def profile():
 
     form = AIProfileForm()
 
+    # Populate choices dynamically from the DB
+    db_languages = session.execute(
+        select(languages.language).order_by(languages.language)
+    ).scalars().all()
+    form.languages.choices = [(lang, lang) for lang in db_languages]
+
     if form.validate_on_submit():
         user_obj.ai_provider = _resolve_provider(form) or None
         user_obj.ai_model = (form.ai_model.data or "").strip() or None
@@ -40,8 +46,15 @@ def profile():
             user_obj.ai_api_key = form.ai_api_key.data.strip() or None
         user_obj.ai_api_base = (form.ai_api_base.data or "").strip() or None
 
+        # Update language selections
+        selected_langs = form.languages.data or []
+        db_langs = session.execute(
+            select(languages).where(languages.language.in_(selected_langs))
+        ).scalars().all()
+        user_obj.languages = list(db_langs)
+
         session.commit()
-        flash("AI settings saved.", category="success")
+        flash("AI and language settings saved.", category="success")
         return redirect(url_for("ai.profile"))
 
     # GET (or failed validation): pre-populate from DB. For the
@@ -57,6 +70,19 @@ def profile():
     form.ai_model.data = user_obj.ai_model or ""
     form.ai_api_base.data = user_obj.ai_api_base or ""
     # NB: never echo the API key back into the form.
+
+    if request.method == "GET":
+        if user_obj.ai_provider:
+            known = {choice[0] for choice in (form.ai_provider.choices or [])}
+            if user_obj.ai_provider in known:
+                form.ai_provider.data = user_obj.ai_provider
+            else:
+                form.ai_provider.data = "custom"
+                form.ai_provider_custom.data = user_obj.ai_provider
+        form.ai_model.data = user_obj.ai_model or ""
+        form.ai_api_base.data = user_obj.ai_api_base or ""
+        # NB: never echo the API key back into the form.
+        form.languages.data = [lang_obj.language for lang_obj in user_obj.languages]
 
     return render_template(
         "profile.html",
