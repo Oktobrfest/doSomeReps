@@ -118,3 +118,8 @@ temp
 .gitignore
 .rules
 alembic.ini
+
+# Piper TTS voice models
+piper_voices/
+*.onnx
+*.onnx.json
