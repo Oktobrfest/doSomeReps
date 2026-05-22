@@ -72,6 +72,16 @@ def profile():
     # NB: never echo the API key back into the form.
 
     if request.method == "GET":
+        if user_obj.ai_provider:
+            known = {choice[0] for choice in (form.ai_provider.choices or [])}
+            if user_obj.ai_provider in known:
+                form.ai_provider.data = user_obj.ai_provider
+            else:
+                form.ai_provider.data = "custom"
+                form.ai_provider_custom.data = user_obj.ai_provider
+        form.ai_model.data = user_obj.ai_model or ""
+        form.ai_api_base.data = user_obj.ai_api_base or ""
+        # NB: never echo the API key back into the form.
         form.languages.data = [lang_obj.language for lang_obj in user_obj.languages]
 
     return render_template(
