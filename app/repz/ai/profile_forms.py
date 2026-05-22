@@ -1,7 +1,7 @@
 """Forms for the user profile / AI integration page."""
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, SelectField, StringField, SubmitField
+from wtforms import PasswordField, SelectField, StringField, SubmitField, SelectMultipleField, ValidationError
 from wtforms.validators import Length, Optional
 
 
@@ -55,4 +55,18 @@ class AIProfileForm(FlaskForm):
         "API Base URL (optional)",
         validators=[Optional(), Length(max=400)],
     )
+    languages = SelectMultipleField(
+        "Preferred Languages",
+        choices=[],
+        validators=[Optional()],
+    )
     submit = SubmitField("Save")
+
+    def validate_languages(self, field):
+        if field.data:
+            if len(field.data) > 3:
+                raise ValidationError("You can select up to 3 languages only.")
+            valid_choices = {choice[0] for choice in (self.languages.choices or [])}
+            for lang in field.data:
+                if lang not in valid_choices:
+                    raise ValidationError(f"'{lang}' is not a valid language option.")

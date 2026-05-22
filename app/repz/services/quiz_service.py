@@ -36,7 +36,7 @@ class QuizPageConfig:
 def render_quiz_page(config: QuizPageConfig, audio_service=None):
     """Shared route workflow for normal quiz and audio quiz"""
     UID = g._login_user.id
-    
+
     cats_due = []
     category_list = get_all_categories()
 
@@ -98,12 +98,16 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
     audio_assets = {}
     if config.mode == "audio" and q and audio_service is not None:
         logging.info(f"🎵 Generating audio assets for question {q.get('question_id')}")
-        
+
+        # Determine the user's primary/first language
+        user_langs = [lang_obj.language for lang_obj in current_user.languages]
+        primary_lang = user_langs[0] if user_langs else "en_US"
+
         # Generate audio assets (this creates/ensures the files exist)
         try:
             raw_assets = audio_service.ensure_audio_for_quiz_question(
                 q=q,
-                language="en_US",
+                language=primary_lang,
                 user=current_user,
                 parts=("question", "answer", "hint"),
             )
@@ -111,32 +115,32 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
         except Exception as e:
             logging.error(f"❌ Failed to generate audio assets: {e}")
             raw_assets = {}
-        
+
         # We'll use the local proxy URLs for all generated assets
         import hashlib
         from flask import url_for
-        
+
         part_to_text = {
             "question": q.get("question_text"),
             "answer": q.get("answer"),
             "hint": q.get("hint"),
         }
-        
+
         for part, text in part_to_text.items():
             if not text:
                 continue
-                
+
             # If the service successfully ensured the asset, we provide the local proxy URL
             if part in raw_assets:
                 text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-                object_key = f"audio/en_US/{q['question_id']}/{part}-{text_hash}.mp3"
-                
+                object_key = f"audio/{primary_lang}/{q['question_id']}/{part}-{text_hash}.mp3"
+
                 audio_url = url_for("audio.serve_audio_by_key", object_key=object_key)
                 audio_assets[part] = audio_url
                 logging.info(f"🔗 Added {part} audio local URL: {audio_url}")
             else:
                 logging.warning(f"⚠️ Part {part} not found in raw_assets, skipping URL generation")
-            
+
         logging.info(f"🎯 Final audio_assets for template: {audio_assets}")
 
     template_vars = {
@@ -149,12 +153,12 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
         "cats_due": cats_due,
         "audio_assets": audio_assets,
     }
-    
+
     if config.mode == "audio":
         logging.info(f"🎨 Rendering audio template with assets: {bool(audio_assets)}")
         if q:
             logging.info(f"📄 Question: {q.get('question_text', '')[:50]}...")
-    
+
     return render_template(config.template_name, **template_vars)
 
 
@@ -174,9 +178,9 @@ def _handle_quiz_post(user_id: int, que_list: list[dict[str, Any]], que_cache_ke
     correct_submit = request.form.get("correct_submit")
     quizq_id_str = request.form.get("quizq-id")
     start_quiz = request.form.get("start-quiz")
-    provided_answer = request.form.get("provided-answer")        
+    provided_answer = request.form.get("provided-answer")
     exclude_question = request.form.get("exclude-question-button")
-    
+
     if quizq_id_str is not None:
         quizq_id = int(quizq_id_str)
     else:
@@ -185,8 +189,8 @@ def _handle_quiz_post(user_id: int, que_list: list[dict[str, Any]], que_cache_ke
     if start_quiz is not None:
         return None
 
-    # exclude question                                    
-    if ((start_quiz is None) and 
+    # exclude question
+    if ((start_quiz is None) and
         (exclude_question == "exclude") and quizq_id != 0):
         _exclude_quiz_question(user_id, quizq_id, que_list, que_cache_key)
         return redirect(url_for(endpoint_name))
@@ -227,13 +231,13 @@ def _exclude_quiz_question(user_id: int, quizq_id: int, que_list: list[dict[str,
     cur_user.excluded_questions.append(excluded_q_obj)
 
     # remove from cache
-    if len(que_list) > 0: 
+    if len(que_list) > 0:
         for i, q in enumerate(que_list):
             if q['quizq_id'] == quizq_id:
                 que_list.pop(i)
                 break
         cache.set(que_cache_key, que_list, timeout=600)
-    
+
     session.add(cur_user)
     session.commit()
 
@@ -249,7 +253,7 @@ def _submit_quiz_answer(
 ):
     """One correct/wrong implementation used by both routes"""
     time_now = func.now()
-    
+
     qry = (
         select(quizq)
         .where(quizq.answered_on.is_(None))
@@ -260,11 +264,11 @@ def _submit_quiz_answer(
 
     if not current_quiz:
         # --- STALE CACHE DETECTED --- or race condition?
-        # This happens if the DB says "Answered" but Redis still served the question.                
+        # This happens if the DB says "Answered" but Redis still served the question.
         # 1. Detailed Logging for Diagnosis
         logging.warning(f"RACE/STALE DETECTED: User {user_id} submitted quizq_id {quizq_id}, but DB says it is already answered.")
         logging.warning(f"Debug - Active Cache Key: {que_cache_key}")
-        
+
         # Log what was actually in the list to see why the app thought it was valid
         current_ids_in_cache = [q.get('quizq_id') for q in que_list] if que_list else 'List is Empty'
         logging.warning(f"Debug - IDs currently in this Cache Key: {current_ids_in_cache}")
@@ -275,13 +279,13 @@ def _submit_quiz_answer(
             original_count = len(que_list)
             # Use str() comparison to ensure we catch it regardless of type
             que_list[:] = [q for q in que_list if str(q.get("quizq_id")) != str(quizq_id)]
-            
+
             if len(que_list) < original_count:
                 logging.info(f"SELF-HEAL SUCCESS: Forced removal of stale quizq_id {quizq_id} from Redis.")
                 cache.set(que_cache_key, que_list, timeout=600)
             else:
                 logging.error(f"SELF-HEAL FAILED: Could not find quizq_id {quizq_id} in the list to remove it.")
-     
+
         flash("This question was already submitted!", category="warning")
         return
 
@@ -300,11 +304,11 @@ def _submit_quiz_answer(
         else:  # None signifies the question is complete and no more levels left
             new_lvl = None
         update_stmt = update_stmt.values(correct=True)
-        
+
         # remove from cache
-        if que_list is not None:    
+        if que_list is not None:
             for i in range(len(que_list) - 1, -1, -1):
-                if str(que_list[i].get("quizq_id")) == str(quizq_id): 
+                if str(que_list[i].get("quizq_id")) == str(quizq_id):
                     logging.info(f"Successfully popped quizq_id {quizq_id} from list index {i}")
                     que_list.pop(i)
                     break
@@ -312,15 +316,15 @@ def _submit_quiz_answer(
             else:
                 logging.warning(f"FAILED to find quizq_id {quizq_id} in que_list during success update!")
 
-            cache.set(que_cache_key, que_list, timeout=600) 
+            cache.set(que_cache_key, que_list, timeout=600)
 
     else:  # incorrect
         update_stmt = update_stmt.values(correct=False)
         new_lvl = 1
         if len(que_list) > 0:
-            que_list[:] = [q for q in que_list if q["quizq_id"] != quizq_id]      
-            cache.set(que_cache_key, que_list, timeout=600)     
-    
+            que_list[:] = [q for q in que_list if q["quizq_id"] != quizq_id]
+            cache.set(que_cache_key, que_list, timeout=600)
+
     # next create a new quizQ Level for that question
     if new_lvl is not None:
         new_quizq = quizq(
@@ -330,7 +334,7 @@ def _submit_quiz_answer(
         )
         # Create new quiz Q
         session.add(new_quizq)
-        session.commit()                
+        session.commit()
 
     # Execute the update statement for the answered quiz question
     session.execute(update_stmt)
@@ -346,7 +350,7 @@ def _select_next_question_or_redirect(
 ):
     """One next-question selection implementation for both modes"""
     success_msg = "Congradulations! You've completed all the questions currently due! You have two options: Either wait for the questions you've already answered to come due again, or to start answering more questions immediately you need to expand your training que! For the ladder option, select how many more questions you'd like to add to your que below and click 'Add More'"
-    
+
     # if no questions are due to be answered give user the option to add more or select more categories.
     if len(que_list) < 1:
         # see if all the categories have been searched through
@@ -375,7 +379,7 @@ def _select_next_question_or_redirect(
         return "", None
     else:
         # sort by date
-        # sorted_que_list = sorted(que_list, key=lambda k: k['last_ansered']) 
+        # sorted_que_list = sorted(que_list, key=lambda k: k['last_ansered'])
         sorted_que_list = sorted(que_list, key=lambda k: (k['last_ansered'] is None, k['last_ansered']))
         if len(sorted_que_list) > 30:
             sorted_que_list = sorted_que_list[:17]
