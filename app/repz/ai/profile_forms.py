@@ -1,7 +1,7 @@
 """Forms for the user profile / AI integration page."""
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, SelectField, StringField, SubmitField
+from wtforms import PasswordField, SelectField, StringField, SubmitField, SelectMultipleField, ValidationError
 from wtforms.validators import Length, Optional
 
 
@@ -26,6 +26,30 @@ COMMON_PROVIDERS = [
     ("openrouter", "OpenRouter"),
     ("ollama", "Ollama (self-hosted)"),
     ("custom", "Other / custom (enter provider id manually)"),
+]
+
+
+LANGUAGE_CODES = [
+    "en_US",
+    "en_GB",
+    "es_ES",
+    "es_MX",
+    "fr_FR",
+    "de_DE",
+    "it_IT",
+    "pt_BR",
+    "pt_PT",
+    "nl_NL",
+    "ru_RU",
+    "ja_JP",
+    "ko_KR",
+    "zh_CN",
+    "zh_TW",
+    "ar_SA",
+    "hi_IN",
+    "tr_TR",
+    "pl_PL",
+    "sv_SE",
 ]
 
 
@@ -55,4 +79,18 @@ class AIProfileForm(FlaskForm):
         "API Base URL (optional)",
         validators=[Optional(), Length(max=400)],
     )
+    languages = SelectMultipleField(
+        "Preferred Languages",
+        choices=[(code, code) for code in LANGUAGE_CODES],
+        validators=[Optional()],
+    )
     submit = SubmitField("Save")
+
+    def validate_languages(self, field):
+        if field.data:
+            if len(field.data) > 3:
+                raise ValidationError("You can select up to 3 languages only.")
+            valid_choices = {choice[0] for choice in (self.languages.choices or [])}
+            for lang in field.data:
+                if lang not in valid_choices:
+                    raise ValidationError(f"'{lang}' is not a valid language option.")

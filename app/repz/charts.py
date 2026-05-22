@@ -1,6 +1,8 @@
 from io import BytesIO
 import base64
 
+import matplotlib
+matplotlib.use('Agg')  # non-interactive backend for server-side rendering
 import matplotlib.pyplot as plt
 import numpy as np
 

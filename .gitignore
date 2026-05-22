@@ -6,7 +6,7 @@
 Thumbs.db
 
 # Environment files
-*.env
+*.env*
 *.flaskenv
 
 # Python
@@ -37,6 +37,9 @@ app/node_modules/
 *.sublime-workspace
 .idea/
 /.idea
+app/.vscode/settings.json
+.vscode/settings.json
+.vscode/launch.json
 
 
 # Build and Distribution
@@ -111,9 +114,12 @@ coll_usage_scripts.txt
 **/temp
 /temp
 temp
-.vscode/settings.json
-.vscode/launch.json
 .SCRATCHFILE
 .gitignore
 .rules
 alembic.ini
+
+# Piper TTS voice models
+piper_voices/
+*.onnx
+*.onnx.json

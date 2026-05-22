@@ -30,7 +30,8 @@ auth = Blueprint(
 @auth.route("/login")
 def login():
     # In dev, OIDC is not registered (see repz/__init__.py). Bypass to dev-login.
-    if os.getenv('FLASK_ENV', 'production') == 'development':
+    env = os.getenv('FLASK_ENV', 'production') 
+    if env in ('development', 'dev'):
         return redirect(url_for('dev_auth.dev_login_index'))
     # send user to Authentik
     redirect_uri = OIDCConfig.OIDC_REDIRECT_URI

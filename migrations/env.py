@@ -4,6 +4,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlalchemy.engine import URL
 
 from alembic import context
 
@@ -34,10 +35,23 @@ from repz.models import Base  # noqa: E402
 
 target_metadata = Base.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+
+def _get_url() -> str:
+    driver = os.environ.get("DRIVER", "").strip() or "psycopg2"
+    drivername = driver if driver.startswith("postgresql") else f"postgresql+{driver}"
+
+    url = URL.create(
+        drivername=drivername,
+        username=os.environ["DB_USERNAME"],
+        password=os.environ["DB_PASSWORD"],
+        host=os.environ["DB_HOST"],
+        port=int(os.environ.get("DB_PORT", "5432")),
+        database=os.environ["DB_NAME"],
+    )
+
+    return url.render_as_string(hide_password=False)
+
+config.set_main_option("sqlalchemy.url", _get_url())
 
 
 def run_migrations_offline() -> None:
