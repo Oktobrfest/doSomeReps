@@ -2,6 +2,7 @@ from flask import Response, abort
 from flask_login import login_required
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 from repz.routes import audio
 from repz.services.quiz_service import QuizPageConfig, render_quiz_page
@@ -21,7 +22,7 @@ class TTSClientAdapter:
                 "Please install it with: pip install piper-tts"
             ) from e
 
-    def create_audio(self, text: str, language: str) -> tuple[bytes, dict]:
+    def create_audio(self, text: str, language: str, sentence_silence: Optional[float] = None) -> tuple[bytes, dict]:
         """Create MP3 audio and return (audio_bytes, metadata)."""
 
         language = language.replace("-", "_")
@@ -39,6 +40,7 @@ class TTSClientAdapter:
                 language=language,
                 upload_to_s3=False,
                 overwrite=True,
+                sentence_silence=sentence_silence,
             )
 
             with open(result.path, "rb") as audio_file:
