@@ -52,6 +52,13 @@ class create_audio:
         "en_GB": "en_GB-alan-medium",
         "fr_FR": "fr_FR-siwis-medium",
         "de_DE": "de_DE-thorsten-medium",
+        "es_ES": "es_ES-sharvard-medium",
+        "es_MX": "es_MX-claude-high",
+        "ru_RU": "ru_RU-irina-medium",
+    }
+
+    DEFAULT_SPEAKER_IDS: ClassVar[dict[str, int]] = {
+        "es_ES-sharvard-medium": 1,  # Speaker 'F' (Female)
     }
 
     _voice_cache: ClassVar[dict[tuple[str, bool, str], Any]] = {}
@@ -67,6 +74,7 @@ class create_audio:
         noise_w_scale: Optional[float] = None,
         volume: float = 1.0,
         mp3_bitrate: str = "128k",
+        sentence_silence: Optional[float] = None,
     ) -> None:
         self.voices_dir = Path(voices_dir or Path.cwd() / "piper_voices")
         self.default_language = default_language
@@ -76,6 +84,7 @@ class create_audio:
         self.noise_w_scale = noise_w_scale
         self.volume = volume
         self.mp3_bitrate = mp3_bitrate
+        self.sentence_silence = sentence_silence
 
     def create(
         self,
@@ -86,6 +95,7 @@ class create_audio:
         speaker_id: Optional[int] = None,
         overwrite: bool = False,
         upload_to_s3: bool = True,
+        sentence_silence: Optional[float] = None,
     ) -> AudioCreationResult:
         """Create an MP3 audio file from text."""
 
@@ -113,7 +123,15 @@ class create_audio:
         target_path.parent.mkdir(parents=True, exist_ok=True)
 
         piper_voice = self._load_voice(selected_voice)
-        syn_config = self._synthesis_config(speaker_id=speaker_id)
+
+        actual_speaker_id = speaker_id
+        if actual_speaker_id is None:
+            actual_speaker_id = self.DEFAULT_SPEAKER_IDS.get(selected_voice)
+
+        syn_config = self._synthesis_config(speaker_id=actual_speaker_id)
+
+        # Use explicitly passed sentence_silence or fallback to default
+        silence_sec = sentence_silence if sentence_silence is not None else self.sentence_silence
 
         # Create temporary files in system temp directory to avoid leaving WAV files in target directory
         temp_wav_file = tempfile.NamedTemporaryFile(
@@ -137,15 +155,33 @@ class create_audio:
             with open(os.devnull, "w") as devnull:
                 with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
                     with wave.open(str(temp_wav_path), "wb") as wav_file:
-                        piper_voice.synthesize_wav(
-                            clean_text,
-                            wav_file,
-                            syn_config=syn_config,
-                        )
+                        if silence_sec and silence_sec > 0:
+                            # 16-bit samples for silence
+                            silence_int16_bytes = bytes(
+                                int(piper_voice.config.sample_rate * silence_sec * 2)
+                            )
+                            wav_params_set = False
+                            for i, audio_chunk in enumerate(piper_voice.synthesize(clean_text, syn_config)):
+                                if not wav_params_set:
+                                    wav_file.setframerate(audio_chunk.sample_rate)
+                                    wav_file.setsampwidth(audio_chunk.sample_width)
+                                    wav_file.setnchannels(audio_chunk.sample_channels)
+                                    wav_params_set = True
+
+                                if i > 0:
+                                    wav_file.writeframes(silence_int16_bytes)
+
+                                wav_file.writeframes(audio_chunk.audio_int16_bytes)
+                        else:
+                            piper_voice.synthesize_wav(
+                                clean_text,
+                                wav_file,
+                                syn_config=syn_config,
+                            )
 
             # Convert WAV to MP3
             self._convert_wav_to_mp3(temp_wav_path, temp_mp3_path)
-            
+
             # Move the final MP3 to the target location
             temp_mp3_path.replace(target_path)
 
@@ -215,6 +251,7 @@ class create_audio:
         speaker_id: Optional[int] = None,
         overwrite: bool = False,
         upload_to_s3: bool = True,
+        sentence_silence: Optional[float] = None,
     ) -> AudioCreationResult:
         """Create an MP3 file in a directory with a deterministic filename."""
 
@@ -232,6 +269,7 @@ class create_audio:
             speaker_id=speaker_id,
             overwrite=overwrite,
             upload_to_s3=upload_to_s3,
+            sentence_silence=sentence_silence,
         )
 
     def __call__(
@@ -243,6 +281,7 @@ class create_audio:
         speaker_id: Optional[int] = None,
         overwrite: bool = False,
         upload_to_s3: bool = True,
+        sentence_silence: Optional[float] = None,
     ) -> AudioCreationResult:
         return self.create(
             text=text,
@@ -252,6 +291,7 @@ class create_audio:
             speaker_id=speaker_id,
             overwrite=overwrite,
             upload_to_s3=upload_to_s3,
+            sentence_silence=sentence_silence,
         )
 
     @classmethod
@@ -393,6 +433,7 @@ class create_audio:
         speaker_id: Optional[int] = None,
         overwrite: bool = False,
         session=None,
+        sentence_silence: Optional[float] = None,
     ) -> Any:
         from ..models import audio
 
@@ -411,6 +452,7 @@ class create_audio:
                 speaker_id=speaker_id,
                 overwrite=overwrite,
                 upload_to_s3=True,
+                sentence_silence=sentence_silence,
             )
 
             if not result.object_key:
@@ -440,25 +482,25 @@ class create_audio:
     @staticmethod
     def cleanup_orphaned_temp_files(directory: Optional[PathLike] = None) -> int:
         """Clean up any orphaned temporary WAV files that may have been left behind.
-        
+
         This utility function can be called periodically to ensure no WAV files
         are left in the filesystem from failed audio generation attempts.
-        
+
         :param directory: Directory to clean up (defaults to system temp directory)
         :return: Number of files cleaned up
         """
         import tempfile
         import glob
-        
+
         if directory is None:
             directory = Path(tempfile.gettempdir())
         else:
             directory = Path(directory)
-        
+
         # Look for temporary WAV files that might have been left behind
         temp_wav_pattern = str(directory / "tmp*.wav")
         wav_files = glob.glob(temp_wav_pattern)
-        
+
         cleaned_count = 0
         for wav_file in wav_files:
             try:
@@ -467,8 +509,8 @@ class create_audio:
                 cleaned_count += 1
             except Exception as e:
                 _LOGGER.warning(f"Failed to clean up temporary WAV file {wav_file}: {e}")
-        
+
         if cleaned_count > 0:
             _LOGGER.info(f"Cleaned up {cleaned_count} orphaned temporary WAV files")
-        
+
         return cleaned_count

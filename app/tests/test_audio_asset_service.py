@@ -20,6 +20,10 @@ class TestAudioAssetServiceGenerateTTS(unittest.TestCase):
         with patch('repz.services.audio_asset_service.session'):
             self.service = AudioAssetService(self.tts_client, self.storage_client)
         self.mock_user = MagicMock()
+        # Set AI credentials by default
+        self.mock_user.ai_provider = "openai"
+        self.mock_user.ai_model = "gpt-4"
+        self.mock_user.ai_api_key = "some_key"
 
     @patch('repz.services.audio_asset_service.completion_for_user')
     def test_generate_tts_texts_success(self, mock_completion):
@@ -75,7 +79,7 @@ class TestAudioAssetServiceGenerateTTS(unittest.TestCase):
         language = "en-US"
 
         # Should not raise exception, but return fallback
-        result = self.service._generate_tts_texts(q, language, self.mock_user)
+        result = self.service._resolve_tts_texts(q, language, self.mock_user)
 
         self.assertEqual(result["question"], "Original question")
         self.assertEqual(result["answer"], "Original answer")
@@ -102,7 +106,7 @@ class TestAudioAssetServiceGenerateTTS(unittest.TestCase):
         }
         language = "en-US"
 
-        result = self.service._generate_tts_texts(q, language, self.mock_user)
+        result = self.service._resolve_tts_texts(q, language, self.mock_user)
 
         self.assertEqual(result["question"], "Original question")
         self.assertEqual(result["answer"], "Original answer")
@@ -140,7 +144,7 @@ class TestAudioAssetServiceGenerateTTS(unittest.TestCase):
 
         # Check fallback when missing fields and AI fails
         mock_completion.side_effect = Exception("AI Error")
-        result = self.service._generate_tts_texts(q, language, self.mock_user)
+        result = self.service._resolve_tts_texts(q, language, self.mock_user)
         self.assertIsNone(result["question"]) # q.get("question_text") is None
         self.assertIsNone(result["answer"])
         self.assertIsNone(result["hint"])
@@ -169,13 +173,17 @@ class TestAudioAssetServiceMultiLanguage(unittest.TestCase):
         mock_lang2.language = "fr_FR"
         mock_user = MagicMock()
         mock_user.languages = [mock_lang1, mock_lang2]
+        # Enable AI
+        mock_user.ai_provider = "openai"
+        mock_user.ai_model = "gpt-4"
+        mock_user.ai_api_key = "some_key"
 
         mock_generate_tts.side_effect = lambda q, lang, user: {
             "question": f"TTS q in {lang}",
             "answer": f"TTS a in {lang}"
         }
 
-        mock_ensure_audio.side_effect = lambda question_id, part, text, language, tts_text: f"url_{language}_{part}"
+        mock_ensure_audio.side_effect = lambda question_id, part, language, tts_text: f"url_{language}_{part}"
 
         q = {
             "question_id": 456,
@@ -201,10 +209,10 @@ class TestAudioAssetServiceMultiLanguage(unittest.TestCase):
         # ensure_audio should be called 4 times (2 parts * 2 languages)
         self.assertEqual(mock_ensure_audio.call_count, 4)
         mock_ensure_audio.assert_any_call(
-            question_id=456, part="question", text="Original question text", language="en_US", tts_text="TTS q in en_US"
+            question_id=456, part="question", language="en_US", tts_text={"question": "TTS q in en_US", "answer": "TTS a in en_US"}
         )
         mock_ensure_audio.assert_any_call(
-            question_id=456, part="question", text="Original question text", language="fr_FR", tts_text="TTS q in fr_FR"
+            question_id=456, part="question", language="fr_FR", tts_text={"question": "TTS q in fr_FR", "answer": "TTS a in fr_FR"}
         )
 
         # Should return assets of the primary/first language (en_US)
@@ -213,24 +221,40 @@ class TestAudioAssetServiceMultiLanguage(unittest.TestCase):
             "answer": "url_en_US_answer"
         })
 
+
+
     @patch('repz.services.audio_asset_service.session')
     @patch.object(AudioAssetService, '_generate_tts_texts')
     @patch.object(AudioAssetService, 'ensure_audio')
-    def test_ensure_audio_for_quiz_question_no_languages_fallback(self, mock_ensure_audio, mock_generate_tts, mock_session):
+    def test_ensure_audio_for_quiz_question_secondary_language_fails(self, mock_ensure_audio, mock_generate_tts, mock_session):
         # Mock database query to return None (no existing audios)
         mock_scalar = MagicMock()
         mock_scalar.scalar_one_or_none.return_value = None
         mock_session.execute.return_value = mock_scalar
 
-        # Mock user with no languages
+        # Mock user languages: primary is "en_US", secondary is "es_ES" (unsupported)
+        mock_lang1 = MagicMock()
+        mock_lang1.language = "en_US"
+        mock_lang2 = MagicMock()
+        mock_lang2.language = "es_ES"
         mock_user = MagicMock()
-        mock_user.languages = []
+        mock_user.languages = [mock_lang1, mock_lang2]
+        mock_user.ai_provider = "openai"
+        mock_user.ai_model = "gpt-4"
+        mock_user.ai_api_key = "some_key"
 
-        mock_generate_tts.return_value = {
-            "question": "TTS q",
-            "answer": "TTS a"
+        mock_generate_tts.side_effect = lambda q, lang, user: {
+            "question": f"TTS q in {lang}",
+            "answer": f"TTS a in {lang}"
         }
-        mock_ensure_audio.side_effect = lambda question_id, part, text, language, tts_text: f"url_{language}_{part}"
+
+        # es_ES will fail when trying to ensure audio
+        def ensure_audio_side_effect(question_id, part, language, tts_text):
+            if language == "es_ES":
+                raise ValueError("Unsupported TTS language: es_ES")
+            return f"url_{language}_{part}"
+
+        mock_ensure_audio.side_effect = ensure_audio_side_effect
 
         q = {
             "question_id": 456,
@@ -242,21 +266,53 @@ class TestAudioAssetServiceMultiLanguage(unittest.TestCase):
         # Call the method
         result = self.service.ensure_audio_for_quiz_question(
             q=q,
-            language="de_DE",
+            language="en_US",
             user=mock_user,
             parts=("question", "answer")
         )
 
-        # It should fall back to "de_DE" passed as argument
-        mock_generate_tts.assert_called_once_with(q, "de_DE", mock_user)
-        self.assertEqual(mock_ensure_audio.call_count, 2)
-        mock_ensure_audio.assert_any_call(
-            question_id=456, part="question", text="Original question text", language="de_DE", tts_text="TTS q"
-        )
+        # Check that it attempted both but didn't crash
+        self.assertEqual(mock_generate_tts.call_count, 2)
+        self.assertEqual(mock_ensure_audio.call_count, 4)
+
+        # Should return assets of the primary language (en_US) completely intact
         self.assertEqual(result, {
-            "question": "url_de_DE_question",
-            "answer": "url_de_DE_answer"
+            "question": "url_en_US_question",
+            "answer": "url_en_US_answer"
         })
+
+    @patch('repz.services.audio_asset_service.session')
+    def test_ensure_audio_calls_tts_with_sentence_silence(self, mock_session):
+        # Mock database query to return None (no existing audios)
+        mock_scalar = MagicMock()
+        mock_scalar.scalar_one_or_none.return_value = None
+        mock_session.execute.return_value = mock_scalar
+
+        # Setup mock return for tts_client.create_audio
+        self.tts_client.create_audio.return_value = (b"fake_audio_bytes", {
+            "size_bytes": 100,
+            "duration_ms": 1000,
+            "tts_engine": "piper",
+            "tts_voice": "en_US-lessac-medium"
+        })
+
+        # Setup mock return for storage_client.save
+        self.storage_client.save.return_value = "http://fake_s3_url/audio.mp3"
+
+        # Call ensure_audio for en_US language (silence should be 0.2)
+        self.service.ensure_audio(
+            question_id=111,
+            part="question",
+            tts_text={"question": "Hello world"},
+            language="en_US"
+        )
+
+        # Assert tts_client.create_audio was called with correct arguments
+        self.tts_client.create_audio.assert_called_once_with(
+            text="Hello world",
+            language="en_US",
+            sentence_silence=0.2
+        )
 
 if __name__ == '__main__':
     unittest.main()

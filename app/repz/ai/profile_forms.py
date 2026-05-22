@@ -29,6 +29,30 @@ COMMON_PROVIDERS = [
 ]
 
 
+LANGUAGE_CODES = [
+    "en_US",
+    "en_GB",
+    "es_ES",
+    "es_MX",
+    "fr_FR",
+    "de_DE",
+    "it_IT",
+    "pt_BR",
+    "pt_PT",
+    "nl_NL",
+    "ru_RU",
+    "ja_JP",
+    "ko_KR",
+    "zh_CN",
+    "zh_TW",
+    "ar_SA",
+    "hi_IN",
+    "tr_TR",
+    "pl_PL",
+    "sv_SE",
+]
+
+
 class AIProfileForm(FlaskForm):
     """Per-user AI provider configuration, stored on the users row."""
 
@@ -57,7 +81,7 @@ class AIProfileForm(FlaskForm):
     )
     languages = SelectMultipleField(
         "Preferred Languages",
-        choices=[],
+        choices=[(code, code) for code in LANGUAGE_CODES],
         validators=[Optional()],
     )
     submit = SubmitField("Save")
