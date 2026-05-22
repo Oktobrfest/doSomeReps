@@ -446,298 +446,527 @@
 
 {# ══════════════════════════════════════════════════════════════════
    JAVASCRIPT — Audio Playback + button state machine
-══════════════════════════════════════════════════════════════════ #}
-<script>
+══════════════════════════════════════════════════════════════════ #}<script>
 (function () {
   'use strict';
 
-  /* ── UI Helpers ────────────────────────────────────────────── */
-  function updatePauseBtn(visible, isPaused) {
-    var pauseBtn = document.getElementById('audio-pause-btn');
-    if (!pauseBtn) return;
-    pauseBtn.style.display = visible ? 'flex' : 'none';
-    if (visible) {
-      pauseBtn.classList.add('has-slider');
-      var btnContent = document.getElementById('audio-pause-btn-content');
-      if (btnContent) {
-        btnContent.innerHTML = isPaused ? '<span>&#9654;</span> Resume' : '<span>&#9208;</span> Pause';
-      }
-      var sliderContainer = document.getElementById('audio-pause-slider-container');
-      if (sliderContainer) {
-        sliderContainer.style.display = 'flex';
-      }
-      var players = getAnswerPlayers();
-      var player = players[currentAnswerIndex];
-      if (player) {
-        setActivePlayer(player, 'audio-pause-slider', 'audio-pause-time');
-      }
-    } else {
-      pauseBtn.classList.remove('has-slider');
-      var sliderContainer = document.getElementById('audio-pause-slider-container');
-      if (sliderContainer) {
-        sliderContainer.style.display = 'none';
-      }
-      clearActivePlayer();
-    }
-  }
+  var questionState = {
+    index: 0,
+    active: false
+  };
 
-  /* ── State & Selectors for Sequential Playback ───────────────── */
-  var currentQuestionIndex = 0;
-  var isQuestionPlaying = false;
+  var answerState = {
+    index: 0,
+    active: false
+  };
 
-  var currentAnswerIndex = 0;
-  var isAnswerPlaying = false;
+  var activeSliderBinding = null;
 
   function getQuestionPlayers() {
-    return Array.prototype.slice.call(document.querySelectorAll('.question-audio-player'));
+    return Array.prototype.slice.call(
+      document.querySelectorAll('.question-audio-player')
+    );
   }
 
   function getAnswerPlayers() {
-    return Array.prototype.slice.call(document.querySelectorAll('.answer-audio-player'));
+    return Array.prototype.slice.call(
+      document.querySelectorAll('.answer-audio-player')
+    );
   }
 
-  function resetQuestionState() {
-    isQuestionPlaying = false;
-    currentQuestionIndex = 0;
+  function formatTime(seconds) {
+    if (!isFinite(seconds) || seconds < 0) {
+      seconds = 0;
+    }
+
+    var mins = Math.floor(seconds / 60);
+    var secs = Math.floor(seconds % 60);
+
+    return mins + ':' + String(secs).padStart(2, '0');
+  }
+
+  function stopEventBubble(event) {
+    event.stopPropagation();
+  }
+
+  function preventSliderClicksFromPressingButtons() {
+    var selectors = [
+      '.audio-slider',
+      '.audio-slider-container'
+    ];
+
+    selectors.forEach(function(selector) {
+      Array.prototype.forEach.call(document.querySelectorAll(selector), function(el) {
+        el.addEventListener('click', stopEventBubble);
+        el.addEventListener('mousedown', stopEventBubble);
+        el.addEventListener('mouseup', stopEventBubble);
+        el.addEventListener('pointerdown', stopEventBubble);
+        el.addEventListener('pointerup', stopEventBubble);
+        el.addEventListener('touchstart', stopEventBubble);
+        el.addEventListener('touchend', stopEventBubble);
+      });
+    });
+  }
+
+  function clearActiveSlider() {
+    if (!activeSliderBinding) {
+      return;
+    }
+
+    var player = activeSliderBinding.player;
+    var slider = activeSliderBinding.slider;
+
+    if (player) {
+      player.removeEventListener('timeupdate', activeSliderBinding.update);
+      player.removeEventListener('loadedmetadata', activeSliderBinding.update);
+      player.removeEventListener('durationchange', activeSliderBinding.update);
+    }
+
+    if (slider) {
+      slider.removeEventListener('input', activeSliderBinding.seek);
+      slider.removeEventListener('change', activeSliderBinding.seek);
+    }
+
+    activeSliderBinding = null;
+  }
+
+  function bindSliderToPlayer(player, sliderId, timeId) {
+    clearActiveSlider();
+
+    var slider = document.getElementById(sliderId);
+    var timeDisplay = document.getElementById(timeId);
+
+    if (!player || !slider || !timeDisplay) {
+      return;
+    }
+
+    var update = function() {
+      var duration = player.duration || 0;
+      var current = player.currentTime || 0;
+
+      if (isFinite(duration) && duration > 0) {
+        slider.value = String((current / duration) * 100);
+      } else {
+        slider.value = '0';
+      }
+
+      timeDisplay.textContent = formatTime(current) + ' / ' + formatTime(duration);
+    };
+
+    var seek = function(event) {
+      event.stopPropagation();
+
+      var duration = player.duration || 0;
+
+      if (!isFinite(duration) || duration <= 0) {
+        return;
+      }
+
+      player.currentTime = (Number(slider.value) / 100) * duration;
+      update();
+    };
+
+    player.addEventListener('timeupdate', update);
+    player.addEventListener('loadedmetadata', update);
+    player.addEventListener('durationchange', update);
+
+    slider.addEventListener('input', seek);
+    slider.addEventListener('change', seek);
+
+    activeSliderBinding = {
+      player: player,
+      slider: slider,
+      update: update,
+      seek: seek
+    };
+
+    update();
+  }
+
+  function resetAudioElement(player) {
+    if (!player) {
+      return;
+    }
+
+    player.pause();
+    player.onended = null;
+    player.onerror = null;
+
+    try {
+      player.currentTime = 0;
+    } catch (e) {
+      console.warn('Could not reset audio currentTime:', e);
+    }
+  }
+
+  function resetAllPlayers(players) {
+    players.forEach(resetAudioElement);
+  }
+
+  function setReadButtonIdle() {
     var btn = document.getElementById('audio-read-btn');
+    var btnContent = document.getElementById('audio-read-btn-content');
+    var sliderContainer = document.getElementById('audio-read-slider-container');
+
     if (btn) {
       btn.classList.remove('has-slider');
     }
-    var btnContent = document.getElementById('audio-read-btn-content');
+
     if (btnContent) {
       btnContent.innerHTML = '<span>&#128266;</span> Read Question';
     }
-    var sliderContainer = document.getElementById('audio-read-slider-container');
+
     if (sliderContainer) {
       sliderContainer.style.display = 'none';
     }
-    clearActivePlayer();
+  }
+
+  function setReadButtonPlaying() {
+    var btn = document.getElementById('audio-read-btn');
+    var btnContent = document.getElementById('audio-read-btn-content');
+    var sliderContainer = document.getElementById('audio-read-slider-container');
+
+    if (btn) {
+      btn.classList.add('has-slider');
+    }
+
+    if (btnContent) {
+      btnContent.innerHTML = '<span>&#9208;</span> Pause';
+    }
+
+    if (sliderContainer) {
+      sliderContainer.style.display = 'flex';
+    }
+  }
+
+  function setReadButtonPaused() {
+    var btnContent = document.getElementById('audio-read-btn-content');
+
+    if (btnContent) {
+      btnContent.innerHTML = '<span>&#9654;</span> Resume';
+    }
+  }
+
+  function setAnswerPauseButtonVisible(isPaused) {
+    var pauseBtn = document.getElementById('audio-pause-btn');
+    var btnContent = document.getElementById('audio-pause-btn-content');
+    var sliderContainer = document.getElementById('audio-pause-slider-container');
+
+    if (!pauseBtn) {
+      return;
+    }
+
+    pauseBtn.style.display = 'flex';
+    pauseBtn.classList.add('has-slider');
+
+    if (btnContent) {
+      btnContent.innerHTML = isPaused
+        ? '<span>&#9654;</span> Resume'
+        : '<span>&#9208;</span> Pause';
+    }
+
+    if (sliderContainer) {
+      sliderContainer.style.display = 'flex';
+    }
+  }
+
+  function setAnswerPauseButtonHidden() {
+    var pauseBtn = document.getElementById('audio-pause-btn');
+    var sliderContainer = document.getElementById('audio-pause-slider-container');
+
+    if (pauseBtn) {
+      pauseBtn.style.display = 'none';
+      pauseBtn.classList.remove('has-slider');
+    }
+
+    if (sliderContainer) {
+      sliderContainer.style.display = 'none';
+    }
+  }
+
+  function resetQuestionState() {
+    questionState.index = 0;
+    questionState.active = false;
+    setReadButtonIdle();
+    clearActiveSlider();
+  }
+
+  function resetAnswerState() {
+    answerState.index = 0;
+    answerState.active = false;
+    setAnswerPauseButtonHidden();
+    clearActiveSlider();
   }
 
   function stopQuestionSequence() {
-    if (isQuestionPlaying) {
-      var players = getQuestionPlayers();
-      var player = players[currentQuestionIndex];
-      if (player) {
-        player.pause();
-        player.currentTime = 0;
-      }
-      resetQuestionState();
-    }
+    var players = getQuestionPlayers();
+
+    players.forEach(function(player) {
+      resetAudioElement(player);
+    });
+
+    resetQuestionState();
+  }
+
+  function stopAnswerSequence() {
+    var players = getAnswerPlayers();
+
+    players.forEach(function(player) {
+      resetAudioElement(player);
+    });
+
+    resetAnswerState();
   }
 
   function playQuestionAt(index) {
     var players = getQuestionPlayers();
-    var btn = document.getElementById('audio-read-btn');
-    
+
     if (index >= players.length) {
       console.log('✅ Finished question audio sequence');
       resetQuestionState();
       return;
     }
 
-    currentQuestionIndex = index;
     var player = players[index];
+
     if (!player) {
-      resetQuestionState();
+      playQuestionAt(index + 1);
       return;
     }
 
-    if (btn) {
-      btn.classList.add('has-slider');
-    }
-    var btnContent = document.getElementById('audio-read-btn-content');
-    if (btnContent) {
-      btnContent.innerHTML = '<span>&#9208;</span> Pause';
-    }
-    var sliderContainer = document.getElementById('audio-read-slider-container');
-    if (sliderContainer) {
-      sliderContainer.style.display = 'flex';
-    }
-    setActivePlayer(player, 'audio-read-slider', 'audio-read-time');
+    questionState.index = index;
+    questionState.active = true;
+
+    var lang = player.getAttribute('data-lang');
+    console.log('▶️ Playing question audio:', lang, index + 1, 'of', players.length);
+
+    setReadButtonPlaying();
+    bindSliderToPlayer(player, 'audio-read-slider', 'audio-read-time');
 
     player.onended = function() {
+      console.log('✅ Finished question audio:', lang);
+
       player.onended = null;
       player.onerror = null;
+
       playQuestionAt(index + 1);
     };
 
-    player.onerror = function() {
-      console.error('❌ Question audio playback failed for language:', player.getAttribute('data-lang'));
+    player.onerror = function(error) {
+      console.error('❌ Question audio playback failed for language:', lang, error);
+
       player.onended = null;
       player.onerror = null;
+
       playQuestionAt(index + 1);
     };
+
+    try {
+      if (player.currentTime && player.ended) {
+        player.currentTime = 0;
+      }
+    } catch (e) {
+      console.warn('Could not prepare question audio:', e);
+    }
 
     var playPromise = player.play();
+
     if (playPromise !== undefined) {
       playPromise.catch(function(error) {
-        console.error('❌ Question audio play failed:', error);
+        console.error('❌ Question audio play failed for language:', lang, error);
+
         player.onended = null;
         player.onerror = null;
+
         playQuestionAt(index + 1);
       });
     }
   }
 
-  /* ── Read Question button ───────────────────────────────────── */
-  window.audioReadQuestion = function () {
-    var btn = document.getElementById('audio-read-btn');
-    var text = document.getElementById('audio-question-text');
-    var players = getQuestionPlayers();
-    
-    console.log('🎵 audioReadQuestion() called. Found players:', players.length);
-    
-    if (!text) {
-      console.error('❌ No question text element found!');
-      return;
-    }
-
-    if (players.length === 0) {
-      console.error('❌ No question audio players found!');
-      return;
-    }
-
-    // Stop answer audio if playing
-    stopAnswerSequence();
-
-    // Case 1: Sequence is already active (playing or paused)
-    if (isQuestionPlaying) {
-      var currentPlayer = players[currentQuestionIndex];
-      if (currentPlayer) {
-        if (!currentPlayer.paused) {
-          console.log('⏸️ Pausing question audio at index ' + currentQuestionIndex);
-          currentPlayer.pause();
-          var btnContent = document.getElementById('audio-read-btn-content');
-          if (btnContent) btnContent.innerHTML = '<span>&#9654;</span> Resume';
-        } else {
-          console.log('▶️ Resuming question audio at index ' + currentQuestionIndex);
-          var btnContent = document.getElementById('audio-read-btn-content');
-          if (btnContent) btnContent.innerHTML = '<span>&#9208;</span> Pause';
-          currentPlayer.play().catch(function(error) {
-            console.error('❌ Question audio resume failed:', error);
-            resetQuestionState();
-          });
-        }
-      }
-      return;
-    }
-
-    // Case 2: Start playing sequence from beginning
-    console.log('🎵 Starting question sequence from beginning');
-    isQuestionPlaying = true;
-    currentQuestionIndex = 0;
-    playQuestionAt(0);
-  };
-
-  /* ── Answer State Helpers ───────────────────────────────────── */
-  function resetAnswerState() {
-    isAnswerPlaying = false;
-    currentAnswerIndex = 0;
-    updatePauseBtn(false);
-  }
-
-  function stopAnswerSequence() {
-    if (isAnswerPlaying) {
-      var players = getAnswerPlayers();
-      var player = players[currentAnswerIndex];
-      if (player) {
-        player.pause();
-        player.currentTime = 0;
-      }
-      resetAnswerState();
-    }
-  }
-
   function playAnswerAt(index) {
     var players = getAnswerPlayers();
+
     if (index >= players.length) {
       console.log('✅ Finished answer audio sequence');
       resetAnswerState();
       return;
     }
 
-    currentAnswerIndex = index;
     var player = players[index];
+
     if (!player) {
-      resetAnswerState();
+      playAnswerAt(index + 1);
       return;
     }
 
-    updatePauseBtn(true, false);
+    answerState.index = index;
+    answerState.active = true;
+
+    var lang = player.getAttribute('data-lang');
+    console.log('▶️ Playing answer audio:', lang, index + 1, 'of', players.length);
+
+    setAnswerPauseButtonVisible(false);
+    bindSliderToPlayer(player, 'audio-pause-slider', 'audio-pause-time');
 
     player.onended = function() {
+      console.log('✅ Finished answer audio:', lang);
+
       player.onended = null;
       player.onerror = null;
+
       playAnswerAt(index + 1);
     };
 
-    player.onerror = function() {
-      console.error('❌ Answer audio playback failed for language:', player.getAttribute('data-lang'));
+    player.onerror = function(error) {
+      console.error('❌ Answer audio playback failed for language:', lang, error);
+
       player.onended = null;
       player.onerror = null;
+
       playAnswerAt(index + 1);
     };
+
+    try {
+      if (player.currentTime && player.ended) {
+        player.currentTime = 0;
+      }
+    } catch (e) {
+      console.warn('Could not prepare answer audio:', e);
+    }
 
     var playPromise = player.play();
+
     if (playPromise !== undefined) {
       playPromise.catch(function(error) {
-        console.error('❌ Answer audio play failed:', error);
+        console.error('❌ Answer audio play failed for language:', lang, error);
+
         player.onended = null;
         player.onerror = null;
+
         playAnswerAt(index + 1);
       });
     }
   }
 
-  /* ── Get Answer button ──────────────────────────────────────── */
-  window.audioGetAnswer = function () {
-    /* Swap buttons in the middle slot */
-    var getAnswerBtn   = document.getElementById('audio-get-answer-btn');
-    var resultPair     = document.getElementById('audio-result-pair');
-    if (getAnswerBtn) getAnswerBtn.style.display = 'none';
-    if (resultPair) resultPair.style.display   = 'flex';
+  window.audioReadQuestion = function () {
+    var players = getQuestionPlayers();
 
-    /* Reveal answer text */
-    var answerSection = document.getElementById('audio-answer-section');
-    if (answerSection) answerSection.style.display = 'block';
+    console.log('🎵 audioReadQuestion() called. Found question players:', players.length);
 
-    // Stop question audio if it is playing/paused, and reset Read Question button
-    stopQuestionSequence();
-
-    var players = getAnswerPlayers();
     if (players.length === 0) {
-      console.warn("No answer audio available to play");
+      console.error('❌ No question audio players found.');
       return;
     }
 
-    console.log('🎵 Starting answer sequence from beginning');
-    isAnswerPlaying = true;
-    currentAnswerIndex = 0;
+    if (answerState.active) {
+      stopAnswerSequence();
+    }
+
+    if (questionState.active) {
+      var currentPlayer = players[questionState.index];
+
+      if (!currentPlayer) {
+        resetQuestionState();
+        return;
+      }
+
+      if (currentPlayer.paused) {
+        console.log('▶️ Resuming question audio:', currentPlayer.getAttribute('data-lang'));
+
+        setReadButtonPlaying();
+
+        currentPlayer.play().catch(function(error) {
+          console.error('❌ Question audio resume failed:', error);
+          resetQuestionState();
+        });
+      } else {
+        console.log('⏸️ Pausing question audio:', currentPlayer.getAttribute('data-lang'));
+
+        currentPlayer.pause();
+        setReadButtonPaused();
+      }
+
+      return;
+    }
+
+    resetAllPlayers(players);
+
+    questionState.index = 0;
+    questionState.active = true;
+
+    playQuestionAt(0);
+  };
+
+  window.audioGetAnswer = function () {
+    var getAnswerBtn = document.getElementById('audio-get-answer-btn');
+    var resultPair = document.getElementById('audio-result-pair');
+    var answerSection = document.getElementById('audio-answer-section');
+
+    if (getAnswerBtn) {
+      getAnswerBtn.style.display = 'none';
+    }
+
+    if (resultPair) {
+      resultPair.style.display = 'flex';
+    }
+
+    if (answerSection) {
+      answerSection.style.display = 'block';
+    }
+
+    if (questionState.active) {
+      stopQuestionSequence();
+    }
+
+    var players = getAnswerPlayers();
+
+    console.log('🎵 audioGetAnswer() called. Found answer players:', players.length);
+
+    if (players.length === 0) {
+      console.warn('No answer audio available to play.');
+      return;
+    }
+
+    resetAllPlayers(players);
+
+    answerState.index = 0;
+    answerState.active = true;
+
     playAnswerAt(0);
   };
 
-  /* ── Pause/Resume logic ─────────────────────────────────────── */
   window.audioPauseToggle = function () {
-    if (!isAnswerPlaying) return;
-
     var players = getAnswerPlayers();
-    var player = players[currentAnswerIndex];
-    if (!player) return;
 
-    // Handle HTML5 Audio
-    if (!player.paused) {
-      player.pause();
-      updatePauseBtn(true, true);
-    } else {
-      player.play().catch(function(err) {
-        console.error("Answer audio resume failed:", err);
+    if (!answerState.active) {
+      return;
+    }
+
+    var player = players[answerState.index];
+
+    if (!player) {
+      resetAnswerState();
+      return;
+    }
+
+    if (player.paused) {
+      console.log('▶️ Resuming answer audio:', player.getAttribute('data-lang'));
+
+      player.play().catch(function(error) {
+        console.error('❌ Answer audio resume failed:', error);
         resetAnswerState();
       });
-      updatePauseBtn(true, false);
+
+      setAnswerPauseButtonVisible(false);
+    } else {
+      console.log('⏸️ Pausing answer audio:', player.getAttribute('data-lang'));
+
+      player.pause();
+      setAnswerPauseButtonVisible(true);
     }
   };
 
+  preventSliderClicksFromPressingButtons();
 })();
 </script>
 
