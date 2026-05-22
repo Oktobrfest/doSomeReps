@@ -69,61 +69,83 @@ class AudioAssetService:
         """Audio generation is idempotent and separate from quiz progression"""
 
         logging.info(f"🎵 ensure_audio_for_quiz_question called for question_id={q.get('question_id')}, parts={parts}")
-        assets = {}
+        
+        # Determine languages to generate assets for
+        user_langs = []
+        if user and getattr(user, "languages", None):
+            user_langs = [lang_obj.language for lang_obj in user.languages if lang_obj.language]
+        
+        # Fallback if user has no languages listed
+        if not user_langs:
+            user_langs = [language or "en_US"]
+            
+        primary_lang = user_langs[0]
+        primary_assets = {}
 
-        # 1. Determine which parts actually need to be generated
-        parts_to_generate = []
-        part_to_text = {
-            "question": q.get("question_text"),
-            "answer": q.get("answer"),
-            "hint": q.get("hint"),
-        }
+        # Loop through each language to ensure assets exist for all of them
+        for lang in user_langs:
+            logging.info(f"🌐 Processing language: {lang}")
+            lang_assets = {}
+            parts_to_generate = []
+            part_to_text = {
+                "question": q.get("question_text"),
+                "answer": q.get("answer"),
+                "hint": q.get("hint"),
+            }
 
-        for part in parts:
-            text = part_to_text.get(part)
-            if not text:
-                continue
+            # 1. Determine which parts actually need to be generated for this language
+            for part in parts:
+                text = part_to_text.get(part)
+                if not text:
+                    continue
 
-            text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-            object_key = f"audio/{language}/{q['question_id']}/{part}-{text_hash}.mp3"
+                text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+                object_key = f"audio/{lang}/{q['question_id']}/{part}-{text_hash}.mp3"
 
-            existing = session.execute(
-                select(audio).where(audio.object_key == object_key)
-            ).scalar_one_or_none()
+                existing = session.execute(
+                    select(audio).where(audio.object_key == object_key)
+                ).scalar_one_or_none()
 
-            if not existing:
-                parts_to_generate.append(part)
+                if not existing:
+                    parts_to_generate.append(part)
 
-        # 2. If any parts need generation, get TTS-friendly versions for the whole question
-        tts_texts = {}
-        if parts_to_generate:
-            logging.info(f"🤖 Generating TTS-friendly text for parts: {parts_to_generate}")
-            tts_texts = self._generate_tts_texts(q, language, user)
+            # 2. If any parts need generation, get TTS-friendly versions for this language
+            tts_texts = {}
+            if parts_to_generate:
+                logging.info(f"🤖 Generating TTS-friendly text for parts: {parts_to_generate} in language {lang}")
+                try:
+                    tts_texts = self._generate_tts_texts(q, lang, user)
+                except Exception as e:
+                    logging.warning(f"⚠️ Failed to generate TTS friendly text via AI for {lang}: {e}. Falling back to raw text.")
+                    tts_texts = {}
 
-        # 3. Ensure audio for each part
-        for part in parts:
-            text = part_to_text.get(part)
-            if not text:
-                logging.debug(f"⏭️ Skipping {part} - no text")
-                continue
+            # 3. Ensure audio for each part in this language
+            for part in parts:
+                text = part_to_text.get(part)
+                if not text:
+                    logging.debug(f"⏭️ Skipping {part} - no text")
+                    continue
 
-            logging.info(f"🔊 Ensuring audio for {part}: {text[:50]}...")
-            try:
-                asset_url = self.ensure_audio(
-                    question_id=q["question_id"],
-                    part=part,
-                    text=text,
-                    language=language,
-                    tts_text=tts_texts.get(part) if part in tts_texts else None
-                )
-                assets[part] = asset_url
-                logging.info(f"✅ Successfully ensured audio for {part}: {asset_url}")
-            except Exception as e:
-                logging.error(f"❌ Failed to ensure audio for {part}: {e}")
-                raise
+                logging.info(f"🔊 Ensuring audio for {part} in {lang}: {text[:50]}...")
+                try:
+                    asset_url = self.ensure_audio(
+                        question_id=q["question_id"],
+                        part=part,
+                        text=text,
+                        language=lang,
+                        tts_text=tts_texts.get(part) if part in tts_texts else None
+                    )
+                    lang_assets[part] = asset_url
+                    logging.info(f"✅ Successfully ensured audio for {part} in {lang}: {asset_url}")
+                except Exception as e:
+                    logging.error(f"❌ Failed to ensure audio for {part} in {lang}: {e}")
+                    raise
 
-        logging.info(f"🎧 Final assets: {assets}")
-        return assets
+            if lang == primary_lang:
+                primary_assets = lang_assets
+
+        logging.info(f"🎧 Final primary language ({primary_lang}) assets: {primary_assets}")
+        return primary_assets
 
     def _generate_tts_texts(self, q: dict, language: str, user) -> dict:
         """Generate TTS-friendly versions of question text using AI."""
