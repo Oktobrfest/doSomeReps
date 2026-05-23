@@ -13,14 +13,16 @@
 
   /* ── Hamburger category bar ── */
   .audio-cat-bar {
-    position: sticky;
-    top: 0;
-    z-index: 200;
     background: #212529;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    margin-bottom: 20px;
+    border-radius: 4px;
   }
 
   .audio-cat-toggle {
-    width: 100%;
     background: #212529;
     color: #f8f9fa;
     border: none;
@@ -32,6 +34,29 @@
     align-items: center;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    flex: 1;
+  }
+
+  .audio-exit-btn {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-right: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .audio-exit-btn:hover {
+    background: #c82333;
+    color: #fff;
+    text-decoration: none;
   }
 
   .audio-cat-toggle:focus {
@@ -258,51 +283,6 @@
 
 <form id="audio-form" method="post">
 
-  {# ══════════════════════════════════════════════════════════════════
-     HAMBURGER CATEGORIES BAR
-  ══════════════════════════════════════════════════════════════════ #}
-  <div class="audio-cat-bar audio-full-bleed">
-    <button type="button"
-            class="audio-cat-toggle"
-            data-toggle="collapse"
-            data-target="#audio-cat-panel"
-            aria-expanded="false"
-            aria-controls="audio-cat-panel">
-      <span>&#9776;&nbsp; Categories</span>
-      <span>
-        {% if selected_categories and selected_categories != 'Not set' %}
-          <span class="badge badge-secondary">{{ selected_categories | length }} selected</span>
-        {% endif %}
-        <span style="font-size:0.75rem; margin-left:6px;">&#9660;</span>
-      </span>
-    </button>
-
-    <div id="audio-cat-panel" class="collapse audio-cat-panel">
-      <ul class="audio-cat-list">
-        {% for cat_item in category_list %}
-          {% set cat = (cat_item | replace(" ", "_")) | trim %}
-          <li>
-            <input type="checkbox"
-                   id="acat-{{ cat }}"
-                   name="category_name"
-                   value="{{ cat }}"
-                   {% if selected_categories and selected_categories != 'Not set' and cat in selected_categories %}
-                     checked
-                   {% endif %}>
-            <label for="acat-{{ cat }}">{{ cat_item }}</label>
-          </li>
-        {% endfor %}
-      </ul>
-      <button type="submit"
-              name="start-quiz"
-              value="start"
-              class="btn btn-primary btn-block">
-        Apply &amp; Start
-      </button>
-    </div>
-  </div>
-  {# end categories bar #}
-
   {% if q %}
 
   {# ══════════════════════════════════════════════════════════════════
@@ -441,6 +421,51 @@
   </div>
 
   {% endif %}
+
+  {# ══════════════════════════════════════════════════════════════════
+     HAMBURGER CATEGORIES BAR (beneath everything)
+  ══════════════════════════════════════════════════════════════════ #}
+  <div class="audio-cat-bar audio-full-bleed">
+    <button type="button"
+            class="audio-cat-toggle"
+            data-toggle="collapse"
+            data-target="#audio-cat-panel"
+            aria-expanded="false"
+            aria-controls="audio-cat-panel">
+      <span>&#9776;&nbsp; Categories</span>
+      <span>
+        {% if selected_categories and selected_categories != 'Not set' %}
+          <span class="badge badge-secondary">{{ selected_categories | length }} selected</span>
+        {% endif %}
+        <span style="font-size:0.75rem; margin-left:6px;">&#9660;</span>
+      </span>
+    </button>
+
+    <div id="audio-cat-panel" class="collapse audio-cat-panel">
+      <ul class="audio-cat-list">
+        {% for cat_item in category_list %}
+          {% set cat = (cat_item | replace(" ", "_")) | trim %}
+          <li>
+            <input type="checkbox"
+                   id="acat-{{ cat }}"
+                   name="category_name"
+                   value="{{ cat }}"
+                   {% if selected_categories and selected_categories != 'Not set' and cat in selected_categories %}
+                     checked
+                   {% endif %}>
+            <label for="acat-{{ cat }}">{{ cat_item }}</label>
+          </li>
+        {% endfor %}
+      </ul>
+      <button type="submit"
+              name="start-quiz"
+              value="start"
+              class="btn btn-primary btn-block">
+        Apply &amp; Start
+      </button>
+    </div>
+  </div>
+  {# end categories bar #}
 
 </form>
 
@@ -967,6 +992,23 @@
   };
 
   preventSliderClicksFromPressingButtons();
+
+  // Inject "Exit Audio Mode" button into the navbar
+  document.addEventListener("DOMContentLoaded", function () {
+    var navbarNav = document.querySelector('.navbar-nav');
+    if (navbarNav) {
+      var exitBtn = document.createElement('a');
+      exitBtn.href = '/quiz';
+      exitBtn.className = 'nav-item nav-link btn btn-danger text-white ml-lg-auto px-3 py-1';
+      exitBtn.id = 'exit-audio-mode';
+      exitBtn.textContent = 'Exit Audio Mode';
+      exitBtn.style.fontWeight = 'bold';
+      exitBtn.style.borderRadius = '4px';
+      exitBtn.style.alignSelf = 'center';
+      exitBtn.style.color = '#fff';
+      navbarNav.appendChild(exitBtn);
+    }
+  });
 })();
 </script>
 

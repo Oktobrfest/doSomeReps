@@ -1,46 +1,279 @@
 {% block navigation %}
 <header>
-  <nav class="navbar-outer-element">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <nav class="container">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbar">
-          <div class="navbar-nav">
-            <a class="nav-item nav-link {% if request.path == url_for('home.about') %}active{% endif %}" id="signUp"
-            href="/about">About Us</a>
-             <a class="nav-item nav-link {% if request.path == url_for('home.homepage') %}active{% endif %}" id="home"
-              href="/">Home/Stats</a>
-              <a class="nav-item nav-link {% if request.path == url_for('catz.topiclist')%}active{% endif %}" id="topics"
-              href="/topiclist">Topics</a>
-            {% if user.is_authenticated %}
-            <a class="nav-item nav-link {% if request.path == url_for('home.quiz') %}active{% endif %}" id="quiz"
-              href="/quiz">Take Quiz</a>
-            <a class="nav-item nav-link {% if request.path == url_for('home.quemore') %}active{% endif %}" id="quemore"
-              href="/quemore">Que More Questions</a>
-            <a class="nav-item nav-link {% if request.path == url_for('home.addcontent') %}active{% endif %}"
-              id="addcontent" href="/addcontent">Add Content</a>
-            <a class="nav-item nav-link {% if request.path == url_for('home.editquestions') %}active{% endif %}"
-              id="editquestions" href="/editquestions">Edit Questions</a>
-            <a class="nav-item nav-link {% if request.path == url_for('ai.question_generator') %}active{% endif %}"
-              id="ai-question-generator" href="{{ url_for('ai.question_generator') }}">AI Question Generator</a>
-            <a class="nav-item nav-link {% if request.path == url_for('ai.profile') %}active{% endif %}"
-              id="profile" href="{{ url_for('ai.profile') }}">Profile</a>
-{#              <a class="nav-item nav-link {% if request.path == url_for('home.studymaterials') %}active{% endif %}"#}
-{#              id="studymaterials" href="/studymaterials">Study Materials</a>         #}
-           
-           
-              <a class="nav-item nav-link {% if request.path == url_for('auth.logout') %}active{% endif %}" id="logout"
-              href="/logout">Logout {{ user.username }}</a>
-            {% else %}
-            <a class="nav-item nav-link {% if request.path == url_for('auth.login') %}active{% endif %}" id="login"
-              href="/login">Login</a>
-            {% endif %}
-          </div>
-        </div>
-      </nav>
-    </nav>
-  </nav>
+  <!-- React Mounting Root -->
+  <div id="react-navbar-root"></div>
 </header>
+
+<!-- Load React and ReactDOM from CDN -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+<script type="text/javascript">
+  (function() {
+    const e = React.createElement;
+
+    // Server-side context variables passed safely to React
+    const currentPath = {{ request.path|tojson }};
+    const aboutUrl = "/about";
+    const homeUrl = "/";
+    const topicsUrl = "/topiclist";
+    const quizUrl = "/quiz";
+    const quemoreUrl = "/quemore";
+    const addcontentUrl = "/addcontent";
+    const editquestionsUrl = "/editquestions";
+    const aiGeneratorUrl = "{{ url_for('ai.question_generator') }}";
+    const profileUrl = "{{ url_for('ai.profile') }}";
+    
+    const user = {
+      isAuthenticated: {% if user.is_authenticated %}true{% else %}false{% endif %},
+      username: {{ user.username|tojson if user.is_authenticated else '""' }}
+    };
+
+    // Check if we are on the /audio page to display the "Exit Audio Mode" button prominently
+    const isAudioPage = currentPath === "/audio";
+
+    function NavbarApp() {
+      const [isOpen, setIsOpen] = React.useState(false);
+
+      const navLinks = [
+        { label: 'About Us', href: aboutUrl, active: currentPath === aboutUrl, id: 'signUp' },
+        { label: 'Home/Stats', href: homeUrl, active: currentPath === homeUrl, id: 'home' },
+        { label: 'Topics', href: topicsUrl, active: currentPath === topicsUrl, id: 'topics' },
+      ];
+
+      if (user.isAuthenticated) {
+        navLinks.push(
+          { label: 'Take Quiz', href: quizUrl, active: currentPath === quizUrl, id: 'quiz' },
+          { label: 'Que More', href: quemoreUrl, active: currentPath === quemoreUrl, id: 'quemore' },
+          { label: 'Add Content', href: addcontentUrl, active: currentPath === addcontentUrl, id: 'addcontent' },
+          { label: 'Edit Questions', href: editquestionsUrl, active: currentPath === editquestionsUrl, id: 'editquestions' },
+          { label: 'AI Generator', href: aiGeneratorUrl, active: currentPath === aiGeneratorUrl, id: 'ai-question-generator' },
+          { label: 'Profile', href: profileUrl, active: currentPath === profileUrl, id: 'profile' },
+          { label: `Logout (${user.username})`, href: '/logout', active: false, id: 'logout', highlight: true }
+        );
+      } else {
+        navLinks.push(
+          { label: 'Login', href: '/login', active: currentPath === '/login', id: 'login', highlight: true }
+        );
+      }
+
+      return e('nav', {
+        style: {
+          background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+          padding: '0.75rem 1.5rem',
+          position: 'relative',
+          zIndex: 1050,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        }
+      },
+        e('div', {
+          style: {
+            maxWidth: '1200px',
+            margin: '0 auto',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          }
+        },
+          // Logo / Brand styling
+          e('div', {
+            style: {
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }
+          },
+            e('a', {
+              href: '/',
+              style: {
+                fontSize: '1.25rem',
+                fontWeight: '800',
+                color: '#f8fafc',
+                textDecoration: 'none',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                background: 'linear-gradient(to right, #ff8c00, #ffa500)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }
+            }, 
+              e('span', { style: { color: '#ff8c00' } }, '★'),
+              'DoSomeReps'
+            ),
+            isAudioPage && e('a', {
+              href: '/quiz',
+              id: 'exit-audio-mode',
+              style: {
+                backgroundColor: '#dc2626',
+                color: '#ffffff',
+                fontWeight: '700',
+                fontSize: '0.8rem',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                boxShadow: '0 2px 8px rgba(220, 38, 38, 0.4)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s'
+              },
+              onMouseEnter: (e) => {
+                e.target.style.backgroundColor = '#b91c1c';
+              },
+              onMouseLeave: (e) => {
+                e.target.style.backgroundColor = '#dc2626';
+              }
+            }, 'Exit Audio Mode')
+          ),
+
+          // Hamburger Button for mobile
+          e('button', {
+            type: 'button',
+            onClick: () => setIsOpen(!isOpen),
+            style: {
+              display: 'none',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '8px',
+              outline: 'none',
+              borderRadius: '6px',
+              transition: 'background-color 0.2s',
+            },
+            className: 'navbar-toggler-btn', // Added class for CSS targeting
+          },
+            e('span', {
+              style: {
+                display: 'block',
+                width: '24px',
+                height: '2px',
+                backgroundColor: '#f8fafc',
+                margin: '5px 0',
+                transition: 'all 0.3s',
+                transform: isOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none'
+              }
+            }),
+            e('span', {
+              style: {
+                display: 'block',
+                width: '24px',
+                height: '2px',
+                backgroundColor: '#f8fafc',
+                margin: '5px 0',
+                transition: 'all 0.3s',
+                opacity: isOpen ? 0 : 1
+              }
+            }),
+            e('span', {
+              style: {
+                display: 'block',
+                width: '24px',
+                height: '2px',
+                backgroundColor: '#f8fafc',
+                margin: '5px 0',
+                transition: 'all 0.3s',
+                transform: isOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none'
+              }
+            })
+          ),
+
+          // Links Container
+          e('div', {
+            style: {
+              transition: 'all 0.3s ease-in-out',
+            },
+            className: `nav-links-container ${isOpen ? 'show' : ''}`
+          },
+            e('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+              },
+              className: 'nav-links-inner'
+            },
+              navLinks.map((link) => 
+                e('a', {
+                  key: link.id,
+                  id: link.id,
+                  href: link.href,
+                  style: {
+                    color: link.active ? '#ff8c00' : '#cbd5e1',
+                    fontSize: '0.9rem',
+                    fontWeight: link.active || link.highlight ? '700' : '500',
+                    textDecoration: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    transition: 'all 0.2s ease',
+                    margin: '0 4px',
+                    border: link.highlight ? '1px solid rgba(255,140,0,0.4)' : 'none',
+                    background: link.highlight ? 'rgba(255,140,0,0.1)' : 'transparent',
+                    boxShadow: link.active ? '0 2px 8px rgba(255,140,0,0.2)' : 'none'
+                  },
+                  onMouseEnter: (e) => {
+                    e.target.style.color = '#ff8c00';
+                    e.target.style.backgroundColor = 'rgba(255,140,0,0.05)';
+                  },
+                  onMouseLeave: (e) => {
+                    e.target.style.color = link.active ? '#ff8c00' : '#cbd5e1';
+                    e.target.style.backgroundColor = link.highlight ? 'rgba(255,140,0,0.1)' : 'transparent';
+                  }
+                }, link.label)
+              )
+            )
+          )
+        )
+      );
+    }
+
+    const container = document.getElementById('react-navbar-root');
+    const root = ReactDOM.createRoot(container);
+    root.render(e(NavbarApp));
+  })();
+</script>
+
+<style>
+  /* Responsive breakpoint classes */
+  @media (max-width: 991px) {
+    .navbar-toggler-btn {
+      display: block !important;
+    }
+    .nav-links-container {
+      width: 100%;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+    }
+    .nav-links-container.show {
+      max-height: 500px;
+      opacity: 1;
+      margin-top: 10px;
+    }
+    .nav-links-inner {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      width: 100%;
+      padding-top: 8px;
+    }
+    .nav-links-inner a {
+      margin: 4px 0 !important;
+      padding: 10px 12px !important;
+      display: block;
+      text-align: left;
+    }
+  }
+  @media (min-width: 992px) {
+    .navbar-toggler-btn {
+      display: none !important;
+    }
+    .nav-links-container {
+      display: block !important;
+      max-height: none !important;
+      opacity: 1 !important;
+    }
+  }
+</style>
 {% endblock %}
