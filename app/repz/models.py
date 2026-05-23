@@ -18,6 +18,13 @@ question_categories = Table(
     Column("question_id", ForeignKey("question.question_id"), primary_key=True),
 )
 
+category_list_association = Table(
+    "category_list_association",
+    Base.metadata,
+    Column("category_list_id", ForeignKey("category_lists.id", ondelete="CASCADE"), primary_key=True),
+    Column("category", ForeignKey("category.category_name", onupdate="CASCADE", ondelete="CASCADE"), primary_key=True),
+)
+
 # favorate users association table
 favorate_links = Table(
     'favorate_links',
@@ -152,6 +159,12 @@ class users(UserMixin, Base):
         "languages", secondary=user_languages, back_populates="users"
     )
 
+    category_lists = relationship(
+        "category_lists",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
 class languages(Base):
     __tablename__ = "languages"
     language = sa.Column(
@@ -170,6 +183,21 @@ class category(Base):
 
     questions = relationship(
         "question", secondary=question_categories, back_populates="categories"
+    )
+
+class category_lists(Base):
+    __tablename__ = "category_lists"
+    id = sa.Column(
+        sa.Integer, Identity(), primary_key=True, autoincrement=True
+    )
+    user_id = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    category_list_name = sa.Column(sa.String(255), nullable=False)
+    is_default = sa.Column(sa.Boolean, nullable=True, default=False)
+
+    user = relationship("users", back_populates="category_lists")
+    categories = relationship(
+        "category",
+        secondary=category_list_association,
     )
 
 class level(Base):

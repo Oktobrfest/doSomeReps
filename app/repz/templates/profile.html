@@ -4,70 +4,33 @@
 
 <div class="centering-container">
   <div class="text-container" style="max-width: 720px; margin: 0 auto;">
-    <h1>User Profile</h1>
-    <p>Configure your AI provider integration. The app uses
-      <a href="https://docs.litellm.ai/docs/providers" target="_blank" rel="noopener">LiteLLM</a>
-      under the hood, so any provider it supports will work here -
-      common ones are pre-listed below; pick "Other / custom" to type
-      a different provider id.
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="m-0">User Profile</h1>
+      <a href="{{ url_for('ai.ai_integration') }}" class="btn btn-outline-primary">
+        <i class="fa fa-plug mr-1"></i> AI Integration Dashboard
+      </a>
+    </div>
+    <p>Configure your AI provider integration.
     </p>
 
     <form method="post" autocomplete="off">
       {{ form.hidden_tag() }}
 
-      <div class="form-group">
-        {{ form.ai_provider.label }}
-        {{ form.ai_provider(class_="form-control", id="ai_provider_select") }}
-      </div>
-
-      <div class="form-group" id="ai_provider_custom_wrap" style="display:none;">
-        {{ form.ai_provider_custom.label }}
-        {{ form.ai_provider_custom(
-          class_="form-control",
-          placeholder="e.g. deepseek, together_ai, perplexity"
-        ) }}
-        <small class="form-text text-muted">
-          Any
-          <a href="https://docs.litellm.ai/docs/providers" target="_blank" rel="noopener">LiteLLM provider id</a>.
-        </small>
-      </div>
-
-      <div class="form-group">
-        {{ form.ai_model.label }}
-        {{ form.ai_model(
-          class_="form-control",
-          placeholder="e.g. gpt-4o, claude-3-5-sonnet-20240620, gemini-1.5-pro"
-        ) }}
-        <small class="form-text text-muted">
-          The model name as your provider expects it. You don't need
-          to include the provider prefix - we'll combine it with the
-          provider above when calling LiteLLM.
-        </small>
-      </div>
-
-      <div class="form-group">
-        {{ form.ai_api_key.label }}
-        {{ form.ai_api_key(
-          class_="form-control",
-          placeholder=(
-            "Leave blank to keep the saved key" if has_saved_key else "Paste your API key"
-          ),
-          autocomplete="new-password"
-        ) }}
-        {% if has_saved_key %}
+      <div class="form-row">
+        <div class="form-group col-md-8">
+          {{ form.ai_model.label }}
+          {{ form.ai_model(class_="form-control") }}
           <small class="form-text text-muted">
-            An API key is currently saved. Leave this field blank to
-            keep it; type a new value to replace it.
+            The model name to use for your study session generation. Models list is auto-populated for your configured provider.
           </small>
-        {% endif %}
-      </div>
-
-      <div class="form-group">
-        {{ form.ai_api_base.label }}
-        {{ form.ai_api_base(
-          class_="form-control",
-          placeholder="Optional - only needed for Azure / OpenAI-compatible / self-hosted endpoints"
-        ) }}
+        </div>
+        <div class="form-group col-md-4">
+          <label for="model-price">Model Price</label>
+          <input type="text" id="model-price" class="form-control" readonly value="N/A">
+          <small class="form-text text-muted">
+            Estimated cost per 1M tokens or per minute.
+          </small>
+        </div>
       </div>
 
       <div class="form-group">
@@ -101,18 +64,45 @@
 </div>
 
 <script>
-  // Show the custom-provider text input only when the user picks
-  // "Other / custom" in the dropdown.
-  (function () {
-    var sel = document.getElementById("ai_provider_select");
-    var wrap = document.getElementById("ai_provider_custom_wrap");
-    if (!sel || !wrap) return;
-    function sync() {
-      wrap.style.display = sel.value === "custom" ? "" : "none";
+document.addEventListener('DOMContentLoaded', function() {
+  const modelSelect = document.getElementById('ai_model');
+  const priceInput = document.getElementById('model-price');
+  
+  const MODEL_PRICES = {
+    "gpt-5-nano": "$0.05 / $0.40 per 1M tokens",
+    "gpt-5.4-nano": "$0.20 per 1M tokens",
+    "gpt-5.4-mini": "$0.75 per 1M tokens",
+    "gpt-5.4": "$2.50 / $15.00 per 1M tokens",
+    "gpt-5.5": "$5.00 / $30.00 per 1M tokens",
+    "tts-1": "Fast/cheap TTS",
+    "tts-1-hd": "Higher quality TTS",
+    "gpt-4o-mini-tts": "~$0.015/min",
+    "claude-haiku-4-5": "$1.00 / $5.00 per 1M tokens",
+    "claude-sonnet-4-6": "$3.00 / $15.00 per 1M tokens",
+    "claude-opus-4-7": "$5.00 / $25.00 per 1M tokens",
+    "gemini-2.5-flash-lite": "$0.10 / $0.40 per 1M tokens",
+    "gemini-2.5-flash": "$0.30 / $2.50 per 1M tokens",
+    "gemini-2.5-pro": "Premium pricing",
+    "gemini-3-pro": "$2.00 / $12.00 per 1M tokens",
+    "gemini-2.5-flash-preview-tts": "TTS / Native audio",
+    "gemini-2.5-pro-preview-tts": "TTS / Native audio",
+    "gemini-live-2.5-flash-native-audio": "Live voice (multilingual)"
+  };
+
+  function updatePrice() {
+    const selectedModel = modelSelect.value;
+    if (selectedModel && MODEL_PRICES[selectedModel]) {
+      priceInput.value = MODEL_PRICES[selectedModel];
+    } else {
+      priceInput.value = "N/A / Custom";
     }
-    sel.addEventListener("change", sync);
-    sync();
-  })();
+  }
+
+  if (modelSelect && priceInput) {
+    modelSelect.addEventListener('change', updatePrice);
+    updatePrice();
+  }
+});
 </script>
 
 {% endblock content %}

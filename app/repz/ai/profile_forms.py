@@ -29,6 +29,39 @@ COMMON_PROVIDERS = [
 ]
 
 
+# Common providers and default models to make configuration easier in the UI/Form.
+PREDEFINED_OPTIONS = {
+    "openai": [
+        # cheap → flagship
+        "gpt-5-nano",          # cheapest ($0.05/$0.40)
+        "gpt-5.4-nano",        # very cheap ($0.20)
+        "gpt-5.4-mini",        # cheap mid-tier ($0.75)
+        "gpt-5.4",             # great ($2.50/$15)
+        "gpt-5.5",             # flagship ($5/$30)
+        # TTS
+        "tts-1",               # fast/cheap TTS
+        "tts-1-hd",            # higher quality TTS
+        "gpt-4o-mini-tts",     # newest, steerable, ~$0.015/min
+    ],
+    "anthropic": [
+        "claude-haiku-4-5",    # cheapest current ($1/$5)
+        "claude-sonnet-4-6",   # best balance ($3/$15) — top for nuanced translation
+        "claude-opus-4-7",     # flagship ($5/$25)
+    ],
+    "gemini": [
+        # cheap → flagship
+        "gemini-2.5-flash-lite",  # cheapest ($0.10/$0.40)
+        "gemini-2.5-flash",       # cheap, strong translation ($0.30/$2.50)
+        "gemini-2.5-pro",         # premium
+        "gemini-3-pro",           # flagship ($2/$12)
+        # TTS / native audio
+        "gemini-2.5-flash-preview-tts",
+        "gemini-2.5-pro-preview-tts",
+        "gemini-live-2.5-flash-native-audio",  # best for live multilingual voice
+    ],
+}
+
+
 LANGUAGE_CODES = [
     "en_US",
     "en_GB",
@@ -67,9 +100,10 @@ class AIProfileForm(FlaskForm):
         "Custom provider id",
         validators=[Optional(), Length(max=60)],
     )
-    ai_model = StringField(
+    ai_model = SelectField(
         "Model name",
-        validators=[Optional(), Length(max=120)],
+        choices=[],
+        validators=[Optional()],
     )
     ai_api_key = PasswordField(
         "API Key",
@@ -85,6 +119,29 @@ class AIProfileForm(FlaskForm):
         validators=[Optional()],
     )
     submit = SubmitField("Save")
+
+    def __init__(self, *args, **kwargs):
+        provider = kwargs.pop("provider", None)
+        current_model = kwargs.pop("current_model", None)
+        super().__init__(*args, **kwargs)
+        self.populate_model_choices(provider, current_model)
+
+    def populate_model_choices(self, provider, current_model=None):
+        """Dynamically populate self.ai_model choices based on provider and current_model."""
+        provider = (provider or "").lower().strip()
+        if provider in PREDEFINED_OPTIONS:
+            models = list(PREDEFINED_OPTIONS[provider])
+        else:
+            # Fallback: combine popular ones from openai, anthropic, gemini
+            models = []
+            for p in ["openai", "anthropic", "gemini"]:
+                models.extend(PREDEFINED_OPTIONS[p])
+
+        # Always ensure current user's model is in choices so selection is preserved
+        if current_model and current_model not in models:
+            models.insert(0, current_model)
+
+        self.ai_model.choices = [("", "-- Select a model --")] + [(m, m) for m in models]
 
     def validate_languages(self, field):
         if field.data:

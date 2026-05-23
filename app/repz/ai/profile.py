@@ -29,7 +29,7 @@ def profile():
         select(users).where(users.id == current_user.id)
     ).scalar_one()
 
-    form = AIProfileForm()
+    form = AIProfileForm(provider=user_obj.ai_provider, current_model=user_obj.ai_model)
 
     # Populate choices dynamically from the DB
     db_languages = session.execute(
@@ -38,13 +38,7 @@ def profile():
     form.languages.choices = [(lang, lang) for lang in db_languages]
 
     if form.validate_on_submit():
-        user_obj.ai_provider = _resolve_provider(form) or None
         user_obj.ai_model = (form.ai_model.data or "").strip() or None
-        # Only overwrite the stored API key if the user actually typed
-        # something - empty submission means "leave existing key alone".
-        if form.ai_api_key.data:
-            user_obj.ai_api_key = form.ai_api_key.data.strip() or None
-        user_obj.ai_api_base = (form.ai_api_base.data or "").strip() or None
 
         # Update language selections
         selected_langs = form.languages.data or []
@@ -54,34 +48,12 @@ def profile():
         user_obj.languages = list(db_langs)
 
         session.commit()
-        flash("AI and language settings saved.", category="success")
+        flash("AI model and language settings saved.", category="success")
         return redirect(url_for("ai.profile"))
 
-    # GET (or failed validation): pre-populate from DB. For the
-    # provider dropdown we show 'custom' if the stored value isn't one
-    # of our common choices, so the user can see/edit it.
-    if user_obj.ai_provider:
-        known = {choice[0] for choice in (form.ai_provider.choices or [])}
-        if user_obj.ai_provider in known:
-            form.ai_provider.data = user_obj.ai_provider
-        else:
-            form.ai_provider.data = "custom"
-            form.ai_provider_custom.data = user_obj.ai_provider
-    form.ai_model.data = user_obj.ai_model or ""
-    form.ai_api_base.data = user_obj.ai_api_base or ""
-    # NB: never echo the API key back into the form.
-
+    # Populate current settings for display
     if request.method == "GET":
-        if user_obj.ai_provider:
-            known = {choice[0] for choice in (form.ai_provider.choices or [])}
-            if user_obj.ai_provider in known:
-                form.ai_provider.data = user_obj.ai_provider
-            else:
-                form.ai_provider.data = "custom"
-                form.ai_provider_custom.data = user_obj.ai_provider
         form.ai_model.data = user_obj.ai_model or ""
-        form.ai_api_base.data = user_obj.ai_api_base or ""
-        # NB: never echo the API key back into the form.
         form.languages.data = [lang_obj.language for lang_obj in user_obj.languages]
 
     return render_template(

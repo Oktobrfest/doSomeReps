@@ -31,6 +31,9 @@ def init_app():
     # lets you reference url_for in .js files
     fujs = FlaskUtilJs(app)    
 
+    from .vite import vite_asset
+    app.jinja_env.globals['vite_asset'] = vite_asset
+
     with app.app_context():
         
         env = os.getenv('FLASK_ENV', 'production')
@@ -83,6 +86,7 @@ def init_app():
         # `ai` blueprint declared in repz.routes.
         from repz.ai import profile as _ai_profile  # noqa: F401
         from repz.ai import question_generator as _ai_question_generator  # noqa: F401
+        from repz.ai import integration as _ai_integration  # noqa: F401
         from repz.routes import ai
         from repz.audio.audio import audio  # noqa: F401
 

@@ -1,30 +1,164 @@
 <!DOCTYPE html>
 {% block categories %}
-<div class="container p-3 my-3 border rounded-8 categories-group">
-  <div class="panel-group">
-    <center>
-      <h1 class="category-title">Categories</h1>
-    </center>
-    <button id="collapse-button" class="btn btn-secondary" data-toggle="collapse"
-      data-target="#category-section">Show/Hide Filters</button>
-    <div id="category-section"
-      class="collapse {% if selected_categories is not defined or selected_categories == 'Not set' %} show {% endif %}">
-      <ul class="list-group list-group-flush form-group" id="categories">
-        {% for category in category_list %}
-        {% set cat = (category|replace( " ", "_" ))|trim %}
-        <li class="list-group-item category-item border">
-          <label for="category_name" class="checkbox-inline"></label>
-          <input type="checkbox" value={{ cat }} name="category_name" class="category_name custom-checkbox" {% if
-            cat in selected_categories or (cats_due is defined and cat in cats_due) %} checked="checked" {% endif %}>
-          &nbsp {{ category }}
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-  <button id="select-all-btn" class="btn btn-secondary collapse show" type="button">Select All</button>
-</div>
+<style>
+  #categories {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    margin: 15px 0 !important;
+    list-style: none !important;
+  }
+  #categories .category-item {
+    max-width: 150px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 6px 10px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    border-radius: 8px !important;
+  }
+  #categories .category-text {
+    font-size: 0.82rem !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    scrollbar-width: thin;
+    margin-left: 6px;
+    flex-grow: 1;
+  }
+  #categories .category-text::-webkit-scrollbar {
+    height: 3px;
+  }
+  #categories .category-text::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  .category_name.custom-checkbox {
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+  }
+</style>
+<div class="container p-3 my-3 border rounded-8 categories-group" id="react-categories-root"></div>
 <hr>
+
+<!-- Load React & ReactDOM -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+<script type="text/javascript">
+  (function() {
+    const e = React.createElement;
+
+    // Server-side values injected safely into JS
+    const categoryList = [
+      {% for category in category_list %}
+        {
+          original: {{ category|tojson }},
+          slug: {{ (category|replace(" ", "_"))|trim|tojson }}
+        },
+      {% endfor %}
+    ];
+
+    const initialSelected = [
+      {% if selected_categories is defined and selected_categories != 'Not set' %}
+        {% if selected_categories is string %}
+          {{ selected_categories|tojson }}
+        {% else %}
+          {% for cat in selected_categories %}
+            {{ cat|tojson }},
+          {% endfor %}
+        {% endif %}
+      {% endif %}
+    ];
+
+    const initialCatsDue = [
+      {% if cats_due is defined %}
+        {% for cat in cats_due %}
+          {{ cat|tojson }},
+        {% endfor %}
+      {% endif %}
+    ];
+
+    // Determine if the filter section should start as shown
+    const initiallyCollapsed = !(initialSelected.length === 0 || initialSelected.includes('Not set'));
+
+    function CategoryApp() {
+      // Set of checked category slugs
+      const [checkedCats, setCheckedCats] = React.useState(() => {
+        const initial = new Set();
+        categoryList.forEach(item => {
+          if (initialSelected.includes(item.slug) || initialCatsDue.includes(item.slug)) {
+            initial.add(item.slug);
+          }
+        });
+        return initial;
+      });
+
+      const [collapsed, setCollapsed] = React.useState(initiallyCollapsed);
+
+      const handleToggle = (slug) => {
+        const next = new Set(checkedCats);
+        if (next.has(slug)) {
+          next.delete(slug);
+        } else {
+          next.add(slug);
+        }
+        setCheckedCats(next);
+      };
+
+      const handleSelectAll = () => {
+        if (checkedCats.size === categoryList.length) {
+          setCheckedCats(new Set());
+        } else {
+          setCheckedCats(new Set(categoryList.map(item => item.slug)));
+        }
+      };
+
+      return e('div', { className: 'panel-group' },
+        e('center', null,
+          e('h1', { className: 'category-title' }, 'Categories')
+        ),
+        e('button', {
+          id: 'collapse-button',
+          className: 'btn btn-secondary',
+          type: 'button',
+          onClick: () => setCollapsed(!collapsed)
+        }, 'Show/Hide Filters'),
+        e('div', {
+          id: 'category-section',
+          className: 'collapse' + (collapsed ? '' : ' show')
+        },
+          e('ul', { className: 'list-group list-group-flush form-group', id: 'categories' },
+            categoryList.map(item =>
+              e('li', { key: item.slug, className: 'list-group-item category-item border' },
+                e('input', {
+                  type: 'checkbox',
+                  value: item.slug,
+                  name: 'category_name',
+                  className: 'category_name custom-checkbox',
+                  checked: checkedCats.has(item.slug),
+                  onChange: () => handleToggle(item.slug)
+                }),
+                e('span', { className: 'category-text' }, item.original)
+              )
+            )
+          )
+        ),
+        e('button', {
+          id: 'select-all-btn',
+          className: 'btn btn-secondary collapse show',
+          type: 'button',
+          onClick: handleSelectAll
+        }, checkedCats.size === categoryList.length ? 'Deselect All' : 'Select All')
+      );
+    }
+
+    const container = document.getElementById('react-categories-root');
+    const root = ReactDOM.createRoot(container);
+    root.render(e(CategoryApp));
+  })();
+</script>
+
 <script src="https://unpkg.com/promise-polyfill@7.1.2/dist/polyfill.min.js"></script>
 <script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
 {{ flask_util_js.js }}
