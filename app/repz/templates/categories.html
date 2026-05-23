@@ -4,8 +4,14 @@
 <hr>
 
 <!-- Load React, ReactDOM, and Framer Motion -->
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script type="text/javascript">
+  if (!window.React) {
+    document.write('<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin><\/script>');
+  }
+  if (!window.ReactDOM) {
+    document.write('<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin><\/script>');
+  }
+</script>
 <script src="https://unpkg.com/framer-motion@11/dist/framer-motion.js" crossorigin></script>
 
 <script type="text/javascript">
@@ -43,7 +49,10 @@
       {% endif %}
     ];
 
-    const initiallyCollapsed = !(initialSelected.length === 0 || initialSelected.includes('Not set'));
+    const hideSavedLists = {% if hide_saved_lists %}true{% else %}false{% endif %};
+    const showHeader = {% if hide_header %}false{% else %}true{% endif %};
+
+    const initiallyCollapsed = !(initialSelected.length === 0 || initialSelected.includes('Not set')) && showHeader;
 
     function CategoryApp() {
       const [checkedCats, setCheckedCats] = React.useState(() => {
@@ -157,7 +166,6 @@
 
       const handleDeleteList = () => {
         if (!selectedListId) return;
-        if (!confirm('Are you sure you want to delete this list?')) return;
 
         fetch(`/api/category-lists/${selectedListId}`, { method: 'DELETE' })
           .then(res => res.json())
@@ -187,7 +195,7 @@
 
       return e('div', { className: 'panel-group' },
         // Beautiful face-lifted Header with Show Filters toggler built beautifully side by side
-        e('div', {
+        showHeader && e('div', {
           style: {
             display: 'flex',
             justifyContent: 'space-between',
@@ -223,10 +231,10 @@
         ),
 
         // Rest of the UI is only visible if NOT collapsed.
-        !collapsed && e('div', { id: 'category-section' },
-          
+        (!collapsed || !showHeader) && e('div', { id: 'category-section' },
+
           // Dropdown selection & actions for Saved Lists (same form style as create new list form!)
-          e('div', {
+          !hideSavedLists && e('div', {
             className: 'mb-3 d-flex align-items-center',
             style: { gap: '6px', flexWrap: 'wrap' }
           },
@@ -255,7 +263,7 @@
               title: 'Delete selected list',
               style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
             }, 'Delete'),
-            
+
             // Thin divider
             e('div', { style: { borderLeft: '1px solid rgba(0,0,0,0.15)', height: '20px', margin: '0 4px' } }),
 
@@ -314,6 +322,7 @@
                   value: item.slug,
                   name: 'category_name',
                   className: 'category_name custom-checkbox',
+                  'data-original': item.original,
                   checked: checkedCats.has(item.slug),
                   onChange: () => handleToggle(item.slug),
                   style: { marginRight: '6px', cursor: 'pointer' }

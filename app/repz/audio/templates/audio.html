@@ -404,6 +404,14 @@
       {% endfor %}
     </div>
 
+    {% if q.created_by_username == user.username %}
+      <div class="audio-edit-container mt-3 text-center">
+        <a href="{{ url_for('home.edit_question_react') }}?q_id={{ q.question_id }}" class="btn btn-secondary font-weight-bold">
+          Edit Question
+        </a>
+      </div>
+    {% endif %}
+
   </div>
   {# end content area #}
 
@@ -422,51 +430,7 @@
 
   {% endif %}
 
-  {# ══════════════════════════════════════════════════════════════════
-     HAMBURGER CATEGORIES BAR (beneath everything)
-  ══════════════════════════════════════════════════════════════════ #}
-  <div class="audio-cat-bar audio-full-bleed">
-    <button type="button"
-            class="audio-cat-toggle"
-            data-toggle="collapse"
-            data-target="#audio-cat-panel"
-            aria-expanded="false"
-            aria-controls="audio-cat-panel">
-      <span>&#9776;&nbsp; Categories</span>
-      <span>
-        {% if selected_categories and selected_categories != 'Not set' %}
-          <span class="badge badge-secondary">{{ selected_categories | length }} selected</span>
-        {% endif %}
-        <span style="font-size:0.75rem; margin-left:6px;">&#9660;</span>
-      </span>
-    </button>
-
-    <div id="audio-cat-panel" class="collapse audio-cat-panel">
-      <ul class="audio-cat-list">
-        {% for cat_item in category_list %}
-          {% set cat = (cat_item | replace(" ", "_")) | trim %}
-          <li>
-            <input type="checkbox"
-                   id="acat-{{ cat }}"
-                   name="category_name"
-                   value="{{ cat }}"
-                   {% if selected_categories and selected_categories != 'Not set' and cat in selected_categories %}
-                     checked
-                   {% endif %}>
-            <label for="acat-{{ cat }}">{{ cat_item }}</label>
-          </li>
-        {% endfor %}
-      </ul>
-      <button type="submit"
-              name="start-quiz"
-              value="start"
-              class="btn btn-primary btn-block">
-        Apply &amp; Start
-      </button>
-    </div>
-  </div>
-  {# end categories bar #}
-
+  {% include "categories.html" %}
 </form>
 
 {# ══════════════════════════════════════════════════════════════════

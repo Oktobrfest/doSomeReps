@@ -105,6 +105,9 @@ window.onload = (event) => {
         }
 
         select_all_btn.addEventListener('click', handleSelectAllClick);
+
+        // Check if q_id parameter is present in the URL to auto-populate the question
+        // Removed original auto-populate logic because we now redirect to the special React page
     }
     // expanding textarea fields
     if ((window.location.pathname === '/addcontent') || (window.location.pathname === '/editquestions')) {
@@ -623,15 +626,21 @@ function populateQuestion(event) {
             data['categories'].forEach(function (item) {
                 let cat = addUnderscores(item);
                 const checkbox = document.querySelector('#editquestionform-area input[type="checkbox"][value="' + cat + '"]');
-                checkbox.checked = true;
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
             });
 
             const submitBtn = document.getElementsByClassName('question-submit-button')[0];
             const autoQue = document.getElementById('auto-que-checkbox-section');
 
             // Set its display property to none
-            submitBtn.style.display = 'none';
-            autoQue.style.display = 'none';
+            if (submitBtn) {
+                submitBtn.style.display = 'none';
+            }
+            if (autoQue) {
+                autoQue.style.display = 'none';
+            }
 
             // Handle images
             // loop through the image strings in the "pics_by_type" object

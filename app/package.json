@@ -3,12 +3,13 @@
     "version": "0.1",
     "description": "",
     "dependencies": {
-        "prismjs": "^1.0.0",
-        "webpack": "latest",
-        "webpack-cli": "latest",
-        "babel-loader": "^8.0.0",
         "@babel/core": "^7.0.0",
-        "@babel/preset-env": "^7.0.0"
+        "@babel/preset-env": "^7.0.0",
+        "babel-loader": "^8.0.0",
+        "prismjs": "^1.0.0",
+        "sonner": "^2.0.7",
+        "webpack": "latest",
+        "webpack-cli": "latest"
     },
     "devDependencies": {
         "webpack-dev-server": "latest"

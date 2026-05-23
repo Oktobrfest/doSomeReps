@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Question (React){% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mt-4 shadow-sm">
+            <div class="card-body">
+                <!-- React root element -->
+                <div id="react-edit-question-root">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading React UI...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Loading React App with Vite...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Render React & Vite asset -->
+<div class="mt-4 pt-4 border-top">
+    {% set hide_header = true %}
+    {% include "categories.html" %}
+</div>
+{{ vite_asset("src/edit_question.tsx") }}
+{% endblock %}

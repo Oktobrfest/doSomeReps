@@ -1,8 +1,24 @@
 {
+  "_client-Ds7D3P6J.js": {
+    "file": "assets/client-Ds7D3P6J.js",
+    "name": "client"
+  },
+  "src/edit_question.tsx": {
+    "file": "assets/react_edit_question-BCMcw0ge.js",
+    "name": "react_edit_question",
+    "src": "src/edit_question.tsx",
+    "isEntry": true,
+    "imports": [
+      "_client-Ds7D3P6J.js"
+    ]
+  },
   "src/main.tsx": {
-    "file": "assets/ai_integration-CbQhWVFJ.js",
+    "file": "assets/ai_integration-BClcbBEb.js",
     "name": "ai_integration",
     "src": "src/main.tsx",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_client-Ds7D3P6J.js"
+    ]
   }
 }

@@ -5,15 +5,16 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   build: {
-    manifest: true,
-    outDir: "../app/repz/static/vite_dist",
-    emptyOutDir: true,
-    rollupOptions: {
-      input: {
-        ai_integration: "src/main.tsx",
-      },
+  manifest: true,
+  outDir: "../app/repz/static/vite_dist",
+  emptyOutDir: true,
+  rollupOptions: {
+    input: {
+      ai_integration: "src/main.tsx",
+      react_edit_question: "src/edit_question.tsx",
     },
   },
+},
   server: {
     origin: "http://localhost:5173",
     cors: true,

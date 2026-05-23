@@ -32,6 +32,7 @@ venv/
 # in case you put it here
 app/node_modules/
 **/node_modules/
+**/assets/
 
 # IDEs and Editors
 *.sublime-project

@@ -111,6 +111,7 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
             logging.info(f"📦 Service returned raw assets: {raw_assets}")
         except Exception as e:
             logging.error(f"❌ Failed to generate audio assets: {e}")
+            flash(f"Failed to generate audio: {str(e)}", category="error")
             raw_assets = {}
 
         audio_assets = _build_audio_assets_for_template(q=q, raw_assets=raw_assets)

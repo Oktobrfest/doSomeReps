@@ -1,7 +1,7 @@
-from flask import flash, request, session, jsonify
+from flask import flash, request, session, jsonify, current_app
 from flask_login import login_required
 from flask import g, make_response
-from ...models import q_pic, users, question, quizq, category, rating
+from ...models import q_pic, users, question, quizq, category, rating, audio
 import json
 
 
@@ -207,12 +207,28 @@ def getq():
                 {"pic_string": pic.pic_string, "pic_id": pic.pic_id} for pic in pics
             ]
 
+    audio_files = []
+    # Query audio records directly to avoid relationship loading/stale cache issues
+    audio_records = session.query(audio).filter_by(question_id=question_id).all()
+    from flask import url_for
+    for aud in audio_records:
+        play_url = url_for("audio.serve_audio_file", audio_id=aud.audio_id) if aud.audio_id else aud.public_url
+        audio_files.append({
+            "audio_id": aud.audio_id,
+            "part": aud.part,
+            "audio_text": aud.audio_text,
+            "public_url": play_url,
+            "language": aud.language,
+            "object_key": aud.object_key,
+        })
+
     q = {
         "question_text": question_obj.question_text,
         "hint": question_obj.hint,
         "answer": question_obj.answer,
         "id": question_obj.question_id,
         "pics_by_type": pics_by_type,
+        "audio_files": audio_files,
         "categories": [c.category_name for c in question_obj.categories],
         "privacy": question_obj.privacy,
     }
@@ -221,6 +237,33 @@ def getq():
     response = make_response(res_q)
     # response.headers['Access-Control-Allow-Origin'] = '*'
     return response
+
+
+@quest_ajx.route("/delete_audio", methods=["POST"], endpoint="delete_audio")
+@login_required
+def delete_audio():
+    import logging
+    data = request.get_json()
+    audio_id = data.get("audio_id")
+    if not audio_id:
+        return jsonify({"error": "Missing audio ID"}), 400
+
+    aud = session.query(audio).filter_by(audio_id=audio_id).first()
+    if not aud:
+        return jsonify({"error": "Audio asset not found"}), 404
+
+    # Delete from S3 if object_key exists
+    if aud.object_key:
+        try:
+            current_app.s3.delete_s3_object(object_name=aud.object_key)
+        except Exception as e:
+            logging.error(f"Error deleting audio from S3: {e}")
+
+    # Delete from database
+    session.delete(aud)
+    session.commit()
+
+    return jsonify({"success": True})
 
 
 @quest_ajx.route("/deleteq", methods=["POST"], endpoint="deleteq")
@@ -251,6 +294,13 @@ def deleteq():
     msg = "Question Deleted"
     flash(msg, category="success")
     return msg
+
+
+@quest_ajx.route("/all_categories", methods=["GET"], endpoint="all_categories")
+@login_required
+def all_categories():
+    from repz.bluehelpers import get_all_categories
+    return jsonify(get_all_categories())
 
 
 @quest_ajx.route("/rateq", methods=["POST"], endpoint="rateq")

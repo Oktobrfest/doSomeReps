@@ -358,6 +358,30 @@ def editquestions():
     )
     
 
+@home.route("/edit_question_react", methods=["GET"], endpoint="edit_question_react")
+@login_required
+def edit_question_react():
+    q_id = request.args.get("q_id")
+    category_list = get_all_categories()
+    selected_categories = []
+    if q_id:
+        try:
+            q_id_int = int(q_id)
+            q_obj = session.query(question).filter_by(question_id=q_id_int).first()
+            if q_obj:
+                selected_categories = [c.category_name.replace(" ", "_") for c in q_obj.categories]
+        except Exception as e:
+            logging.error(f"Error fetching question {q_id}: {e}")
+
+    return render_template(
+        "edit_question_react.html",
+        user=current_user,
+        category_list=category_list,
+        selected_categories=selected_categories,
+        hide_saved_lists=True,
+    )
+
+
 @home.route("/studymaterials", methods=["GET", "POST"], endpoint="studymaterials")
 @login_required
 def studymaterials():

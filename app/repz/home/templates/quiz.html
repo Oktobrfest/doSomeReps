@@ -51,9 +51,13 @@ Quiz
 
                 <h3 id="created-by">Created By:{{ q.created_by_username }}</h3>
 
-                <!-- FUTURE TODO. LINK TO EDIT THE QUESTION:
-                <button type="button" class="edit-question-link-button btn btn-secondary font-weight-bold" id="edit-question-link-button">
-                    <a href=""</button> -->
+                {% if q.created_by_username == user.username %}
+                <div class="edit-question-link-container mb-2">
+                    <a href="{{ url_for('home.edit_question_react') }}?q_id={{ q.question_id }}" class="btn btn-secondary font-weight-bold" id="edit-question-link-button">
+                        Edit Question
+                    </a>
+                </div>
+                {% endif %}
 
                 {% if q.created_by_username != user.username %}
                 
