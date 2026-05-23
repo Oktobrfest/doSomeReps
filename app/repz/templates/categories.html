@@ -1,53 +1,17 @@
 <!DOCTYPE html>
 {% block categories %}
-<style>
-  #categories {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
-    gap: 8px !important;
-    padding: 0 !important;
-    margin: 15px 0 !important;
-    list-style: none !important;
-  }
-  #categories .category-item {
-    max-width: 150px !important;
-    display: flex !important;
-    align-items: center !important;
-    padding: 6px 10px !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    border-radius: 8px !important;
-  }
-  #categories .category-text {
-    font-size: 0.82rem !important;
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    scrollbar-width: thin;
-    margin-left: 6px;
-    flex-grow: 1;
-  }
-  #categories .category-text::-webkit-scrollbar {
-    height: 3px;
-  }
-  #categories .category-text::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-  }
-  .category_name.custom-checkbox {
-    margin: 0 !important;
-    flex-shrink: 0 !important;
-  }
-</style>
 <div class="container p-3 my-3 border rounded-8 categories-group" id="react-categories-root"></div>
 <hr>
 
-<!-- Load React & ReactDOM -->
+<!-- Load React, ReactDOM, and Framer Motion -->
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/framer-motion@11/dist/framer-motion.js" crossorigin></script>
 
 <script type="text/javascript">
   (function() {
     const e = React.createElement;
+    const motion = window.Motion.motion;
 
     // Server-side values injected safely into JS
     const categoryList = [
@@ -79,11 +43,9 @@
       {% endif %}
     ];
 
-    // Determine if the filter section should start as shown
     const initiallyCollapsed = !(initialSelected.length === 0 || initialSelected.includes('Not set'));
 
     function CategoryApp() {
-      // Set of checked category slugs
       const [checkedCats, setCheckedCats] = React.useState(() => {
         const initial = new Set();
         categoryList.forEach(item => {
@@ -95,6 +57,50 @@
       });
 
       const [collapsed, setCollapsed] = React.useState(initiallyCollapsed);
+      const [savedLists, setSavedLists] = React.useState([]);
+      const [newListName, setNewListName] = React.useState('');
+      const [isSaving, setIsSaving] = React.useState(false);
+      const [selectedListId, setSelectedListId] = React.useState('');
+
+      // Fetch saved category lists on mount
+      React.useEffect(() => {
+        fetch('/api/category-lists')
+          .then(res => res.json())
+          .then(data => {
+            if (Array.isArray(data)) {
+              setSavedLists(data);
+              const defaultList = data.find(l => l.is_default);
+              if (defaultList) {
+                // If we don't have checked categories from session, pre-select it
+                if (checkedCats.size === 0) {
+                  applyList(defaultList);
+                }
+                setSelectedListId(defaultList.id.toString());
+              }
+            }
+          })
+          .catch(err => console.error('Error fetching category lists:', err));
+      }, []);
+
+      const applyList = (list) => {
+        const next = new Set();
+        list.categories.forEach(catName => {
+          const slug = catName.replace(/ /g, '_');
+          next.add(slug);
+        });
+        setCheckedCats(next);
+      };
+
+      const handleListDropdownChange = (event) => {
+        const listId = event.target.value;
+        setSelectedListId(listId);
+        if (listId) {
+          const list = savedLists.find(l => l.id.toString() === listId);
+          if (list) {
+            applyList(list);
+          }
+        }
+      };
 
       const handleToggle = (slug) => {
         const next = new Set(checkedCats);
@@ -114,42 +120,240 @@
         }
       };
 
+      const handleCreateList = (e) => {
+        e.preventDefault();
+        if (!newListName.trim()) return;
+        setIsSaving(true);
+
+        const payload = {
+          name: newListName.trim(),
+          categories: Array.from(checkedCats),
+          is_default: savedLists.length === 0
+        };
+
+        fetch('/api/category-lists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+          .then(res => res.json())
+          .then(newList => {
+            if (newList.id) {
+              setSavedLists(prev => {
+                if (newList.is_default) {
+                  return prev.map(l => ({ ...l, is_default: false })).concat(newList);
+                }
+                return [...prev, newList];
+              });
+              setSelectedListId(newList.id.toString());
+              setNewListName('');
+            } else if (newList.error) {
+              alert(newList.error);
+            }
+          })
+          .catch(err => console.error('Error creating list:', err))
+          .finally(() => setIsSaving(false));
+      };
+
+      const handleDeleteList = () => {
+        if (!selectedListId) return;
+        if (!confirm('Are you sure you want to delete this list?')) return;
+
+        fetch(`/api/category-lists/${selectedListId}`, { method: 'DELETE' })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setSavedLists(prev => prev.filter(l => l.id.toString() !== selectedListId));
+              setSelectedListId('');
+            }
+          })
+          .catch(err => console.error('Error deleting list:', err));
+      };
+
+      const handleSetDefault = () => {
+        if (!selectedListId) return;
+        fetch(`/api/category-lists/${selectedListId}/set-default`, { method: 'POST' })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setSavedLists(prev => prev.map(l => ({
+                ...l,
+                is_default: l.id.toString() === selectedListId
+              })));
+            }
+          })
+          .catch(err => console.error('Error setting default list:', err));
+      };
+
       return e('div', { className: 'panel-group' },
-        e('center', null,
-          e('h1', { className: 'category-title' }, 'Categories')
-        ),
-        e('button', {
-          id: 'collapse-button',
-          className: 'btn btn-secondary',
-          type: 'button',
-          onClick: () => setCollapsed(!collapsed)
-        }, 'Show/Hide Filters'),
+        // Beautiful face-lifted Header with Show Filters toggler built beautifully side by side
         e('div', {
-          id: 'category-section',
-          className: 'collapse' + (collapsed ? '' : ' show')
+          style: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: collapsed ? '0' : '1rem',
+            borderBottom: collapsed ? 'none' : '2px solid rgba(255, 140, 0, 0.2)',
+            paddingBottom: collapsed ? '0' : '0.5rem'
+          }
         },
-          e('ul', { className: 'list-group list-group-flush form-group', id: 'categories' },
+          e('h3', {
+            style: {
+              margin: '0',
+              fontWeight: '700',
+              letterSpacing: '0.5px',
+              fontSize: '1.4rem',
+              color: '#000000', // Explicit black color
+              textTransform: 'uppercase'
+            }
+          }, 'Categories'),
+          e('button', {
+            id: 'collapse-button',
+            className: 'btn btn-secondary btn-sm', // Same style as Select All button!
+            type: 'button',
+            onClick: () => setCollapsed(!collapsed),
+            style: {
+              fontWeight: '600',
+              fontSize: '0.8rem',
+              color: '#ffffff', // Clean white text on secondary background
+              borderRadius: '4px',
+              padding: '4px 12px'
+            }
+          }, collapsed ? 'Show Filters' : 'Hide Filters')
+        ),
+
+        // Rest of the UI is only visible if NOT collapsed.
+        !collapsed && e('div', { id: 'category-section' },
+          
+          // Dropdown selection & actions for Saved Lists (same form style as create new list form!)
+          e('div', {
+            className: 'mb-3 d-flex align-items-center',
+            style: { gap: '6px', flexWrap: 'wrap' }
+          },
+            e('select', {
+              className: 'form-control form-control-sm',
+              value: selectedListId,
+              onChange: handleListDropdownChange,
+              style: { maxWidth: '200px', fontSize: '0.8rem', height: '31px', color: '#000000' }
+            },
+              e('option', { value: '' }, '-- Select Saved List --'),
+              savedLists.map(list =>
+                e('option', { key: list.id, value: list.id.toString() }, `${list.name}${list.is_default ? ' ★' : ''}`)
+              )
+            ),
+            selectedListId && e('button', {
+              type: 'button',
+              className: 'btn btn-secondary btn-sm', // Same Select All style button
+              onClick: handleSetDefault,
+              title: 'Set selected list as default',
+              style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
+            }, 'Set Default'),
+            selectedListId && e('button', {
+              type: 'button',
+              className: 'btn btn-secondary btn-sm', // Same Select All style button
+              onClick: handleDeleteList,
+              title: 'Delete selected list',
+              style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
+            }, 'Delete'),
+            
+            // Thin divider
+            e('div', { style: { borderLeft: '1px solid rgba(0,0,0,0.15)', height: '20px', margin: '0 4px' } }),
+
+            // Create list input and button (harmonized on the same line)
+            e('input', {
+              type: 'text',
+              className: 'form-control form-control-sm',
+              placeholder: 'Save selection as...',
+              value: newListName,
+              onChange: (e) => setNewListName(e.target.value),
+              style: { maxWidth: '200px', fontSize: '0.8rem', height: '31px', color: '#000000' }
+            }),
+            e('button', {
+              type: 'button',
+              onClick: handleCreateList,
+              className: 'btn btn-secondary btn-sm', // Same Select All style button
+              disabled: isSaving || !newListName.trim() || checkedCats.size === 0,
+              style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
+            }, 'Save List')
+          ),
+
+          // Selection grid of category checkboxes (With font color set to black)
+          e(motion.ul, {
+            layout: true,
+            className: 'list-group form-group',
+            id: 'categories',
+            style: {
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gap: '8px',
+              padding: '0',
+              listStyleType: 'none',
+              marginBottom: '1rem'
+            }
+          },
             categoryList.map(item =>
-              e('li', { key: item.slug, className: 'list-group-item category-item border' },
+              e(motion.li, {
+                layout: true,
+                initial: { opacity: 0, scale: 0.9 },
+                animate: { opacity: 1, scale: 1 },
+                transition: { type: "spring", stiffness: 300, damping: 25 },
+                key: item.slug,
+                className: 'list-group-item category-item border rounded shadow-sm',
+                style: {
+                  margin: '0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '6px 8px',
+                  backgroundColor: checkedCats.has(item.slug) ? '#ff8c00' : '#ffa500',
+                  color: '#000000', // Explicit black color
+                  transition: 'background-color 0.2s ease'
+                }
+              },
                 e('input', {
                   type: 'checkbox',
                   value: item.slug,
                   name: 'category_name',
                   className: 'category_name custom-checkbox',
                   checked: checkedCats.has(item.slug),
-                  onChange: () => handleToggle(item.slug)
+                  onChange: () => handleToggle(item.slug),
+                  style: { marginRight: '6px', cursor: 'pointer' }
                 }),
-                e('span', { className: 'category-text' }, item.original)
+                e('label', {
+                    className: 'checkbox-inline mb-0',
+                    style: {
+                      cursor: 'pointer',
+                      flexGrow: '1',
+                      fontWeight: checkedCats.has(item.slug) ? '700' : '500',
+                      fontSize: '0.8rem',
+                      color: '#000000', // Explicit black color for text
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    },
+                    onClick: () => handleToggle(item.slug),
+                    title: item.original
+                }, item.original)
               )
             )
+          ),
+
+          // Face-lifted Select All button
+          e('div', { style: { display: 'flex', justifyContent: 'flex-start' } },
+            e('button', {
+              id: 'select-all-btn',
+              className: 'btn btn-secondary btn-sm',
+              type: 'button',
+              onClick: handleSelectAll,
+              style: {
+                fontWeight: '600',
+                fontSize: '0.8rem',
+                borderRadius: '4px',
+                padding: '4px 12px',
+                color: '#ffffff'
+              }
+            }, checkedCats.size === categoryList.length ? 'Deselect All' : 'Select All')
           )
-        ),
-        e('button', {
-          id: 'select-all-btn',
-          className: 'btn btn-secondary collapse show',
-          type: 'button',
-          onClick: handleSelectAll
-        }, checkedCats.size === categoryList.length ? 'Deselect All' : 'Select All')
+        )
       );
     }
 

@@ -230,16 +230,19 @@ window.onload = (event) => {
     }
 
     if ((window.location.pathname === '/quiz') || (window.location.pathname === '/quemore') || (window.location.pathname === '/editquestions')) {
-        document.getElementById("select-all-btn").addEventListener("click", function () {
-            event.preventDefault();
-            let checkboxes = document.querySelectorAll('input[type="checkbox"].category_name');
-            let allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+        const select_all_btn = document.getElementById("select-all-btn");
+        if (select_all_btn) {
+            select_all_btn.addEventListener("click", function () {
+                event.preventDefault();
+                let checkboxes = document.querySelectorAll('input[type="checkbox"].category_name');
+                let allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
 
-            for (let checkbox of checkboxes) {
-                checkbox.checked = !allChecked;
-            }
-            this.textContent = allChecked ? 'Select All' : 'Uncheck All';
-        });
+                for (let checkbox of checkboxes) {
+                    checkbox.checked = !allChecked;
+                }
+                this.textContent = allChecked ? 'Select All' : 'Uncheck All';
+            });
+        }
     }
 
     if (window.location.pathname === '/topiclist') {

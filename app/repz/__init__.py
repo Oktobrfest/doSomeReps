@@ -94,6 +94,8 @@ def init_app():
         app.register_blueprint(home)
         app.register_blueprint(auth)
         app.register_blueprint(catz)
+        from repz.catz.catz_api import catz_api
+        app.register_blueprint(catz_api)
         app.register_blueprint(catz_static, url_prefix='/catz')
         app.register_blueprint(quest_ajx)
         app.register_blueprint(user_ajx)

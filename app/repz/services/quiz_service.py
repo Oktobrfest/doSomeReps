@@ -212,7 +212,20 @@ def _build_audio_assets_for_template(q: dict, raw_assets: dict) -> dict:
 def _get_selected_categories():
     """One source of truth for category session/form behavior."""
     if request.method == "GET":
-        return get_session("quiz_category_names")
+        saved_names = get_session("quiz_category_names")
+        if saved_names == "Not set" or not saved_names:
+            # Check if user has a default category list
+            from repz.models import category_lists
+            from repz.database import session
+            default_list = session.execute(
+                select(category_lists)
+                .where(category_lists.user_id == current_user.id)
+                .where(category_lists.is_default == True)
+            ).scalars().first()
+            if default_list:
+                saved_names = [c.category_name.replace(" ", "_") for c in default_list.categories]
+                set_session("quiz_category_names", saved_names)
+        return saved_names
 
     selected_categories = request.form.getlist("category_name")
     set_session("quiz_category_names", selected_categories)
