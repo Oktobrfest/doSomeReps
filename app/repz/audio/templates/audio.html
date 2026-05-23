@@ -439,6 +439,13 @@
 (function () {
   'use strict';
 
+  // Force page reload when navigating back via history back to prevent stale/deleted audio 404s
+  window.addEventListener('pageshow', function (event) {
+    if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+      window.location.reload();
+    }
+  });
+
   var questionState = {
     index: 0,
     active: false
