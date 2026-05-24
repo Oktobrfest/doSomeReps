@@ -1,24 +1,33 @@
 {
-  "_client-Ds7D3P6J.js": {
-    "file": "assets/client-Ds7D3P6J.js",
+  "_client-BG2PaGfe.js": {
+    "file": "assets/client-BG2PaGfe.js",
     "name": "client"
   },
+  "src/audio_command_system.tsx": {
+    "file": "assets/audio_command_system-C-hqZrId.js",
+    "name": "audio_command_system",
+    "src": "src/audio_command_system.tsx",
+    "isEntry": true,
+    "imports": [
+      "_client-BG2PaGfe.js"
+    ]
+  },
   "src/edit_question.tsx": {
-    "file": "assets/react_edit_question-BCMcw0ge.js",
+    "file": "assets/react_edit_question-Hd4DbbOZ.js",
     "name": "react_edit_question",
     "src": "src/edit_question.tsx",
     "isEntry": true,
     "imports": [
-      "_client-Ds7D3P6J.js"
+      "_client-BG2PaGfe.js"
     ]
   },
   "src/main.tsx": {
-    "file": "assets/ai_integration-BClcbBEb.js",
+    "file": "assets/ai_integration-uhgTYF3l.js",
     "name": "ai_integration",
     "src": "src/main.tsx",
     "isEntry": true,
     "imports": [
-      "_client-Ds7D3P6J.js"
+      "_client-BG2PaGfe.js"
     ]
   }
 }

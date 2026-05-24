@@ -7,6 +7,7 @@
         "@babel/preset-env": "^7.0.0",
         "babel-loader": "^8.0.0",
         "prismjs": "^1.0.0",
+        "sherpa-onnx": "^1.13.2",
         "sonner": "^2.0.7",
         "webpack": "latest",
         "webpack-cli": "latest"

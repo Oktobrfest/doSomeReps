@@ -12,6 +12,7 @@ export default defineConfig({
     input: {
       ai_integration: "src/main.tsx",
       react_edit_question: "src/edit_question.tsx",
+      audio_command_system: "src/audio_command_system.tsx",
     },
   },
 },

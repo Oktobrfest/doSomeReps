@@ -290,6 +290,9 @@
   ══════════════════════════════════════════════════════════════════ #}
   <div class="audio-action-area">
 
+    {# ── React Voice Command Listen Button ── #}
+    <div id="audio-command-root" class="w-100 mb-3"></div>
+
     {# ── Read Question ── #}
     <button type="button"
             id="audio-read-btn"
@@ -982,5 +985,7 @@
   });
 })();
 </script>
+
+{{ vite_asset("src/audio_command_system.tsx") }}
 
 {% endblock content %}

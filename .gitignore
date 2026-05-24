@@ -125,3 +125,8 @@ alembic.ini
 piper_voices/
 *.onnx
 *.onnx.json
+
+# Voice Models and WASM binaries
+*.wasm
+*.model
+app/repz/static/models/kws/sherpa-*.js

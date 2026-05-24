@@ -57,3 +57,4 @@ cryptography
 pydantic
 piper-tts
 pytest
+sherpa-onnx
