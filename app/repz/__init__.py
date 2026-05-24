@@ -24,40 +24,40 @@ sess = Session()
 def init_app():
     """Create Flask application."""
     app = Flask(__name__, instance_relative_config=False)
-        
+
     # login_manager = LoginManager()
-    # login_manager.init_app(app)            
-        
+    # login_manager.init_app(app)
+
     # lets you reference url_for in .js files
-    fujs = FlaskUtilJs(app)    
+    fujs = FlaskUtilJs(app)
 
     from .vite import vite_asset
     app.jinja_env.globals['vite_asset'] = vite_asset
 
     with app.app_context():
-        
+
         env = os.getenv('FLASK_ENV', 'production')
-        
+
         from .configs.config import Config
-        
+
         # try:
         #     app.config.from_object(Config)
         # except Exception as e:
         #     print(f"Failed to load configuration: {e}")
         #     raise
-        
+
         # Load the appropriate configuration
         if env == 'development':
             from .configs.dev import DevConfig as Conf
         else:  # Defaults to production
             from .configs.prod import ProdConfig as Conf
-        
+
         try:
             app.config.from_object(Conf)
         except Exception as e:
             print(f"Failed to load Dev or Prod Configuration: {e}")
             raise
-    
+
         cache.init_app(app)
         sess.init_app(app)
 
@@ -70,10 +70,10 @@ def init_app():
         image_paths = Conf.initialize_image_paths()
         for path in image_paths:
             Config.setup_image_paths(path)
-                 
+
         from .database import session
         from .models import users
-        
+
         # Blueprints
         # Import parts of our application
         from repz.home.home import home
@@ -106,14 +106,14 @@ def init_app():
         if env == 'development':
             from repz.auth.dev_login import dev_auth
             app.register_blueprint(dev_auth)
-        
+
         g.user = current_user
-        
+
         app.s3 = S3(app)
-        
+
         login_manager = LoginManager(app)
         login_manager.login_view = "dev_auth.dev_login_index" if env == 'development' else "auth.login"
-                       
+
         @login_manager.user_loader
         def load_user(user_id):
             if user_id == 'None':
@@ -132,9 +132,9 @@ def init_app():
         def unauthorized():
             """Redirect unauthorized users to Login page."""
             flash('You must be logged in to view that page.')
-            
+
             return flask.redirect(flask.url_for('auth.login', user=current_user))
-        
+
         @app.teardown_appcontext
         def shutdown_session(exception=None):
             if exception:
@@ -144,7 +144,7 @@ def init_app():
         @app.after_request
         def add_coop_coep_headers(response):
             response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-            response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+            response.headers["Cross-Origin-Embedder-Policy"] = "credentialless"
             return response
-                  
+
     return app

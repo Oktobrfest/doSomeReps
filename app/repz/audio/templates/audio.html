@@ -115,6 +115,51 @@
     min-height: 0;   /* prevents overflow on small screens */
   }
 
+  /* React Voice Command "Listen" button styling: same style/width, half height */
+  #audio-command-root {
+    flex: 0.5 !important;
+    margin-bottom: 0 !important;
+    display: flex;
+    width: 100%;
+  }
+
+  .audio-voice-command-container {
+    width: 100% !important;
+    height: 100% !important;
+    margin-bottom: 0 !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .audio-voice-command-container > div:first-child {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex;
+    gap: 8px;
+  }
+
+  #audio-command-root button {
+    font-size: clamp(1.1rem, 4.5vw, 1.6rem) !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    border: none !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+    transition: filter 0.1s !important;
+    flex: 1 !important;
+    height: 100% !important;
+    width: 100% !important;
+  }
+
+  #audio-command-root button:active {
+    filter: brightness(0.88) !important;
+  }
+
   /* The middle "Get Answer / Correct+Wrong" slot stays as a flex container */
   .audio-middle-slot {
     display: flex;
@@ -291,7 +336,16 @@
   <div class="audio-action-area">
 
     {# ── React Voice Command Listen Button ── #}
-    <div id="audio-command-root" class="w-100 mb-3"></div>
+    <div id="audio-command-root" class="w-100"></div>
+
+    {# ── Question Images ── #}
+    {% for pic in q.pics['question_image'] %}
+      {% if pic %}
+        <div class="text-center w-100 mb-2">
+          <img src="{{ pic }}" class="img-fluid" alt="Question image" style="max-height: 300px; object-fit: contain;">
+        </div>
+      {% endif %}
+    {% endfor %}
 
     {# ── Read Question ── #}
     <button type="button"
@@ -320,6 +374,15 @@
 
     {# ── Middle slot: Get Answer ↔ Correct / Wrong ── #}
     <div class="audio-middle-slot" id="audio-middle-slot">
+
+      {# ── Answer pictures ── #}
+      <div id="audio-answer-pics" style="display:none;" class="w-100 text-center">
+        {% for pic in q.pics['answer_pics'] %}
+          {% if pic %}
+            <img src="{{ pic }}" class="img-fluid mb-2" alt="Answer image" style="max-height: 300px; object-fit: contain;">
+          {% endif %}
+        {% endfor %}
+      </div>
 
       {# Get Answer (visible by default) #}
       <button type="button"
@@ -382,13 +445,6 @@
       {% endfor %}
     {% endif %}
 
-
-    {% for pic in q.pics['question_image'] %}
-      {% if pic %}
-        <img src="{{ pic }}" class="img-fluid mb-2" alt="Question image">
-      {% endif %}
-    {% endfor %}
-
     {# ── Answer (hidden until Get Answer pressed) ── #}
     <div id="audio-answer-section" class="audio-answer-box" style="display:none;">
       <h5>&#128218; The Answer</h5>
@@ -399,12 +455,6 @@
           </audio>
         {% endfor %}
       {% endif %}
-
-      {% for pic in q.pics['answer_pics'] %}
-        {% if pic %}
-          <img src="{{ pic }}" class="img-fluid mt-2" alt="Answer image">
-        {% endif %}
-      {% endfor %}
     </div>
 
     {% if q.created_by_username == user.username %}
@@ -900,6 +950,7 @@
     var getAnswerBtn = document.getElementById('audio-get-answer-btn');
     var resultPair = document.getElementById('audio-result-pair');
     var answerSection = document.getElementById('audio-answer-section');
+    var answerPics = document.getElementById('audio-answer-pics');
 
     if (getAnswerBtn) {
       getAnswerBtn.style.display = 'none';
@@ -911,6 +962,10 @@
 
     if (answerSection) {
       answerSection.style.display = 'block';
+    }
+
+    if (answerPics) {
+      answerPics.style.display = 'block';
     }
 
     if (questionState.active) {
@@ -986,6 +1041,6 @@
 })();
 </script>
 
-{{ vite_asset("src/audio_command_system.tsx") }}
+{{ vite_asset("src/audio/audio_command_system.tsx") }}
 
 {% endblock content %}

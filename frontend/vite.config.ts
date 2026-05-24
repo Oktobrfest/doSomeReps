@@ -12,7 +12,7 @@ export default defineConfig({
     input: {
       ai_integration: "src/main.tsx",
       react_edit_question: "src/edit_question.tsx",
-      audio_command_system: "src/audio_command_system.tsx",
+      audio_command_system: "src/audio/audio_command_system.tsx",
     },
   },
 },
@@ -20,14 +20,14 @@ export default defineConfig({
     origin: "http://localhost:5173",
     cors: true,
     headers: {
-      "Cross-Origin-Opener-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "require-corp",
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
     },
   },
   preview: {
     headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
+       'Cross-Origin-Opener-Policy': 'same-origin',
+       'Cross-Origin-Embedder-Policy': 'credentialless',
+     },
   },
 });
