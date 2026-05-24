@@ -102,16 +102,17 @@
 
   /* ── Action button area (~70 % of viewport height) ── */
   .audio-action-area {
-    height: 70vh;
+    min-height: 70vh;
+    height: auto;
     display: flex;
     flex-direction: column;
     gap: 8px;
     padding: 10px 0;
   }
 
-  /* Every direct flex-child of the action area gets equal height */
+  /* Every direct flex-child of the action area gets equal height when not overflowing */
   .audio-action-area > * {
-    flex: 1;
+    flex: 1 0 auto;
     min-height: 0;   /* prevents overflow on small screens */
   }
 
@@ -160,9 +161,11 @@
     filter: brightness(0.88) !important;
   }
 
-  /* The middle "Get Answer / Correct+Wrong" slot stays as a flex container */
+  /* The middle "Get Answer / Correct+Wrong" slot stays as a flex container, vertically stacked */
   .audio-middle-slot {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   /* ── Individual action buttons ── */
@@ -412,15 +415,6 @@
     </div>
     {# end middle slot #}
 
-    {# ── Exclude ── #}
-    <button type="submit"
-            name="exclude-question-button"
-            id="audio-exclude-btn"
-            class="audio-main-btn btn btn-secondary"
-            value="exclude">
-      <span>&#128683;</span> Exclude
-    </button>
-
   </div>
   {# end action area #}
 
@@ -457,16 +451,26 @@
       {% endif %}
     </div>
 
-    {% if q.created_by_username == user.username %}
-      <div class="audio-edit-container mt-3 text-center">
-        <a href="{{ url_for('home.edit_question_react') }}?q_id={{ q.question_id }}" class="btn btn-secondary font-weight-bold">
-          Edit Question
-        </a>
-      </div>
-    {% endif %}
-
   </div>
   {# end content area #}
+
+  {# ── Admin Actions Area (Exclude & Edit Question) ── #}
+  <div class="d-flex justify-content-center align-items-center flex-wrap gap-2 mt-4 mb-3">
+    <button type="submit"
+            name="exclude-question-button"
+            id="audio-exclude-btn"
+            class="btn btn-secondary font-weight-bold"
+            value="exclude"
+            style="margin: 5px;">
+      <span>&#128683;</span> Exclude
+    </button>
+
+    {% if q.created_by_username == user.username %}
+      <a href="{{ url_for('home.edit_question_react') }}?q_id={{ q.question_id }}" class="btn btn-secondary font-weight-bold" style="margin: 5px;">
+        Edit Question
+      </a>
+    {% endif %}
+  </div>
 
   {% else %}
 

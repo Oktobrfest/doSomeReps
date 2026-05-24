@@ -28,6 +28,7 @@
         },
       {% endfor %}
     ];
+    categoryList.sort((a, b) => a.original.localeCompare(b.original, undefined, { sensitivity: 'base', numeric: true }));
 
     const initialSelected = [
       {% if selected_categories is defined and selected_categories != 'Not set' %}
@@ -347,7 +348,7 @@
           ),
 
           // Face-lifted Select All button
-          e('div', { style: { display: 'flex', justifyContent: 'flex-start' } },
+          e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' } },
             e('button', {
               id: 'select-all-btn',
               className: 'btn btn-secondary btn-sm',
@@ -360,7 +361,23 @@
                 padding: '4px 12px',
                 color: '#ffffff'
               }
-            }, checkedCats.size === categoryList.length ? 'Deselect All' : 'Select All')
+            }, checkedCats.size === categoryList.length ? 'Deselect All' : 'Select All'),
+            e('button', {
+              id: 'apply-categories-btn',
+              className: 'btn btn-primary btn-sm',
+              type: 'submit',
+              name: 'apply-categories',
+              value: 'Apply',
+              style: {
+                fontWeight: '700',
+                fontSize: '0.8rem',
+                borderRadius: '4px',
+                padding: '4px 16px',
+                backgroundColor: '#007bff',
+                borderColor: '#007bff',
+                color: '#ffffff'
+              }
+            }, 'Apply')
           )
         )
       );

@@ -246,11 +246,36 @@ def _handle_quiz_post(
     start_quiz = request.form.get("start-quiz")
     provided_answer = request.form.get("provided-answer")
     exclude_question = request.form.get("exclude-question-button")
+    apply_categories = request.form.get("apply-categories")
 
     if quizq_id_str is not None:
         quizq_id = int(quizq_id_str)
     else:
         quizq_id = 0
+
+    if apply_categories == "Apply":
+        # Check if the categories of the current question are still checked off (present in selected_categories).
+        # We need to find the current question in que_list matching quizq_id, or if we can't find it, we check the database.
+        current_q = None
+        if quizq_id != 0 and que_list:
+            for item in que_list:
+                if item.get("quizq_id") == quizq_id:
+                    current_q = item
+                    break
+
+        if current_q:
+            q_cats = [c.replace(" ", "_") for c in current_q.get("categories", [])]
+            # If ANY category of the current question is still in the selected_categories,
+            # we keep the page as is. Otherwise, if NONE of the current question's categories
+            # are in the selected categories, we redirect to reload a question from the updated categories.
+            has_overlap = any(cat in selected_categories for cat in q_cats)
+            if not has_overlap:
+                # Force reloading with only questions from the selected categories by redirecting
+                return redirect(url_for(endpoint_name))
+        else:
+            # If there's no current question, we can also redirect to refresh
+            return redirect(url_for(endpoint_name))
+        return None
 
     if start_quiz is not None:
         return None
