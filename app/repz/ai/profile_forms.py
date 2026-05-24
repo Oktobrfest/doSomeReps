@@ -59,6 +59,58 @@ PREDEFINED_OPTIONS = {
         "gemini-2.5-pro-preview-tts",
         "gemini-live-2.5-flash-native-audio",  # best for live multilingual voice
     ],
+    "deepseek": [
+           "deepseek-v4-flash",    # cheapest ($0.11/$0.22)
+           "deepseek-v4-pro",      # reasoning flagship ($0.43/$0.87 promo)
+           "deepseek-chat",        # alias for v4-flash non-thinking
+           "deepseek-reasoner",    # alias for v4-flash thinking
+       ],
+       "kimi": [
+           "kimi-k2.5",            # cheaper ($0.60/$3.00)
+           "kimi-k2.6",            # flagship multimodal ($0.95/$4.00)
+       ],
+       "glm": [
+           "glm-4.5-flash",        # free
+           "glm-4.7-flash",        # free
+           "glm-4.6",              # MIT licensed, $0.43/$1.74
+           "glm-5",                # generalist flagship
+           "glm-5.1",              # agentic coding leader
+       ],
+       "qwen": [
+           "qwen3.5-flash",        # cheapest ($0.07/$0.26)
+           "qwen3-coder-next",     # cheap coder ($0.11/$0.80)
+           "qwen3.5-plus",         # multimodal ($0.30/$1.80, 1M ctx)
+           "qwen3-max-thinking",   # reasoning ($0.78/$3.90)
+           "qwen3.7-max",          # new flagship ($2.50/$7.50)
+       ],
+       "mistral": [
+           "mistral-nemo",         # cheapest ($0.02/$0.03)
+           "ministral-8b",         # edge
+           "mistral-small-3.1",    # ($0.20/$0.60)
+           "mistral-small-4",      # newer small
+           "codestral",            # code ($0.30/$0.90)
+           "mistral-medium-3",     # ($0.40/$2.00)
+           "magistral-medium",     # reasoning
+           "mistral-large-3",      # flagship, cheap output ($2/$6)
+       ],
+       "llama": [
+           # Note: pick via hosted provider — Groq/Together/DeepInfra/Fireworks
+           "llama-3.1-8b-instant",     # cheapest & fastest on Groq
+           "llama-3.3-70b",            # workhorse
+           "llama-4-scout",            # newer, ultra-cheap on Groq
+           "llama-4-maverick",         # bigger Llama 4
+           "llama-3.1-405b",           # largest
+       ],
+       "xai": [
+           "grok-4.1-fast",        # cheap + 2M ctx ($0.20/$0.50)
+           "grok-4.3",             # newest flagship ($1.25/$2.50)
+           "grok-4.20",            # premium ($2/$6)
+       ],
+       "cohere": [
+           "command-r7b",          # ultra-cheap ($0.0375/$0.15)
+           "command-r",            # mid-tier RAG
+           "command-r-plus",       # flagship RAG ($2.50/$10)
+       ],
 }
 
 

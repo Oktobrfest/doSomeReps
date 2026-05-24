@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 
-// Define TypeScript interfaces for the Sherpa-ONNX WebAssembly wrapper
 interface SherpaStream {
   acceptWaveform(sampleRate: number, samples: Float32Array): void;
   inputFinished(): void;
@@ -9,449 +8,373 @@ interface SherpaStream {
 }
 
 interface SherpaKws {
-  handle: number;
   createStream(): SherpaStream;
   isReady(stream: SherpaStream): boolean;
   decode(stream: SherpaStream): void;
   reset(stream: SherpaStream): void;
-  getResult(stream: SherpaStream): { keyword: string };
+  getResult(stream: SherpaStream): { keyword?: string };
   free(): void;
 }
 
+type EngineState = "idle" | "loading" | "listening" | "error";
 type CommandCallback = () => void;
 
+declare global {
+  interface Window {
+    Module?: any;
+    createKws?: (module: any, config?: any) => SherpaKws;
+    audioReadQuestion?: () => void;
+  }
+}
+
+const KWS_BASE_URL = "/static/models/kws";
+const TARGET_SAMPLE_RATE = 16000;
+
+// AudioWorklet code as a string — it runs in a separate thread, so we can't
+// import it from this file directly. We blob-url it at runtime.
+const PCM_WORKLET_SOURCE = `
+class PcmCaptureProcessor extends AudioWorkletProcessor {
+  process(inputs) {
+    const input = inputs[0];
+    if (input && input[0] && input[0].length > 0) {
+      // Copy because the underlying buffer is reused by the audio thread.
+      this.port.postMessage(input[0].slice(0));
+    }
+    return true;
+  }
+}
+registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
+`;
+
+function buildWorkletBlobUrl(): string {
+  const blob = new Blob([PCM_WORKLET_SOURCE], { type: "application/javascript" });
+  return URL.createObjectURL(blob);
+}
+
+async function buildKwsConfig(): Promise<any> {
+  const res = await fetch(`${KWS_BASE_URL}/keywords.txt`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch keywords.txt: ${res.status} ${res.statusText}`);
+  }
+  const keywordsText = await res.text();
+
+  return {
+    featConfig: {
+      samplingRate: TARGET_SAMPLE_RATE,
+      featureDim: 80,
+    },
+    modelConfig: {
+      transducer: {
+        encoder: "./encoder-epoch-12-avg-2-chunk-16-left-64.onnx",
+        decoder: "./decoder-epoch-12-avg-2-chunk-16-left-64.onnx",
+        joiner: "./joiner-epoch-12-avg-2-chunk-16-left-64.onnx",
+      },
+      tokens: "./tokens.txt",
+      provider: "cpu",
+      modelType: "",
+      numThreads: 1,
+      num_threads: 1,
+      debug: 0,
+      modelingUnit: "bpe",
+      modeling_unit: "bpe",
+      bpeVocab: "./bpe.model",
+      bpe_vocab: "./bpe.model",
+    },
+    maxActivePaths: 4,
+    numTrailingBlanks: 1,
+    keywordsScore: 1.5,
+    keywordsThreshold: 0.35,
+    keywords: keywordsText, // raw content, not a path
+  };
+}
+
 class AudioCommandManager {
-  private callbacks: Map<string, CommandCallback> = new Map();
+  private callbacks = new Map<string, CommandCallback>();
 
   registerCommand(command: string, callback: CommandCallback) {
-    this.callbacks.set(command.toUpperCase().trim(), callback);
+    this.callbacks.set(this.normalize(command), callback);
   }
 
   triggerCommand(command: string) {
-    const cmd = command.toUpperCase().trim();
-    const callback = this.callbacks.get(cmd);
-    if (callback) {
-      console.log(`[AudioCommandManager] Triggered callback for: "${cmd}"`);
-      callback();
-    } else {
-      console.warn(`[AudioCommandManager] No callback registered for command: "${cmd}"`);
+    const normalized = this.normalize(command);
+    const callback = this.callbacks.get(normalized);
+    if (!callback) {
+      console.warn(`[AudioCommandManager] No callback registered for "${normalized}"`);
+      return;
     }
+    console.log(`[AudioCommandManager] Triggered "${normalized}"`);
+    callback();
+  }
+
+  private normalize(command: string) {
+    return command.toUpperCase().trim();
   }
 }
 
-// Customized exact-offset struct allocation for OnlineModelConfig in newer C++ builds
-function initModelConfigCustom(config: any, Module: any) {
-  const encoderLen = Module.lengthBytesUTF8(config.transducer.encoder) + 1;
-  const decoderLen = Module.lengthBytesUTF8(config.transducer.decoder) + 1;
-  const joinerLen = Module.lengthBytesUTF8(config.transducer.joiner) + 1;
-  
-  const transducerBuffer = Module._malloc(encoderLen + decoderLen + joinerLen);
-  const transducerPtr = Module._malloc(12);
-  
-  let offset = 0;
-  Module.stringToUTF8(config.transducer.encoder, transducerBuffer + offset, encoderLen);
-  offset += encoderLen;
-  Module.stringToUTF8(config.transducer.decoder, transducerBuffer + offset, decoderLen);
-  offset += decoderLen;
-  Module.stringToUTF8(config.transducer.joiner, transducerBuffer + offset, joinerLen);
-  
-  Module.setValue(transducerPtr, transducerBuffer, "i8*");
-  Module.setValue(transducerPtr + 4, transducerBuffer + encoderLen, "i8*");
-  Module.setValue(transducerPtr + 8, transducerBuffer + encoderLen + decoderLen, "i8*");
-
-  // Allocate OnlineModelConfig (incorporating new C++ 'warm_up' parameter!)
-  const modelConfigLen = 12 + 8 + 4 + 4 + 4 + 4 + (10 * 4);
-  const ptr = Module._malloc(modelConfigLen);
-  Module.HEAPU8.fill(0, ptr, ptr + modelConfigLen);
-  
-  Module._CopyHeap(transducerPtr, 12, ptr);
-  Module._free(transducerPtr);
-
-  const tokensLen = Module.lengthBytesUTF8(config.tokens) + 1;
-  const providerLen = Module.lengthBytesUTF8(config.provider || "cpu") + 1;
-  const modelTypeLen = Module.lengthBytesUTF8(config.modelType || "") + 1;
-  const modelingUnitLen = Module.lengthBytesUTF8(config.modelingUnit || "bpe") + 1;
-  const bpeVocabLen = Module.lengthBytesUTF8(config.bpeVocab || "") + 1;
-  
-  const bufferLen = tokensLen + providerLen + modelTypeLen + modelingUnitLen + bpeVocabLen;
-  const buffer = Module._malloc(bufferLen);
-  
-  let sOffset = 0;
-  Module.stringToUTF8(config.tokens, buffer, tokensLen);
-  sOffset += tokensLen;
-  Module.stringToUTF8(config.provider || "cpu", buffer + sOffset, providerLen);
-  sOffset += providerLen;
-  Module.stringToUTF8(config.modelType || "", buffer + sOffset, modelTypeLen);
-  sOffset += modelTypeLen;
-  Module.stringToUTF8(config.modelingUnit || "bpe", buffer + sOffset, modelingUnitLen);
-  sOffset += modelingUnitLen;
-  Module.stringToUTF8(config.bpeVocab || "", buffer + sOffset, bpeVocabLen);
-
-  // Set memory values at exact offsets expected by C++
-  Module.setValue(ptr + 32, buffer, "i8*"); // tokens
-  Module.setValue(ptr + 36, config.numThreads || 1, "i32"); // num_threads
-  Module.setValue(ptr + 40, config.warmUp || 0, "i32"); // warm_up
-  Module.setValue(ptr + 44, buffer + tokensLen, "i8*"); // provider
-  Module.setValue(ptr + 48, config.debug ? 1 : 0, "i32"); // debug
-  Module.setValue(ptr + 52, buffer + tokensLen + providerLen, "i8*"); // model_type
-  Module.setValue(ptr + 56, buffer + tokensLen + providerLen + modelTypeLen, "i8*"); // modeling_unit
-  Module.setValue(ptr + 60, buffer + tokensLen + providerLen + modelTypeLen + modelingUnitLen, "i8*"); // bpe_vocab
-
-  return {
-    buffer: buffer,
-    ptr: ptr,
-    len: modelConfigLen,
-    transducerBuffer: transducerBuffer
-  };
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+    if (existing?.dataset.loaded === "true") {
+      resolve();
+      return;
+    }
+    const script = existing || document.createElement("script");
+    script.src = src;
+    script.async = false;
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      resolve();
+    };
+    script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+    if (!existing) {
+      document.body.appendChild(script);
+    }
+  });
 }
 
-// Custom spotter configuration builder with exact offsets
-function initKwsConfigCustom(config: any, Module: any) {
-  const featConfigPtr = Module._malloc(8);
-  Module.setValue(featConfigPtr, config.featConfig.samplingRate || 16000, "i32");
-  Module.setValue(featConfigPtr + 4, config.featConfig.featureDim || 80, "i32");
+function resampleLinear(input: Float32Array, inputRate: number, outputRate: number): Float32Array {
+  if (inputRate === outputRate) return new Float32Array(input);
 
-  const modelConfig = initModelConfigCustom(config.modelConfig, Module);
-  
-  const numBytes = 8 + modelConfig.len + (4 * 7);
-  const ptr = Module._malloc(numBytes);
-  Module.HEAPU8.fill(0, ptr, ptr + numBytes);
-  
-  let offset = 0;
-  Module._CopyHeap(featConfigPtr, 8, ptr + offset);
-  offset += 8;
-  
-  Module._CopyHeap(modelConfig.ptr, modelConfig.len, ptr + offset);
-  offset += modelConfig.len;
-  
-  Module.setValue(ptr + offset, config.maxActivePaths || 4, "i32");
-  offset += 4;
-  Module.setValue(ptr + offset, config.numTrailingBlanks || 1, "i32");
-  offset += 4;
-  Module.setValue(ptr + offset, config.keywordsScore || 1.0, "float");
-  offset += 4;
-  Module.setValue(ptr + offset, config.keywordsThreshold || 0.25, "float");
-  offset += 4;
-  
-  const keywordsLen = Module.lengthBytesUTF8(config.keywords) + 1;
-  const keywordsBuffer = Module._malloc(keywordsLen);
-  Module.stringToUTF8(config.keywords, keywordsBuffer, keywordsLen);
-  
-  Module.setValue(ptr + offset, keywordsBuffer, "i8*");
-  offset += 4;
-  Module.setValue(ptr + offset, 0, "i8*"); // keywordsBuf
-  offset += 4;
-  Module.setValue(ptr + offset, 0, "i32"); // keywordsBufSize
-  
-  Module._free(featConfigPtr);
-  
-  return {
-    ptr: ptr,
-    modelConfig: modelConfig,
-    keywordsBuffer: keywordsBuffer
-  };
+  const ratio = inputRate / outputRate;
+  const outputLength = Math.max(1, Math.round(input.length / ratio));
+  const output = new Float32Array(outputLength);
+
+  for (let i = 0; i < outputLength; i++) {
+    const srcIndex = i * ratio;
+    const i0 = Math.floor(srcIndex);
+    const i1 = Math.min(i0 + 1, input.length - 1);
+    const frac = srcIndex - i0;
+    output[i] = input[i0] + (input[i1] - input[i0]) * frac;
+  }
+  return output;
 }
 
-function freeKwsConfigCustom(config: any, Module: any) {
-  if (config.keywordsBuffer) {
-    Module._free(config.keywordsBuffer);
-  }
-  if (config.modelConfig) {
-    if (config.modelConfig.buffer) {
-      Module._free(config.modelConfig.buffer);
-    }
-    if (config.modelConfig.transducerBuffer) {
-      Module._free(config.modelConfig.transducerBuffer);
-    }
-    if (config.modelConfig.ptr) {
-      Module._free(config.modelConfig.ptr);
-    }
-  }
-  if (config.ptr) {
-    Module._free(config.ptr);
-  }
+function normalizeDetectedKeyword(keyword: string): string {
+  return keyword.toUpperCase().trim();
 }
 
 export function AudioCommandSystemComponent() {
-  const [engineState, setEngineState] = useState<"idle" | "loading" | "listening" | "error">("idle");
+  const [engineState, setEngineState] = useState<EngineState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
 
-  const commandManagerRef = useRef<AudioCommandManager>(new AudioCommandManager());
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const mediaStreamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const recorderNodeRef = useRef<ScriptProcessorNode | null>(null);
+  const commandManagerRef = useRef(new AudioCommandManager());
   const recognizerRef = useRef<SherpaKws | null>(null);
-  const streamRef = useRef<SherpaStream | null>(null);
+  const recognizerStreamRef = useRef<SherpaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const workletUrlRef = useRef<string | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const isStartingRef = useRef(false);
 
-  // Initialize and register callbacks
+  // Register commands once.
   useEffect(() => {
     const manager = commandManagerRef.current;
 
-    // Register our primary wired command
     manager.registerCommand("READ QUESTION", () => {
-      console.log("Executing 'READ QUESTION' command...");
-      if (typeof (window as any).audioReadQuestion === "function") {
-        (window as any).audioReadQuestion();
+      console.log(`Executing "READ QUESTION"`);
+      if (typeof window.audioReadQuestion === "function") {
+        window.audioReadQuestion();
       } else {
-        console.error("audioReadQuestion function not found in global scope!");
+        console.error("window.audioReadQuestion was not found.");
       }
     });
-
-    // Architecture support for remaining commands (not wired up to act, but registered)
     manager.registerCommand("CORRECT", () => console.log("Voice Command: CORRECT"));
     manager.registerCommand("WRONG", () => console.log("Voice Command: WRONG"));
     manager.registerCommand("GET ANSWER", () => console.log("Voice Command: GET ANSWER"));
     manager.registerCommand("RELOAD", () => console.log("Voice Command: RELOAD"));
     manager.registerCommand("ASK AI", () => console.log("Voice Command: ASK AI"));
+
+    return () => {
+      stopListening();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stopListening = () => {
-    if (recorderNodeRef.current) {
-      try {
-        recorderNodeRef.current.disconnect();
-      } catch (e) {}
-      recorderNodeRef.current = null;
+    try {
+      if (workletNodeRef.current) {
+        workletNodeRef.current.port.onmessage = null;
+        workletNodeRef.current.disconnect();
+        workletNodeRef.current = null;
+      }
+      if (sourceRef.current) {
+        sourceRef.current.disconnect();
+        sourceRef.current = null;
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+        void audioCtxRef.current.close();
+        audioCtxRef.current = null;
+      }
+      if (workletUrlRef.current) {
+        URL.revokeObjectURL(workletUrlRef.current);
+        workletUrlRef.current = null;
+      }
+      if (recognizerStreamRef.current) {
+        recognizerStreamRef.current.free();
+        recognizerStreamRef.current = null;
+      }
+      if (recognizerRef.current) {
+        recognizerRef.current.free();
+        recognizerRef.current = null;
+      }
+    } catch (err) {
+      console.warn("Error during stopListening cleanup:", err);
     }
-    if (mediaStreamSourceRef.current) {
-      try {
-        mediaStreamSourceRef.current.disconnect();
-      } catch (e) {}
-      mediaStreamSourceRef.current = null;
-    }
-    if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
-      audioCtxRef.current.close();
-      audioCtxRef.current = null;
-    }
-    if (streamRef.current) {
-      try {
-        streamRef.current.free();
-      } catch (e) {}
-      streamRef.current = null;
-    }
+    isStartingRef.current = false;
     setEngineState("idle");
   };
 
-  const startVoiceEngine = async () => {
+  const initializeSherpa = async () => {
+    if (window.createKws && window.Module?.calledRun) return;
+
+    if (!window.crossOriginIsolated) {
+      throw new Error(
+        "Cross-Origin Isolation is not enabled (window.crossOriginIsolated is false). " +
+        "Sherpa-ONNX WASM KWS requires COOP and COEP headers, and must be accessed via localhost or HTTPS."
+      );
+    }
+
+    console.log("Initializing Sherpa-ONNX KWS WASM...");
+    const debugLogs: string[] = [];
+
+    const wasmReady = new Promise<void>((resolve) => {
+      window.Module = {
+        print: (text: string) => {
+          const line = `[Sherpa-WASM STDOUT] ${text}`;
+          console.log(line);
+          debugLogs.push(line);
+        },
+        printErr: (text: string) => {
+          const line = `[Sherpa-WASM] ${text}`;
+          // Sherpa writes both info logs and real errors to stderr.
+          // Only flag lines that look like genuine failures.
+          const looksLikeError = /\b(error|fail|failed|fatal|exception|abort|cannot|invalid)\b/i.test(text);
+          if (looksLikeError) {
+            console.error(line);
+          } else {
+            console.debug(line);
+          }
+          debugLogs.push(line);
+        },
+        locateFile: (path: string) => `${KWS_BASE_URL}/${path}`,
+        onRuntimeInitialized: () => {
+          console.log("Sherpa WASM runtime initialized.");
+          resolve();
+        },
+      };
+    });
+
+    try {
+      await loadScript(`${KWS_BASE_URL}/sherpa-onnx-kws.js`);
+      await loadScript(`${KWS_BASE_URL}/sherpa-onnx-wasm-kws-main.js`);
+      await wasmReady;
+    } catch (err) {
+      const tail = debugLogs.slice(-5).join("\n");
+      throw new Error(`Failed to initialize Sherpa WASM. ${String(err)}\n${tail}`);
+    }
+
+    if (typeof window.createKws !== "function") {
+      throw new Error("Sherpa createKws() was not found after loading sherpa-onnx-kws.js.");
+    }
+  };
+
+  const startListening = async () => {
+    if (isStartingRef.current || engineState === "loading") return;
     if (engineState === "listening") {
       stopListening();
       return;
     }
 
+    isStartingRef.current = true;
     setEngineState("loading");
     setErrorMsg(null);
-
-    // Track standard output and error output from WebAssembly C++ engine
-    const debugLogs: string[] = [];
+    setLastCommand(null);
 
     try {
-      // 1. Fetch assets in parallel from static/models/kws/
-      const fileUrls = {
-        encoder: "/static/models/kws/encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
-        decoder: "/static/models/kws/decoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
-        joiner: "/static/models/kws/joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
-        tokens: "/static/models/kws/tokens.txt",
-        bpe: "/static/models/kws/bpe.model",
-        keywords: "/static/models/kws/keywords.txt",
-      };
+      await initializeSherpa();
 
-      console.log("Fetching model and keyword files...");
-      const fetchFile = async (url: string) => {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to load asset from ${url}`);
-        const buf = await response.arrayBuffer();
-        console.log(`Successfully fetched: ${url} (${buf.byteLength} bytes)`);
-        return new Uint8Array(buf);
-      };
+      console.log("Loading keyword spotter config...");
+      const config = await buildKwsConfig();
 
-      const [encoderData, decoderData, joinerData, tokensData, bpeData, keywordsData] = await Promise.all([
-        fetchFile(fileUrls.encoder),
-        fetchFile(fileUrls.decoder),
-        fetchFile(fileUrls.joiner),
-        fetchFile(fileUrls.tokens),
-        fetchFile(fileUrls.bpe),
-        fetchFile(fileUrls.keywords),
-      ]);
-
-      const keywordsText = new TextDecoder().decode(keywordsData);
-      console.log("Keywords configuration string:\n", keywordsText);
-
-      // 2. Setup dynamic Emscripten Module
-      console.log("Initializing WebAssembly engine...");
-      
-      let resolveWasmInit: () => void;
-      const wasmInitPromise = new Promise<void>((resolve) => {
-        resolveWasmInit = resolve;
-      });
-
-      // Mount all possible directory prefixes for absolute reliability in MEMFS
-      const customModule: any = {
-        // Redirect standard I/O prints to console logs and store them for traceback
-        print: (text: string) => {
-          const logMsg = `[Sherpa-WASM STDOUT] ${text}`;
-          console.log(logMsg);
-          debugLogs.push(logMsg);
-        },
-        printErr: (text: string) => {
-          const logMsg = `[Sherpa-WASM STDERR] ${text}`;
-          console.error(logMsg);
-          debugLogs.push(logMsg);
-        },
-        getPreloadedPackage: () => new ArrayBuffer(0),
-        locateFile: (path: string) => {
-          if (path === "sherpa-onnx-wasm-kws-main.wasm") {
-            return "/static/models/kws/sherpa-onnx-wasm-kws-main.wasm";
-          }
-          return path;
-        },
-        MountedFiles: new Map<string, Uint8Array>([
-          ["encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx", encoderData],
-          ["decoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx", decoderData],
-          ["joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx", joinerData],
-          ["tokens.txt", tokensData],
-          ["bpe.model", bpeData],
-
-          ["/encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx", encoderData],
-          ["/decoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx", decoderData],
-          ["/joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx", joinerData],
-          ["/tokens.txt", tokensData],
-          ["/bpe.model", bpeData],
-
-          ["./encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx", encoderData],
-          ["./decoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx", decoderData],
-          ["./joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx", joinerData],
-          ["./tokens.txt", tokensData],
-          ["./bpe.model", bpeData],
-        ]),
-        onRuntimeInitialized: () => {
-          console.log("WASM Runtime fully initialized!");
-          resolveWasmInit();
-        }
-      };
-
-      (window as any).Module = customModule;
-
-      // 3. Dynamic Script Loading of Sherpa-ONNX WASM wrapper
-      const loadScript = (src: string): Promise<void> => {
-        return new Promise((resolve, reject) => {
-          const script = document.createElement("script");
-          script.src = src;
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error(`Failed to load script ${src}`));
-          document.body.appendChild(script);
-        });
-      };
-
-      await loadScript("/static/models/kws/sherpa-onnx-wasm-kws-main.js");
-      await loadScript("/static/models/kws/sherpa-onnx-kws.js");
-
-      // Wait for the WASM runtime initialization callback to execute
-      await wasmInitPromise;
-
-      // 4. Create Spotter Config with exact C++ offset alignment
-      const kwsConfig = {
-        featConfig: {
-          samplingRate: 16000,
-          featureDim: 80,
-        },
-        modelConfig: {
-          transducer: {
-            encoder: "./encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
-            decoder: "./decoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
-            joiner: "./joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
-          },
-          tokens: "./tokens.txt",
-          provider: "cpu",
-          modelType: "",
-          numThreads: 1,
-          warmUp: 0,
-          debug: 1, // Turn debug mode ON for extreme verbosity inside WASM console
-          modelingUnit: "bpe",
-          bpeVocab: "./bpe.model",
-        },
-        maxActivePaths: 4,
-        numTrailingBlanks: 1,
-        keywordsScore: 1.5,
-        keywordsThreshold: 0.35,
-        keywords: keywordsText,
-      };
-
-      console.log("Configuring Keyword Spotter with custom offsets...");
-      
-      const customKwsAlloc = initKwsConfigCustom(kwsConfig, customModule);
-      const handle = customModule._SherpaOnnxCreateKeywordSpotter(customKwsAlloc.ptr);
-      
-      if (handle === 0) {
-        throw new Error("Failed to create Keyword Spotter (handle is 0)");
-      }
-      
-      freeKwsConfigCustom(customKwsAlloc, customModule);
-      
-      const recognizer = new (window as any).Kws(kwsConfig, customModule) as SherpaKws;
-      recognizer.handle = handle; // Use our perfectly jumble-free handle!
+      console.log("Creating Sherpa keyword spotter...");
+      const recognizer = window.createKws!(window.Module, config);
       recognizerRef.current = recognizer;
 
-      // 5. Initialize Microphone Stream
+      const recognizerStream = recognizer.createStream();
+      recognizerStreamRef.current = recognizerStream;
+
       console.log("Requesting microphone permission...");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioCtx = new AudioContext({ sampleRate: 16000 });
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      mediaStreamRef.current = mediaStream;
+
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx: AudioContext = new AudioContextClass();
       audioCtxRef.current = audioCtx;
 
-      const mediaStreamSource = audioCtx.createMediaStreamSource(stream);
-      mediaStreamSourceRef.current = mediaStreamSource;
+      const inputSampleRate = audioCtx.sampleRate;
+      console.log(`AudioContext sample rate: ${inputSampleRate}`);
 
-      const bufferSize = 4096;
-      const recorder = audioCtx.createScriptProcessor(bufferSize, 1, 1);
-      recorderNodeRef.current = recorder;
+      // Register the worklet from a blob URL so we don't need a separate file.
+      const workletUrl = buildWorkletBlobUrl();
+      workletUrlRef.current = workletUrl;
+      await audioCtx.audioWorklet.addModule(workletUrl);
 
-      // Setup KWS streams
-      const recognizerStream = recognizer.createStream();
-      streamRef.current = recognizerStream;
+      const source = audioCtx.createMediaStreamSource(mediaStream);
+      sourceRef.current = source;
 
-      recorder.onaudioprocess = (e) => {
-        const inputSamples = e.inputBuffer.getChannelData(0);
-        // Deep copy samples for safe WebAssembly manipulation
-        const samples = new Float32Array(inputSamples);
+      const workletNode = new AudioWorkletNode(audioCtx, "pcm-capture-processor", {
+        numberOfInputs: 1,
+        numberOfOutputs: 0,
+        channelCount: 1,
+      });
+      workletNodeRef.current = workletNode;
 
-        recognizerStream.acceptWaveform(16000, samples);
+      workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
+        const chunk = event.data;
+        if (!chunk || chunk.length === 0) return;
+
+        const samples = resampleLinear(chunk, inputSampleRate, TARGET_SAMPLE_RATE);
+        recognizerStream.acceptWaveform(TARGET_SAMPLE_RATE, samples);
 
         while (recognizer.isReady(recognizerStream)) {
           recognizer.decode(recognizerStream);
-          const result = recognizer.getResult(recognizerStream);
-
-          if (result && result.keyword && result.keyword.trim().length > 0) {
-            const detectedKeyword = result.keyword.trim();
-            console.log(`[KWS] Match detected: "${detectedKeyword}"`);
-            setLastCommand(detectedKeyword);
-            commandManagerRef.current.triggerCommand(detectedKeyword);
-            recognizer.reset(recognizerStream);
-          }
         }
+
+        const result = recognizer.getResult(recognizerStream);
+        const keyword = result?.keyword ? normalizeDetectedKeyword(result.keyword) : "";
+        if (!keyword) return;
+
+        console.log(`[KWS] Match detected: "${keyword}"`);
+        setLastCommand(keyword);
+        commandManagerRef.current.triggerCommand(keyword);
+        recognizer.reset(recognizerStream);
       };
 
-      mediaStreamSource.connect(recorder);
-      recorder.connect(audioCtx.destination);
+      // Worklet has no output; we don't connect it to destination.
+      source.connect(workletNode);
 
       setEngineState("listening");
-      console.log("Voice Command System successfully started!");
-    } catch (err: any) {
+      console.log("Voice command system started.");
+    } catch (err) {
       console.error("Failed to start voice command system:", err);
-      
-      // Extract details from tracked WASM standard console logs
-      const stderrLines = debugLogs.filter(line => line.includes("STDERR"));
-      let exceptionString = "Check browser dev console details.";
-      if (stderrLines.length > 0) {
-        exceptionString = `WASM Stderr: ${stderrLines.join(" | ")}`;
-      } else if (debugLogs.length > 0) {
-        exceptionString = `WASM logs: ${debugLogs.slice(-3).join(" | ")}`;
-      }
-
-      const formattedError = `Start Error (Address: ${err}): ${exceptionString}`;
-      console.error("[DETAILED EXCEPTION] ->", formattedError);
-      
-      setErrorMsg(formattedError);
-      setEngineState("error");
+      setErrorMsg(err instanceof Error ? err.message : String(err));
       stopListening();
+      setEngineState("error");
+    } finally {
+      isStartingRef.current = false;
     }
   };
 
@@ -460,14 +383,14 @@ export function AudioCommandSystemComponent() {
       <div className="d-flex align-items-center justify-content-center gap-2">
         <button
           type="button"
-          onClick={startVoiceEngine}
+          onClick={startListening}
           disabled={engineState === "loading"}
           className={`btn ${
             engineState === "listening"
               ? "btn-danger pulse-listening"
               : engineState === "loading"
-              ? "btn-warning"
-              : "btn-outline-success"
+                ? "btn-warning"
+                : "btn-outline-success"
           } d-flex align-items-center gap-2 px-4 py-2 font-weight-bold shadow-sm`}
           style={{ borderRadius: "24px", transition: "all 0.3s ease" }}
         >
@@ -516,15 +439,13 @@ export function AudioCommandSystemComponent() {
   );
 }
 
-// Auto-mount the React Root element if it is present on the page
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("audio-command-root");
-  if (container) {
-    const root = ReactDOM.createRoot(container);
-    root.render(
-      <React.StrictMode>
-        <AudioCommandSystemComponent />
-      </React.StrictMode>
-    );
-  }
+  if (!container) return;
+  const root = ReactDOM.createRoot(container);
+  root.render(
+    <React.StrictMode>
+      <AudioCommandSystemComponent />
+    </React.StrictMode>
+  );
 });

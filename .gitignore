@@ -32,7 +32,7 @@ venv/
 # in case you put it here
 app/node_modules/
 **/node_modules/
-**/assets/
+/app/repz/static/vite_dist/
 
 # IDEs and Editors
 *.sublime-project
@@ -66,9 +66,6 @@ app/.vscode/settings.json
 **/*.bmp
 **/*.svg
 **/*.pdf
-
-# Lock files
-*.lock
 
 # Documentation
 docs/_build/
@@ -117,7 +114,6 @@ coll_usage_scripts.txt
 /temp
 temp
 .SCRATCHFILE
-.gitignore
 .rules
 alembic.ini
 
@@ -130,3 +126,9 @@ piper_voices/
 *.wasm
 *.model
 app/repz/static/models/kws/sherpa-*.js
+
+/vendor/
+
+# KWS model downloads / generated model artifacts
+/app/repz/static/models/kws/*.data
+/app/repz/static/models/kws/test_wavs/

@@ -140,5 +140,11 @@ def init_app():
             if exception:
                 session.rollback()
             session.remove()
+
+        @app.after_request
+        def add_coop_coep_headers(response):
+            response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+            response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+            return response
                   
     return app
