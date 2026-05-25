@@ -1,0 +1,66 @@
+.hidden {
+  display: none;
+}
+
+.sliderContainer {
+  width: 90%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  box-sizing: border-box;
+}
+
+/* Style the range input slider */
+.slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(0, 0, 0, 0.15);
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Style the range thumb (slider handle) so it is larger and easy to touch */
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.1s;
+}
+
+.slider::-webkit-slider-thumb:active {
+  transform: scale(1.3);
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.1s;
+}
+
+.slider::-moz-range-thumb:active {
+  transform: scale(1.3);
+}
+
+/* Time display style */
+.timeInfo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.9;
+  user-select: none;
+}

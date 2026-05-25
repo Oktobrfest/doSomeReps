@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Slider } from '@/components/ui/slider';
-import { Button } from '@/components/ui/button';
-import { Pause, Play } from 'lucide-react';
 import type { AudioAsset } from './types';
+import styles from './AudioPlayer.module.css';
 
 interface AudioPlayerProps {
   assets: AudioAsset[];
   isPlaying: boolean;
   onSequenceEnd: () => void;
-  onTogglePause: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -22,17 +19,15 @@ export function AudioPlayer({
   assets,
   isPlaying,
   onSequenceEnd,
-  onTogglePause,
 }: AudioPlayerProps) {
   const [trackIndex, setTrackIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
 
-  const currentAudio = audioRefs.current[trackIndex] ?? null;
-
   // React to isPlaying changes — play or pause the current track.
   useEffect(() => {
+    const currentAudio = audioRefs.current[trackIndex];
     if (!currentAudio) return;
     if (isPlaying) {
       const p = currentAudio.play();
@@ -83,13 +78,14 @@ export function AudioPlayer({
   }, []);
 
   const handleSeek = useCallback(
-    (values: number[]) => {
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const currentAudio = audioRefs.current[trackIndex];
       if (!currentAudio || !isFinite(duration) || duration <= 0) return;
-      const pct = values[0];
+      const pct = parseFloat(e.target.value);
       currentAudio.currentTime = (pct / 100) * duration;
       setCurrentTime(currentAudio.currentTime);
     },
-    [currentAudio, duration]
+    [trackIndex, duration]
   );
 
   // Stop click events bubbling up to the parent button (which would re-trigger playback).
@@ -111,40 +107,30 @@ export function AudioPlayer({
           onTimeUpdate={i === trackIndex ? handleTimeUpdate : undefined}
           onLoadedMetadata={i === trackIndex ? handleLoadedMetadata : undefined}
           onError={i === trackIndex ? handleEnded : undefined}
-          className="hidden"
+          className={styles.hidden}
         />
       ))}
 
-      {/* Slider + pause toggle. Don't let clicks bubble to outer button. */}
+      {/* Slider + playback timer. Don't let clicks bubble to outer button. */}
       <div
-        className="flex w-full flex-col items-center gap-1.5 px-2 pt-1"
+        className={styles.sliderContainer}
         onClick={stop}
         onPointerDown={stop}
         onTouchStart={stop}
       >
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={(e) => { stop(e); onTogglePause(); }}
-          className="h-7 gap-1.5 text-sm font-medium text-white hover:bg-white/15 hover:text-white"
-        >
-          {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
-          {isPlaying ? 'Pause' : 'Resume'}
-        </Button>
-
-        <Slider
-          value={[pct]}
-          onValueChange={handleSeek}
+        <input
+          type="range"
+          value={pct}
+          onChange={handleSeek}
           min={0}
           max={100}
           step={0.1}
           onClick={stop}
           onPointerDown={stop}
-          className="w-full max-w-xs"
+          className={styles.slider}
         />
 
-        <div className="text-xs font-medium text-white/90 select-none">
+        <div className={styles.timeInfo}>
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
       </div>

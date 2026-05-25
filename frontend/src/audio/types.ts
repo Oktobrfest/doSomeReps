@@ -34,11 +34,28 @@ export interface AudioQuizProps {
   csrfToken?: string;
 }
 
-// The state machine. One source of truth for what's visible.
-export type QuizPhase =
-  | 'idle'              // no audio active, answer hidden
-  | 'question-playing'  // question audio sequence is playing
-  | 'question-paused'   // question audio paused mid-sequence
-  | 'answer-revealed'   // answer visible, no audio playing yet
-  | 'answer-playing'    // answer audio sequence is playing
-  | 'answer-paused';    // answer audio paused mid-sequence
+export type CommandCallback = () => void;
+
+export type EngineState = "idle" | "loading" | "listening" | "error";
+
+export interface SherpaStream {
+  acceptWaveform(sampleRate: number, samples: Float32Array): void;
+  free(): void;
+}
+
+export interface SherpaKws {
+  createStream(): SherpaStream;
+  isReady(stream: SherpaStream): boolean;
+  decode(stream: SherpaStream): void;
+  getResult(stream: SherpaStream): { keyword: string } | null;
+  reset(stream: SherpaStream): void;
+  free(): void;
+}
+
+declare global {
+  interface Window {
+    createKws?: (Module: any, config: any) => SherpaKws;
+    Module?: any;
+    audioReadQuestion?: () => void;
+  }
+}
