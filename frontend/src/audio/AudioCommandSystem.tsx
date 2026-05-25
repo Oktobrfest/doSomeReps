@@ -29,13 +29,32 @@ export function AudioCommandSystemComponent() {
     const manager = commandManagerRef.current;
     registerAllCommands(manager);
 
+    const exitBtn = document.getElementById("exit-audio-mode");
+    if (exitBtn) {
+      exitBtn.addEventListener("click", () => {
+        sessionStorage.setItem("audio_listening_active", "false");
+      });
+    }
+
     return () => {
-      stopListening();
+      stopListening(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const stopListening = () => {
+  // Auto-start listening if previously active
+  useEffect(() => {
+    const wasListening = sessionStorage.getItem("audio_listening_active") === "true";
+    if (wasListening) {
+      const timer = setTimeout(() => {
+        void startListening();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const stopListening = (manual = false) => {
     try {
       if (workletNodeRef.current) {
         workletNodeRef.current.port.onmessage = null;
@@ -71,12 +90,15 @@ export function AudioCommandSystemComponent() {
     }
     isStartingRef.current = false;
     setEngineState("idle");
+    if (manual) {
+      sessionStorage.setItem("audio_listening_active", "false");
+    }
   };
 
   const startListening = async () => {
     if (isStartingRef.current || engineState === "loading") return;
     if (engineState === "listening") {
-      stopListening();
+      stopListening(true);
       return;
     }
 
@@ -148,6 +170,13 @@ export function AudioCommandSystemComponent() {
 
         console.log(`[KWS] Match detected: "${keyword}"`);
         setLastCommand(keyword);
+
+        // For commands that navigate/submit the page, stop listening cleanly first.
+        // We do NOT treat this as manual stop, so sessionStorage.audio_listening_active stays "true" for the next page.
+        if (keyword === "CORRECT" || keyword === "WRONG") {
+          stopListening(false);
+        }
+
         commandManagerRef.current.triggerCommand(keyword);
         recognizer.reset(recognizerStream);
       };
@@ -156,11 +185,12 @@ export function AudioCommandSystemComponent() {
       source.connect(workletNode);
 
       setEngineState("listening");
+      sessionStorage.setItem("audio_listening_active", "true");
       console.log("Voice command system started.");
     } catch (err) {
       console.error("Failed to start voice command system:", err);
       setErrorMsg(err instanceof Error ? err.message : String(err));
-      stopListening();
+      stopListening(true);
       setEngineState("error");
     } finally {
       isStartingRef.current = false;
@@ -204,7 +234,7 @@ export function AudioCommandSystemComponent() {
           <button
             type="button"
             className="btn btn-outline-secondary"
-            onClick={stopListening}
+            onClick={() => stopListening(true)}
             style={{ borderRadius: "50%", width: "40px", height: "40px", padding: "0" }}
             title="Stop listening"
           >

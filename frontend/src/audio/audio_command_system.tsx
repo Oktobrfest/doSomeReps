@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { AudioCommandSystemComponent } from "./AudioCommandSystem";
+import "../index.css";
 
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("audio-command-root");

@@ -1,5 +1,13 @@
 import { AudioCommandManager } from "../AudioCommandManager";
 
 export function registerWrong(manager: AudioCommandManager) {
-  manager.registerCommand("WRONG", () => console.log("Voice Command: WRONG"));
+  manager.registerCommand("WRONG", () => {
+    console.log("Voice Command: WRONG");
+    const wrongBtn = document.querySelector('button[name="incorrect_submit"]') as HTMLButtonElement | null;
+    if (wrongBtn) {
+      wrongBtn.click();
+    } else {
+      console.error("Wrong button not found.");
+    }
+  });
 }

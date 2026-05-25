@@ -34,6 +34,9 @@ def init_app():
     from .vite import vite_asset
     app.jinja_env.globals['vite_asset'] = vite_asset
 
+    from flask_wtf.csrf import generate_csrf
+    app.jinja_env.globals['csrf_token'] = generate_csrf
+
     with app.app_context():
 
         env = os.getenv('FLASK_ENV', 'production')

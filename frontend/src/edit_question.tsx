@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { toast, Toaster } from "sonner";
+import "./index.css";
 
 interface PicData {
   pic_string: string;
