@@ -57,5 +57,7 @@ declare global {
     createKws?: (Module: any, config: any) => SherpaKws;
     Module?: any;
     audioReadQuestion?: () => void;
+    audioPause?: () => void;
+    audioResume?: () => void;
   }
 }

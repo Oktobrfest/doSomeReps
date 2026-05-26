@@ -2,9 +2,11 @@ import {
   useState,
   useCallback,
   useMemo,
+  useEffect,
   type ButtonHTMLAttributes,
 } from 'react';
 import { AudioPlayer } from './AudioPlayer';
+import { AudioCommandSystemComponent } from './AudioCommandSystem';
 import {
   Volume2,
   BookOpen,
@@ -128,6 +130,40 @@ export function AudioQuiz({
     setQuestionPlaying(true);
   }, [questionActive, answerActive]);
 
+  useEffect(() => {
+    (window as any).audioReadQuestion = handleReadQuestion;
+    return () => {
+      delete (window as any).audioReadQuestion;
+    };
+  }, [handleReadQuestion]);
+
+  const handlePause = useCallback(() => {
+    setQuestionPlaying(false);
+    setAnswerPlaying(false);
+  }, []);
+
+  useEffect(() => {
+    (window as any).audioPause = handlePause;
+    return () => {
+      delete (window as any).audioPause;
+    };
+  }, [handlePause]);
+
+  const handleResume = useCallback(() => {
+    if (questionActive) {
+      setQuestionPlaying(true);
+    } else if (answerActive) {
+      setAnswerPlaying(true);
+    }
+  }, [questionActive, answerActive]);
+
+  useEffect(() => {
+    (window as any).audioResume = handleResume;
+    return () => {
+      delete (window as any).audioResume;
+    };
+  }, [handleResume]);
+
   const handleQuestionEnded = useCallback(() => {
     setQuestionActive(false);
     setQuestionPlaying(false);
@@ -178,7 +214,9 @@ export function AudioQuiz({
       <input type="hidden" name="quizq-id" value={question.quizq_id} />
 
       <div className={styles.actionsSection}>
-        <div id="audio-command-root" className={styles.audioCommandRoot} />
+        <div id="audio-command-root" className={styles.audioCommandRoot}>
+          <AudioCommandSystemComponent />
+        </div>
 
         {question.pics.question_image?.map((pic, i) =>
           pic ? (
@@ -231,6 +269,7 @@ export function AudioQuiz({
 
           {!answerRevealed && (
             <LargeActionButton
+              id="audio-get-answer-btn"
               onClick={handleGetAnswer}
               className={styles.orangeBtn}
             >
