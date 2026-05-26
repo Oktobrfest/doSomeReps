@@ -4,15 +4,33 @@ import { AudioCommandManager } from "./AudioCommandManager";
 import { buildKwsConfig, initializeSherpa, TARGET_SAMPLE_RATE } from "./sherpaEngine";
 import { buildWorkletBlobUrl, resampleLinear } from "./audioCapture";
 import { registerAllCommands } from "./commands";
+import styles from "./AudioCommandSystem.module.css";
+import actionStyles from "./ActionButton.module.css";
+
+const AVAILABLE_COMMANDS = [
+  "READ QUESTION",
+  "GET ANSWER",
+  "CORRECT",
+  "WRONG",
+  "PAUSE",
+  "RESUME",
+  "RELOAD",
+  "ASK AI"
+];
 
 function normalizeDetectedKeyword(keyword: string): string {
   return keyword.toUpperCase().trim();
+}
+
+function cx(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
 }
 
 export function AudioCommandSystemComponent() {
   const [engineState, setEngineState] = useState<EngineState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const commandManagerRef = useRef(new AudioCommandManager());
   const recognizerRef = useRef<SherpaKws | null>(null);
@@ -53,6 +71,18 @@ export function AudioCommandSystemComponent() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Close hamburger menu on outside clicks
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleOutsideClick = () => {
+      setMenuOpen(false);
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => {
+      document.removeEventListener("click", handleOutsideClick);
+    };
+  }, [menuOpen]);
 
   const stopListening = (manual = false) => {
     try {
@@ -198,44 +228,81 @@ export function AudioCommandSystemComponent() {
   };
 
   return (
-    <div className="audio-voice-command-container mb-3 text-center">
-      <div className="d-flex align-items-center justify-content-center gap-2">
-        <button
-          type="button"
-          onClick={startListening}
-          disabled={engineState === "loading"}
-          className={`btn ${
-            engineState === "listening"
-              ? "btn-danger pulse-listening"
-              : engineState === "loading"
-                ? "btn-warning"
-                : "btn-success"
-          } d-flex align-items-center gap-2 font-weight-bold shadow-sm`}
-          style={{ transition: "all 0.3s ease" }}
-        >
-          {engineState === "listening" ? (
-            <>
-              <span className="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>
-              Listening for commands...
-            </>
-          ) : engineState === "loading" ? (
-            <>
-              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-              Initializing...
-            </>
-          ) : (
-            <>
-              <span>🎤</span> Listen
-            </>
+    <div className={styles.voiceCommandContainer}>
+      <div className={styles.controlsRow}>
+        <div className={styles.splitButtonContainer}>
+          <button
+            type="button"
+            onClick={startListening}
+            disabled={engineState === "loading"}
+            className={cx(
+              actionStyles.largeBtn,
+              styles.mainSplitBtn,
+              engineState === "listening" && cx(actionStyles.redBtn, styles.pulseListening),
+              engineState === "loading" && actionStyles.orangeBtn,
+              engineState === "idle" && actionStyles.greenBtn
+            )}
+          >
+            {engineState === "listening" ? (
+              <div className={styles.btnContentCol}>
+                <div className={actionStyles.btnContent}>
+                  <span className={styles.spinnerGrow} role="status" aria-hidden="true"></span>
+                  <span>Listening for commands...</span>
+                </div>
+                {lastCommand && (
+                  <div className={styles.detectedInside}>
+                    Detected: <span className={styles.commandBadgeInside}>{lastCommand}</span>
+                  </div>
+                )}
+              </div>
+            ) : engineState === "loading" ? (
+              <div className={actionStyles.btnContent}>
+                <span className={styles.spinnerBorder} role="status" aria-hidden="true"></span>
+                <span>Initializing...</span>
+              </div>
+            ) : (
+              <div className={actionStyles.btnContent}>
+                <span className={styles.micIcon}>🎤</span>
+                <span>Listen</span>
+              </div>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((prev) => !prev);
+            }}
+            className={cx(
+              actionStyles.largeBtn,
+              styles.menuSplitBtn,
+              engineState === "listening" && actionStyles.redBtn,
+              engineState === "loading" && actionStyles.orangeBtn,
+              engineState === "idle" && actionStyles.greenBtn
+            )}
+            title="Available commands"
+          >
+            ☰
+          </button>
+
+          {menuOpen && (
+            <div className={styles.dropdownMenu}>
+              <div className={styles.dropdownHeader}>Available Commands</div>
+              {AVAILABLE_COMMANDS.map((cmd) => (
+                <div key={cmd} className={styles.dropdownItem}>
+                  {cmd}
+                </div>
+              ))}
+            </div>
           )}
-        </button>
+        </div>
 
         {engineState === "listening" && (
           <button
             type="button"
-            className="btn btn-outline-secondary"
+            className={styles.stopButton}
             onClick={() => stopListening(true)}
-            style={{ borderRadius: "50%", width: "40px", height: "40px", padding: "0" }}
             title="Stop listening"
           >
             ⏹
@@ -243,14 +310,8 @@ export function AudioCommandSystemComponent() {
         )}
       </div>
 
-      {lastCommand && (
-        <div className="mt-2 text-success small font-weight-bold">
-          Detected: <span className="badge badge-success px-2 py-1">{lastCommand}</span>
-        </div>
-      )}
-
       {errorMsg && (
-        <div className="mt-2 text-danger small font-weight-bold" style={{ whiteSpace: "pre-wrap" }}>
+        <div className={styles.errorMessage}>
           ⚠️ {errorMsg}
         </div>
       )}

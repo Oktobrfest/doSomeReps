@@ -15,9 +15,11 @@ import {
   Ban,
   Pause,
   Play,
+  Edit,
 } from 'lucide-react';
 import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
+import actionStyles from './ActionButton.module.css';
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -34,7 +36,7 @@ function LargeActionButton({
   return (
     <button
       type={type}
-      className={cx(styles.largeBtn, className)}
+      className={cx(actionStyles.largeBtn, className)}
       {...props}
     >
       {children}
@@ -60,7 +62,7 @@ function LargePlayableControl({
   return (
     <div className={styles.playableControl}>
       <div
-        className={cx(styles.largeBtn, styles.hasSlider, className)}
+        className={cx(actionStyles.largeBtn, actionStyles.hasSlider, className)}
         style={{ cursor: 'default' }}
       >
         <button
@@ -80,9 +82,9 @@ function LargePlayableControl({
           }}
         >
           {isPlaying ? (
-            <Pause className={styles.iconLarge} />
+            <Pause className={actionStyles.iconLarge} />
           ) : (
-            <Play className={styles.iconLarge} />
+            <Play className={actionStyles.iconLarge} />
           )}
           <span>{isPlaying ? 'Pause' : 'Resume'}</span>
         </button>
@@ -234,7 +236,7 @@ export function AudioQuiz({
           <LargePlayableControl
             onClick={handleReadQuestion}
             isPlaying={questionPlaying}
-            className={styles.orangeBtn}
+            className={actionStyles.orangeBtn}
             assets={questionAssets}
             onSequenceEnd={handleQuestionEnded}
           />
@@ -242,10 +244,10 @@ export function AudioQuiz({
           <LargeActionButton
             onClick={handleReadQuestion}
             disabled={questionAssets.length === 0}
-            className={styles.orangeBtn}
+            className={actionStyles.orangeBtn}
           >
-            <div className={styles.btnContent}>
-              <Volume2 className={styles.iconLarge} />
+            <div className={actionStyles.btnContent}>
+              <Volume2 className={actionStyles.iconLarge} />
               <span>Read Question</span>
             </div>
           </LargeActionButton>
@@ -271,10 +273,10 @@ export function AudioQuiz({
             <LargeActionButton
               id="audio-get-answer-btn"
               onClick={handleGetAnswer}
-              className={styles.orangeBtn}
+              className={actionStyles.blueBtn}
             >
-              <div className={styles.btnContent}>
-                <BookOpen className={styles.iconLarge} />
+              <div className={actionStyles.btnContent}>
+                <BookOpen className={actionStyles.iconLarge} />
                 <span>Get Answer</span>
               </div>
             </LargeActionButton>
@@ -284,7 +286,7 @@ export function AudioQuiz({
             <LargePlayableControl
               onClick={handleAnswerToggle}
               isPlaying={answerPlaying}
-              className={styles.cyanBtn}
+              className={actionStyles.blueBtn}
               assets={answerAssets}
               onSequenceEnd={handleAnswerEnded}
             />
@@ -296,10 +298,10 @@ export function AudioQuiz({
                 type="submit"
                 name="correct_submit"
                 value="Correct!"
-                className={cx(styles.flex1, styles.greenBtn)}
+                className={cx(styles.flex1, actionStyles.greenBtn)}
               >
-                <div className={styles.btnContent}>
-                  <Check className={styles.iconLarge} />
+                <div className={actionStyles.btnContent}>
+                  <Check className={actionStyles.iconLarge} />
                   <span>Correct!</span>
                 </div>
               </LargeActionButton>
@@ -308,10 +310,10 @@ export function AudioQuiz({
                 type="submit"
                 name="incorrect_submit"
                 value="Wrong!"
-                className={cx(styles.flex1, styles.redBtn)}
+                className={cx(styles.flex1, actionStyles.redBtn)}
               >
-                <div className={styles.btnContent}>
-                  <X className={styles.iconLarge} />
+                <div className={actionStyles.btnContent}>
+                  <X className={actionStyles.iconLarge} />
                   <span>Wrong!</span>
                 </div>
               </LargeActionButton>
@@ -336,7 +338,7 @@ export function AudioQuiz({
         {answerRevealed && (
           <div className={styles.card}>
             <h5 className={styles.cardTitle}>
-              <BookOpen className={styles.iconSmall} />
+              <BookOpen className={actionStyles.iconSmall} />
               The Answer
             </h5>
 
@@ -348,22 +350,28 @@ export function AudioQuiz({
       </div>
 
       <div className={styles.adminActions}>
-        <button
+        <LargeActionButton
           type="submit"
           name="exclude-question-button"
           value="exclude"
-          className={styles.secondaryBtn}
+          className={cx(styles.flex1, actionStyles.redBtn)}
         >
-          <Ban className={styles.iconTiny} />
-          Exclude
-        </button>
+          <div className={actionStyles.btnContent}>
+            <Ban className={actionStyles.iconLarge} />
+            <span>Exclude</span>
+          </div>
+        </LargeActionButton>
 
         {question.created_by_username === currentUsername && (
           <a
             href={`${editQuestionUrl}?q_id=${question.question_id}`}
-            className={styles.secondaryBtn}
+            className={cx(actionStyles.largeBtn, styles.flex1, actionStyles.cyanBtn)}
+            style={{ textDecoration: 'none' }}
           >
-            Edit Question
+            <div className={actionStyles.btnContent}>
+              <Edit className={actionStyles.iconLarge} />
+              <span>Edit Question</span>
+            </div>
           </a>
         )}
       </div>

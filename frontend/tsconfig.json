@@ -6,7 +6,6 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -19,11 +18,15 @@
       "@/*": ["./src/*"]
     },
 
-    /* Linting */
+    "rootDirs": [".", "generated"],
+
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
+  },
+  "cmkOptions": {
+    "enabled": true
   },
   "include": ["src"]
 }

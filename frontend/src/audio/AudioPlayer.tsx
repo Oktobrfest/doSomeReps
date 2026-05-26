@@ -182,60 +182,26 @@ export function AudioPlayer({
         onTouchStart={stop}
       >
         {assets.length > 1 && (
-          <div style={{ display: 'flex', gap: '20px', marginBottom: '4px', alignItems: 'center' }}>
+          <div className={styles.trackControls}>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); prevTrack(); }}
               disabled={trackIndex === 0}
-              style={{
-                background: 'rgba(0,0,0,0.2)',
-                color: '#fff',
-                border: 'none',
-                padding: '4px 12px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                opacity: trackIndex === 0 ? 0.3 : 1
-              }}
+              className={styles.navButton}
             >
               ◀ Prev
             </button>
-            <span style={{
-              fontWeight: '600',
-              color: '#fff',
-              whiteSpace: 'nowrap',
-              background: 'rgba(255,255,255,0.15)',
-              padding: '10px',
-              margin: '8px',
-              borderRadius: '20px',
-              fontSize: '1.5rem',
-              letterSpacing: '0.05em',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: 'inset 0 2px 2px rgba(0,0,0,0.2)',
-              height: '48px',
-              boxSizing: 'border-box'
-            }}>
-              <span style={{ opacity: 0.9, margin: '0.5rem' }}>Track</span>
-              <strong style={{ color: '#00ffd2'  }}>{trackIndex + 1}</strong>
-              <span style={{ opacity: 0.5, padding: '11px'}}>/</span>
-              <span style={{ opacity: 0.8, marginRight: '0.5rem'  }}>{assets.length}</span>
+            <span className={styles.trackBadge}>
+              <span className={styles.trackLabel}>Track</span>
+              <strong className={styles.trackCurrent}>{trackIndex + 1}</strong>
+              <span className={styles.trackSeparator}>/</span>
+              <span className={styles.trackTotal}>{assets.length}</span>
             </span>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); nextTrack(); }}
               disabled={trackIndex + 1 === assets.length}
-              style={{
-                background: 'rgba(0,0,0,0.2)',
-                color: '#fff',
-                border: 'none',
-                padding: '4px 12px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                opacity: trackIndex + 1 === assets.length ? 0.3 : 1
-              }}
+              className={styles.navButton}
             >
               Next ▶
             </button>
@@ -254,7 +220,7 @@ export function AudioPlayer({
           className={styles.slider}
         />
 
-        <div className={styles.timeInfo} style={{ fontSize: '1.1rem', fontWeight: '500' }}>
+        <div className={styles.timeInfo} >
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
       </div>
