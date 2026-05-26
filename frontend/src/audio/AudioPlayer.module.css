@@ -23,6 +23,8 @@
   border-radius: 3px;
   outline: none;
   cursor: pointer;
+  margin-top: 15px;
+  margin-bottom: 2px;
 }
 
 /* Style the range thumb (slider handle) so it is larger and easy to touch */

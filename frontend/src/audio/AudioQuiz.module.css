@@ -51,6 +51,8 @@
 }
 
 .largeBtn.hasSlider {
+  min-height: 220px;
+  height: auto;
   padding: 16px !important;
   gap: 8px !important;
 }

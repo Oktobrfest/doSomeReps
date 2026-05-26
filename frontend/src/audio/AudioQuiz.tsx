@@ -57,26 +57,40 @@ function LargePlayableControl({
 }: PlayableControlProps) {
   return (
     <div className={styles.playableControl}>
-      <button
-        type="button"
-        onClick={onClick}
+      <div
         className={cx(styles.largeBtn, styles.hasSlider, className)}
+        style={{ cursor: 'default' }}
       >
-        <div className={styles.btnContent}>
+        <button
+          type="button"
+          onClick={onClick}
+          className={styles.playPauseToggleBtn}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'inherit',
+            font: 'inherit',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: 0,
+          }}
+        >
           {isPlaying ? (
             <Pause className={styles.iconLarge} />
           ) : (
             <Play className={styles.iconLarge} />
           )}
           <span>{isPlaying ? 'Pause' : 'Resume'}</span>
-        </div>
+        </button>
 
         <AudioPlayer
           assets={assets}
           isPlaying={isPlaying}
           onSequenceEnd={onSequenceEnd}
         />
-      </button>
+      </div>
     </div>
   );
 }
@@ -107,6 +121,7 @@ export function AudioQuiz({
     if (answerActive) {
       setAnswerActive(false);
       setAnswerPlaying(false);
+      setAnswerRevealed(false);
     }
 
     setQuestionActive(true);

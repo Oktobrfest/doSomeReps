@@ -23,79 +23,143 @@ export function AudioPlayer({
   const [trackIndex, setTrackIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  // Create an array of refs for audio elements
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
 
-  // React to isPlaying changes — play or pause the current track.
+  // 1. Reset all audio elements and state when the asset list changes (moving to a new question/answer)
   useEffect(() => {
-    const currentAudio = audioRefs.current[trackIndex];
-    if (!currentAudio) return;
-    if (isPlaying) {
-      const p = currentAudio.play();
-      if (p !== undefined) {
-        p.catch((err) => {
-          console.error('Audio play failed:', err);
-          advanceTrack();
-        });
+    audioRefs.current.forEach((audio) => {
+      if (audio) {
+        audio.pause();
+        try { audio.currentTime = 0; } catch { /* ignore */ }
       }
-    } else {
-      currentAudio.pause();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying, trackIndex]);
-
-  // Reset when the asset list changes (new question).
-  useEffect(() => {
+    });
     setTrackIndex(0);
     setCurrentTime(0);
     setDuration(0);
-    audioRefs.current.forEach((a) => {
-      if (a) {
-        a.pause();
-        try { a.currentTime = 0; } catch { /* ignore */ }
-      }
-    });
   }, [assets]);
 
-  const advanceTrack = useCallback(() => {
-    setTrackIndex((idx) => {
-      const next = idx + 1;
-      if (next >= assets.length) {
-        queueMicrotask(onSequenceEnd);
-        return idx;
+  // 2. Play or Pause the active audio element based on `isPlaying` and `trackIndex`
+  useEffect(() => {
+    const activeAudio = audioRefs.current[trackIndex];
+    if (!activeAudio) return;
+
+    // Sync duration immediately if already loaded
+    if (isFinite(activeAudio.duration) && activeAudio.duration > 0) {
+      setDuration(activeAudio.duration);
+    } else {
+      setDuration(0);
+    }
+
+    if (isPlaying) {
+      const playPromise = activeAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.error('Audio play failed:', err);
+        });
       }
-      return next;
-    });
-  }, [assets.length, onSequenceEnd]);
+    } else {
+      activeAudio.pause();
+    }
 
-  const handleEnded = useCallback(() => advanceTrack(), [advanceTrack]);
+    // Cleanup: pause active audio if index changes or player unmounts
+    return () => {
+      activeAudio.pause();
+    };
+  }, [isPlaying, trackIndex]);
 
+  // 3. Handle when the active track ends
+  const handleEnded = useCallback(() => {
+    if (trackIndex + 1 < assets.length) {
+      // Move to next track
+      setTrackIndex(trackIndex + 1);
+      setCurrentTime(0);
+      setDuration(0);
+    } else {
+      // Sequence completed! Reset all tracks to beginning and notify parent
+      audioRefs.current.forEach((audio) => {
+        if (audio) {
+          try { audio.currentTime = 0; } catch { /* ignore */ }
+        }
+      });
+      setTrackIndex(0);
+      setCurrentTime(0);
+      setDuration(0);
+      onSequenceEnd();
+    }
+  }, [trackIndex, assets.length, onSequenceEnd]);
+
+  // 4. Handle time and metadata updates
   const handleTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLAudioElement>) => {
-    setCurrentTime(e.currentTarget.currentTime);
-  }, []);
+    const audioIndex = audioRefs.current.indexOf(e.currentTarget);
+    if (audioIndex === trackIndex) {
+      setCurrentTime(e.currentTarget.currentTime);
+    }
+  }, [trackIndex]);
 
   const handleLoadedMetadata = useCallback((e: React.SyntheticEvent<HTMLAudioElement>) => {
-    setDuration(e.currentTarget.duration);
-  }, []);
+    const audioIndex = audioRefs.current.indexOf(e.currentTarget);
+    if (audioIndex === trackIndex) {
+      setDuration(e.currentTarget.duration);
+    }
+  }, [trackIndex]);
 
   const handleSeek = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const currentAudio = audioRefs.current[trackIndex];
-      if (!currentAudio || !isFinite(duration) || duration <= 0) return;
+      const activeAudio = audioRefs.current[trackIndex];
+      if (!activeAudio || !isFinite(duration) || duration <= 0) return;
       const pct = parseFloat(e.target.value);
-      currentAudio.currentTime = (pct / 100) * duration;
-      setCurrentTime(currentAudio.currentTime);
+      const newTime = (pct / 100) * duration;
+      activeAudio.currentTime = newTime;
+      setCurrentTime(newTime);
     },
     [trackIndex, duration]
   );
 
-  // Stop click events bubbling up to the parent button (which would re-trigger playback).
-  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
+  // Manual track navigation (Prev/Next buttons)
+  const prevTrack = useCallback(() => {
+    if (trackIndex > 0) {
+      const activeAudio = audioRefs.current[trackIndex];
+      if (activeAudio) {
+        activeAudio.pause();
+        try { activeAudio.currentTime = 0; } catch { /* ignore */ }
+      }
+      setTrackIndex(trackIndex - 1);
+      setCurrentTime(0);
+      setDuration(0);
+    }
+  }, [trackIndex]);
 
+  const nextTrack = useCallback(() => {
+    if (trackIndex + 1 < assets.length) {
+      const activeAudio = audioRefs.current[trackIndex];
+      if (activeAudio) {
+        activeAudio.pause();
+        try { activeAudio.currentTime = 0; } catch { /* ignore */ }
+      }
+      setTrackIndex(trackIndex + 1);
+      setCurrentTime(0);
+      setDuration(0);
+    } else {
+      audioRefs.current.forEach((audio) => {
+        if (audio) {
+          try { audio.currentTime = 0; } catch { /* ignore */ }
+        }
+      });
+      setTrackIndex(0);
+      setCurrentTime(0);
+      setDuration(0);
+      onSequenceEnd();
+    }
+  }, [trackIndex, assets.length, onSequenceEnd]);
+
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
   const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // Hidden audio elements: always attach listeners so metadata is read immediately upon mounting or loading
   return (
     <>
-      {/* Hidden audio elements, kept mounted for preload */}
       {assets.map((asset, i) => (
         <audio
           key={`${asset.url}-${i}`}
@@ -104,9 +168,8 @@ export function AudioPlayer({
           preload="auto"
           data-lang={asset.lang}
           onEnded={i === trackIndex ? handleEnded : undefined}
-          onTimeUpdate={i === trackIndex ? handleTimeUpdate : undefined}
-          onLoadedMetadata={i === trackIndex ? handleLoadedMetadata : undefined}
-          onError={i === trackIndex ? handleEnded : undefined}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
           className={styles.hidden}
         />
       ))}
@@ -118,6 +181,67 @@ export function AudioPlayer({
         onPointerDown={stop}
         onTouchStart={stop}
       >
+        {assets.length > 1 && (
+          <div style={{ display: 'flex', gap: '20px', marginBottom: '4px', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); prevTrack(); }}
+              disabled={trackIndex === 0}
+              style={{
+                background: 'rgba(0,0,0,0.2)',
+                color: '#fff',
+                border: 'none',
+                padding: '4px 12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                opacity: trackIndex === 0 ? 0.3 : 1
+              }}
+            >
+              ◀ Prev
+            </button>
+            <span style={{
+              fontWeight: '600',
+              color: '#fff',
+              whiteSpace: 'nowrap',
+              background: 'rgba(255,255,255,0.15)',
+              padding: '10px',
+              margin: '8px',
+              borderRadius: '20px',
+              fontSize: '1.5rem',
+              letterSpacing: '0.05em',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: 'inset 0 2px 2px rgba(0,0,0,0.2)',
+              height: '48px',
+              boxSizing: 'border-box'
+            }}>
+              <span style={{ opacity: 0.9, margin: '0.5rem' }}>Track</span>
+              <strong style={{ color: '#00ffd2'  }}>{trackIndex + 1}</strong>
+              <span style={{ opacity: 0.5, padding: '11px'}}>/</span>
+              <span style={{ opacity: 0.8, marginRight: '0.5rem'  }}>{assets.length}</span>
+            </span>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); nextTrack(); }}
+              disabled={trackIndex + 1 === assets.length}
+              style={{
+                background: 'rgba(0,0,0,0.2)',
+                color: '#fff',
+                border: 'none',
+                padding: '4px 12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                opacity: trackIndex + 1 === assets.length ? 0.3 : 1
+              }}
+            >
+              Next ▶
+            </button>
+          </div>
+        )}
+
         <input
           type="range"
           value={pct}
@@ -130,7 +254,7 @@ export function AudioPlayer({
           className={styles.slider}
         />
 
-        <div className={styles.timeInfo}>
+        <div className={styles.timeInfo} style={{ fontSize: '1.1rem', fontWeight: '500' }}>
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
       </div>
