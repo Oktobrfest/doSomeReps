@@ -192,7 +192,11 @@ def get_quizes(selected_cats, UID):
 
     # Calculate the elapsed time of function excecution for Development ONLY
     elapsed_time = time.time() - start_time
-    print("Total get Que List Run Time:", elapsed_time, "seconds")   
+    try:
+        print("Total get Que List Run Time:", elapsed_time, "seconds")   
+    except ValueError:
+        # Standard output stream has been closed or detached in the server process
+        pass
 
     return que_list        
 

@@ -15,7 +15,8 @@ const AVAILABLE_COMMANDS = [
   "PAUSE",
   "RESUME",
   "RELOAD",
-  "ASK AI"
+  "ASK AI",
+  "STOP LISTENING"
 ];
 
 function normalizeDetectedKeyword(keyword: string): string {
@@ -31,6 +32,17 @@ export function AudioCommandSystemComponent() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Clear detected command display after 6 seconds
+  useEffect(() => {
+    if (!lastCommand) return;
+
+    const timer = setTimeout(() => {
+      setLastCommand(null);
+    }, 6000);
+
+    return () => clearTimeout(timer);
+  }, [lastCommand]);
 
   const commandManagerRef = useRef(new AudioCommandManager());
   const recognizerRef = useRef<SherpaKws | null>(null);
@@ -124,6 +136,20 @@ export function AudioCommandSystemComponent() {
       sessionStorage.setItem("audio_listening_active", "false");
     }
   };
+
+  const stopListeningRef = useRef(stopListening);
+  useEffect(() => {
+    stopListeningRef.current = stopListening;
+  }, [stopListening]);
+
+  useEffect(() => {
+    (window as any).stopAudioListening = () => {
+      stopListeningRef.current(true);
+    };
+    return () => {
+      delete (window as any).stopAudioListening;
+    };
+  }, []);
 
   const startListening = async () => {
     if (isStartingRef.current || engineState === "loading") return;
