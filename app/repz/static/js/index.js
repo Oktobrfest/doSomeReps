@@ -214,22 +214,53 @@ window.onload = (event) => {
 
     if (window.location.pathname === '/about') {
         let timesCollection = document.getElementsByClassName('rep-duration');
+        let originalValues = [];
+        for (let i = 0; i < timesCollection.length; i++) {
+            originalValues.push(parseFloat(timesCollection[i].outerText));
+        }
 
-        Array.prototype.forEach.call(timesCollection, function (element) {
-            let days = parseFloat(element.outerText);
+        function formatDuration(days) {
             if (days < .04) {
-                // convert to hours
-                let hours = (days * 24.0 * 60).toFixed();
-                element.textContent = hours + ' Mins';
-            } else if
-                (days > .04 && days < 2) {
+                let mins = (days * 24.0 * 60).toFixed();
+                return mins + ' Mins';
+            } else if (days >= .04 && days < 2) {
                 let hours = (days * 24.0).toFixed();
-                element.textContent = hours + ' Hours';
-
+                return hours + ' Hours';
+            } else if (days >= 365) {
+                let years = (days / 365).toFixed(1);
+                if (years.endsWith('.0')) {
+                    years = parseFloat(years).toFixed();
+                }
+                return years + (years === '1' ? ' year' : ' years');
+            } else if (days >= 30) {
+                let months = (days / 30.4).toFixed(1);
+                if (months.endsWith('.0')) {
+                    months = parseFloat(months).toFixed();
+                }
+                return months + ' months';
+            } else if (days >= 7) {
+                let weeks = (days / 7).toFixed(1);
+                if (weeks.endsWith('.0')) {
+                    weeks = parseFloat(weeks).toFixed();
+                }
+                return weeks + ' weeks';
             } else {
-                element.textContent = days.toFixed() + ' days';
-            };
-        });
+                return days.toFixed() + ' days';
+            }
+        }
+
+        for (let i = 0; i < timesCollection.length; i++) {
+            let days = originalValues[i];
+            let formattedCurrent = formatDuration(days);
+            
+            if (i > 0) {
+                let diff = days - originalValues[i - 1];
+                let formattedDiff = formatDuration(diff);
+                timesCollection[i].textContent = formattedCurrent + ' (' + formattedDiff + ')';
+            } else {
+                timesCollection[i].textContent = formattedCurrent;
+            }
+        }
     }
 
     if ((window.location.pathname === '/quiz') || (window.location.pathname === '/quemore') || (window.location.pathname === '/editquestions')) {
