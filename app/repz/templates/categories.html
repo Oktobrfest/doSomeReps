@@ -80,7 +80,22 @@
             if (Array.isArray(data)) {
               setSavedLists(data);
               const defaultList = data.find(l => l.is_default);
-              if (defaultList) {
+              
+              // Find if any saved list exactly matches the currently checked categories
+              let matchedList = null;
+              if (checkedCats.size > 0) {
+                matchedList = data.find(list => {
+                  if (list.categories.length !== checkedCats.size) return false;
+                  return list.categories.every(catName => {
+                    const slug = catName.replace(/ /g, '_');
+                    return checkedCats.has(slug);
+                  });
+                });
+              }
+
+              if (matchedList) {
+                setSelectedListId(matchedList.id.toString());
+              } else if (defaultList) {
                 // If we don't have checked categories from session, pre-select it
                 if (checkedCats.size === 0) {
                   applyList(defaultList);
