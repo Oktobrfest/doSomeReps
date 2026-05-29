@@ -2,10 +2,12 @@ import hashlib
 import logging
 import random
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 from flask import flash, redirect, render_template, request, url_for, g
 from flask_login import current_user
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
 
@@ -25,6 +27,137 @@ from repz.bluehelpers import (
 )
 
 
+# ---------------------------------------------------------------------------
+# Domain types
+# ---------------------------------------------------------------------------
+
+
+class AnswerVerdict(StrEnum):
+    """
+    The three possible outcomes a user can submit for a quiz question.
+
+    The string values MUST match the `value=` attributes on the verdict
+    buttons in the quiz templates (currently quiz.html and audio.html).
+    """
+
+    CORRECT = "Correct!"
+    WRONG = "Wrong!"
+    SLIGHTLY_WRONG = "Slightly Wrong"
+
+    @property
+    def is_correct(self) -> bool:
+        return self is AnswerVerdict.CORRECT
+
+    @property
+    def is_wrong(self) -> bool:
+        return self in (AnswerVerdict.WRONG, AnswerVerdict.SLIGHTLY_WRONG)
+
+    @property
+    def is_slightly_wrong(self) -> bool:
+        return self is AnswerVerdict.SLIGHTLY_WRONG
+
+
+# ---------------------------------------------------------------------------
+# Form action models
+#
+# The quiz form can submit one of four distinct user intents. Parsing the
+# raw Flask form into a tagged union of these models keeps validation at
+# the boundary and lets the handler dispatch on type instead of probing
+# raw strings.
+# ---------------------------------------------------------------------------
+
+
+class _QuizActionBase(BaseModel):
+    """Shared config for all quiz action models."""
+
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+
+class QuizStart(_QuizActionBase):
+    """User clicked the start-quiz button on an empty quiz page."""
+
+
+class QuizApplyCategories(_QuizActionBase):
+    """User clicked 'Apply' on the category sidebar."""
+
+    quizq_id: int = 0  # 0 means "no current question on the page"
+
+
+class QuizExclusion(_QuizActionBase):
+    """User clicked 'Exclude Question' on the current question."""
+
+    quizq_id: int = Field(gt=0)
+
+
+class QuizSubmission(_QuizActionBase):
+    """User clicked Correct / Wrong / Slightly Wrong on the current question."""
+
+    quizq_id: int = Field(gt=0)
+    verdict: AnswerVerdict
+    provided_answer: str | None = None
+
+
+QuizAction = QuizStart | QuizApplyCategories | QuizExclusion | QuizSubmission
+
+
+def _parse_quiz_action(form) -> QuizAction | None:
+    """
+    Convert a raw Flask `request.form` into a typed quiz action.
+
+    Returns None when the POST does not correspond to any recognized action
+    (matches the original handler's silent fall-through behavior).
+    """
+    # Apply-categories takes precedence over everything else, exactly as
+    # the original handler ordered it.
+    if form.get("apply-categories") == "Apply":
+        raw_id = form.get("quizq-id")
+        try:
+            quizq_id = int(raw_id) if raw_id is not None else 0
+        except (TypeError, ValueError):
+            quizq_id = 0
+        return QuizApplyCategories(quizq_id=quizq_id)
+
+    # Start-quiz short-circuits before any quizq_id checks in the original.
+    if form.get("start-quiz") is not None:
+        return QuizStart()
+
+    raw_id = form.get("quizq-id")
+    try:
+        quizq_id = int(raw_id) if raw_id is not None else 0
+    except (TypeError, ValueError):
+        quizq_id = 0
+
+    # Exclude requires a real quizq_id.
+    if form.get("exclude-question-button") == "exclude" and quizq_id != 0:
+        return QuizExclusion(quizq_id=quizq_id)
+
+    # Verdict submission. The template currently uses two mutually-exclusive
+    # form fields (`correct_submit` and `incorrect_submit`); we collapse them
+    # into a single AnswerVerdict here so the rest of the code never sees
+    # that quirk.
+    verdict_raw = form.get("correct_submit") or form.get("incorrect_submit")
+    if verdict_raw is not None and quizq_id != 0:
+        try:
+            return QuizSubmission(
+                quizq_id=quizq_id,
+                verdict=verdict_raw,
+                provided_answer=form.get("provided-answer"),
+            )
+        except ValidationError:
+            logging.warning(
+                "Discarding quiz submission with unrecognized verdict=%r",
+                verdict_raw,
+            )
+            return None
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Page config
+# ---------------------------------------------------------------------------
+
+
 @dataclass(frozen=True)
 class QuizPageConfig:
     mode: str
@@ -32,6 +165,11 @@ class QuizPageConfig:
     endpoint_name: str
     title: str
     description: str
+
+
+# ---------------------------------------------------------------------------
+# Main entry point
+# ---------------------------------------------------------------------------
 
 
 def render_quiz_page(config: QuizPageConfig, audio_service=None):
@@ -65,6 +203,7 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
             que_list=que_list,
             que_cache_key=que_cache_key,
             endpoint_name=config.endpoint_name,
+            selected_categories=selected_categories,
         )
         if redirect_response is not None:
             return redirect_response
@@ -168,7 +307,7 @@ def _build_audio_assets_for_template(q: dict, raw_assets: dict) -> dict:
     The raw service result proves which audio assets were successfully ensured.
     This function then builds local proxy URLs for the template.
     """
-    audio_assets = {}
+    audio_assets: dict[str, list[dict[str, str]]] = {}
 
     if not raw_assets:
         return audio_assets
@@ -228,9 +367,20 @@ def _get_selected_categories():
                 set_session("quiz_category_names", saved_names)
         return saved_names
 
-    selected_categories = request.form.getlist("category_name")
-    set_session("quiz_category_names", selected_categories)
-    return selected_categories
+    if "apply-categories" in request.form or "category_name" in request.form:
+        selected_categories = request.form.getlist("category_name")
+        set_session("quiz_category_names", selected_categories)
+        return selected_categories
+
+    saved_names = get_session("quiz_category_names")
+    if saved_names == "Not set" or not saved_names:
+        return []
+    return saved_names
+
+
+# ---------------------------------------------------------------------------
+# POST dispatch
+# ---------------------------------------------------------------------------
 
 
 def _handle_quiz_post(
@@ -238,73 +388,75 @@ def _handle_quiz_post(
     que_list: list[dict[str, Any]],
     que_cache_key: str,
     endpoint_name: str,
+    selected_categories: list[str],
 ):
     """Shared POST action handling for both quiz modes."""
-    incorrect_submit = request.form.get("incorrect_submit")
-    correct_submit = request.form.get("correct_submit")
-    quizq_id_str = request.form.get("quizq-id")
-    start_quiz = request.form.get("start-quiz")
-    provided_answer = request.form.get("provided-answer")
-    exclude_question = request.form.get("exclude-question-button")
-    apply_categories = request.form.get("apply-categories")
+    action = _parse_quiz_action(request.form)
 
-    if quizq_id_str is not None:
-        quizq_id = int(quizq_id_str)
-    else:
-        quizq_id = 0
+    match action:
+        case QuizApplyCategories(quizq_id=qid):
+            return _handle_apply_categories(
+                quizq_id=qid,
+                que_list=que_list,
+                selected_categories=selected_categories,
+                endpoint_name=endpoint_name,
+            )
 
-    if apply_categories == "Apply":
-        # Check if the categories of the current question are still checked off (present in selected_categories).
-        # We need to find the current question in que_list matching quizq_id, or if we can't find it, we check the database.
-        current_q = None
-        if quizq_id != 0 and que_list:
-            for item in que_list:
-                if item.get("quizq_id") == quizq_id:
-                    current_q = item
-                    break
+        case QuizStart():
+            return None
 
-        if current_q:
-            q_cats = [c.replace(" ", "_") for c in current_q.get("categories", [])]
-            # If ANY category of the current question is still in the selected_categories,
-            # we keep the page as is. Otherwise, if NONE of the current question's categories
-            # are in the selected categories, we redirect to reload a question from the updated categories.
-            has_overlap = any(cat in selected_categories for cat in q_cats)
-            if not has_overlap:
-                # Force reloading with only questions from the selected categories by redirecting
-                return redirect(url_for(endpoint_name))
-        else:
-            # If there's no current question, we can also redirect to refresh
+        case QuizExclusion(quizq_id=qid):
+            _exclude_quiz_question(user_id, qid, que_list, que_cache_key)
             return redirect(url_for(endpoint_name))
-        return None
 
-    if start_quiz is not None:
-        return None
+        case QuizSubmission(
+            quizq_id=qid, verdict=verdict, provided_answer=provided_answer
+        ):
+            _submit_quiz_answer(
+                user_id=user_id,
+                quizq_id=qid,
+                verdict=verdict,
+                provided_answer=provided_answer,
+                que_list=que_list,
+                que_cache_key=que_cache_key,
+                endpoint_name=endpoint_name,
+            )
+            return redirect(url_for(endpoint_name))
 
-    if (
-        (start_quiz is None)
-        and (exclude_question == "exclude")
-        and quizq_id != 0
-    ):
-        _exclude_quiz_question(user_id, quizq_id, que_list, que_cache_key)
+        case _:
+            return None
+
+
+def _handle_apply_categories(
+    quizq_id: int,
+    que_list: list[dict[str, Any]],
+    selected_categories: list[str],
+    endpoint_name: str,
+):
+    """
+    Apply-categories logic, preserved exactly from the original handler.
+
+    If the categories of the current question no longer overlap with the
+    user's selected categories, redirect so a fresh question is loaded.
+    """
+    current_q = None
+    if quizq_id != 0 and que_list:
+        for item in que_list:
+            if item.get("quizq_id") == quizq_id:
+                current_q = item
+                break
+
+    if current_q:
+        q_cats = [c.replace(" ", "_") for c in current_q.get("categories", [])]
+        # If ANY category of the current question is still in the
+        # selected_categories, keep the page as is. Otherwise, redirect to
+        # reload a question from the updated categories.
+        has_overlap = any(cat in selected_categories for cat in q_cats)
+        if not has_overlap:
+            return redirect(url_for(endpoint_name))
+    else:
+        # If there's no current question, redirect to refresh.
         return redirect(url_for(endpoint_name))
-
-    if (
-        (start_quiz is None)
-        and ((correct_submit == "Correct!") or (incorrect_submit == "Wrong!"))
-        and quizq_id != 0
-    ):
-        is_correct = correct_submit == "Correct!"
-        _submit_quiz_answer(
-            user_id=user_id,
-            quizq_id=quizq_id,
-            is_correct=is_correct,
-            provided_answer=provided_answer,
-            que_list=que_list,
-            que_cache_key=que_cache_key,
-            endpoint_name=endpoint_name,
-        )
-        return redirect(url_for(endpoint_name))
-
     return None
 
 
@@ -344,7 +496,7 @@ def _exclude_quiz_question(
 def _submit_quiz_answer(
     user_id: int,
     quizq_id: int,
-    is_correct: bool,
+    verdict: AnswerVerdict,
     provided_answer: str | None,
     que_list: list[dict[str, Any]],
     que_cache_key: str,
@@ -402,7 +554,7 @@ def _submit_quiz_answer(
         .values(answered_on=time_now, provided_answer=provided_answer)
     )
 
-    if is_correct:
+    if verdict.is_correct:
         max_lvl = session.execute(select(func.max(level.level_no))).scalar()
 
         if current_quiz[0].level_no < max_lvl:
@@ -428,7 +580,13 @@ def _submit_quiz_answer(
 
     else:
         update_stmt = update_stmt.values(correct=False)
-        new_lvl = 1
+        if verdict.is_slightly_wrong:
+            if current_quiz[0].level_no > 3:
+                new_lvl = 3
+            else:
+                new_lvl = max(current_quiz[0].level_no - 1, 1)
+        else:
+            new_lvl = 1
 
         if len(que_list) > 0:
             que_list[:] = [

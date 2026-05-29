@@ -11,5 +11,8 @@
     } | tojson | safe }}
   </script>
   {{ vite_asset("src/audio/audio_quiz_entry.tsx") }}
-  {% include "categories.html" %}
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% include "categories.html" %}
+  </form>
 {% endblock %}

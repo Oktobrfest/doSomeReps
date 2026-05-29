@@ -16,6 +16,7 @@ import {
   Pause,
   Play,
   Edit,
+  Minus,
 } from 'lucide-react';
 import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
@@ -315,6 +316,18 @@ export function AudioQuiz({
                 <div className={actionStyles.btnContent}>
                   <X className={actionStyles.iconLarge} />
                   <span>Wrong!</span>
+                </div>
+              </LargeActionButton>
+
+              <LargeActionButton
+                type="submit"
+                name="incorrect_submit"
+                value="Slightly Wrong"
+                className={cx(styles.flex1, actionStyles.orangeBtn)}
+              >
+                <div className={actionStyles.btnContent}>
+                  <Minus className={actionStyles.iconLarge} />
+                  <span>Slightly Wrong</span>
                 </div>
               </LargeActionButton>
             </div>
