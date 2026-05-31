@@ -33,6 +33,7 @@ venv/
 app/node_modules/
 **/node_modules/
 /app/repz/static/vite_dist/
+.vite/
 
 # IDEs and Editors
 *.sublime-project
