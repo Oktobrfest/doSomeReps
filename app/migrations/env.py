@@ -50,8 +50,10 @@ def _get_url() -> str:
     )
 
     return url.render_as_string(hide_password=False)
+    
 
-config.set_main_option("sqlalchemy.url", _get_url())
+config.set_main_option("sqlalchemy.url", _get_url().replace("%", "%%"))
+
 
 
 def run_migrations_offline() -> None:
