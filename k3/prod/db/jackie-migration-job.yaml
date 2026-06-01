@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: reps-prod-migration
+  namespace: reps-prod
+spec:
+  ttlSecondsAfterFinished: 1500 # Automatically deletes the job after completion
+  template:
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: migration
+          image: docker.io/oktobrfest/reps:latest
+          command: ["python", "-m", "alembic", "upgrade", "head"]
+          workingDir: /app
+          envFrom:
+            - secretRef:
+                name: reps-prod-secrets
+            - secretRef:
+                name: reps-oidc
+            - configMapRef:
+                name: reps-prod-config
+            - configMapRef:
+                name: reps-oidc-config
+      restartPolicy: Never

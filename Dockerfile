@@ -41,15 +41,15 @@ RUN pip install setuptools && \
     fi
 
 # Node.js dependencies and build
-COPY app/package*.json app/webpack.config.js ./
-ENV NODE_ENV=${NODE_ENV}
-RUN echo "### NODE_ENV = ${NODE_ENV} ###"
-
+WORKDIR /frontend
+COPY frontend/package*.json ./
 RUN npm install
 
-# Copy only necessary source files for build
-COPY app/repz/static/js ./repz/static/js
+# Copy frontend source files for Vite build
+COPY frontend/ ./
 RUN npm run build
+
+WORKDIR /app
 
 
 # =====  Final production stage    =====
@@ -62,20 +62,8 @@ ARG PYTHON_LIB_VERSION
 # Copy only runtime dependencies and built assets from builder
 COPY --from=builder /usr/local/lib/python${PYTHON_LIB_VERSION}/site-packages/ /usr/local/lib/python${PYTHON_LIB_VERSION}/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
-# NOT SURE IF YOU WANT THIS:
-# COPY --from=builder /app/repz/static/dist ./repz/static/dist
 
 # Install only required runtime dependencies
-# TODO: LOOK THRU THESE AND MAKE SURE THEIR ALL EVEN NEEDED!
-# RUN apk --no-cache add \
-#     postgresql-libs \
-#     g++ \
-#     unixodbc-dev \
-#     gnupg \
-#     nodejs \
-#     npm \
-#     build-base \
-#     libstdc++
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     g++ \
@@ -85,6 +73,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     npm \
     build-essential \
     libstdc++6 \
+    ffmpeg \
  && rm -rf /var/lib/apt/lists/*
 
 
@@ -101,7 +90,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 
 
-# ===== DEV =====
+# ===== development =====
 FROM base-runtime AS development
 
 COPY app/entrypoint.sh /app/entrypoint.sh
@@ -110,11 +99,22 @@ ENV FLASK_ENV=development \
     FLASK_DEBUG=1
 
 
-
+# ===== prod =====
 FROM base-runtime AS prod
 
 COPY app /app
 
+RUN mkdir -p /app/piper_voices && \
+    for voice in \
+        en_US-lessac-medium \
+        es_ES-sharvard-medium \
+        es_MX-claude-high \
+        ru_RU-irina-medium \
+    ; do \
+        python -m piper.download_voices "$voice" --data-dir /app/piper_voices && \
+        test -s "/app/piper_voices/${voice}.onnx" && \
+        test -s "/app/piper_voices/${voice}.onnx.json"; \
+    done
 
 
 FROM ${NODE_ENV} AS final
