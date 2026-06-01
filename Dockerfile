@@ -103,7 +103,6 @@ ENV FLASK_ENV=development \
 FROM base-runtime AS prod
 
 COPY app /app
-
 RUN mkdir -p /app/piper_voices && \
     for voice in \
         en_US-lessac-medium \

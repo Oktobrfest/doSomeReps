@@ -22,5 +22,5 @@ Generate a new auto-detected migration:
   docker-compose run --rm reps_dev alembic revision --autogenerate -m "description"
 
 # For prod alternatively use the migration job:
-  kubectl -n reps-prod delete job/reps-prod-migration
+  kubectl delete job reps-prod-migration -n reps-prod
   kubectl apply -f k3/prod/db/jackie-migration-job.yaml

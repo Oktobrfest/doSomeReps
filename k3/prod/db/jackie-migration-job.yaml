@@ -7,6 +7,8 @@ spec:
   ttlSecondsAfterFinished: 1500 # Automatically deletes the job after completion
   template:
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: jackie
       imagePullSecrets:
         - name: regcred
       containers:
