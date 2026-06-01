@@ -116,7 +116,6 @@ coll_usage_scripts.txt
 temp
 .SCRATCHFILE
 .rules
-alembic.ini
 
 # Piper TTS voice models
 piper_voices/
