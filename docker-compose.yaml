@@ -29,8 +29,10 @@ services:
       - CACHE_REDIS_HOST=reps_redis
     volumes:
       - ./app:/app
+      - ./piper_voices:/app/piper_voices
       - ./alembic.ini:/app/alembic.ini
       - ./migrations:/app/migrations
+      - ./frontend:/frontend
     command: sh entrypoint.sh
 
     # UNCOMMENT THIS FOR VS-CODE:

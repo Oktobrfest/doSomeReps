@@ -18,21 +18,7 @@ GUNICORN_MAX_REQUESTS_JITTER=${GUNICORN_MAX_REQUESTS_JITTER:-50}
 # echo "Initial ls:"
 # ls
 
-# If we're not already in the /app directory that contains wsgi.py,
-# try /app as a fallback.
-if [ ! -f "wsgi.py" ]; then
-  echo "wsgi.py not found in $(pwd). Checking /app..."
-  if [ -f "/app/wsgi.py" ]; then
-    echo "Found /app/wsgi.py, cd /app"
-    cd /app
-  else
-    echo "ERROR: wsgi.py not found in $(pwd) or /app"
-    echo "Contents of /app (if it exists):"
-    ls -al /app || echo "/app not accessible"
-    exit 1
-  fi
-fi
-
+cd /app
 echo "Using app directory: $(pwd)"
 
 echo "IDE IS: ${IDE}"
@@ -40,8 +26,10 @@ if [ "$FLASK_ENV" = "development" ] || [ "$FLASK_DEBUG" = "1" ]; then
     DEBUG_PORT=${DEBUG_PORT:-5558}
     # This is for dev apparently only for now:::: NOT WORKING, FAILS!
 #    USER z
-    echo "Running Webpack build..."
+    echo "Running frontend build..."
+    cd /frontend
     npm run build
+    cd /app
 
     echo "Development environment detected, installing debugpy..."
     pip install debugpy
