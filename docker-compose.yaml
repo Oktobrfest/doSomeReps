@@ -1,5 +1,6 @@
 services:
   reps_dev:
+    user: "${UID}:${GID}"
     build:
       context: ./
       # dockerfile: ./dev.Dockerfile
@@ -27,6 +28,8 @@ services:
       - DB_NAME=${DB_NAME}
       - DRIVER=${DRIVER}
       - CACHE_REDIS_HOST=reps_redis
+      - UID=1000
+      - GID=1000
     volumes:
       - ./app:/app
       - ./piper_voices:/app/piper_voices
