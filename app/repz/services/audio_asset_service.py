@@ -412,6 +412,18 @@ Rules:
             f"question_id={q.get('question_id')}, parts={parts}"
         )
 
+        if not user.languages:
+            from repz.models import languages
+            default_lang = session.execute(
+                select(languages).where(languages.language == language)
+            ).scalar_one_or_none()
+            if not default_lang:
+                default_lang = languages(language=language)
+                session.add(default_lang)
+                session.flush()
+            user.languages.append(default_lang)
+            session.commit()
+
         assets_by_language = {}
         part_to_text = self._default_tts_texts(q)
 
