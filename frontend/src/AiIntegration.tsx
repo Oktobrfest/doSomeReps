@@ -77,20 +77,20 @@ export default function AiIntegration() {
   const getModelPrice = (modelName: string, providerName: string): string => {
     console.log('=== GET MODEL PRICE DEBUG ===');
     console.log('Input - Model:', modelName, 'Provider:', providerName);
-    
+
     if (!config?.modelPrices) {
       console.log('No modelPrices in config');
       return "N/A";
     }
-    
+
     console.log('Available prices:', config.modelPrices);
-    
+
     // Normalize to lowercase for matching
     const normalizedModel = (modelName || "").trim().toLowerCase();
     const normalizedProvider = (providerName || "").trim().toLowerCase();
-    
+
     console.log('Normalized - Model:', normalizedModel, 'Provider:', normalizedProvider);
-    
+
     // Try multiple lookup strategies
     const lookupKeys = [
       modelName, // Original case
@@ -100,16 +100,16 @@ export default function AiIntegration() {
       modelName.split('/').pop() || modelName, // Just the model part after /
       (modelName.split('/').pop() || modelName).toLowerCase(), // Lowercase model part
     ];
-    
+
     console.log('Trying lookup keys:', lookupKeys);
-    
+
     for (const key of lookupKeys) {
       // Try exact match
       if (config.modelPrices[key]) {
         console.log('✓ Found price with key:', key, '→', config.modelPrices[key]);
         return config.modelPrices[key];
       }
-      
+
       // Try case-insensitive match
       const lowerKey = key.toLowerCase();
       for (const [priceKey, priceValue] of Object.entries(config.modelPrices)) {
@@ -119,17 +119,14 @@ export default function AiIntegration() {
         }
       }
     }
-    
+
     console.log('✗ No price found for model');
     return "N/A";
   };
 
   // Update model price whenever formModel or formProvider changes
   useEffect(() => {
-    console.log('=== MODEL PRICE EFFECT TRIGGERED ===');
-    console.log('formModel:', formModel);
-    console.log('formProvider:', formProvider);
-    
+
     if (formModel && config) {
       const price = getModelPrice(formModel, formProvider);
       console.log('Setting currentModelPrice to:', price);
@@ -142,8 +139,6 @@ export default function AiIntegration() {
 
   const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const prov = e.target.value;
-    console.log('=== PROVIDER CHANGED ===');
-    console.log('New provider:', prov);
     setFormProvider(prov);
 
     // Auto-select first standard model or empty for custom
@@ -160,8 +155,6 @@ export default function AiIntegration() {
   };
 
   const handleModelChange = (newModel: string) => {
-    console.log('=== MODEL CHANGED ===');
-    console.log('New model:', newModel);
     setFormModel(newModel);
   };
 
