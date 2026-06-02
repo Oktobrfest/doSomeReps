@@ -5,6 +5,7 @@ from flask import flash, redirect, render_template, url_for, request
 from flask_login import current_user, login_required
 from sqlalchemy import select
 
+from app.repz.ai.litellm_client import build_price_map
 from repz.routes import ai
 
 from ..database import session
@@ -24,7 +25,7 @@ def _resolve_provider(form: AIProfileForm) -> str:
 @ai.route("/profile", methods=["GET", "POST"], endpoint="profile")
 @login_required
 def profile():
-    """Render and save the per-user AI integration form."""
+    """Render and save the per-user profile languages form."""
     user_obj = session.execute(
         select(users).where(users.id == current_user.id)
     ).scalar_one()
@@ -38,8 +39,6 @@ def profile():
     form.languages.choices = [(lang, lang) for lang in db_languages]
 
     if form.validate_on_submit():
-        user_obj.ai_model = (form.ai_model.data or "").strip() or None
-
         # Update language selections
         selected_langs = form.languages.data or []
         db_langs = session.execute(
@@ -48,12 +47,11 @@ def profile():
         user_obj.languages = list(db_langs)
 
         session.commit()
-        flash("AI model and language settings saved.", category="success")
+        flash("Language settings saved.", category="success")
         return redirect(url_for("ai.profile"))
 
     # Populate current settings for display
     if request.method == "GET":
-        form.ai_model.data = user_obj.ai_model or ""
         form.languages.data = [lang_obj.language for lang_obj in user_obj.languages]
 
     return render_template(
@@ -62,5 +60,4 @@ def profile():
         description="Configure your AI provider integration.",
         user=current_user,
         form=form,
-        has_saved_key=bool(user_obj.ai_api_key),
     )
