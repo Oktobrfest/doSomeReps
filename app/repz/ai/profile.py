@@ -5,7 +5,6 @@ from flask import flash, redirect, render_template, url_for, request
 from flask_login import current_user, login_required
 from sqlalchemy import select
 
-from app.repz.ai.litellm_client import build_price_map
 from repz.routes import ai
 
 from ..database import session

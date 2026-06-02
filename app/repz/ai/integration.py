@@ -4,14 +4,14 @@ Provides API endpoints for retrieving, saving, and testing AI configurations usi
 """
 
 import logging
-from flask import jsonify, render_template, request
+from flask import jsonify, request
 from flask_login import current_user, login_required
 from sqlalchemy import select
 
 from repz.routes import ai
 from ..database import session
 from ..models import users
-from .litellm_client import completion_for_user, AIConfigError
+from .litellm_client import completion_for_user, AIConfigError, price_label
 from .profile_forms import PREDEFINED_OPTIONS
 
 
@@ -36,15 +36,8 @@ def get_ai_config():
         has_key = bool(user_obj.ai_api_key)
         masked_key = "••••••••••••••••" if has_key else ""
 
-        # Build prices for all models in PREDEFINED_OPTIONS
-        from app.repz.ai.litellm_client import price_label
-        
-        logging.info("=== BUILDING PRICE MAP ===")
-        logging.info(f"User model: {user_obj.ai_model}, provider: {user_obj.ai_provider}")
-        
         prices = {}
         for prov, models in PREDEFINED_OPTIONS.items():
-            logging.debug(f"Processing provider: {prov} with {len(models)} models")
             for m in models:
                 if m:
                     price = price_label(m, prov)
@@ -52,11 +45,9 @@ def get_ai_config():
                     prices[m] = price
                     # Also store with lowercase key
                     prices[m.lower()] = price
-                    logging.debug(f"Mapped {m} and {m.lower()} -> {price}")
 
         # Ensure current model has a price entry
         if user_obj.ai_model and user_obj.ai_model not in prices:
-            logging.info(f"Current model {user_obj.ai_model} not in prices, adding it")
             m = user_obj.ai_model
             prov = user_obj.ai_provider
             if "/" in m:
@@ -64,13 +55,10 @@ def get_ai_config():
                 price = price_label(parts[1], parts[0])
             else:
                 price = price_label(m, prov)
-            
+
             # Store with both original and lowercase keys
             prices[m] = price
             prices[m.lower()] = price
-            logging.debug(f"Added current model: {m} and {m.lower()} -> {price}")
-        
-        logging.info(f"Final price map has {len(prices)} entries")
 
         result_data = {
             "provider": user_obj.ai_provider or "",
@@ -81,10 +69,7 @@ def get_ai_config():
             "predefinedOptions": PREDEFINED_OPTIONS,
             "modelPrices": prices
         }
-        
-        logging.info(f"Returning config with {len(prices)} price entries")
-        logging.debug(f"Sample prices: {list(prices.items())[:5]}")
-        
+
         response = jsonify(result_data)
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         return response
@@ -176,12 +161,12 @@ def test_ai_completion():
             {"role": "system", "content": "You are a helpful assistant validating this AI integration works correctly."},
             {"role": "user", "content": prompt}
         ]
-        
+
         resp = completion_for_user(user_obj, messages=messages, temperature=0.7)
         choices = getattr(resp, "choices", [])
         content = choices[0]["message"]["content"] if choices else ""
         model_used = getattr(resp, "model", user_obj.ai_model)
-        
+
         return jsonify({
             "success": True,
             "response": content,
