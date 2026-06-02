@@ -62,6 +62,7 @@ ARG PYTHON_LIB_VERSION
 # Copy only runtime dependencies and built assets from builder
 COPY --from=builder /usr/local/lib/python${PYTHON_LIB_VERSION}/site-packages/ /usr/local/lib/python${PYTHON_LIB_VERSION}/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
+COPY --from=builder /app/repz/static/vite_dist/ /app/repz/static/vite_dist/
 
 # Install only required runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
