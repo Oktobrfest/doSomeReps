@@ -7,6 +7,7 @@ interface AIConfig {
   hasKey: boolean;
   maskedKey: string;
   predefinedOptions: Record<string, string[]>;
+  modelPrices?: Record<string, string>;
 }
 
 export default function AiIntegration() {
@@ -24,6 +25,7 @@ export default function AiIntegration() {
   const [formApiBase, setFormApiBase] = useState<string>("");
   const [formApiKey, setFormApiKey] = useState<string>("");
   const [isCustomModel, setIsCustomModel] = useState<boolean>(false);
+  const [currentModelPrice, setCurrentModelPrice] = useState<string>("N/A");
 
   // Playground states
   const [prompt, setPrompt] = useState<string>("");
@@ -35,7 +37,7 @@ export default function AiIntegration() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/integration/api/config");
+      const res = await fetch(`/integration/api/config?_=${Date.now()}`);
       let data: any;
       try {
         data = await res.json();
@@ -71,18 +73,96 @@ export default function AiIntegration() {
     fetchConfig();
   }, []);
 
+  // Helper function to get model price with normalization and debugging
+  const getModelPrice = (modelName: string, providerName: string): string => {
+    console.log('=== GET MODEL PRICE DEBUG ===');
+    console.log('Input - Model:', modelName, 'Provider:', providerName);
+    
+    if (!config?.modelPrices) {
+      console.log('No modelPrices in config');
+      return "N/A";
+    }
+    
+    console.log('Available prices:', config.modelPrices);
+    
+    // Normalize to lowercase for matching
+    const normalizedModel = (modelName || "").trim().toLowerCase();
+    const normalizedProvider = (providerName || "").trim().toLowerCase();
+    
+    console.log('Normalized - Model:', normalizedModel, 'Provider:', normalizedProvider);
+    
+    // Try multiple lookup strategies
+    const lookupKeys = [
+      modelName, // Original case
+      normalizedModel, // Lowercase
+      `${providerName}/${modelName}`, // With provider prefix
+      `${normalizedProvider}/${normalizedModel}`, // Lowercase with provider
+      modelName.split('/').pop() || modelName, // Just the model part after /
+      (modelName.split('/').pop() || modelName).toLowerCase(), // Lowercase model part
+    ];
+    
+    console.log('Trying lookup keys:', lookupKeys);
+    
+    for (const key of lookupKeys) {
+      // Try exact match
+      if (config.modelPrices[key]) {
+        console.log('✓ Found price with key:', key, '→', config.modelPrices[key]);
+        return config.modelPrices[key];
+      }
+      
+      // Try case-insensitive match
+      const lowerKey = key.toLowerCase();
+      for (const [priceKey, priceValue] of Object.entries(config.modelPrices)) {
+        if (priceKey.toLowerCase() === lowerKey) {
+          console.log('✓ Found price with case-insensitive match:', priceKey, '→', priceValue);
+          return priceValue;
+        }
+      }
+    }
+    
+    console.log('✗ No price found for model');
+    return "N/A";
+  };
+
+  // Update model price whenever formModel or formProvider changes
+  useEffect(() => {
+    console.log('=== MODEL PRICE EFFECT TRIGGERED ===');
+    console.log('formModel:', formModel);
+    console.log('formProvider:', formProvider);
+    
+    if (formModel && config) {
+      const price = getModelPrice(formModel, formProvider);
+      console.log('Setting currentModelPrice to:', price);
+      setCurrentModelPrice(price);
+    } else {
+      console.log('Model or config not ready, setting N/A');
+      setCurrentModelPrice("N/A");
+    }
+  }, [formModel, formProvider, config]);
+
   const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const prov = e.target.value;
+    console.log('=== PROVIDER CHANGED ===');
+    console.log('New provider:', prov);
     setFormProvider(prov);
 
     // Auto-select first standard model or empty for custom
     if (config?.predefinedOptions[prov] && config.predefinedOptions[prov].length > 0) {
-      setFormModel(config.predefinedOptions[prov][0]);
+      const firstModel = config.predefinedOptions[prov][0];
+      console.log('Auto-selecting first model:', firstModel);
+      setFormModel(firstModel);
       setIsCustomModel(false);
     } else {
+      console.log('No predefined models, using custom');
       setFormModel("");
       setIsCustomModel(true);
     }
+  };
+
+  const handleModelChange = (newModel: string) => {
+    console.log('=== MODEL CHANGED ===');
+    console.log('New model:', newModel);
+    setFormModel(newModel);
   };
 
   const handleSaveConfig = async (e: React.FormEvent) => {
@@ -378,7 +458,7 @@ export default function AiIntegration() {
             <form onSubmit={handleSaveConfig}>
               <div className="row">
                 {/* Provider Dropdown */}
-                <div className="col-md-6 form-group">
+                <div className="col-md-4 form-group">
                   <label htmlFor="provider-select" className="font-weight-bold small text-secondary">
                     AI Provider
                   </label>
@@ -402,7 +482,7 @@ export default function AiIntegration() {
                 </div>
 
                 {/* Model ID Selection */}
-                <div className="col-md-6 form-group">
+                <div className="col-md-4 form-group">
                   <div className="d-flex justify-content-between align-items-center">
                     <label htmlFor="model-input" className="font-weight-bold small text-secondary m-0">
                       Model ID
@@ -433,14 +513,14 @@ export default function AiIntegration() {
                       className="form-control mt-1"
                       placeholder="e.g. anthropic/claude-3-5-sonnet-20240620"
                       value={formModel}
-                      onChange={(e) => setFormModel(e.target.value)}
+                      onChange={(e) => handleModelChange(e.target.value)}
                     />
                   ) : (
                     <select
                       id="model-input"
                       className="form-control mt-1"
                       value={formModel}
-                      onChange={(e) => setFormModel(e.target.value)}
+                      onChange={(e) => handleModelChange(e.target.value)}
                     >
                       {(config.predefinedOptions[formProvider] || []).map((mod) => (
                         <option key={mod} value={mod}>
@@ -454,6 +534,24 @@ export default function AiIntegration() {
                   )}
                   <small className="form-text text-muted">
                     Identifier passed directly to the model selector.
+                  </small>
+                </div>
+
+                {/* Model Price Column */}
+                <div className="col-md-4 form-group">
+                  <label htmlFor="model-price-display" className="font-weight-bold small text-secondary">
+                    Model Price
+                  </label>
+                  <input
+                    id="model-price-display"
+                    type="text"
+                    className="form-control mt-1"
+                    readOnly
+                    value={currentModelPrice}
+                    style={{ backgroundColor: currentModelPrice !== "N/A" ? "#e7f5e7" : "#f8f9fa" }}
+                  />
+                  <small className="form-text text-muted">
+                    {currentModelPrice !== "N/A" ? "LiteLLM pricing data" : "No pricing data available"}
                   </small>
                 </div>
               </div>

@@ -24,6 +24,7 @@ COMMON_PROVIDERS = [
     ("mistral", "Mistral"),
     ("groq", "Groq"),
     ("openrouter", "OpenRouter"),
+    ("deepinfra", "DeepInfra"),
     ("ollama", "Ollama (self-hosted)"),
     ("custom", "Other / custom (enter provider id manually)"),
 ]
@@ -110,6 +111,26 @@ PREDEFINED_OPTIONS = {
            "command-r7b",          # ultra-cheap ($0.0375/$0.15)
            "command-r",            # mid-tier RAG
            "command-r-plus",       # flagship RAG ($2.50/$10)
+       ],
+       "deepinfra": [
+           # DeepSeek family
+           "deepseek-ai/DeepSeek-V4-Flash",       # cheapest DeepSeek ($0.10/$0.20)
+           "deepseek-ai/DeepSeek-V3.2",           # efficient ($0.26/$0.38)
+           "deepseek-ai/DeepSeek-V4-Pro",         # flagship reasoning ($1.30/$2.60)
+           "deepseek-ai/DeepSeek-V3.1-Terminus",  # hybrid reasoning ($0.27/$0.95)
+           # Meta Llama family
+           "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",  # fast/cheap ($0.02/$0.03)
+           "meta-llama/Llama-3.3-70B-Instruct-Turbo",      # workhorse ($0.10/$0.32)
+           "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8", # MoE ($0.15/$0.60)
+           # Qwen family
+           "Qwen/Qwen3.5-35B-A3B",     # efficient MoE ($0.14/$1.00)
+           "Qwen/Qwen3.6-35B-A3B",     # latest MoE ($0.15/$0.95)
+           "Qwen/Qwen3-Max",           # flagship ($1.20/$6.00)
+           # Other top models
+           "moonshotai/Kimi-K2.5",     # multimodal agent ($0.45/$2.25)
+           "zai-org/GLM-5.1",          # agentic coding ($1.05/$3.50)
+           "nvidia/Nemotron-3-Nano-30B-A3B",  # fast MoE ($0.05/$0.20)
+           "MiniMaxAI/MiniMax-M2.7",   # complex agents ($0.30/$1.20)
        ],
 }
 

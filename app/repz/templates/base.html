@@ -12,10 +12,6 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   {{ flask_util_js.js }}
 
-  <!-- Sonner CSS and JS via CDN -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sonner@2.0.7/dist/styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/sonner@2.0.7/dist/index.umd.js"></script>
-
   <script type="module" src="{{ url_for('static', filename='js/index.js') }}"></script>
 
   <title>
@@ -28,8 +24,6 @@
 {% include 'navigation.html' %}
 
 <body tabindex="1">
-<!-- Toaster element for Sonner notifications -->
-<div id="sonner-toaster" class="sonner-toaster" style="position: fixed; bottom: 16px; right: 16px; z-index: 9999; pointer-events: none;"></div>
 
 <div id="my-message-area">
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -60,59 +54,6 @@
   </div>
 
   {% include 'footer.html' %}
-
-  <!-- Initialize Sonner and render flashed messages -->
-  <script type="text/javascript">
-    document.addEventListener("DOMContentLoaded", function() {
-      if (window.Sonner) {
-        // Create Sonner toaster
-        window.toasterInstance = new window.Sonner.Toaster({
-          target: document.getElementById('sonner-toaster'),
-          theme: 'light',
-          richColors: true,
-          closeButton: true
-        });
-
-        // Capture standard flashed messages and toast them
-        const flashes = [];
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              flashes.push({
-                category: {{ category|tojson }},
-                message: {{ message|tojson }}
-              });
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-
-        flashes.forEach(flash => {
-          if (flash.category === 'error' || flash.category === 'danger') {
-            window.toasterInstance.create({
-              type: 'error',
-              title: 'Error',
-              description: flash.message,
-              duration: 10000
-            });
-          } else if (flash.category === 'warning') {
-            window.toasterInstance.create({
-              type: 'warning',
-              title: 'Warning',
-              description: flash.message,
-              duration: 8000
-            });
-          } else {
-            window.toasterInstance.create({
-              type: 'success',
-              title: 'Success',
-              description: flash.message,
-              duration: 5000
-            });
-          }
-        });
-      }
-    });
-  </script>
 
   <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
     integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
