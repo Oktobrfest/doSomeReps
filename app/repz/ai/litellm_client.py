@@ -22,7 +22,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from litellm import litellm
-
+import logging
+logger = logging.getLogger(__name__)
 
 class AIConfigError(RuntimeError):
     """Raised when the current user hasn't finished configuring AI."""
@@ -82,26 +83,25 @@ def completion_for_user(user, messages: List[Dict[str, str]], **kwargs: Any):
 
 def price_label(model_name, provider=None):
     """Best-effort '$in / $out per 1M tokens' string, or '' if unknown.
-    
+
     This function tries multiple lookup strategies with normalization to find
     pricing information in litellm.model_cost.
     """
     import logging
     logger = logging.getLogger(__name__)
-    
-    logger.debug(f"=== PRICE_LABEL DEBUG ===")
+
     logger.debug(f"Input - model_name: {model_name}, provider: {provider}")
-    
+
     if not model_name:
         logger.debug("No model_name provided")
         return ""
-    
+
     # Normalize inputs
     model_normalized = model_name.strip().lower()
     provider_normalized = provider.strip().lower() if provider else None
-    
+
     logger.debug(f"Normalized - model: {model_normalized}, provider: {provider_normalized}")
-    
+
     # Build list of keys to try (both original case and lowercase)
     keys = [
         model_name,  # Original case
@@ -109,13 +109,13 @@ def price_label(model_name, provider=None):
         model_name.split("/")[-1],  # Bare name (original case)
         model_normalized.split("/")[-1],  # Bare name (lowercase)
     ]
-    
+
     if provider:
         keys.extend([
             f"{provider}/{model_name}",  # Original case with provider
             f"{provider_normalized}/{model_normalized}",  # Lowercase with provider
         ])
-    
+
     # Also try extracting provider from model if it contains /
     if "/" in model_name:
         parts = model_name.split("/", 1)
@@ -126,9 +126,9 @@ def price_label(model_name, provider=None):
             extracted_model.lower(),  # Lowercase model part
             f"{extracted_provider.lower()}/{extracted_model.lower()}",  # Fully lowercase
         ])
-    
+
     logger.debug(f"Trying lookup keys: {keys}")
-    
+
     # Try each key, checking both exact match and case-insensitive match
     for key in keys:
         # Try exact match first
@@ -145,7 +145,7 @@ def price_label(model_name, provider=None):
                 result = f"${cin * 1e6:.2f} per 1M tokens"
                 logger.debug(f"Returning: {result}")
                 return result
-        
+
         # Try case-insensitive match
         lower_key = key.lower()
         for cost_key in litellm.model_cost.keys():
@@ -163,22 +163,20 @@ def price_label(model_name, provider=None):
                         result = f"${cin * 1e6:.2f} per 1M tokens"
                         logger.debug(f"Returning: {result}")
                         return result
-    
+
     logger.debug(f"✗ No pricing found for model {model_name}")
     return ""
 
 def build_price_map(choices, provider=None):
     """choices = form.ai_model.choices  ->  {model_value: price_string}
-    
+
     Returns a dict with both original keys and normalized lowercase keys
     to ensure the frontend can find prices regardless of case.
     """
-    import logging
-    logger = logging.getLogger(__name__)
-    
-    logger.debug(f"=== BUILD_PRICE_MAP DEBUG ===")
-    logger.debug(f"Provider: {provider}, Choices count: {len(choices) if choices else 0}")
-    
+
+
+    # logger.debug(f"Provider: {provider}, Choices count: {len(choices) if choices else 0}")
+
     price_map = {}
     for value, _ in choices:
         if value:
@@ -188,6 +186,6 @@ def build_price_map(choices, provider=None):
             # Also store with lowercase key for easier lookup
             price_map[value.lower()] = price
             logger.debug(f"Mapped {value} and {value.lower()} -> {price}")
-    
-    logger.debug(f"Final price_map has {len(price_map)} entries")
+
+    # logger.debug(f"Final price_map has {len(price_map)} entries")
     return price_map

@@ -192,6 +192,7 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
             category_list=category_list,
             q="",
             selected_categories=selected_categories,
+            audio_assets={},
         )
 
     cache_helper = CacheHelper(UID)
@@ -218,6 +219,7 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
                 category_list=category_list,
                 q="",
                 selected_categories=selected_categories,
+                audio_assets={},
             )
 
     if len(que_list) < 1:
