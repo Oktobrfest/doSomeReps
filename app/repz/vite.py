@@ -60,13 +60,17 @@ def vite_asset(entrypoint: str) -> Markup:
                     current_app.logger.error(f"Error reading Vite manifest at {path}: {e}")
 
     if not manifest:
-        # Return a warning in comments so the page doesn't crash completely
-        return Markup(f"<!-- Vite manifest not found. Did you run 'npm run build' inside 'frontend'? checked: {manifest_paths} -->")
+        msg = f"Vite manifest not found. Did you run 'npm run build' inside 'frontend'? checked paths: {manifest_paths}"
+        current_app.logger.error(msg)
+        # Return an HTML comment and trigger a console error so it shows in browser logs immediately
+        return Markup(f"<!-- {msg} -->\n<script>console.error({json.dumps(msg)});</script>")
 
     # Resolve entrypoint in manifest
     entry_info = manifest.get(entrypoint)
     if not entry_info:
-        return Markup(f"<!-- Vite entrypoint {entrypoint} not found in manifest -->")
+        msg = f"Vite entrypoint {entrypoint} not found in manifest."
+        current_app.logger.error(msg)
+        return Markup(f"<!-- {msg} -->\n<script>console.error({json.dumps(msg)});</script>")
 
     js_file = entry_info.get('file')
     html_parts = []
