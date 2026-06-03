@@ -14,7 +14,7 @@ export default defineConfig({
     manifest: true,
     outDir: "../app/repz/static/vite_dist",
     emptyOutDir: true,
-    cssCodeSplit: false,
+    cssCodeSplit: true,
     minify: false,
     sourcemap: true,
     target: "esnext",

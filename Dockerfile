@@ -62,7 +62,6 @@ ARG PYTHON_LIB_VERSION
 # Copy only runtime dependencies and built assets from builder
 COPY --from=builder /usr/local/lib/python${PYTHON_LIB_VERSION}/site-packages/ /usr/local/lib/python${PYTHON_LIB_VERSION}/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
-COPY --from=builder /app/repz/static/vite_dist/ /app/repz/static/vite_dist/
 
 # Install only required runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -106,6 +105,8 @@ ENV FLASK_ENV=development \
 FROM base-runtime AS prod
 
 COPY app /app
+COPY --from=builder /app/repz/static/vite_dist/ /app/repz/static/vite_dist/
+
 RUN mkdir -p /app/piper_voices && \
     for voice in \
         en_US-lessac-medium \
@@ -118,29 +119,29 @@ RUN mkdir -p /app/piper_voices && \
         test -s "/app/piper_voices/${voice}.onnx.json"; \
     done
 
-# Download Sherpa-ONNX KWS WASM assets and model files
-RUN mkdir -p /app/repz/static/models/kws && \
-    MODELS_URL="https://modelscope.cn/api/v1/models/pkufool/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01/repo?Revision=master&FilePath=" && \
-    WASM_URL="https://huggingface.co/spaces/yuiyide/sherpa-oon-kws/resolve/main/" && \
-    for file in \
-        bpe.model \
-        decoder-epoch-12-avg-2-chunk-16-left-64.onnx \
-        encoder-epoch-12-avg-2-chunk-16-left-64.onnx \
-        joiner-epoch-12-avg-2-chunk-16-left-64.onnx \
-        tokens.txt \
-    ; do \
-        curl -sSLo "/app/repz/static/models/kws/$file" "${MODELS_URL}${file}" && \
-        test -s "/app/repz/static/models/kws/$file"; \
-    done && \
-    for file in \
-        sherpa-onnx-kws.js \
-        sherpa-onnx-wasm-kws-main.js \
-        sherpa-onnx-wasm-kws-main.wasm \
-        sherpa-onnx-wasm-kws-main.data \
-    ; do \
-        curl -sSLo "/app/repz/static/models/kws/$file" "${WASM_URL}${file}" && \
-        test -s "/app/repz/static/models/kws/$file"; \
-    done
+# # Download Sherpa-ONNX KWS WASM assets and model files --- JUST PUT IN GIT INSTEAD!
+# RUN mkdir -p /app/repz/static/models/kws && \
+#     MODELS_URL="https://modelscope.cn/api/v1/models/pkufool/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01/repo?Revision=master&FilePath=" && \
+#     WASM_URL="https://huggingface.co/spaces/yuiyide/sherpa-oon-kws/resolve/main/" && \
+#     for file in \
+#         bpe.model \
+#         decoder-epoch-12-avg-2-chunk-16-left-64.onnx \
+#         encoder-epoch-12-avg-2-chunk-16-left-64.onnx \
+#         joiner-epoch-12-avg-2-chunk-16-left-64.onnx \
+#         tokens.txt \
+#     ; do \
+#         curl -sSLo "/app/repz/static/models/kws/$file" "${MODELS_URL}${file}" && \
+#         test -s "/app/repz/static/models/kws/$file"; \
+#     done && \
+#     for file in \
+#         sherpa-onnx-kws.js \
+#         sherpa-onnx-wasm-kws-main.js \
+#         sherpa-onnx-wasm-kws-main.wasm \
+#         sherpa-onnx-wasm-kws-main.data \
+#     ; do \
+#         curl -sSLo "/app/repz/static/models/kws/$file" "${WASM_URL}${file}" && \
+#         test -s "/app/repz/static/models/kws/$file"; \
+#     done
 
 
 FROM ${NODE_ENV} AS final
