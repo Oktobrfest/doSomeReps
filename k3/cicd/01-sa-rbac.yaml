@@ -1,0 +1,55 @@
+---
+# ServiceAccount for the GitHub Actions self-hosted runner
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: github-actions-runner
+  namespace: reps-prod
+
+---
+# Role: minimum permissions needed by the CI runner
+#   - Create/delete/list/watch jobs (for Kaniko build)
+#   - Get/list/patch deployments (for rollout restart)
+#   - Get/list/watch pods and pod logs (for debugging)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: github-actions-runner
+  namespace: reps-prod
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+
+---
+# RoleBinding: bind the Role to the ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: github-actions-runner
+  namespace: reps-prod
+subjects:
+  - kind: ServiceAccount
+    name: github-actions-runner
+    namespace: reps-prod
+roleRef:
+  kind: Role
+  name: github-actions-runner
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Long-lived token Secret for the ServiceAccount (Kubernetes 1.24+)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-actions-runner-token
+  namespace: reps-prod
+  annotations:
+    kubernetes.io/service-account.name: github-actions-runner
+type: kubernetes.io/service-account-token

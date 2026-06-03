@@ -1,0 +1,46 @@
+name: Deploy to Prod
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  kaniko-build:
+    runs-on: [self-hosted, k3s-prod, arm64]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Delete old kaniko job (if exists)
+        run: |
+          kubectl delete job reps-build -n reps-prod --ignore-not-found=true
+
+      - name: Apply kaniko build job
+        run: |
+          kubectl apply -f k3/prod/10-kaniko-job.yaml
+
+      - name: Wait for kaniko job to complete
+        run: |
+          kubectl wait --for=condition=complete job/reps-build -n reps-prod --timeout=1800s
+
+      - name: Trigger deployment rollout restart
+        run: |
+          kubectl rollout restart deployment/reps-prod -n reps-prod
+
+      - name: Wait for rollout to complete
+        run: |
+          kubectl rollout status deployment/reps-prod -n reps-prod --timeout=300s
+
+      - name: Print kaniko build logs (always)
+        if: always()
+        run: |
+          echo "=== Kaniko build logs ==="
+          kubectl logs job/reps-build -n reps-prod --tail=200 || true
