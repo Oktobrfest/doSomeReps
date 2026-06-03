@@ -227,13 +227,14 @@ export function AudioCommandSystemComponent() {
         console.log(`[KWS] Match detected: "${keyword}"`);
         setLastCommand(keyword);
 
-        // For commands that navigate/submit the page, stop listening cleanly first.
+        // Trigger the command immediately so the form submits without delay.
+        commandManagerRef.current.triggerCommand(keyword);
+
+        // For commands that navigate/submit the page, stop listening cleanly.
         // We do NOT treat this as manual stop, so sessionStorage.audio_listening_active stays "true" for the next page.
         if (keyword === "CORRECT" || keyword === "WRONG") {
           stopListening(false);
         }
-
-        commandManagerRef.current.triggerCommand(keyword);
         recognizer.reset(recognizerStream);
       };
 
