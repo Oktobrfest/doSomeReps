@@ -167,6 +167,20 @@ export function AudioQuiz({
     };
   }, [handleResume]);
 
+  // Auto-read the question when a new question loads in audio mode.
+  useEffect(() => {
+    if (!question || questionAssets.length === 0) return;
+    const wasListening = sessionStorage.getItem("audio_listening_active") === "true";
+    if (!wasListening) return;
+
+    // Small delay to let the DOM settle before starting audio.
+    const timer = setTimeout(() => {
+      setQuestionActive(true);
+      setQuestionPlaying(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [question, questionAssets]);
+
   const handleQuestionEnded = useCallback(() => {
     setQuestionActive(false);
     setQuestionPlaying(false);
