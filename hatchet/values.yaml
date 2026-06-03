@@ -1,0 +1,155 @@
+# ---------------------------------------------------------------------------
+# Hatchet Stack — self-hosted Helm values
+#
+# Requires:
+#   1) A namespace:        kubectl create namespace hatchet
+#   2) Postgres deployed:  kubectl apply -f hatchet/db/
+#   3) Secrets populated:  cp hatchet/secret-template.yaml hatchet/secret.yaml
+#                          → fill in values, then: kubectl apply -f hatchet/secret.yaml
+#   4) Install Hatchet:    helm upgrade --install hatchet-stack hatchet/hatchet-stack \
+#                            -n hatchet -f hatchet/values.yaml
+#
+# Test:
+#   helm template hatchet-stack hatchet/hatchet-stack -n hatchet -f hatchet/values.yaml
+# ---------------------------------------------------------------------------
+
+# ── Postgres (owned by Hatchet chart — DISABLE; we bring our own) ──────────
+postgres:
+  enabled: false
+
+# ── RabbitMQ (not needed — using Postgres-backed queue) ────────────────────
+rabbitmq:
+  enabled: false
+
+# ── Caddy (not needed — use kubectl port-forward or Traefik/Ingress) ───────
+caddy:
+  enabled: false
+
+# ── Shared config for all Hatchet components ───────────────────────────────
+sharedConfig:
+  enabled: true
+
+  image:
+    tag: "v0.84.0"
+
+  # Internal cluster URL for the API server.
+  # After install confirm with:  kubectl get svc -n hatchet
+  serverUrl: "http://hatchet-stack-api.hatchet.svc.cluster.local:8080"
+
+  # Cookie domain must match the host you access the API from.
+  # Start with port-forward:  kubectl port-forward -n hatchet svc/hatchet-stack-api 8080:8080
+  serverAuthCookieDomain: "localhost"
+  serverAuthCookieInsecure: "t"
+  serverAuthSetEmailVerified: "t"
+  serverAuthBasicAuthEnabled: "t"
+
+  # gRPC — workers connect here inside the cluster.
+  grpcBroadcastAddress: "hatchet-stack-engine.hatchet.svc.cluster.local:7070"
+  grpcInsecure: "t"
+
+  # Admin user.
+  # Email is set here; password is pulled from the existing secret below.
+  defaultAdminEmail: "admin@example.com"
+
+  env:
+    # ── Postgres connection ────────────────────────────────────────────────
+    # Populated from the Secret below — DO NOT hardcode credentials here.
+    DATABASE_URL: ""
+    # Format: postgresql://user:password@hatchet-postgres.hatchet.svc.cluster.local:5432/hatchet?sslmode=disable
+
+    # ── Use Postgres as the message queue (no RabbitMQ needed) ─────────────
+    SERVER_MSGQUEUE_KIND: "postgres"
+
+    # ── Logging ────────────────────────────────────────────────────────────
+    SERVER_LOGGER_LEVEL: "info"
+    SERVER_LOGGER_FORMAT: "console"
+    DATABASE_LOGGER_LEVEL: "warn"
+    DATABASE_LOGGER_FORMAT: "console"
+
+    # ── Connection pool sizing (modest for a small install) ────────────────
+    DATABASE_MAX_CONNS: "20"
+    DATABASE_MIN_CONNS: "2"
+    DATABASE_MAX_QUEUE_CONNS: "20"
+    DATABASE_MIN_QUEUE_CONNS: "2"
+
+    # ── Internal gRPC (no TLS between components inside the cluster) ───────
+    SERVER_GRPC_INSECURE: "true"
+    SERVER_INTERNAL_CLIENT_BASE_STRATEGY: "none"
+
+  # ── Reference the external Secret we create ──────────────────────────────
+  existingSecret:
+    enabled: true
+    name: "hatchet-secrets"
+
+    # Map keys in hatchet-secrets to what the chart expects.
+    databaseUrlKey: "DATABASE_URL"
+    existingSecretKeys:
+      defaultAdminPassword: "DEFAULT_ADMIN_PASSWORD"
+
+# ── API server ─────────────────────────────────────────────────────────────
+api:
+  enabled: true
+  replicaCount: 1
+
+  migrationJob:
+    enabled: true
+    backoffLimit: 1
+    activeDeadlineSeconds: 900
+
+  ingress:
+    enabled: false
+
+  health:
+    enabled: true
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 156Mi
+    limits:
+      memory: 512Mi
+
+# ── Engine / scheduler ─────────────────────────────────────────────────────
+engine:
+  enabled: true
+  nameOverride: engine
+  replicaCount: 1
+
+  ingress:
+    enabled: false
+
+  health:
+    enabled: true
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 156Mi
+    limits:
+      memory: 512Mi
+
+# ── Frontend dashboard (enabled for quickstart / debugging) ────────────────
+frontend:
+  enabled: true
+
+  ingress:
+    enabled: false
+
+  service:
+    type: ClusterIP
+    externalPort: 8080
+    internalPort: 80
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 384Mi
+
+# ── Jobs ───────────────────────────────────────────────────────────────────
+quickstartJob:
+  enabled: true
+
+workerTokenJob:
+  enabled: true
