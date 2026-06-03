@@ -72,16 +72,40 @@ def vite_asset(entrypoint: str) -> Markup:
         current_app.logger.error(msg)
         return Markup(f"<!-- {msg} -->\n<script>console.error({json.dumps(msg)});</script>")
 
-    js_file = entry_info.get('file')
     html_parts = []
-    
-    if js_file:
-        js_url = url_for('static', filename=f'vite_dist/{js_file}')
-        html_parts.append(f'<script type="module" src="{js_url}"></script>')
+    seen_css = set()
+    seen_js = set()
 
-    css_files = entry_info.get('css', [])
-    for css_file in css_files:
-        css_url = url_for('static', filename=f'vite_dist/{css_file}')
-        html_parts.append(f'<link rel="stylesheet" href="{css_url}">')
+    def _collect(entry_key: str):
+        """Recursively collect JS and CSS from entry and all imported chunks."""
+        info = manifest.get(entry_key)
+        if not info:
+            return
+
+        js_file = info.get('file')
+        if js_file and js_file not in seen_js:
+            seen_js.add(js_file)
+            # Only emit <script> for the top-level entry; imported chunks are
+            # loaded dynamically by the browser when the entry module executes.
+            # Adding them here would double-load and potentially break module
+            # initialization order.
+
+        for css_file in info.get('css', []):
+            if css_file not in seen_css:
+                seen_css.add(css_file)
+                css_url = url_for('static', filename=f'vite_dist/{css_file}')
+                html_parts.append(f'<link rel="stylesheet" href="{css_url}">')
+
+        for import_key in info.get('imports', []):
+            _collect(import_key)
+
+    # Start from the entrypoint
+    _collect(entrypoint)
+
+    # Emit the entry JS script tag
+    entry_js = entry_info.get('file')
+    if entry_js:
+        js_url = url_for('static', filename=f'vite_dist/{entry_js}')
+        html_parts.insert(0, f'<script type="module" src="{js_url}"></script>')
 
     return Markup('\n'.join(html_parts))
