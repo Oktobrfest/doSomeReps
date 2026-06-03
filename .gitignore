@@ -129,6 +129,12 @@ app/repz/static/models/kws/sherpa-*.js
 
 /vendor/
 
-# KWS model downloads / generated model artifacts
-/app/repz/static/models/kws/*.data
-/app/repz/static/models/kws/test_wavs/
+# KWS test files (Ignored)
+app/repz/static/models/kws/test_wavs/
+
+# EXPLICITLY ALLOW Sherpa-ONNX KWS models and WASM runtime
+!app/repz/static/models/kws/*.onnx
+!app/repz/static/models/kws/*.wasm
+!app/repz/static/models/kws/*.model
+!app/repz/static/models/kws/*.data
+!app/repz/static/models/kws/*.js
