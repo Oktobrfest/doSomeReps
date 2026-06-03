@@ -127,15 +127,15 @@ class AudioAssetService:
 
     def _language_tts_instruction(self, language: str) -> str:
         """Return language-specific TTS instructions."""
-        if language == "en_US":
+        if language.startswith("en"):
             return """The target language is English.
 Rewrite the text to sound natural when spoken aloud.
 """
 
-        lang_text = f"""Translate the text into the target language: {language}.
+        lang_text = f"""Translate the text into the target language: {language}
+        if it isn't already in that language.
 Use the normal writing system for that language.
 Make the translated text natural, fluent, and easy to understand when spoken aloud.
-Do not leave the text in English unless the target language is English.
 """
 
         if language in ("es_ES", "es_MX", "en_ES") or language.startswith("es"):
@@ -175,25 +175,18 @@ Avoid difficult rarely used words and jargon.
 
         if not can_use_ai:
             logging.warning(
-                f"⚠️ AI TTS text generation unavailable for {part} in {language}; "
+                f"AI TTS text generation unavailable for {part} in {language}; "
                 f"falling back to source text because user AI config is incomplete."
             )
             return source_text
 
-        logging.info(f"🤖 Generating TTS text for {part} in {language}")
+        logging.info(f"Generating TTS text for {part} in {language}")
 
         tts_text = self._generate_tts_text_for_part(
             part=part,
             source_text=source_text,
             language=language,
             user=user,
-        )
-
-        self._validate_generated_tts_text(
-            part=part,
-            source_text=source_text,
-            tts_text=tts_text,
-            language=language,
         )
 
         logging.info(
@@ -266,133 +259,6 @@ Rules:
 
         return tts_text
 
-    def _validate_generated_tts_text(
-        self,
-        *,
-        part: str,
-        source_text: str,
-        tts_text: str,
-        language: str,
-    ) -> None:
-        """
-        Validate that AI-generated TTS text is usable.
-
-        This intentionally raises for suspicious non-English output instead of
-        silently saving bad audio.
-        """
-        if tts_text is None:
-            raise ValueError(f"AI returned None for {part} in {language}")
-
-        cleaned_tts_text = tts_text.strip()
-
-        if not cleaned_tts_text:
-            raise ValueError(f"AI returned empty TTS text for {part} in {language}")
-
-        if cleaned_tts_text.startswith("{") or cleaned_tts_text.startswith("["):
-            raise ValueError(
-                f"AI returned structured data instead of plain TTS text for "
-                f"{part} in {language}: {cleaned_tts_text[:160]}"
-            )
-
-        source_normalized = " ".join(source_text.lower().split())
-        tts_normalized = " ".join(cleaned_tts_text.lower().split())
-
-        if source_normalized == tts_normalized and language != "en_US":
-            raise ValueError(
-                f"AI returned unchanged source text for non-English TTS generation: "
-                f"part={part}, language={language}, text={cleaned_tts_text[:160]}"
-            )
-
-        if language in ("es_ES", "es_MX", "en_ES") or language.startswith("es"):
-            self._validate_spanish_tts_text(
-                part=part,
-                language=language,
-                tts_text=cleaned_tts_text,
-            )
-
-    def _validate_spanish_tts_text(
-        self,
-        *,
-        part: str,
-        language: str,
-        tts_text: str,
-    ) -> None:
-        """
-        Conservative validation that catches obvious English fallback for Spanish audio.
-
-        This is not pretending to be a full language detector. It catches the exact
-        failure mode where English source text gets spoken with a Spanish voice.
-        """
-        normalized = " ".join(tts_text.lower().split())
-        padded = f" {normalized} "
-
-        common_english_markers = [
-            " what ",
-            " does ",
-            " how ",
-            " why ",
-            " when ",
-            " where ",
-            " which ",
-            " the ",
-            " a ",
-            " an ",
-            " and ",
-            " or ",
-            " model ",
-            " learning ",
-            " curve ",
-            " answer ",
-            " question ",
-            " plots ",
-            " plot ",
-            " data ",
-            " training ",
-            " validation ",
-        ]
-
-        common_spanish_markers = [
-            " qué ",
-            " que ",
-            " cómo ",
-            " como ",
-            " por ",
-            " para ",
-            " una ",
-            " un ",
-            " el ",
-            " la ",
-            " los ",
-            " las ",
-            " y ",
-            " o ",
-            " del ",
-            " de ",
-            " en ",
-            " con ",
-            " respuesta ",
-            " pregunta ",
-            " modelo ",
-            " aprendizaje ",
-            " curva ",
-        ]
-
-        english_hits = [
-            marker for marker in common_english_markers
-            if marker in padded
-        ]
-
-        spanish_hits = [
-            marker for marker in common_spanish_markers
-            if marker in padded
-        ]
-
-        if len(english_hits) >= 3 and len(spanish_hits) == 0:
-            raise ValueError(
-                f"AI output for Spanish TTS still appears to be English: "
-                f"part={part}, language={language}, "
-                f"english_markers={english_hits}, text={tts_text[:200]}"
-            )
 
     def ensure_audio_for_quiz_question(
         self,
@@ -429,7 +295,7 @@ Rules:
 
         for lang_obj in user.languages:
             lang = lang_obj.language
-            logging.info(f"🌐 Processing language: {lang}")
+            logging.info(f"Processing language: {lang}")
 
             assets_by_language[lang] = {}
 
@@ -437,7 +303,7 @@ Rules:
                 source_text = part_to_text.get(part)
 
                 if not source_text:
-                    logging.debug(f"⏭️ Skipping {part} - no text")
+                    logging.debug(f"Skipping {part} - no text")
                     continue
 
                 object_key = self._audio_object_key(
@@ -450,7 +316,7 @@ Rules:
                 existing_url = self._get_existing_audio_url(object_key)
 
                 if existing_url is not None:
-                    logging.info(f"♾️ Found existing audio for {part} in {lang}: {existing_url}")
+                    logging.info(f"Found existing audio for {part} in {lang}: {existing_url}")
                     assets_by_language[lang][part] = existing_url
                     continue
 
@@ -461,7 +327,7 @@ Rules:
                     user=user,
                 )
 
-                logging.info(f"🔊 Ensuring audio for {part} in {lang}: {source_text[:80]}...")
+                logging.info(f"Ensuring audio for {part} in {lang}: {source_text[:80]}...")
 
                 try:
                     asset_url = self.ensure_audio(
@@ -515,13 +381,13 @@ Rules:
 
         if existing is not None:
             logging.info(
-                f"♾️ Found existing audio, returning: "
+                f"Found existing audio, returning: "
                 f"{existing.public_url or existing.object_key}"
             )
             return str(existing.public_url or existing.object_key)
 
-        logging.info(f"🎵 No existing audio found, creating new audio for: {source_text[:80]}...")
-        logging.info(f"🗣️ TTS text for {part} in {language}: {tts_text[:200]}...")
+        logging.info(f"No existing audio found, creating new audio for: {source_text[:80]}...")
+        logging.info(f"TTS text for {part} in {language}: {tts_text[:200]}...")
 
         sentence_silence = self._sentence_silence_for_language(language)
 
@@ -542,7 +408,7 @@ Rules:
                 content=audio_bytes,
                 content_type="audio/mpeg",
             )
-            logging.info(f"☁️ Saved to S3, public URL: {public_url}")
+            logging.info(f"Saved to S3, public URL: {public_url}")
         except Exception as e:
             logging.error(f"❌ S3 save failed: {e}")
             raise
@@ -564,10 +430,10 @@ Rules:
 
             session.add(row)
             session.commit()
-            logging.info("💾 Saved to database successfully")
+            logging.info("Saved to database successfully")
 
         except IntegrityError:
-            logging.info("🔄 Concurrent creation detected, using existing record")
+            logging.info("Concurrent creation detected, using existing record")
             session.rollback()
 
             existing = session.execute(

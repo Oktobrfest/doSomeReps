@@ -14,7 +14,13 @@ export default defineConfig({
     manifest: true,
     outDir: "../app/repz/static/vite_dist",
     emptyOutDir: true,
+    cssCodeSplit: false,
+    minify: false,
+    sourcemap: true,
+    target: "esnext",
+    modulePreload: false,
     rollupOptions: {
+      treeshake: false,
       input: {
         ai_integration: "src/main.tsx",
         react_edit_question: "src/edit_question.tsx",
