@@ -172,6 +172,11 @@ def save_to_que():
     if len(que) > 0:
         qty_added = create_brand_new_quizq(que, UID)  
         msg = "Saved " + str(qty_added) + " questions to your que. "
+
+        # Trigger background audio asset generation for each question
+        from repz.hatchet_client import trigger_audio_generation
+        for question_id in que:
+            trigger_audio_generation(question_id=question_id, user_id=UID)
     else:
         qty_added = 0
     

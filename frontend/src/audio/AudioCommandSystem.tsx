@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { EngineState, SherpaKws, SherpaStream } from "./types";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { AudioCommandManager } from "./AudioCommandManager";
-import { buildKwsConfig, initializeSherpa, TARGET_SAMPLE_RATE } from "./sherpaEngine";
-import { buildWorkletBlobUrl, resampleLinear } from "./audioCapture";
+import { buildWorkletBlobUrl } from "./audioCapture";
+import { KwsWorkerClient } from "./kwsWorkerClient";
+import type { WorkerState } from "./kwsWorkerClient";
 import { registerAllCommands } from "./commands";
 import styles from "./AudioCommandSystem.module.css";
 import actionStyles from "./ActionButton.module.css";
@@ -19,40 +19,48 @@ const AVAILABLE_COMMANDS = [
   "STOP LISTENING"
 ];
 
-function normalizeDetectedKeyword(keyword: string): string {
-  return keyword.toUpperCase().trim();
-}
-
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
 export function AudioCommandSystemComponent() {
-  const [engineState, setEngineState] = useState<EngineState>("idle");
+  const [engineState, setEngineState] = useState<WorkerState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Clear detected command display after 6 seconds
-  useEffect(() => {
-    if (!lastCommand) return;
-
-    const timer = setTimeout(() => {
-      setLastCommand(null);
-    }, 6000);
-
-    return () => clearTimeout(timer);
-  }, [lastCommand]);
-
-  const commandManagerRef = useRef(new AudioCommandManager());
-  const recognizerRef = useRef<SherpaKws | null>(null);
-  const recognizerStreamRef = useRef<SherpaStream | null>(null);
+  // Refs for audio capture (these stay on the main thread — only PCM routing)
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const workletUrlRef = useRef<string | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const inputSampleRateRef = useRef<number>(44100);
+
+  // Refs for worker and command manager
+  const kwsWorkerRef = useRef<KwsWorkerClient | null>(null);
+  const commandManagerRef = useRef(new AudioCommandManager());
   const isStartingRef = useRef(false);
+
+  // Clear detected command display after 6 seconds
+  useEffect(() => {
+    if (!lastCommand) return;
+    const timer = setTimeout(() => setLastCommand(null), 6000);
+    return () => clearTimeout(timer);
+  }, [lastCommand]);
+
+  // Build a stable callback-based interface for the KWS worker
+  const handleKeyword = useCallback((keyword: string) => {
+    setLastCommand(keyword);
+    commandManagerRef.current.triggerCommand(keyword);
+
+    // For commands that navigate/submit, stop listening cleanly
+    if (keyword === "CORRECT" || keyword === "WRONG") {
+      stopListeningCleanup();
+    }
+    // Reset the worker's keyword state after detection to avoid repeats
+    kwsWorkerRef.current?.reset();
+  }, []);
 
   // Register commands once.
   useEffect(() => {
@@ -67,7 +75,7 @@ export function AudioCommandSystemComponent() {
     }
 
     return () => {
-      stopListening(false);
+      stopListeningCleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -87,16 +95,14 @@ export function AudioCommandSystemComponent() {
   // Close hamburger menu on outside clicks
   useEffect(() => {
     if (!menuOpen) return;
-    const handleOutsideClick = () => {
-      setMenuOpen(false);
-    };
+    const handleOutsideClick = () => setMenuOpen(false);
     document.addEventListener("click", handleOutsideClick);
-    return () => {
-      document.removeEventListener("click", handleOutsideClick);
-    };
+    return () => document.removeEventListener("click", handleOutsideClick);
   }, [menuOpen]);
 
-  const stopListening = (manual = false) => {
+  // ---- Audio capture cleanup (main thread only) ----
+
+  const stopAudioCapture = () => {
     try {
       if (workletNodeRef.current) {
         workletNodeRef.current.port.onmessage = null;
@@ -119,41 +125,44 @@ export function AudioCommandSystemComponent() {
         URL.revokeObjectURL(workletUrlRef.current);
         workletUrlRef.current = null;
       }
-      if (recognizerStreamRef.current) {
-        recognizerStreamRef.current.free();
-        recognizerStreamRef.current = null;
-      }
-      if (recognizerRef.current) {
-        recognizerRef.current.free();
-        recognizerRef.current = null;
-      }
     } catch (err) {
-      console.warn("Error during stopListening cleanup:", err);
+      console.warn("Error during audio capture cleanup:", err);
+    }
+  };
+
+  // ---- Full stop: worker + audio capture ----
+
+  const stopListeningCleanup = () => {
+    stopAudioCapture();
+    if (kwsWorkerRef.current) {
+      kwsWorkerRef.current.stop();
+      kwsWorkerRef.current = null;
     }
     isStartingRef.current = false;
     setEngineState("idle");
+  };
+
+  const stopListening = (manual = false) => {
+    stopListeningCleanup();
     if (manual) {
       sessionStorage.setItem("audio_listening_active", "false");
     }
   };
 
-  const stopListeningRef = useRef(stopListening);
+  // Expose global stop function
+  const stopListeningCb = useCallback(() => stopListening(true), []);
   useEffect(() => {
-    stopListeningRef.current = stopListening;
-  }, [stopListening]);
-
-  useEffect(() => {
-    (window as any).stopAudioListening = () => {
-      stopListeningRef.current(true);
-    };
+    (window as any).stopAudioListening = stopListeningCb;
     return () => {
       delete (window as any).stopAudioListening;
     };
-  }, []);
+  }, [stopListeningCb]);
+
+  // ---- Start listening ----
 
   const startListening = async () => {
     if (isStartingRef.current || engineState === "loading") return;
-    if (engineState === "listening") {
+    if (engineState === "listening" || engineState === "ready") {
       stopListening(true);
       return;
     }
@@ -164,18 +173,28 @@ export function AudioCommandSystemComponent() {
     setLastCommand(null);
 
     try {
-      await initializeSherpa();
+      // 1. Start the KWS Web Worker (handles all WASM/model loading off main thread)
+      const kwsWorker = new KwsWorkerClient({
+        onKeyword: handleKeyword,
+        onReady: () => {
+          // Worker is initialized but we still need audio capture
+          // State will be set to "listening" after audio capture starts
+        },
+        onError: (msg) => {
+          setErrorMsg(msg);
+          stopListeningCleanup();
+        },
+        onStateChange: (state) => {
+          // Don't override "listening" with "ready" — audio capture is the final step
+          if (state === "ready") return;
+          setEngineState(state);
+        },
+      });
 
-      console.log("Loading keyword spotter config...");
-      const config = await buildKwsConfig();
+      kwsWorkerRef.current = kwsWorker;
+      await kwsWorker.start();
 
-      console.log("Creating Sherpa keyword spotter...");
-      const recognizer = window.createKws!(window.Module, config);
-      recognizerRef.current = recognizer;
-
-      const recognizerStream = recognizer.createStream();
-      recognizerStreamRef.current = recognizerStream;
-
+      // 2. Start microphone capture
       console.log("Requesting microphone permission...");
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -188,13 +207,13 @@ export function AudioCommandSystemComponent() {
       mediaStreamRef.current = mediaStream;
 
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      const audioCtx: AudioContext = new AudioContextClass();
+      const audioCtx = new AudioContextClass();
       audioCtxRef.current = audioCtx;
 
-      const inputSampleRate = audioCtx.sampleRate;
-      console.log(`AudioContext sample rate: ${inputSampleRate}`);
+      inputSampleRateRef.current = audioCtx.sampleRate;
+      console.log(`AudioContext sample rate: ${audioCtx.sampleRate}`);
 
-      // Register the worklet from a blob URL so we don't need a separate file.
+      // Register the PCM capture worklet
       const workletUrl = buildWorkletBlobUrl();
       workletUrlRef.current = workletUrl;
       await audioCtx.audioWorklet.addModule(workletUrl);
@@ -209,46 +228,24 @@ export function AudioCommandSystemComponent() {
       });
       workletNodeRef.current = workletNode;
 
+      // Route PCM chunks from the worklet to the KWS worker
+      // The worklet runs on the audio thread, but onmessage fires on main thread.
+      // We immediately forward to the worker (which transfers the buffer, avoiding copy).
       workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
         const chunk = event.data;
         if (!chunk || chunk.length === 0) return;
-
-        const samples = resampleLinear(chunk, inputSampleRate, TARGET_SAMPLE_RATE);
-        recognizerStream.acceptWaveform(TARGET_SAMPLE_RATE, samples);
-
-        while (recognizer.isReady(recognizerStream)) {
-          recognizer.decode(recognizerStream);
-        }
-
-        const result = recognizer.getResult(recognizerStream);
-        const keyword = result?.keyword ? normalizeDetectedKeyword(result.keyword) : "";
-        if (!keyword) return;
-
-        console.log(`[KWS] Match detected: "${keyword}"`);
-        setLastCommand(keyword);
-
-        // Trigger the command immediately so the form submits without delay.
-        commandManagerRef.current.triggerCommand(keyword);
-
-        // For commands that navigate/submit the page, stop listening cleanly.
-        // We do NOT treat this as manual stop, so sessionStorage.audio_listening_active stays "true" for the next page.
-        if (keyword === "CORRECT" || keyword === "WRONG") {
-          stopListening(false);
-        }
-        recognizer.reset(recognizerStream);
+        kwsWorkerRef.current?.sendAudioChunk(chunk);
       };
 
-      // Worklet has no output; we don't connect it to destination.
       source.connect(workletNode);
 
       setEngineState("listening");
       sessionStorage.setItem("audio_listening_active", "true");
-      console.log("Voice command system started.");
+      console.log("Voice command system started (KWS in Web Worker).");
     } catch (err) {
       console.error("Failed to start voice command system:", err);
       setErrorMsg(err instanceof Error ? err.message : String(err));
-      stopListening(true);
-      setEngineState("error");
+      stopListeningCleanup();
     } finally {
       isStartingRef.current = false;
     }
