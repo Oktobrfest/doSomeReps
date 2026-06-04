@@ -78,8 +78,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-# Re-install hatchet-sdk in runtime stage to work around namespace-package
-# issue with the multi-stage COPY of site-packages.
+# Install hatchet-sdk directly in the runtime stage. It is deliberately
+# excluded from requirements.txt (builder stage) because its namespace-
+# package layout does not survive the multi-stage COPY of site-packages.
+# This may upgrade pydantic past litellm's pin; the patch bump is compatible.
 RUN pip install --no-cache-dir hatchet-sdk
 
 
