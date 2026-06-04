@@ -78,6 +78,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
+# Re-install hatchet-sdk in runtime stage to work around namespace-package
+# issue with the multi-stage COPY of site-packages.
+RUN pip install --no-cache-dir hatchet-sdk
+
 
 # ARG NODE_ENV=production
 
