@@ -70,9 +70,15 @@ engine:
     requests: { cpu: 100m, memory: 156Mi }
     limits:   { memory: 512Mi }
 
-# ── Frontend dashboard OFF (flip to true if you want the UI) ───────────────
+# ── Frontend dashboard ON ────────────────────────────────────────────────
 frontend:
-  enabled: false
+  enabled: true
+  replicaCount: 1
+  ingress:
+    enabled: false
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits:   { memory: 256Mi }
 
 # ── Jobs ───────────────────────────────────────────────────────────────────
 quickstartJob:

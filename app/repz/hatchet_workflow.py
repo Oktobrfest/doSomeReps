@@ -22,6 +22,12 @@ from repz.hatchet_client import AudioGenerationInput
 logger = logging.getLogger(__name__)
 
 
+def _log(input: str):
+    """Helper to emit the same message to the local process stdout *and* Hatchet."""
+    logger.info(input)
+    return input
+
+
 def _create_workflow():
     """Create and return the audio-generation hatchet task + hatchet client.
 
@@ -47,7 +53,7 @@ def _create_workflow():
         question_id = input.question_id
         user_id = input.user_id
 
-        ctx.log(f"Starting audio generation for question_id={question_id}, user_id={user_id}")
+        ctx.log(_log(f"Starting audio generation for question_id={question_id}, user_id={user_id}"))
 
         from repz import init_app
 
@@ -71,7 +77,7 @@ def _create_workflow():
 
             if user is None:
                 msg = f"User {user_id} not found"
-                ctx.log(msg)
+                ctx.log(_log(msg))
                 return {"status": "error", "message": msg}
 
             q_row = session.execute(
@@ -80,7 +86,7 @@ def _create_workflow():
 
             if q_row is None:
                 msg = f"Question {question_id} not found"
-                ctx.log(msg)
+                ctx.log(_log(msg))
                 return {"status": "error", "message": msg}
 
             # Build the dict expected by AudioAssetService
@@ -149,13 +155,12 @@ def _create_workflow():
                     user=user,
                     parts=("question", "answer", "hint"),
                 )
-                ctx.log(
-                    f"Audio generation complete for question_id={question_id}: "
-                    f"{result}"
-                )
+                ctx.log(_log(
+                    f"Audio generation complete for question_id={question_id}: {result}"
+                ))
                 return {"status": "success", "question_id": question_id, "assets": result}
             except Exception as e:
-                ctx.log(f"Audio generation failed for question_id={question_id}: {e}")
+                ctx.log(_log(f"Audio generation failed for question_id={question_id}: {e}"))
                 raise
 
     return hatchet, generate_quiz_audio
@@ -173,7 +178,7 @@ def main():
         workflows=[task],
     )
 
-    logger.info("Starting Hatchet worker: AudioGenerationWorker")
+    logger.info("Starting Hatchet worker: AudioGenerationWorker (listening for task 'generate_quiz_audio')")
     worker.start()
 
 
