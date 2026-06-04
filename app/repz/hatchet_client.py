@@ -6,6 +6,7 @@ Import and use `get_hatchet()` to get a singleton client, or call
 """
 
 import logging
+import os
 
 from pydantic import BaseModel
 
@@ -29,6 +30,11 @@ def get_hatchet() -> Hatchet:
     global _hatchet
     if _hatchet is None:
         _hatchet = Hatchet()
+        logger.info(
+            "Hatchet client initialized: server=%s, grpc=%s",
+            os.getenv("HATCHET_CLIENT_SERVER_URL", "<default>"),
+            os.getenv("HATCHET_CLIENT_HOST_PORT", "<default>"),
+        )
     return _hatchet
 
 
@@ -63,16 +69,26 @@ def trigger_audio_generation(question_id: int, user_id: int) -> None:
 
     Does not wait for completion. Errors are logged but not raised to the caller.
     """
+    logger.info(
+        "Preparing to dispatch audio generation for question_id=%s, user_id=%s",
+        question_id,
+        user_id,
+    )
     try:
         task = _get_generate_audio_task()
+        logger.info("Submitting task 'generate_quiz_audio' to Hatchet")
         task.run(
             input=AudioGenerationInput(question_id=question_id, user_id=user_id),
             wait_for_result=False,
         )
         logger.info(
-            f"Dispatched audio generation for question_id={question_id}, user_id={user_id}"
+            "Dispatched audio generation for question_id=%s, user_id=%s",
+            question_id,
+            user_id,
         )
     except Exception:
         logger.exception(
-            f"Failed to dispatch audio generation for question_id={question_id}, user_id={user_id}"
+            "Failed to dispatch audio generation for question_id=%s, user_id=%s",
+            question_id,
+            user_id,
         )

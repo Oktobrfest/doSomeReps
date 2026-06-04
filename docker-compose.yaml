@@ -30,6 +30,10 @@ services:
       - CACHE_REDIS_HOST=reps_redis
       - UID=1000
       - GID=1000
+      - HATCHET_CLIENT_TOKEN=${HATCHET_CLIENT_TOKEN}
+      - HATCHET_CLIENT_HOST_PORT=host.docker.internal:7070
+      - HATCHET_CLIENT_SERVER_URL=http://host.docker.internal:8080
+      - HATCHET_CLIENT_TLS_STRATEGY=none
     volumes:
       - ./app:/app
       - ./piper_voices:/app/piper_voices
@@ -38,6 +42,32 @@ services:
 
     # UNCOMMENT THIS FOR VS-CODE:
   # command: python -m debugpy --wait-for-client --listen 0.0.0.0:5552 -m flask run --host=0.0.0.0  --port=5551 --debugger
+
+  hatchet_worker:
+    build:
+      context: ./
+      args:
+        - NODE_ENV=development
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=wsgi.py
+      - HATCHET_CLIENT_TOKEN=${HATCHET_CLIENT_TOKEN}
+      - HATCHET_CLIENT_HOST_PORT=host.docker.internal:7070
+      - HATCHET_CLIENT_SERVER_URL=http://host.docker.internal:8080
+      - HATCHET_CLIENT_TLS_STRATEGY=none
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DRIVER=${DRIVER}
+    volumes:
+      - ./app:/app
+      - ./piper_voices:/app/piper_voices
+    command: python -m repz.hatchet_workflow
+
 
   reps_postgres:
       image: postgres:18-alpine
