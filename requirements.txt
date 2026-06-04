@@ -58,3 +58,4 @@ pydantic
 piper-tts
 pytest
 sherpa-onnx
+hatchet-sdk

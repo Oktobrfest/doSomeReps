@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hatchet-worker
+  namespace: reps-prod
+  labels:
+    app: hatchet-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hatchet-worker
+  template:
+    metadata:
+      labels:
+        app: hatchet-worker
+    spec:
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - jackie
+
+      imagePullSecrets:
+        - name: regcred
+
+      containers:
+        - name: hatchet-worker
+          image: docker.io/oktobrfest/reps:latest
+          imagePullPolicy: Always
+
+          command: ["python", "-m", "repz.hatchet_workflow"]
+
+          env:
+            - name: FLASK_ENV
+              value: "production"
+            - name: FLASK_APP
+              value: "wsgi.py"
+
+          envFrom:
+            - secretRef:
+                name: reps-prod-secrets
+            - secretRef:
+                name: reps-oidc
+            - configMapRef:
+                name: reps-prod-config
+            - configMapRef:
+                name: reps-oidc-config
+
+          resources:
+            requests:
+              cpu: "110m"
+              memory: "256Mi"
+            limits:
+              cpu: "5000m"
+              memory: "4Gi"
