@@ -24,11 +24,12 @@ export default defineConfig({
     rollupOptions: {
       treeshake: false,
       input: {
-        ai_integration: "src/main.tsx",
-        react_edit_question: "src/edit_question.tsx",
-        audio_command_system: "src/audio/audio_command_system.tsx",
-        audio_quiz_entry: "src/audio/audio_quiz_entry.tsx",
-      },
+      ai_integration: "src/main.tsx",
+      react_edit_question: "src/edit_question.tsx",
+      audio_command_system: "src/audio/audio_command_system.tsx",
+      audio_quiz_entry: "src/audio/audio_quiz_entry.tsx",
+      quiz_markdown: "src/QuizMarkdown.tsx",
+    },
     },
   },
   server: {
