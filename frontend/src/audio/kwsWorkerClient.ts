@@ -38,13 +38,23 @@ export class KwsWorkerClient {
     this.setState("loading");
 
     try {
-      // Create a classic worker (Sherpa Emscripten output uses importScripts,
-      // which is not available in module workers).
-      // Vite handles worker bundling automatically when using the ?worker suffix
-      // or when the file is referenced via new URL with { type: "classic" }.
-      // For classic workers, we construct the URL and let Vite bundle it.
-      const workerUrl = new URL("./kwsWorker.js", import.meta.url);
+      // In dev: Vite serves worker on localhost:5173, page is on localhost:5553.
+      // Classic workers need same-origin, so we fetch and create a blob URL.
+      // In prod: We can use the Vite-resolved path since it's same-origin.
+      const isDev = import.meta.env.DEV;
+      let workerUrl: string;
+      if (isDev) {
+        // Dev: fetch from Vite dev server, create blob URL
+        const resp = await fetch(new URL("./kwsWorker.js", import.meta.url));
+        if (!resp.ok) throw new Error(`Failed to fetch worker: ${resp.status}`);
+        const blob = new Blob([await resp.text()], { type: "application/javascript" });
+        workerUrl = URL.createObjectURL(blob);
+      } else {
+        // Prod: Vite already resolved the path to /static/vite_dist/assets/...
+        workerUrl = new URL("./kwsWorker.js", import.meta.url).href;
+      }
       this.worker = new Worker(workerUrl, { type: "classic" });
+      if (isDev) URL.revokeObjectURL(workerUrl);
 
       this.worker.onmessage = (event: MessageEvent) => {
         const msg = event.data;
