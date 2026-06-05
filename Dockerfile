@@ -47,7 +47,7 @@ RUN npm install
 
 # Copy frontend source files for Vite build
 COPY frontend/ ./
-RUN npm run build
+RUN NODE_ENV=production npm run build
 
 WORKDIR /app
 
