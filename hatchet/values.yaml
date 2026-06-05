@@ -1,3 +1,5 @@
+# helm upgrade hatchet-stack hatchet/hatchet-stack -n hatchet -f hatchet/values.yaml
+
 postgres:
   enabled: true
 
@@ -5,7 +7,7 @@ rabbitmq:
   enabled: false      # using the Postgres-backed queue instead
 
 caddy:
-  enabled: false      # reach services via port-forward or your own Ingress
+  enabled: true
 
 # ── ONE sharedConfig block (you had two; the second clobbered your tag) ────
 sharedConfig:
@@ -16,7 +18,7 @@ sharedConfig:
 
   # These names embed release "hatchet-stack" + namespace "hatchet".
   # Change either of those and you must change these to match.
-  serverUrl: "http://hatchet-stack-api.hatchet.svc.cluster.local:8080"
+  serverUrl: "http://localhost:8888"
   grpcBroadcastAddress: "hatchet-stack-engine.hatchet.svc.cluster.local:7070"
 
   serverAuthCookieDomain: "localhost"
