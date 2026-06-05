@@ -2,13 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
-// https://vitejs.dev/config/
-const isProduction = process.env.NODE_ENV === 'production';
+const base = process.env.NODE_ENV === 'production' ? '/static/vite_dist/' : '/';
 
-// @ts-ignore
-const base = isProduction ? '/static/vite_dist/' : '/';
-
-// https://vitejs.dev/config/
 export default defineConfig({
   base,
   plugins: [react()],

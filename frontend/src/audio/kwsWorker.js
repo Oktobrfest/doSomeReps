@@ -12,7 +12,7 @@
  * as-is without compilation issues.
  */
 
-const KWS_BASE_URL = "/static/models/kws";
+const KWS_BASE_URL = self.location.origin + "/static/models/kws";
 const TARGET_SAMPLE_RATE = 16000;
 
 // ---- Worker state ----
