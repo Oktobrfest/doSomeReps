@@ -34,7 +34,7 @@ def addcat():
             er = True
         else:
             query = Query([category])
-            result = query.with_session(session)
+            result = query.with_session(session)  # type: ignore[arg-type]
             for c in result:
                 if newCategory == c.category_name:
                     data = "category already exists"
@@ -50,7 +50,7 @@ def addcat():
             cache.set('category_list', category_list, timeout=60*60*24) # a day
             # clean up the string
             data = newCategory
-            htl = clean_for_html(newCategory)
+            htl = clean_for_html(newCategory)  # type: ignore[arg-type]
         else:
             htl = "error"
             print("Error occured while trying to create a new category! ",
@@ -59,7 +59,7 @@ def addcat():
 
     except Exception as e:
         print("Error occured creating a new category! ", data)
-        return jsonify({'data': 'error', 'htl': data + str(e), 'error':
+        return jsonify({'data': 'error', 'htl': data + str(e), 'error':  # type: ignore[operator]
             True}), 500
 
 
@@ -153,7 +153,7 @@ def searchq():
     user = get_user(UID)
 
     excluded_question_ids = [q.question_id for q in user.excluded_questions]
-    if excluded_chkbox == False:
+    if excluded_chkbox is False:
         # update query to exclude them
         query = query.filter(~question.question_id.in_(excluded_question_ids))
     else:
@@ -256,7 +256,7 @@ def delete_audio():
     # Delete from S3 if object_key exists
     if aud.object_key:
         try:
-            s3 = get_s3
+            s3 = get_s3()
             s3.delete_s3_object(object_name=aud.object_key)
         except Exception as e:
             logging.error(f"Error deleting audio from S3: {e}")

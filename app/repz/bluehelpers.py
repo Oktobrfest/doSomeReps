@@ -19,7 +19,8 @@ from werkzeug.utils import secure_filename
 
 from .database import session
 from .models import category, level, q_pic, question, question_categories, quizq, rating, users
-from repz import cache
+from repz.extensions import cache
+from .s3_ext import get_s3
 from .home.form_validation import validate_filename, allowed_file
 
 
@@ -297,9 +298,10 @@ def exclude(exclusion_ids, UID):
 def delete_pic(pic):
         file_key = os.path.basename(pic.pic_string)
 
-        s3_obj_exists = current_app.s3.lookup_object(object_name = file_key)
+        s3 = get_s3()
+        s3_obj_exists = s3.lookup_object(object_name = file_key)
         if s3_obj_exists:
-            is_delete_success = current_app.s3.delete_s3_object(object_name = file_key)
+            is_delete_success = s3.delete_s3_object(object_name = file_key)
             if is_delete_success:
                 logging.debug(f"Deleting question pic with pic_string: {pic.pic_string} and with id: {pic.pic_id}")
             else:

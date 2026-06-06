@@ -55,7 +55,7 @@ from werkzeug.utils import secure_filename
 from wtforms import FileField, IntegerField, StringField, SubmitField, validators  # Re-added validators
 from wtforms.validators import DataRequired, NumberRange
 
-from repz import cache
+from repz.extensions import cache
 from repz.cache_helper import CacheHelper
 from repz.routes import home
 from repz.services.quiz_service import QuizPageConfig, render_quiz_page
@@ -97,17 +97,17 @@ def favicon():
         "favicon.ico",
         mimetype="image/vnd.microsoft.icon",
     )
-    
+
 
 @home.route("/about", methods=["GET", "POST"], endpoint="about")
 @cache.cached(timeout=500000)
 def about():
-    """About us page."""   
+    """About us page."""
     day_qry = select(level.level_no,level.days_hence)
     days_obj_all = session.execute(day_qry).all()
-        
+
     days = [ (d.level_no, d.days_hence) for d in days_obj_all ]
-    
+
     return render_template(
         "about.html",
         user=current_user,
@@ -124,40 +124,40 @@ def homepage():
     if current_user.is_authenticated:
         # Render a homepage for authenticated users
         UID = g._login_user.id
-        
+
         user_qry = select(users).where(users.id == UID)
-        
+
         user = session.execute(user_qry).scalars().first()
-            
+
         favorites = {}
         blocked = {}
         for u in user.favorates:
             favorites[u.id] = u.username
-        
+
         for b in user.blocked_users:
             blocked[b.id] = b.username
-        
-        
+
+
         selected_cats = get_all_categories()
-        
+
         que_list = get_quizes(selected_cats, UID)
 
         category_count = {}
         for q in que_list:
-            for c in q['categories']: 
+            for c in q['categories']:
                 if c in category_count:
                     category_count[c] += 1
                 else:
-                    category_count[c] = 1       
+                    category_count[c] = 1
 
         sorted_cats = sorted(category_count.items(), key = lambda x: x[1], reverse = True)
         limited_sorted_cats = sorted_cats[:5]
         sorted_cats_dict = dict(limited_sorted_cats)
-        
+
         x_arr, y_arr = split_dict(sorted_cats_dict)
-              
+
         catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
-        
+
         return render_template(
             "home.html",
             title="Homepage",
@@ -173,7 +173,7 @@ def homepage():
         sorted_ques_cat_count = cat_questions_count(8)
         limited_cat_count = dict(sorted_ques_cat_count)
         categories, question_count = split_dict(limited_cat_count)
-                        
+
         categories_graph = render_chart(categories, question_count, 'Categories', 'Questions')
 
         repetition_days_real = list(session.execute(select(level.days_hence)).scalars().all())
@@ -185,7 +185,7 @@ def homepage():
                                user=current_user,
                                forgetting_chart = forgetting_chart,
                                categories_graph = categories_graph)
-    
+
 
 # creates a new question
 @home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
@@ -212,7 +212,7 @@ def addcontent():
     if privacy_chkbox == "on":
         privacy = True
     else:
-        privacy = False        
+        privacy = False
 
     selected_categories = request.form.getlist("category_name")
 
@@ -236,11 +236,11 @@ def addcontent():
             flash("You must select at least one category!", category="error")
         # if fail == True:
         #     return redirect(url_for("home.addcontent"))
-        
+
         if len(answer) > 3999:
             # THROW/LOG error here because client isn't validating form lenght properly!
             answer = answer[:3999]
-                 
+
         if fail:
             flash("Failed Validation!", category="error")
             return render_template(
@@ -251,7 +251,7 @@ def addcontent():
                 category_list=category_list,
                 selected_categories=selected_categories,
                 form=form, # possibly replace this with QuestionForm()
-            )    
+            )
 
         # create new question!
         new_question = question(
@@ -270,7 +270,7 @@ def addcontent():
 
         # pictures
         save_pictures(new_question, request)
-        
+
         session.add(new_question)
         session.commit()
 
@@ -282,7 +282,7 @@ def addcontent():
 
         flash("New question created!", category="success")
 
-        
+
     return render_template(
         "addcontent.html",
         title="Add content",
@@ -292,7 +292,7 @@ def addcontent():
         selected_categories=selected_categories,
         form=form,
     )
-        
+
 
 @home.route("/quiz", methods=["GET", "POST"], endpoint="quiz")
 @login_required
@@ -306,7 +306,7 @@ def quiz():
             description=".",
         )
     )
-    
+
 
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
 @login_required
@@ -330,7 +330,7 @@ def quemore():
         category_list=category_list,
         selected_categories=selected_categories,
     )
-    
+
 
 @home.route("/editquestions", methods=["GET"], endpoint="editquestions")
 @login_required
@@ -356,7 +356,7 @@ def editquestions():
         form=form,
         q=q,
     )
-    
+
 
 @home.route("/edit_question_react", methods=["GET"], endpoint="edit_question_react")
 @login_required
@@ -386,7 +386,7 @@ def edit_question_react():
 @login_required
 def studymaterials():
     logging.debug('Rendering studymaterials.html')
-    
+
     return render_template(
         "studymaterials.html",
         title="Study Materials",
@@ -398,13 +398,13 @@ def studymaterials():
 # @login_required
 # def exclude_q():
 #     UID = g._login_user.id
-    
+
 
 #     msg = "Excluded Question"
 #     flash(msg, category="success")
-    
+
 #     response_msg = jsonify('ok')
-    
+
 #     return response_msg
 
 
@@ -424,4 +424,3 @@ def topic_questions(selected_topic):
         topics=topics,
         questions=questions
     )
-
