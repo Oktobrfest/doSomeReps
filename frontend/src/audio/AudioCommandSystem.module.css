@@ -97,11 +97,17 @@
 }
 
 .dropdownItem {
+  display: block;
+  width: 100%;
   padding: 0.6rem 1rem;
   font-size: 0.95rem;
   color: #1e293b;
   font-weight: 600;
-  cursor: default;
+  font-family: inherit;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease;
 }
 

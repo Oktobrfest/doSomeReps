@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
 
-from repz import cache
+from repz.extensions import cache
 from repz.cache_helper import CacheHelper
 from repz.database import session
 from repz.models import level, question, quizq

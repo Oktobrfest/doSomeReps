@@ -1,6 +1,6 @@
 import hashlib
 
-from repz import cache
+from repz.extensions import cache
 
 class CacheHelper:
     def __init__(self, user_id):
@@ -20,9 +20,9 @@ class CacheHelper:
 
    # implement caching
 # def cache_cats(selected_categories, UID):
-#     sorted_cats = sorted(selected_categories) 
+#     sorted_cats = sorted(selected_categories)
 #     cats_string = ''.join(sorted_cats)
-#     cat_hash = hashlib.md5(cats_string.encode()).hexdigest() 
+#     cat_hash = hashlib.md5(cats_string.encode()).hexdigest()
 #     que_cache_key = f"que_user_{UID}_cats_{cat_hash}"
 #     que_list = cache.get(que_cache_key) or []
 #     return que_list

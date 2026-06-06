@@ -1,6 +1,6 @@
 label > input { width: 3em; }
 form > * { padding-right: 1em; }
-#result { font-weight: bold; } 
+#result { font-weight: bold; }
 
 .start-quiz-button {
   font-size: 20px;
@@ -354,7 +354,7 @@ td {
 /* #singlestar {
   display: flex;
   align-items: center;
-  flex-direction: row-reverse; 
+  flex-direction: row-reverse;
   justify-content: space-between;
   position: relative;
 } */
@@ -801,5 +801,3 @@ pre[class*="language-"] {
 .error {
   color: red
 }
-
-

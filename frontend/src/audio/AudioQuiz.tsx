@@ -187,6 +187,11 @@ export function AudioQuiz({
   }, []);
 
   const handleGetAnswer = useCallback(() => {
+    if (answerActive) {
+      setAnswerPlaying((prev) => !prev);
+      return;
+    }
+
     setAnswerRevealed(true);
 
     if (questionActive) {
@@ -198,7 +203,14 @@ export function AudioQuiz({
       setAnswerActive(true);
       setAnswerPlaying(true);
     }
-  }, [questionActive, answerAssets.length]);
+  }, [questionActive, answerActive, answerAssets.length]);
+
+  useEffect(() => {
+    (window as any).audioGetAnswer = handleGetAnswer;
+    return () => {
+      delete (window as any).audioGetAnswer;
+    };
+  }, [handleGetAnswer]);
 
   const handleAnswerToggle = useCallback(() => {
     setAnswerPlaying((prev) => !prev);

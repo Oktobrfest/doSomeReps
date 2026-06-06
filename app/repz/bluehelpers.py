@@ -19,7 +19,8 @@ from werkzeug.utils import secure_filename
 
 from .database import session
 from .models import category, level, q_pic, question, question_categories, quizq, rating, users
-from repz import cache
+from repz.extensions import cache
+from .s3_ext import get_s3
 from .home.form_validation import validate_filename, allowed_file
 
 
@@ -38,10 +39,11 @@ def remove_underscore(html_string: str) -> str:
 def set_session(key, value):
     # Set a value in the session
     local_session[key] = value
-    
-    
+
+
 def create_brand_new_quizq(question_ids, UID):
     new_q_quiz_list = []
+    from repz.hatchet_client import trigger_audio_generation
     for question_id in question_ids:
         new_quizq = quizq(
             user_id=UID,
@@ -49,13 +51,16 @@ def create_brand_new_quizq(question_ids, UID):
         )
         new_quizq.question_id = question_id
         new_q_quiz_list.append(new_quizq)
-   
+
+        # Trigger background audio asset generation for each question
+        trigger_audio_generation(question_id=question_id, user_id=UID)
+
     session.add_all(new_q_quiz_list)
     session.commit()
     qty_added = len(new_q_quiz_list)
     return qty_added
-    
-    
+
+
 def get_session(key):
     # Get the value from the session
     value = local_session.get(key, 'Not set')
@@ -74,26 +79,26 @@ def get_all_categories():
     if category_list is None:
         category_list = get_all_db_categories()
         cache.set('category_list', category_list, timeout=60*60*24*7) # 1 week
-    
-    return category_list   
 
-        
+    return category_list
+
+
 def score(question_id):
     ratings = session.execute(select(rating.rating).where(rating.question_id == question_id)).scalars().all()
-    
+
     score = 0.0
     count = 0
     for rate in ratings:
         score += rate
         count += 1
-    
+
     if count == 0:
         final_score = 0
     else:
         final_score = score / count
-    
+
     return final_score
-        
+
 
 def get_quizes(selected_cats, UID):
       # Start the timer (to time excecution speed for development)
@@ -102,9 +107,9 @@ def get_quizes(selected_cats, UID):
     user = get_user(UID)
 
     excluded_question_ids = [q.question_id for q in user.excluded_questions]
-   
+
     quest_wCats_qry = (
-        select(question, text("STRING_AGG(category.category_name, ',')"), quizq, level.days_hence)   
+        select(question, text("STRING_AGG(category.category_name, ',')"), quizq, level.days_hence)
         .join(question.categories)
         .join(
             quizq,
@@ -133,7 +138,7 @@ def get_quizes(selected_cats, UID):
         question_cats = [c.category_name for c in r.question.categories]
         if not set(question_cats) & set(selected_cats):
             continue  # Skip the current iteration if there's no intersection
-        
+
         last_ansered = None
         user_rate_qry = select(rating.rating).where(rating.question_id == r.question.question_id).where(rating.user_id == UID)
         user_rated = session.execute(user_rate_qry).scalars().first()
@@ -167,12 +172,12 @@ def get_quizes(selected_cats, UID):
             for img in r.question.pics:
                 pics[img.pic_type].append(img.pic_string)
 
-            creator = select(users.username).where(users.id == r.question.created_by)  
+            creator = select(users.username).where(users.id == r.question.created_by)
 
-            creator_username = session.execute(creator).first()[0]  
-            
+            creator_username = session.execute(creator).first()[0]
+
             rating_score = score(r.question.question_id)
-            
+
             q = {
                 "quizq_id": r.quizq.quizq_id,
                 "question_id": r.question.question_id,
@@ -193,12 +198,12 @@ def get_quizes(selected_cats, UID):
     # Calculate the elapsed time of function excecution for Development ONLY
     elapsed_time = time.time() - start_time
     try:
-        print("Total get Que List Run Time:", elapsed_time, "seconds")   
+        print("Total get Que List Run Time:", elapsed_time, "seconds")
     except ValueError:
         # Standard output stream has been closed or detached in the server process
         pass
 
-    return que_list        
+    return que_list
 
 
 def get_user(user_id):
@@ -211,9 +216,9 @@ def get_user(user_id):
         user_id_int = user_id
 
     usr_qry = select(users).where(users.id == user_id_int)
-    
+
     usr_obj = session.execute(usr_qry).first()
-    
+
     user = usr_obj[0]
 
     return user
@@ -239,16 +244,16 @@ def tally_que_catz(quizq_list):
 def tally_catz(questions_list):
     category_count = {}
     for q in questions_list:
-        for c in q.categories: 
+        for c in q.categories:
             cat = c.category_name
             if cat in category_count:
                 category_count[cat] += 1
             else:
-                category_count[cat] = 1       
+                category_count[cat] = 1
     return category_count
 
 
-def split_dict(dict):        
+def split_dict(dict):
     x_arr = []
     y_arr = []
     for k,v in dict.items():
@@ -259,14 +264,14 @@ def split_dict(dict):
 
 def unexclude(question_id, UID):
     user = get_user(UID)
-    
+
     ques_qry = select(question).where(question.question_id == question_id)
-    
+
     ques_obj = session.execute(ques_qry).first()[0]
 
     if ques_obj in user.excluded_questions:
         user.excluded_questions.remove(ques_obj)
-        session.commit() 
+        session.commit()
         msg = { 'success': "Un-Excluded Question" }
     else:
         msg = { 'failure': "Question object not found in user's excluded questions" }
@@ -292,16 +297,17 @@ def exclude(exclusion_ids, UID):
 
 def delete_pic(pic):
         file_key = os.path.basename(pic.pic_string)
-        
-        s3_obj_exists = current_app.s3.lookup_object(object_name = file_key)
+
+        s3 = get_s3()
+        s3_obj_exists = s3.lookup_object(object_name = file_key)
         if s3_obj_exists:
-            is_delete_success = current_app.s3.delete_s3_object(object_name = file_key)
+            is_delete_success = s3.delete_s3_object(object_name = file_key)
             if is_delete_success:
                 logging.debug(f"Deleting question pic with pic_string: {pic.pic_string} and with id: {pic.pic_id}")
             else:
                 flash('Failed to delete picture from S3 Bucket!', category="error")
-                logging.debug(f"ERROR- FAILED TO DELETE PICTURE FROM S3 BUCKET HERE: {file_key} . Next, trying: Deleting question pic with pic_string: {pic.pic_string} and with id: {pic.pic_id}")  
-                   
+                logging.debug(f"ERROR- FAILED TO DELETE PICTURE FROM S3 BUCKET HERE: {file_key} . Next, trying: Deleting question pic with pic_string: {pic.pic_string} and with id: {pic.pic_id}")
+
         session.delete(pic)
         # session.commit()
 
@@ -320,14 +326,14 @@ def cat_questions_count(qty):
     except OperationalError as e:
         current_app.logger.error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA, DB Error:' + str(e))
         session.close()
-        raise 
-    
+        raise
+
 
 def get_categories_questions(cat):
     """Fetch all public questions for the selected category"""
     questions_qry = select(question).join(question.categories).where(
         category.category_name == cat,
-        question.privacy == False      
+        question.privacy == False
     )
 
     questions = session.execute(questions_qry.distinct()).scalars().all()
@@ -368,6 +374,3 @@ def unslugify(slug):
 
     # Replace hyphens back to spaces
     return text.replace('-', ' ')
-
-
-

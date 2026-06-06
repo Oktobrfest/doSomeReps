@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 
 from .form_validation import allowed_file, validate_filename
 from ..models import q_pic, question
+from ..s3_ext import get_s3
 
 
 def gen_unique_filename(filename):
@@ -38,7 +39,8 @@ def save_pictures(question, request) -> question:
                         "x-amz-meta-pic_type": pic_type,
                     }
                     ExtraArgs = {"Metadata": Metadata}
-                    location_string = current_app.s3.upload_file_to_s3(
+                    s3 = get_s3()
+                    location_string = s3.upload_file_to_s3(
                         file_name = file_path,
                         ExtraArgs = ExtraArgs, 
                         object_name = picname
