@@ -7,19 +7,14 @@ from os import environ
 import flask
 import flask_login
 from flask import Flask, g, flash
-from flask_caching import Cache
 from flask_login import LoginManager, current_user
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
-from flask_session import Session
 
 from .flask_util_js import FlaskUtilJs
-from .aws_s3 import S3
 
-
-#makes this globaly available
-cache = Cache()
-sess = Session()
+from .extensions import cache, sess
+from .s3_ext import init_s3
 
 def init_app():
     """Create Flask application."""
@@ -112,7 +107,8 @@ def init_app():
 
         g.user = current_user
 
-        app.s3 = S3(app)
+        # app.s3 = S3(app) #original
+        init_s3(app)
 
         login_manager = LoginManager(app)
         login_manager.login_view = "dev_auth.dev_login_index" if env == 'development' else "auth.login"

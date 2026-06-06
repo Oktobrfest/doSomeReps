@@ -1,12 +1,13 @@
-from flask import flash, request, session, jsonify, current_app
+from flask import flash, request, jsonify, current_app
 from flask_login import login_required
 from flask import g, make_response
+from repz.s3_ext import get_s3
 from ...models import q_pic, users, question, quizq, category, rating, audio
 import json
 
 
 import copy
-from repz import cache
+from repz.extensions import cache
 from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload, Query
 
@@ -27,7 +28,7 @@ def addcat():
     htl = ""
     data = ""
     try:
-        if len(newCategory) < 3:
+        if newCategory is None or len(newCategory) < 3:
             data = "too short bro!"
             flash(data, category="error")
             er = True
@@ -68,13 +69,13 @@ def addcat():
 def saveq():
     # retrieve the updated question data
     updated_question_json = request.form['updated_question']
-    
+
     # convert the JSON string to a Python object
     updated_question = json.loads(updated_question_json)
-    
+
     # loop through the database pics and see if they match the ones in the request
     q = session.query(question).filter_by(question_id=updated_question['id']).first()
-    
+
     # Check if any existing images need to be deleted
     for pic in q.pics:
         if pic.pic_type == "hint_image":
@@ -85,12 +86,12 @@ def saveq():
                delete_pic(pic)
         elif pic.pic_type == "question_image":
             if pic.pic_string not in set(updated_question["pics_by_type"]["question"]):
-                delete_pic(pic)  
-    
+                delete_pic(pic)
+
     save_pictures(q, request)
-    
+
     privacy = updated_question['privacy']
-    
+
     session.query(question).filter(question.question_id == updated_question['id']).update(
         {
             "question_text": updated_question['question_text'],
@@ -100,7 +101,7 @@ def saveq():
         },
         synchronize_session='fetch',
     )
-    
+
     # update question categories
     selected_cats = session.query(category).filter(category.category_name.in_(updated_question['categories'])).all()
 
@@ -122,9 +123,9 @@ def searchq():
     UID = g._login_user.id
     # get The submitted Json values
     filters = request.get_json()
-        
+
     underscored_cats = filters["search-categories"]
-    
+
     set_session("filter_categories", underscored_cats)
 
 
@@ -147,7 +148,7 @@ def searchq():
         .filter(category.category_name.in_(filter_cats))
         .filter(question.created_by==UID)
     )
-    
+
   # get the user obj
     user = get_user(UID)
 
@@ -255,7 +256,8 @@ def delete_audio():
     # Delete from S3 if object_key exists
     if aud.object_key:
         try:
-            current_app.s3.delete_s3_object(object_name=aud.object_key)
+            s3 = get_s3
+            s3.delete_s3_object(object_name=aud.object_key)
         except Exception as e:
             logging.error(f"Error deleting audio from S3: {e}")
 
@@ -271,7 +273,7 @@ def delete_audio():
 def deleteq():
     delete_q = request.get_json()
     question_id = delete_q["id"]
-    
+
     q = session.query(question).options(joinedload(question.pics)).filter_by(question_id=delete_q["id"]).first()
 
     # gather the q_pics and remove them from s3
@@ -280,15 +282,15 @@ def deleteq():
     # loop over the q_pics and delete their corresponding objects in S3
     for pic in q_pics:
         delete_pic(pic)
-    
+
     exquestion = session.query(question).filter(question.question_id == question_id).first()
     # find all entries in 'excluded_questions' where 'question_id' matches the question you want to delete
-    if exquestion is not None: 
+    if exquestion is not None:
         q_users = session.query(users).filter(users.excluded_questions.contains(exquestion)).all()
 
         for usr in q_users:
             usr.excluded_questions.remove(exquestion)
-    
+
     session.delete(q)
     session.commit()
     msg = "Question Deleted"
@@ -321,7 +323,7 @@ def rateq():
         new_rating = rating(question_id = question_id,
                         user_id = UID,
                         rating = rated,)
-        
+
         session.add(new_rating)
         session.commit()
         msg = "Question Rated"
@@ -331,4 +333,3 @@ def rateq():
 
     flash(msg, category="success")
     return msg
-
