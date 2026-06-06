@@ -314,9 +314,18 @@ export function AudioCommandSystemComponent() {
             <div className={styles.dropdownMenu}>
               <div className={styles.dropdownHeader}>Available Commands</div>
               {AVAILABLE_COMMANDS.map((cmd) => (
-                <div key={cmd} className={styles.dropdownItem}>
+                <button
+                  key={cmd}
+                  type="button"
+                  className={styles.dropdownItem}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    commandManagerRef.current.triggerCommand(cmd);
+                  }}
+                >
                   {cmd}
-                </div>
+                </button>
               ))}
             </div>
           )}
