@@ -21,6 +21,7 @@ import {
 import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
 import actionStyles from './ActionButton.module.css';
+import { MarkdownContent } from '../components/MarkdownContent';
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -372,7 +373,9 @@ export function AudioQuiz({
           ))}
         </div>
 
-        <p className={styles.textBlock}>{question.question_text}</p>
+        <div className={styles.textBlock}>
+          <MarkdownContent content={question.question_text} />
+        </div>
 
         {answerRevealed && (
           <div className={styles.card}>
@@ -381,9 +384,9 @@ export function AudioQuiz({
               The Answer
             </h5>
 
-            <pre className={styles.cardContent}>
-              {question.answer}
-            </pre>
+            <div className={styles.cardContent}>
+              <MarkdownContent content={question.answer} />
+            </div>
           </div>
         )}
       </div>
