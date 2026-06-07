@@ -336,11 +336,8 @@ def quemore():
 @login_required
 def editquestions():
     UID = g._login_user.id
-    form = QuestionForm()
     category_list = get_all_categories()
-    question_categories = []
     filter_categories = []
-    q = None
     if request.method == "GET":
         filter_categories = get_session("filter_categories")
         if filter_categories == "Not set":
@@ -351,10 +348,7 @@ def editquestions():
         title="Edit or Delete Questions",
         user=current_user,
         category_list=category_list,
-        selected_categories=question_categories,
         filter_categories=filter_categories,
-        form=form,
-        q=q,
     )
 
 

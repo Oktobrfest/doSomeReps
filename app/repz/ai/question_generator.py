@@ -41,6 +41,7 @@ from ..database import session as db_session
 from ..models import category, question
 from .litellm_client import AIConfigError, completion_for_user
 from .question_generator_forms import AIQuestionGenForm
+from .question_pipeline import generate_questions, generate_hints
 
 
 # Session key holding the current batch of AI-generated questions
@@ -486,51 +487,19 @@ def question_generator():
             )
             return _render_page(form, category_list, selected_categories)
 
-        # Build the prompt: template (with categories + range) followed
-        # by the user's pasted material. We use spaced category names in
-        # the prompt for better AI readability.
-        spaced_cats = [remove_underscore(c) for c in selected_categories]
-        prompt_header = QUESTION_GENERATION_PROMPT_TEMPLATE.format(
-            qty_from=form.qty_from.data,
-            qty_to=form.qty_to.data,
-            categories=", ".join(spaced_cats),
-        )
-        full_prompt = prompt_header + (form.quiz_content.data or "")
-
         try:
-            resp = completion_for_user(
-                current_user,
-                messages=[{"role": "user", "content": full_prompt}],
-                response_format=GeneratedQuestionSet,
+            generated = generate_questions(
+                text=form.quiz_content.data or "",
+                categories=selected_categories,
+                qty_from=form.qty_from.data,
+                qty_to=form.qty_to.data,
+                user_id=UID,
             )
-            qset = _parse_question_set(resp)
-            generated: List[Dict[str, Any]] = [q.model_dump() for q in qset.questions]
 
             # Optional second call: hints for the difficult questions.
             if form.try_provide_hints.data and generated:
-                hint_payload = json.dumps(
-                    [
-                        {"question": g["question"], "answer": g["answer"]}
-                        for g in generated
-                    ],
-                    indent=2,
-                )
-                hint_resp = completion_for_user(
-                    current_user,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": HINT_GENERATION_PROMPT_TEMPLATE + hint_payload,
-                        }
-                    ],
-                    response_format=GeneratedHintSet,
-                )
                 try:
-                    hset = _parse_hint_set(hint_resp)
-                    # Merge by index; ignore extras / shortfalls gracefully.
-                    for i, h in enumerate(hset.hints[: len(generated)]):
-                        if h.hint:
-                            generated[i]["hint"] = h.hint
+                    generate_hints(generated, UID)
                 except Exception as e:  # noqa: BLE001
                     logging.warning("Hint parse failed: %s", e)
                     flash(

@@ -77,9 +77,6 @@ window.onload = (event) => {
         // process the search
         searchbutton.onclick = function () { getSearchData(filterform) };
 
-        const save_question_button = document.querySelector("#save-question-button");
-        save_question_button.addEventListener('click', clearMsgArea);
-
         // add select all cats button
         const insert_into_div = document.getElementById("search-filters");
         let select_all_btn = document.createElement("button");
@@ -88,9 +85,6 @@ window.onload = (event) => {
         select_all_btn.textContent = 'Select All';
 
         insert_into_div.append(select_all_btn);
-
-        const edit_q_sel_all_btn = document.querySelector("[type=Button]#select-all-btn");
-        edit_q_sel_all_btn.style.display = 'none';
 
         function handleSelectAllClick() {
             event.preventDefault();
@@ -110,7 +104,7 @@ window.onload = (event) => {
         // Removed original auto-populate logic because we now redirect to the special React page
     }
     // expanding textarea fields
-    if ((window.location.pathname === '/addcontent') || (window.location.pathname === '/editquestions')) {
+    if (window.location.pathname === '/addcontent') {
         const textareas = document.getElementsByTagName('textarea');
         for (let i = 0; i < textareas.length; i++) {
             autoResize(textareas[i]);
@@ -570,8 +564,18 @@ function getSearchData(filterform) {
                     });
                 };
 
-                li.addEventListener('click', clearMsgArea);
-                li.addEventListener('click', populateQuestion);
+                li.addEventListener('click', function(event) {
+                    const questionId = event.target.closest('[data-value]')?.dataset.value;
+                    if (questionId) {
+                        // Check if we're on the editquestions page and the React inline editor is available
+                        if (window.setEditQuestionId && window.location.pathname === '/editquestions') {
+                            window.setEditQuestionId(parseInt(questionId, 10));
+                        } else {
+                            // Fallback to redirect
+                            window.location.href = '/edit_question?q_id=' + questionId;
+                        }
+                    }
+                });
                 let result_list_div = document.getElementById("search-results-list-unstyled").appendChild(li);
             });
         })
@@ -933,9 +937,11 @@ function fadeOutEffect(fadeTarget) {
 }
 
 function hideQuestionArea() {
-    // hide question area
+    // hide question area (if present)
     const question_area = document.getElementById("editquestionform-area");
-    question_area.style.display = "none";
+    if (question_area) {
+        question_area.style.display = "none";
+    }
 }
 
 var searchquefilters = flask_util.url_for('que_ajx.searchquefilters');
