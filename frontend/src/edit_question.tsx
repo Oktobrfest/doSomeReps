@@ -52,6 +52,7 @@ export default function EditQuestionReact() {
   const [questionFiles, setQuestionFiles] = useState<File[]>([]);
   const [hintFiles, setHintFiles] = useState<File[]>([]);
   const [answerFiles, setAnswerFiles] = useState<File[]>([]);
+    const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -159,6 +160,36 @@ export default function EditQuestionReact() {
     setFiles: React.Dispatch<React.SetStateAction<File[]>>
   ) => {
     setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const handleDelete = async () => {
+    if (!questionId) return;
+
+    const confirmed = window.confirm("Are you sure you want to delete this question?");
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch("/deleteq", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: questionId }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete the question.");
+      }
+
+      setSuccessMsg("Question deleted successfully!");
+      // Clear the form and redirect after a short delay
+      setTimeout(() => {
+        window.location.href = "/editquestions";
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete question.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -597,15 +628,23 @@ export default function EditQuestionReact() {
               </div>
             </div>
 
-            <div className="border-top pt-3 mt-3 d-flex justify-content-end">
-              <button
-                type="submit"
-                className="btn btn-primary px-5"
-                disabled={saving}
-              >
-                {saving ? "Saving..." : "Save Question"}
-              </button>
-            </div>
+            <div className="border-top pt-3 mt-3 d-flex justify-content-between">
+                          <button
+                            type="button"
+                            className="btn btn-danger"
+                            onClick={handleDelete}
+                            disabled={deleting || !questionId}
+                          >
+                            {deleting ? "Deleting..." : "Delete Question"}
+                          </button>
+                          <button
+                            type="submit"
+                            className="btn btn-primary px-5"
+                            disabled={saving}
+                          >
+                            {saving ? "Saving..." : "Save Question"}
+                          </button>
+                        </div>
           </form>
         </div>
       </div>

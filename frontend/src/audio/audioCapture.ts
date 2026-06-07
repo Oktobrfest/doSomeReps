@@ -13,7 +13,7 @@ registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
 `;
 
 export function buildWorkletBlobUrl(): string {
-  const blob = new Blob([PCM_WORKLET_SOURCE], { type: "application/javascript" });
+  const blob = new Blob([PCM_WORKLET_SOURCE], { type: "text/javascript" });
   return URL.createObjectURL(blob);
 }
 
