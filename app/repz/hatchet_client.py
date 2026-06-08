@@ -11,6 +11,7 @@ import os
 from pydantic import BaseModel
 
 from hatchet_sdk import Hatchet
+from repz.ai.schema import QuestionGenInput, DocumentGenInput
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,8 @@ class AudioGenerationInput(BaseModel):
 
 _hatchet: Hatchet | None = None
 _generate_audio_task = None
+_generate_questions_task = None
+_generate_questions_from_doc_task = None
 
 
 def get_hatchet() -> Hatchet:
@@ -62,6 +65,114 @@ def _get_generate_audio_task():
 
     _generate_audio_task = generate_quiz_audio
     return _generate_audio_task
+
+
+def _get_generate_questions_task():
+    """Lazily create and return the standalone task for generating questions directly from text."""
+    global _generate_questions_task
+    if _generate_questions_task is not None:
+        return _generate_questions_task
+
+    h = get_hatchet()
+
+    @h.task(
+        name="generate_questions_workflow",
+        execution_timeout="5m",
+        retries=1,
+        input_validator=QuestionGenInput,
+    )
+    def generate_questions_workflow(input: QuestionGenInput, ctx) -> dict:
+        raise NotImplementedError(
+            "This stub should never be executed directly. "
+            "The hatchet worker process runs the real implementation."
+        )
+
+    _generate_questions_task = generate_questions_workflow
+    return _generate_questions_task
+
+
+def _get_generate_questions_from_doc_task():
+    """Lazily create and return the standalone task for generating questions from document files."""
+    global _generate_questions_from_doc_task
+    if _generate_questions_from_doc_task is not None:
+        return _generate_questions_from_doc_task
+
+    h = get_hatchet()
+
+    @h.task(
+        name="generate_questions_from_doc_workflow",
+        execution_timeout="10m",
+        retries=1,
+        input_validator=DocumentGenInput,
+    )
+    def generate_questions_from_doc_workflow(input: DocumentGenInput, ctx) -> dict:
+        raise NotImplementedError(
+            "This stub should never be executed directly. "
+            "The hatchet worker process runs the real implementation."
+        )
+
+    _generate_questions_from_doc_task = generate_questions_from_doc_workflow
+    return _generate_questions_from_doc_task
+
+
+def trigger_question_generation(
+    text_content: str,
+    categories: list[str],
+    qty_from: int,
+    qty_to: int,
+    user_id: int,
+    try_hints: bool = False,
+) -> list[dict]:
+    """Trigger question generation from raw text on Hatchet and wait for results."""
+    logger.info("Triggering question generation via Hatchet for user_id=%s", user_id)
+    try:
+        task = _get_generate_questions_task()
+        result = task.run(
+            input=QuestionGenInput(
+                text_content=text_content,
+                categories=categories,
+                qty_from=qty_from,
+                qty_to=qty_to,
+                user_id=user_id,
+                try_hints=try_hints,
+            ),
+            wait_for_result=True,
+        )
+        return result.get("questions", [])
+    except Exception:
+        logger.exception("Failed to run question generation workflow via Hatchet for user_id=%s", user_id)
+        raise
+
+
+def trigger_document_question_generation(
+    document_path: str,
+    document_type: str,
+    categories: list[str],
+    qty_from: int,
+    qty_to: int,
+    user_id: int,
+    try_hints: bool = False,
+) -> list[dict]:
+    """Trigger question generation from a document on Hatchet and wait for results."""
+    logger.info("Triggering document question generation via Hatchet for user_id=%s", user_id)
+    try:
+        task = _get_generate_questions_from_doc_task()
+        result = task.run(
+            input=DocumentGenInput(
+                document_path=document_path,
+                document_type=document_type,
+                categories=categories,
+                qty_from=qty_from,
+                qty_to=qty_to,
+                user_id=user_id,
+                try_hints=try_hints,
+            ),
+            wait_for_result=True,
+        )
+        return result.get("questions", [])
+    except Exception:
+        logger.exception("Failed to run document question generation workflow via Hatchet for user_id=%s", user_id)
+        raise
 
 
 def trigger_audio_generation(question_id: int, user_id: int) -> None:

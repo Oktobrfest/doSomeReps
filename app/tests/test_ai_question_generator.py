@@ -114,12 +114,12 @@ class TestAIQuestionGeneratorAPIs(unittest.TestCase):
         self.assertIn("category is required", response.get_json()["error"])
 
     @patch("repz.ai.question_generator.current_user")
-    @patch("repz.ai.question_generator.generate_questions")
+    @patch("repz.hatchet_client.trigger_question_generation")
     @patch("repz.ai.question_generator.set_session")
-    def test_generate_endpoint_success(self, mock_set_session, mock_generate, mock_current_user):
+    def test_generate_endpoint_success(self, mock_set_session, mock_trigger, mock_current_user):
         mock_current_user.id = 1
         mock_current_user.is_authenticated = True
-        mock_generate.return_value = [
+        mock_trigger.return_value = [
             {"question": "Gen Q", "hint": None, "answer": "Gen A", "categories": ["Math"]}
         ]
         

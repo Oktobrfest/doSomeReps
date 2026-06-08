@@ -18,6 +18,7 @@ from typing import Optional
 from hatchet_sdk import Hatchet, Context
 
 from repz.hatchet_client import AudioGenerationInput
+from repz.ai.schema import QuestionGenInput, DocumentGenInput
 
 logger = logging.getLogger(__name__)
 
@@ -163,22 +164,90 @@ def _create_workflow():
                 ctx.log(_log(f"Audio generation failed for question_id={question_id}: {e}"))
                 raise
 
-    return hatchet, generate_quiz_audio
+    @hatchet.task(
+        name="generate_questions_workflow",
+        execution_timeout="5m",
+        retries=1,
+        input_validator=QuestionGenInput,
+    )
+    def generate_questions_workflow(input: QuestionGenInput, ctx: Context) -> dict:
+        """Generate quiz questions from raw text."""
+        ctx.log(_log(f"Starting question generation via Hatchet for user_id={input.user_id}"))
+        from repz import init_app
+        app = init_app()
+        with app.app_context():
+            from repz.ai.question_pipeline import generate_questions, generate_hints
+
+            generated = generate_questions(
+                text=input.text_content,
+                categories=input.categories,
+                qty_from=input.qty_from,
+                qty_to=input.qty_to,
+                user_id=input.user_id,
+            )
+            if input.try_hints and generated:
+                try:
+                    generate_hints(generated, input.user_id)
+                except Exception as e:
+                    ctx.log(_log(f"Hint generation failed: {e}"))
+
+            ctx.log(_log(f"Generated {len(generated)} questions via Hatchet for user_id={input.user_id}"))
+            return {"questions": generated}
+
+    @hatchet.task(
+        name="generate_questions_from_doc_workflow",
+        execution_timeout="10m",
+        retries=1,
+        input_validator=DocumentGenInput,
+    )
+    def generate_questions_from_doc_workflow(input: DocumentGenInput, ctx: Context) -> dict:
+        """Generate quiz questions from PDF or image document files."""
+        ctx.log(_log(f"Starting document question generation via Hatchet for user_id={input.user_id}, path={input.document_path}"))
+        from repz import init_app
+        app = init_app()
+        with app.app_context():
+            from repz.ai.doc_processor import extract_text_from_pdf, extract_text_from_image
+            from repz.ai.question_pipeline import generate_questions, generate_hints
+
+            if input.document_type == "pdf":
+                text = extract_text_from_pdf(input.document_path)
+            elif input.document_type in ("image", "png", "jpg", "jpeg"):
+                text = extract_text_from_image(input.document_path)
+            else:
+                raise ValueError(f"Unsupported document type: {input.document_type}")
+
+            generated = generate_questions(
+                text=text,
+                categories=input.categories,
+                qty_from=input.qty_from,
+                qty_to=input.qty_to,
+                user_id=input.user_id,
+            )
+            if input.try_hints and generated:
+                try:
+                    generate_hints(generated, input.user_id)
+                except Exception as e:
+                    ctx.log(_log(f"Hint generation failed: {e}"))
+
+            ctx.log(_log(f"Generated {len(generated)} questions from doc via Hatchet for user_id={input.user_id}"))
+            return {"questions": generated}
+
+    return hatchet, [generate_quiz_audio, generate_questions_workflow, generate_questions_from_doc_workflow]
 
 
 def main():
     """Entry point for the hatchet worker process."""
     logging.basicConfig(level=logging.INFO)
 
-    hatchet, task = _create_workflow()
+    hatchet, tasks = _create_workflow()
 
     worker = hatchet.worker(
         name="AudioGenerationWorker",
         slots=4,
-        workflows=[task],
+        workflows=tasks,
     )
 
-    logger.info("Starting Hatchet worker: AudioGenerationWorker (listening for task 'generate_quiz_audio')")
+    logger.info("Starting Hatchet worker: AudioGenerationWorker (listening for tasks)")
     worker.start()
 
 

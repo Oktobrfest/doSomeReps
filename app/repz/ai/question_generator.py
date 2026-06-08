@@ -507,19 +507,16 @@ def ai_qgen_generate():
     set_session("ai_qgen_category_names", selected_categories)
 
     try:
-        generated = generate_questions(
-            text=text,
+        from repz.hatchet_client import trigger_question_generation
+
+        generated = trigger_question_generation(
+            text_content=text,
             categories=selected_categories,
             qty_from=qty_from,
             qty_to=qty_to,
             user_id=UID,
+            try_hints=try_provide_hints,
         )
-
-        if try_provide_hints and generated:
-            try:
-                generate_hints(generated, UID)
-            except Exception as e:
-                logging.warning("Hint parse failed: %s", e)
 
         local_session[SESSION_KEY_GENERATED] = generated
         return jsonify({
