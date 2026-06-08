@@ -229,6 +229,21 @@ export function QuestionEditor({
       return;
     }
 
+    if (questionText.length > 1500) {
+      toast.error(`Question text cannot exceed 1500 characters (currently ${questionText.length} characters).`);
+      return;
+    }
+
+    if (hintText && hintText.length > 2000) {
+      toast.error(`Hint cannot exceed 2000 characters (currently ${hintText.length} characters).`);
+      return;
+    }
+
+    if (answerText.length > 4000) {
+      toast.error(`Answer cannot exceed 4000 characters (currently ${answerText.length} characters).`);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     setSuccessMsg(null);
@@ -268,7 +283,8 @@ export function QuestionEditor({
       });
 
       if (!res.ok) {
-        throw new Error("Failed to save the question.");
+        const errorText = await res.text().catch(() => "");
+        throw new Error(errorText || "Failed to save the question.");
       }
 
       toast.success("Question saved successfully!");
@@ -373,6 +389,7 @@ export function QuestionEditor({
                     rows={4}
                     value={questionText}
                     onChange={(e) => setQuestionText(e.target.value)}
+                    maxLength={1500}
                     required
                   />
 
@@ -446,6 +463,7 @@ export function QuestionEditor({
                     rows={2}
                     value={hintText}
                     onChange={(e) => setHintText(e.target.value)}
+                    maxLength={2000}
                   />
 
                   {/* Hint Images Section */}
@@ -518,6 +536,7 @@ export function QuestionEditor({
                     rows={4}
                     value={answerText}
                     onChange={(e) => setAnswerText(e.target.value)}
+                    maxLength={4000}
                     required
                   />
 

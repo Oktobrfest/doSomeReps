@@ -27,6 +27,10 @@ function EditQuestionReact() {
     }
   };
 
+  const handleSaved = () => {
+    handleBack();
+  };
+
   return (
     <div>
       <div className="mb-3">
@@ -41,6 +45,7 @@ function EditQuestionReact() {
       <QuestionEditor
         questionId={questionId}
         onDeleted={handleDeleted}
+        onSaved={handleSaved}
       />
     </div>
   );

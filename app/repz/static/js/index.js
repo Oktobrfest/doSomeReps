@@ -762,6 +762,18 @@ function saveQuestion(ev) {
         alert("Question text must be at least 8 characters long.");
         return false;
     }
+    if (q.question_text.length > 1500) {
+        alert("Question text cannot exceed 1500 characters.");
+        return false;
+    }
+    if (q.hint && q.hint.length > 2000) {
+        alert("Hint cannot exceed 2000 characters.");
+        return false;
+    }
+    if (q.answer.length > 4000) {
+        alert("Answer cannot exceed 4000 characters.");
+        return false;
+    }
 
     // categories
     let categories = [];

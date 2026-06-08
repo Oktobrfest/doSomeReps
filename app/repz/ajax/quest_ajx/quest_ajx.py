@@ -73,6 +73,17 @@ def saveq():
     # convert the JSON string to a Python object
     updated_question = json.loads(updated_question_json)
 
+    question_text = updated_question.get('question_text', '')
+    hint = updated_question.get('hint', '')
+    answer = updated_question.get('answer', '')
+
+    if question_text and len(question_text) > 1500:
+        return "Question text cannot exceed 1500 characters.", 400
+    if hint and len(hint) > 2000:
+        return "Hint cannot exceed 2000 characters.", 400
+    if answer and len(answer) > 4000:
+        return "Answer cannot exceed 4000 characters.", 400
+
     # loop through the database pics and see if they match the ones in the request
     q = session.query(question).filter_by(question_id=updated_question['id']).first()
 
