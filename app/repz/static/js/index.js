@@ -115,7 +115,10 @@ window.onload = (event) => {
         if (window.location.pathname === '/addcontent') {
             // make sure checkboxes are selected before submitting
             let form = document.getElementById('add_question');
-            document.getElementById("select-all-btn").classList.add("hidden");
+            var selectAllBtn = document.getElementById("select-all-btn");
+            if (selectAllBtn) {
+                selectAllBtn.classList.add("hidden");
+            }
 
             // Add a 'submit' event listener to the form
             form.addEventListener('submit', function (event) {

@@ -19,11 +19,30 @@ function EditQuestionReact() {
     window.location.href = "/editquestions";
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = "/quiz";
+    }
+  };
+
   return (
-    <QuestionEditor
-      questionId={questionId}
-      onDeleted={handleDeleted}
-    />
+    <div>
+      <div className="mb-3">
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          onClick={handleBack}
+        >
+          <i className="fa fa-arrow-left mr-2"></i> Go Back
+        </button>
+      </div>
+      <QuestionEditor
+        questionId={questionId}
+        onDeleted={handleDeleted}
+      />
+    </div>
   );
 }
 
