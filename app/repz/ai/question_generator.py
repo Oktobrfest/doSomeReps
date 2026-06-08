@@ -482,16 +482,32 @@ def ai_qgen_state():
 @login_required
 def ai_qgen_generate():
     """Trigger AI question generation."""
-    data = request.get_json() or {}
-    text = (data.get("quiz_content") or "").strip()
-    selected_categories = data.get("categories") or []
-    qty_from = data.get("qty_from", 5)
-    qty_to = data.get("qty_to", 10)
-    try_provide_hints = bool(data.get("try_provide_hints", False))
-    UID = current_user.id
+    import tempfile
+    import os
 
-    if not text:
-        return jsonify({"success": False, "error": "Quiz content is required."}), 400
+    if request.is_json:
+        data = request.get_json() or {}
+        text = (data.get("quiz_content") or "").strip()
+        selected_categories = data.get("categories") or []
+        qty_from = data.get("qty_from", 5)
+        qty_to = data.get("qty_to", 10)
+        try_provide_hints = bool(data.get("try_provide_hints", False))
+        file_obj = None
+    else:
+        text = (request.form.get("quiz_content") or "").strip()
+        cats_raw = request.form.get("categories")
+        if cats_raw:
+            try:
+                selected_categories = json.loads(cats_raw)
+            except Exception:
+                selected_categories = request.form.getlist("categories")
+        else:
+            selected_categories = []
+        qty_from = request.form.get("qty_from", 5)
+        qty_to = request.form.get("qty_to", 10)
+        try_provide_hints = request.form.get("try_provide_hints") == "true"
+        file_obj = request.files.get("file")
+
     if not selected_categories:
         return jsonify({"success": False, "error": "At least one category is required."}), 400
 
@@ -507,16 +523,55 @@ def ai_qgen_generate():
     set_session("ai_qgen_category_names", selected_categories)
 
     try:
-        from repz.hatchet_client import trigger_question_generation
+        UID = current_user.id
+        if file_obj and file_obj.filename:
+            filename = file_obj.filename.lower()
+            if filename.endswith(".pdf"):
+                doc_type = "pdf"
+            elif filename.endswith((".png", ".jpg", ".jpeg")):
+                doc_type = "image"
+            else:
+                return jsonify({
+                    "success": False,
+                    "error": "Unsupported file format. Please upload a PDF or an image (PNG, JPG, JPEG)."
+                }), 400
 
-        generated = trigger_question_generation(
-            text_content=text,
-            categories=selected_categories,
-            qty_from=qty_from,
-            qty_to=qty_to,
-            user_id=UID,
-            try_hints=try_provide_hints,
-        )
+            suffix = os.path.splitext(filename)[1]
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                file_obj.save(tmp.name)
+                tmp_path = tmp.name
+
+            try:
+                from repz.hatchet_client import trigger_document_question_generation
+
+                generated = trigger_document_question_generation(
+                    document_path=tmp_path,
+                    document_type=doc_type,
+                    categories=selected_categories,
+                    qty_from=qty_from,
+                    qty_to=qty_to,
+                    user_id=UID,
+                    try_hints=try_provide_hints,
+                )
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+        else:
+            if not text:
+                return jsonify({"success": False, "error": "Quiz content is required."}), 400
+
+            from repz.hatchet_client import trigger_question_generation
+
+            generated = trigger_question_generation(
+                text_content=text,
+                categories=selected_categories,
+                qty_from=qty_from,
+                qty_to=qty_to,
+                user_id=UID,
+                try_hints=try_provide_hints,
+            )
 
         local_session[SESSION_KEY_GENERATED] = generated
         return jsonify({
