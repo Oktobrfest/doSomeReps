@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Edit Question (React){% endblock %}
+{% block title %}Edit Question{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -19,12 +19,6 @@
             </div>
         </div>
     </div>
-</div>
-
-<!-- Render React & Vite asset -->
-<div class="mt-4 pt-4 border-top">
-    {% set hide_header = true %}
-    {% include "categories.html" %}
 </div>
 {{ vite_asset("src/edit_question.tsx") }}
 {% endblock %}

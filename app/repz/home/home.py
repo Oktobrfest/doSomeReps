@@ -336,11 +336,8 @@ def quemore():
 @login_required
 def editquestions():
     UID = g._login_user.id
-    form = QuestionForm()
     category_list = get_all_categories()
-    question_categories = []
     filter_categories = []
-    q = None
     if request.method == "GET":
         filter_categories = get_session("filter_categories")
         if filter_categories == "Not set":
@@ -351,16 +348,13 @@ def editquestions():
         title="Edit or Delete Questions",
         user=current_user,
         category_list=category_list,
-        selected_categories=question_categories,
         filter_categories=filter_categories,
-        form=form,
-        q=q,
     )
 
 
-@home.route("/edit_question_react", methods=["GET"], endpoint="edit_question_react")
+@home.route("/edit_question", methods=["GET"], endpoint="edit_question")
 @login_required
-def edit_question_react():
+def edit_question():
     q_id = request.args.get("q_id")
     category_list = get_all_categories()
     selected_categories = []
@@ -374,7 +368,7 @@ def edit_question_react():
             logging.error(f"Error fetching question {q_id}: {e}")
 
     return render_template(
-        "edit_question_react.html",
+            "edit_question.html",
         user=current_user,
         category_list=category_list,
         selected_categories=selected_categories,

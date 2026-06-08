@@ -6,7 +6,7 @@
       'question': q,
       'audioAssets': audio_assets,
       'currentUsername': user.username,
-      'editQuestionUrl': url_for('home.edit_question_react'),
+      'editQuestionUrl': url_for('home.edit_question'),
       'csrfToken': csrf_token()
     } | tojson | safe }}
   </script>

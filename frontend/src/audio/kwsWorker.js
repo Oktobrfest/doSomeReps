@@ -154,12 +154,28 @@ function processAudioChunk(samples, inputSampleRate) {
   var resampled = resampleLinear(samples, inputSampleRate, TARGET_SAMPLE_RATE);
   stream.acceptWaveform(TARGET_SAMPLE_RATE, resampled);
 
+  // Track if we've actually done any decoding this chunk
+  var didDecode = false;
   while (recognizer.isReady(stream)) {
     recognizer.decode(stream);
+    didDecode = true;
   }
 
-  var result = recognizer.getResult(stream);
-  var keyword = result && result.keyword ? normalizeKeyword(result.keyword) : "";
+  // Only call getResult if we've processed audio.
+  // Calling getResult when there's not enough audio can cause JSON parse errors.
+  if (!didDecode) return;
+
+  // Protect against getResult throwing on incomplete streams
+  var result;
+  var keyword = "";
+  try {
+    result = recognizer.getResult(stream);
+    keyword = result && result.keyword ? normalizeKeyword(result.keyword) : "";
+  } catch (err) {
+    // getResult can fail when there's not enough audio data for a valid result
+    // This is normal during initial buffering - ignore and continue
+    return;
+  }
   if (!keyword) return;
 
   console.log('[KWS Worker] Match detected: "' + keyword + '"');

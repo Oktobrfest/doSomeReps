@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 
 from flask import (
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -41,6 +42,7 @@ from ..database import session as db_session
 from ..models import category, question
 from .litellm_client import AIConfigError, completion_for_user
 from .question_generator_forms import AIQuestionGenForm
+from .question_pipeline import generate_questions, generate_hints
 
 
 # Session key holding the current batch of AI-generated questions
@@ -453,266 +455,280 @@ def _read_edited_item(form, idx: int) -> Dict[str, Any]:
 )
 @login_required
 def question_generator():
-    """Render the page; on POST dispatch on the clicked button's `action`."""
-    form = AIQuestionGenForm()
-    category_list = get_all_categories()
-    UID = current_user.id
-
-    action = request.form.get("action", "") if request.method == "POST" else ""
-
-    # Categories selected via the shared categories.html partial come
-    # in as repeated `category_name` form fields. Only the "generate"
-    # action carries them; for the other actions we fall back to the
-    # session-stored selection.
-    if action == "generate":
-        selected_categories = request.form.getlist("category_name")
-        set_session("ai_qgen_category_names", selected_categories)
-    else:
-        selected_categories = get_session("ai_qgen_category_names")
-        if selected_categories == "Not set":
-            selected_categories = []
-
-    # ---------- Action: generate ------------------------------------
-    if action == "generate":
-        if not form.validate_on_submit():
-            flash("Please fix the form errors and try again.", category="error")
-            return _render_page(form, category_list, selected_categories)
-
-        if not selected_categories:
-            flash(
-                "Please select at least one category - the AI uses these "
-                "to tag every generated question.",
-                category="error",
-            )
-            return _render_page(form, category_list, selected_categories)
-
-        # Build the prompt: template (with categories + range) followed
-        # by the user's pasted material. We use spaced category names in
-        # the prompt for better AI readability.
-        spaced_cats = [remove_underscore(c) for c in selected_categories]
-        prompt_header = QUESTION_GENERATION_PROMPT_TEMPLATE.format(
-            qty_from=form.qty_from.data,
-            qty_to=form.qty_to.data,
-            categories=", ".join(spaced_cats),
-        )
-        full_prompt = prompt_header + (form.quiz_content.data or "")
-
-        try:
-            resp = completion_for_user(
-                current_user,
-                messages=[{"role": "user", "content": full_prompt}],
-                response_format=GeneratedQuestionSet,
-            )
-            qset = _parse_question_set(resp)
-            generated: List[Dict[str, Any]] = [q.model_dump() for q in qset.questions]
-
-            # Optional second call: hints for the difficult questions.
-            if form.try_provide_hints.data and generated:
-                hint_payload = json.dumps(
-                    [
-                        {"question": g["question"], "answer": g["answer"]}
-                        for g in generated
-                    ],
-                    indent=2,
-                )
-                hint_resp = completion_for_user(
-                    current_user,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": HINT_GENERATION_PROMPT_TEMPLATE + hint_payload,
-                        }
-                    ],
-                    response_format=GeneratedHintSet,
-                )
-                try:
-                    hset = _parse_hint_set(hint_resp)
-                    # Merge by index; ignore extras / shortfalls gracefully.
-                    for i, h in enumerate(hset.hints[: len(generated)]):
-                        if h.hint:
-                            generated[i]["hint"] = h.hint
-                except Exception as e:  # noqa: BLE001
-                    logging.warning("Hint parse failed: %s", e)
-                    flash(
-                        "Hint generation returned an unexpected shape; "
-                        "questions saved without hints.",
-                        category="error",
-                    )
-
-            local_session[SESSION_KEY_GENERATED] = generated
-            flash(
-                f"Generated {len(generated)} question(s).",
-                category="success",
-            )
-        except AIConfigError as e:
-            flash(str(e), category="error")
-        except Exception as e:  # noqa: BLE001 - surface any provider error
-            logging.exception("AI question generation failed")
-            flash(f"AI request failed: {e}", category="error")
-
-        return redirect(url_for("ai.question_generator"))
-
-    # ---------- Action: save:N or save_all --------------------------
-    if action.startswith("save:") or action == "save_all":
-        existing = list(local_session.get(SESSION_KEY_GENERATED, []))
-        if not existing:
-            flash("Nothing to save.", category="error")
-            return redirect(url_for("ai.question_generator"))
-
-        if action == "save_all":
-            saved = 0
-            kept: List[Dict[str, Any]] = []
-            for i in range(len(existing)):
-                edited = _read_edited_item(request.form, i)
-                if _save_one_to_db(
-                    edited["question"],
-                    edited["hint"],
-                    edited["answer"],
-                    edited["categories"],
-                    UID,
-                    privacy=edited["privacy"],
-                    auto_que=edited["auto_que"],
-                ):
-                    saved += 1
-                else:
-                    # Keep the un-saved one in the list so the user can
-                    # fix it (e.g. duplicate / too short) and try again.
-                    kept.append(
-                        {
-                            "question": edited["question"],
-                            "hint": edited["hint"],
-                            "answer": edited["answer"],
-                            "categories": edited["categories"],
-                        }
-                    )
-            local_session[SESSION_KEY_GENERATED] = kept
-            if saved:
-                flash(f"Saved {saved} question(s) to the database.", category="success")
-        else:
-            try:
-                idx = int(action.split(":", 1)[1])
-            except (ValueError, IndexError):
-                flash("Bad save target.", category="error")
-                return redirect(url_for("ai.question_generator"))
-
-            if 0 <= idx < len(existing):
-                edited = _read_edited_item(request.form, idx)
-                if _save_one_to_db(
-                    edited["question"],
-                    edited["hint"],
-                    edited["answer"],
-                    edited["categories"],
-                    UID,
-                    privacy=edited["privacy"],
-                    auto_que=edited["auto_que"],
-                ):
-                    existing.pop(idx)
-                    local_session[SESSION_KEY_GENERATED] = existing
-                    flash("Question saved.", category="success")
-            else:
-                flash("That question is no longer in the list.", category="error")
-
-        return redirect(url_for("ai.question_generator"))
-
-    # ---------- Action: delete:N or delete_all ----------------------
-    if action.startswith("delete:") or action == "delete_all":
-        if action == "delete_all":
-            local_session[SESSION_KEY_GENERATED] = []
-            flash("Cleared all generated questions.", category="success")
-        else:
-            try:
-                idx = int(action.split(":", 1)[1])
-            except (ValueError, IndexError):
-                flash("Bad delete target.", category="error")
-                return redirect(url_for("ai.question_generator"))
-
-            existing = list(local_session.get(SESSION_KEY_GENERATED, []))
-            if 0 <= idx < len(existing):
-                existing.pop(idx)
-                local_session[SESSION_KEY_GENERATED] = existing
-                flash("Removed.", category="success")
-
-        return redirect(url_for("ai.question_generator"))
-
-    # ---------- Action: extend:N or extend_all ----------------------
-    if action.startswith("extend:") or action == "extend_all":
-        existing = list(local_session.get(SESSION_KEY_GENERATED, []))
-        if not existing:
-            flash("Nothing to extend.", category="error")
-            return redirect(url_for("ai.question_generator"))
-
-        if action == "extend_all":
-            extended = 0
-            for i in range(len(existing)):
-                # Pick up any per-question "extend instructions" the
-                # user typed into the text field next to the Extend
-                # button before clicking Extend All.
-                instr = (
-                    request.form.get(f"gen_extend_text_{i}", "") or ""
-                ).strip()
-                try:
-                    _extend_one(existing[i], instr)
-                    extended += 1
-                except AIConfigError as e:
-                    # Config errors will affect every subsequent call,
-                    # so bail out of the loop early.
-                    flash(str(e), category="error")
-                    break
-                except Exception as e:  # noqa: BLE001
-                    logging.exception("Extend-all failed on item %d", i)
-                    flash(
-                        f"Extend failed for question #{i + 1}: {e}",
-                        category="error",
-                    )
-                    # Keep going with the remaining items.
-            local_session[SESSION_KEY_GENERATED] = existing
-            if extended:
-                flash(
-                    f"Extended {extended} answer(s).",
-                    category="success",
-                )
-        else:
-            try:
-                idx = int(action.split(":", 1)[1])
-            except (ValueError, IndexError):
-                flash("Bad extend target.", category="error")
-                return redirect(url_for("ai.question_generator"))
-
-            if 0 <= idx < len(existing):
-                instr = (
-                    request.form.get(f"gen_extend_text_{idx}", "") or ""
-                ).strip()
-                try:
-                    _extend_one(existing[idx], instr)
-                    local_session[SESSION_KEY_GENERATED] = existing
-                    flash("Answer extended.", category="success")
-                except AIConfigError as e:
-                    flash(str(e), category="error")
-                except Exception as e:  # noqa: BLE001
-                    logging.exception("Extend failed")
-                    flash(f"Extend failed: {e}", category="error")
-            else:
-                flash(
-                    "That question is no longer in the list.",
-                    category="error",
-                )
-
-        return redirect(url_for("ai.question_generator"))
-
-    # ---------- GET (or unknown POST) -------------------------------
-    return _render_page(form, category_list, selected_categories)
-
-
-def _render_page(form, category_list, selected_categories):
-    """Common render path - pulls generated questions from the session."""
-    generated_questions = list(local_session.get(SESSION_KEY_GENERATED, []))
+    """Render the React page template."""
     return render_template(
         "ai_question_generator.html",
         title="AI Question Generator",
         description="Have AI generate quiz questions from your material.",
         user=current_user,
-        form=form,
-        category_list=category_list,
-        selected_categories=selected_categories,
-        generated_questions=generated_questions,
     )
+
+
+@ai.route("/ai_question_generator/api/state", methods=["GET"])
+@login_required
+def ai_qgen_state():
+    """Get the current state (generated questions and selected categories)."""
+    generated_questions = list(local_session.get(SESSION_KEY_GENERATED, []))
+    selected_categories = get_session("ai_qgen_category_names")
+    if selected_categories == "Not set":
+        selected_categories = []
+    return jsonify({
+        "generated_questions": generated_questions,
+        "selected_categories": selected_categories
+    })
+
+
+@ai.route("/ai_question_generator/api/generate", methods=["POST"])
+@login_required
+def ai_qgen_generate():
+    """Trigger AI question generation."""
+    data = request.get_json() or {}
+    text = (data.get("quiz_content") or "").strip()
+    selected_categories = data.get("categories") or []
+    qty_from = data.get("qty_from", 5)
+    qty_to = data.get("qty_to", 10)
+    try_provide_hints = bool(data.get("try_provide_hints", False))
+    UID = current_user.id
+
+    if not text:
+        return jsonify({"success": False, "error": "Quiz content is required."}), 400
+    if not selected_categories:
+        return jsonify({"success": False, "error": "At least one category is required."}), 400
+
+    # Validate quantities
+    try:
+        qty_from = int(qty_from)
+        qty_to = int(qty_to)
+        if not (0 <= qty_from <= 50) or not (0 <= qty_to <= 50):
+            raise ValueError()
+    except ValueError:
+        return jsonify({"success": False, "error": "Quantities must be between 0 and 50."}), 400
+
+    set_session("ai_qgen_category_names", selected_categories)
+
+    try:
+        generated = generate_questions(
+            text=text,
+            categories=selected_categories,
+            qty_from=qty_from,
+            qty_to=qty_to,
+            user_id=UID,
+        )
+
+        if try_provide_hints and generated:
+            try:
+                generate_hints(generated, UID)
+            except Exception as e:
+                logging.warning("Hint parse failed: %s", e)
+
+        local_session[SESSION_KEY_GENERATED] = generated
+        return jsonify({
+            "success": True,
+            "generated_questions": generated,
+            "selected_categories": selected_categories
+        })
+    except AIConfigError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logging.exception("AI question generation failed")
+        return jsonify({"success": False, "error": f"AI request failed: {e}"}), 500
+
+
+@ai.route("/ai_question_generator/api/save", methods=["POST"])
+@login_required
+def ai_qgen_save_one():
+    """Save a single generated question."""
+    data = request.get_json() or {}
+    try:
+        idx = int(data.get("index"))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Invalid index."}), 400
+
+    existing = list(local_session.get(SESSION_KEY_GENERATED, []))
+    if not (0 <= idx < len(existing)):
+        return jsonify({"success": False, "error": "Question not found."}), 404
+
+    item = data.get("question") or {}
+    q_text = (item.get("question") or "").strip()
+    hint = (item.get("hint") or "").strip() or None
+    answer = (item.get("answer") or "").strip()
+    categories = item.get("categories") or []
+    privacy = bool(item.get("privacy", False))
+    auto_que = bool(item.get("auto_que", False))
+
+    if not q_text or not answer:
+        return jsonify({"success": False, "error": "Question and answer text are required."}), 400
+
+    UID = current_user.id
+    if _save_one_to_db(
+        q_text,
+        hint,
+        answer,
+        categories,
+        UID,
+        privacy=privacy,
+        auto_que=auto_que,
+    ):
+        existing.pop(idx)
+        local_session[SESSION_KEY_GENERATED] = existing
+        return jsonify({
+            "success": True,
+            "generated_questions": existing
+        })
+    else:
+        return jsonify({"success": False, "error": "Failed to save question to database."}), 500
+
+
+@ai.route("/ai_question_generator/api/save_all", methods=["POST"])
+@login_required
+def ai_qgen_save_all():
+    """Save all generated questions."""
+    data = request.get_json() or {}
+    items = data.get("questions") or []
+
+    existing = list(local_session.get(SESSION_KEY_GENERATED, []))
+    if not existing:
+        return jsonify({"success": False, "error": "No questions to save."}), 400
+
+    UID = current_user.id
+    saved = 0
+    kept = []
+
+    for i, item in enumerate(items):
+        if i >= len(existing):
+            break
+        q_text = (item.get("question") or "").strip()
+        hint = (item.get("hint") or "").strip() or None
+        answer = (item.get("answer") or "").strip()
+        categories = item.get("categories") or []
+        privacy = bool(item.get("privacy", False))
+        auto_que = bool(item.get("auto_que", False))
+
+        if q_text and answer and _save_one_to_db(
+            q_text,
+            hint,
+            answer,
+            categories,
+            UID,
+            privacy=privacy,
+            auto_que=auto_que,
+        ):
+            saved += 1
+        else:
+            kept.append({
+                "question": q_text,
+                "hint": hint,
+                "answer": answer,
+                "categories": categories,
+            })
+
+    local_session[SESSION_KEY_GENERATED] = kept
+    return jsonify({
+        "success": True,
+        "saved_count": saved,
+        "generated_questions": kept
+    })
+
+
+@ai.route("/ai_question_generator/api/delete", methods=["POST"])
+@login_required
+def ai_qgen_delete_one():
+    """Delete a single generated question from the working list."""
+    data = request.get_json() or {}
+    try:
+        idx = int(data.get("index"))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Invalid index."}), 400
+
+    existing = list(local_session.get(SESSION_KEY_GENERATED, []))
+    if 0 <= idx < len(existing):
+        existing.pop(idx)
+        local_session[SESSION_KEY_GENERATED] = existing
+        return jsonify({"success": True, "generated_questions": existing})
+    return jsonify({"success": False, "error": "Question not found."}), 404
+
+
+@ai.route("/ai_question_generator/api/delete_all", methods=["POST"])
+@login_required
+def ai_qgen_delete_all():
+    """Clear all generated questions."""
+    local_session[SESSION_KEY_GENERATED] = []
+    return jsonify({"success": True, "generated_questions": []})
+
+
+@ai.route("/ai_question_generator/api/extend", methods=["POST"])
+@login_required
+def ai_qgen_extend_one():
+    """Extend a single generated question's answer using AI."""
+    data = request.get_json() or {}
+    try:
+        idx = int(data.get("index"))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Invalid index."}), 400
+
+    existing = list(local_session.get(SESSION_KEY_GENERATED, []))
+    if not (0 <= idx < len(existing)):
+        return jsonify({"success": False, "error": "Question not found."}), 404
+
+    # Fetch updated question details from user's edit
+    item = data.get("question") or {}
+    existing[idx]["question"] = (item.get("question") or "").strip()
+    existing[idx]["hint"] = (item.get("hint") or "").strip() or None
+    existing[idx]["answer"] = (item.get("answer") or "").strip()
+    existing[idx]["categories"] = item.get("categories") or []
+
+    instr = (data.get("extend_text") or "").strip()
+
+    try:
+        _extend_one(existing[idx], instr)
+        local_session[SESSION_KEY_GENERATED] = existing
+        return jsonify({"success": True, "generated_questions": existing})
+    except AIConfigError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logging.exception("Extend failed")
+        return jsonify({"success": False, "error": f"Extend failed: {e}"}), 500
+
+
+@ai.route("/ai_question_generator/api/extend_all", methods=["POST"])
+@login_required
+def ai_qgen_extend_all():
+    """Extend all generated questions' answers using AI."""
+    data = request.get_json() or {}
+    items = data.get("questions") or []
+
+    existing = list(local_session.get(SESSION_KEY_GENERATED, []))
+    if not existing:
+        return jsonify({"success": False, "error": "No questions to extend."}), 400
+
+    extended = 0
+    errors = []
+
+    for i, item in enumerate(items):
+        if i >= len(existing):
+            break
+
+        # Pull latest edited values from frontend
+        existing[i]["question"] = (item.get("question") or "").strip()
+        existing[i]["hint"] = (item.get("hint") or "").strip() or None
+        existing[i]["answer"] = (item.get("answer") or "").strip()
+        existing[i]["categories"] = item.get("categories") or []
+
+        instr = (item.get("extend_text") or "").strip()
+        try:
+            _extend_one(existing[i], instr)
+            extended += 1
+        except AIConfigError as e:
+            errors.append(f"Config error: {e}")
+            break  # config error affects all, bail out
+        except Exception as e:
+            logging.exception("Extend-all failed on item %d", i)
+            errors.append(f"Extend failed for question #{i + 1}: {e}")
+
+    local_session[SESSION_KEY_GENERATED] = existing
+    return jsonify({
+        "success": len(errors) == 0,
+        "extended_count": extended,
+        "generated_questions": existing,
+        "errors": errors
+    })

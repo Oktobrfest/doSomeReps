@@ -8,6 +8,13 @@ from repz.bluehelpers import remove_underscore
 # JSON-based endpoints for Category Lists CRUD
 catz_api = Blueprint('catz_api', __name__)
 
+@catz_api.route('/api/categories', methods=['GET'])
+@login_required
+def get_categories():
+    db_categories = session.execute(select(category)).scalars().all()
+    categories_list = sorted([c.category_name for c in db_categories])
+    return jsonify(categories_list)
+
 @catz_api.route('/api/category-lists', methods=['GET'])
 @login_required
 def get_category_lists():
