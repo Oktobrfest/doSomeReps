@@ -162,11 +162,11 @@ class TestPagesUsingFullCategories(unittest.TestCase):
         )
         self.assertIn('vite_asset("src/edit_question_inline.tsx")', content)
 
-    def test_ai_generator_uses_full_categories(self):
+    def test_ai_generator_renders_react_component(self):
         content = self._read_template(
             ['repz', 'templates', 'ai_question_generator.html']
         )
-        self.assertIn('include "categories.html"', content)
+        self.assertIn('vite_asset("src/ai_question_generator.tsx")', content)
 
     def test_audio_uses_full_categories(self):
         content = self._read_template(

@@ -30,6 +30,7 @@ export default defineConfig({
       audio_command_system: "src/audio/audio_command_system.tsx",
       audio_quiz_entry: "src/audio/audio_quiz_entry.tsx",
       quiz_markdown: "src/QuizMarkdown.tsx",
+      ai_question_generator: "src/ai_question_generator.tsx",
     },
     },
   },
