@@ -64,7 +64,20 @@ quiz app.
 Generate between {qty_from} and {qty_to} question/answer pairs total.
 
 Each question should:
-- Be short, clear, and self-contained.
+- Be short, clear, and self-contained. The person answering these
+  questions will NOT have access to the source material, so every
+  question must stand entirely on its own.
+- NEVER reference the source material itself. Do not use phrases like
+  "According to the text", "Based on the provided material", "In the
+  article", "As shown in the document", or any similar wording.
+- NEVER reference specific locations or identifiers from the source
+  material. Do not use cross-references like "See equation (2.5)",
+  "as described in Chapter 3", "refer to Figure 4", "in the example
+  above", "per the preceding paragraph", or anything similar. If
+  something from the source is needed in the question (e.g. a
+  formula, a definition, a specific data point), copy that content
+  directly into the question text instead of pointing the reader
+  elsewhere.
 - Have a brief, factual answer (one or two sentences). The user will
   later be able to ask you to "extend" any answer into a longer,
   more in-depth explanation, so keep these initial answers compact.
@@ -79,7 +92,8 @@ User-selected categories (choose one or more for each question, from
 this list only): {categories}
 
 Source material follows below. Generate questions strictly about this
-material:
+material (but write them as self-contained questions that never mention
+or reference the source material itself):
 
 ---
 """
@@ -536,28 +550,42 @@ def ai_qgen_generate():
                     "error": "Unsupported file format. Please upload a PDF or an image (PNG, JPG, JPEG)."
                 }), 400
 
+            import uuid
+            from repz.s3_ext import get_s3
+
             suffix = os.path.splitext(filename)[1]
+            s3_object_key = f"temp_uploads/{uuid.uuid4()}{suffix}"
+
+            # Save upload to a local temp file so we can upload it to S3
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
                 file_obj.save(tmp.name)
                 tmp_path = tmp.name
 
             try:
-                from repz.hatchet_client import trigger_document_question_generation
-
-                generated = trigger_document_question_generation(
-                    document_path=tmp_path,
-                    document_type=doc_type,
-                    categories=selected_categories,
-                    qty_from=qty_from,
-                    qty_to=qty_to,
-                    user_id=UID,
-                    try_hints=try_provide_hints,
+                s3_client = get_s3()
+                content_type = file_obj.content_type or "application/octet-stream"
+                s3_client.upload_file_to_s3(
+                    tmp_path,
+                    ExtraArgs={"ContentType": content_type},
+                    object_name=s3_object_key,
                 )
             finally:
                 try:
                     os.unlink(tmp_path)
                 except Exception:
                     pass
+
+            from repz.hatchet_client import trigger_document_question_generation
+
+            generated = trigger_document_question_generation(
+                document_path=s3_object_key,
+                document_type=doc_type,
+                categories=selected_categories,
+                qty_from=qty_from,
+                qty_to=qty_to,
+                user_id=UID,
+                try_hints=try_provide_hints,
+            )
         else:
             if not text:
                 return jsonify({"success": False, "error": "Quiz content is required."}), 400

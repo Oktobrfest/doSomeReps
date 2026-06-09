@@ -201,20 +201,60 @@ def _create_workflow():
         input_validator=DocumentGenInput,
     )
     def generate_questions_from_doc_workflow(input: DocumentGenInput, ctx: Context) -> dict:
-        """Generate quiz questions from PDF or image document files."""
-        ctx.log(_log(f"Starting document question generation via Hatchet for user_id={input.user_id}, path={input.document_path}"))
+        """Generate quiz questions from PDF or image document files (downloaded from S3)."""
+        ctx.log(_log(f"Starting document question generation via Hatchet for user_id={input.user_id}, s3_key={input.document_path}"))
         from repz import init_app
         app = init_app()
         with app.app_context():
+            import tempfile
+            import os
             from repz.ai.doc_processor import extract_text_from_pdf, extract_text_from_image
             from repz.ai.question_pipeline import generate_questions, generate_hints
+            from repz.s3_ext import get_s3
 
-            if input.document_type == "pdf":
-                text = extract_text_from_pdf(input.document_path)
-            elif input.document_type in ("image", "png", "jpg", "jpeg"):
-                text = extract_text_from_image(input.document_path)
-            else:
-                raise ValueError(f"Unsupported document type: {input.document_type}")
+            s3_key = input.document_path
+            s3_client = get_s3()
+
+            # Download file bytes from S3
+            ctx.log(_log(f"Downloading document from S3: {s3_key}"))
+            result = s3_client.get_object(s3_key)
+            if result is None:
+                msg = f"S3 object not found: {s3_key}"
+                ctx.log(_log(msg))
+                raise FileNotFoundError(msg)
+
+            content_bytes, content_type = result
+            ctx.log(_log(f"Downloaded {len(content_bytes)} bytes from S3"))
+
+            # Determine extension from s3 key
+            _, ext = os.path.splitext(s3_key)
+            if not ext:
+                ext = ".pdf" if input.document_type == "pdf" else ".png"
+
+            tmp_path = None
+            try:
+                with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+                    tmp.write(content_bytes)
+                    tmp_path = tmp.name
+
+                if input.document_type == "pdf":
+                    text = extract_text_from_pdf(tmp_path)
+                elif input.document_type in ("image", "png", "jpg", "jpeg"):
+                    text = extract_text_from_image(tmp_path)
+                else:
+                    raise ValueError(f"Unsupported document type: {input.document_type}")
+            finally:
+                if tmp_path:
+                    try:
+                        os.unlink(tmp_path)
+                    except Exception:
+                        pass
+                # Delete the temporary S3 object after processing
+                try:
+                    s3_client.delete_s3_object(s3_key)
+                    ctx.log(_log(f"Deleted S3 object: {s3_key}"))
+                except Exception as e:
+                    ctx.log(_log(f"Warning: could not delete S3 object {s3_key}: {e}"))
 
             generated = generate_questions(
                 text=text,

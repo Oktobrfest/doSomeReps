@@ -556,11 +556,10 @@ export function AiQuestionGenerator() {
 
                 <div className={styles.formGroup}>
                   <span className={styles.label}>Categories</span>
-                  <div className={styles.badgeContainer}>
-                    {gq.categories.map((cat, catIdx) => (
-                      <span key={catIdx} className={styles.badge}>{cat}</span>
-                    ))}
-                  </div>
+                  <CatPicker
+                    selectedCategories={gq.categories}
+                    onChange={(cats) => handleQuestionChange(i, "categories", cats)}
+                  />
                 </div>
 
                 <div className={styles.questionOptions}>

@@ -170,13 +170,16 @@ class TestAIQuestionGeneratorAPIs(unittest.TestCase):
     @patch("repz.ai.question_generator.current_user")
     @patch("repz.hatchet_client.trigger_document_question_generation")
     @patch("repz.ai.question_generator.set_session")
-    def test_generate_endpoint_with_pdf_upload(self, mock_set_session, mock_trigger_doc, mock_current_user):
+    @patch("repz.s3_ext.get_s3")
+    def test_generate_endpoint_with_pdf_upload(self, mock_get_s3, mock_set_session, mock_trigger_doc, mock_current_user):
         import io
         mock_current_user.id = 1
         mock_current_user.is_authenticated = True
         mock_trigger_doc.return_value = [
             {"question": "Doc Q", "hint": None, "answer": "Doc A", "categories": ["Math"]}
         ]
+        mock_s3_client = MagicMock()
+        mock_get_s3.return_value = mock_s3_client
 
         with self.client.session_transaction() as sess:
             sess["_user_id"] = "1"
@@ -201,18 +204,27 @@ class TestAIQuestionGeneratorAPIs(unittest.TestCase):
         self.assertEqual(len(res_data["generated_questions"]), 1)
         self.assertEqual(res_data["generated_questions"][0]["question"], "Doc Q")
         mock_trigger_doc.assert_called_once()
+        # Verify S3 upload was called
+        self.assertTrue(mock_s3_client.upload_file_to_s3.called)
+        # Verify trigger was called with correct document_type
         self.assertEqual(mock_trigger_doc.call_args[1]["document_type"], "pdf")
+        # Verify document_path is an S3 object key (starts with temp_uploads/)
+        doc_path = mock_trigger_doc.call_args[1]["document_path"]
+        self.assertTrue(doc_path.startswith("temp_uploads/"))
 
     @patch("repz.ai.question_generator.current_user")
     @patch("repz.hatchet_client.trigger_document_question_generation")
     @patch("repz.ai.question_generator.set_session")
-    def test_generate_endpoint_with_image_upload(self, mock_set_session, mock_trigger_doc, mock_current_user):
+    @patch("repz.s3_ext.get_s3")
+    def test_generate_endpoint_with_image_upload(self, mock_get_s3, mock_set_session, mock_trigger_doc, mock_current_user):
         import io
         mock_current_user.id = 1
         mock_current_user.is_authenticated = True
         mock_trigger_doc.return_value = [
             {"question": "Image Q", "hint": None, "answer": "Image A", "categories": ["Science"]}
         ]
+        mock_s3_client = MagicMock()
+        mock_get_s3.return_value = mock_s3_client
 
         with self.client.session_transaction() as sess:
             sess["_user_id"] = "1"
@@ -237,8 +249,14 @@ class TestAIQuestionGeneratorAPIs(unittest.TestCase):
         self.assertEqual(len(res_data["generated_questions"]), 1)
         self.assertEqual(res_data["generated_questions"][0]["question"], "Image Q")
         mock_trigger_doc.assert_called_once()
+        # Verify S3 upload was called
+        self.assertTrue(mock_s3_client.upload_file_to_s3.called)
+        # Verify trigger was called with correct document_type
         self.assertEqual(mock_trigger_doc.call_args[1]["document_type"], "image")
         self.assertTrue(mock_trigger_doc.call_args[1]["try_hints"])
+        # Verify document_path is an S3 object key
+        doc_path = mock_trigger_doc.call_args[1]["document_path"]
+        self.assertTrue(doc_path.startswith("temp_uploads/"))
 
     @patch("repz.ai.question_generator.current_user")
     def test_generate_endpoint_unsupported_file_type(self, mock_current_user):

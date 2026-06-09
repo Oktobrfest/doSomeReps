@@ -58,4 +58,6 @@ pydantic
 piper-tts
 pytest
 sherpa-onnx
+pypdf
+pytesseract
 # hatchet-sdk: installed in Dockerfile runtime stage (see Dockerfile comment)

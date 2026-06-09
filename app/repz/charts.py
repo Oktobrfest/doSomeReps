@@ -1,8 +1,10 @@
 from io import BytesIO
 import base64
 
+import logging
 import matplotlib
 matplotlib.use('Agg')  # non-interactive backend for server-side rendering
+logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
 import matplotlib.pyplot as plt
 import numpy as np
 
