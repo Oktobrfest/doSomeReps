@@ -28,7 +28,20 @@ quiz app.
 Generate between {qty_from} and {qty_to} question/answer pairs total.
 
 Each question should:
-- Be short, clear, and self-contained.
+- Be short, clear, and self-contained. The person answering these
+  questions will NOT have access to the source material, so every
+  question must stand entirely on its own.
+- NEVER reference the source material itself. Do not use phrases like
+  "According to the text", "Based on the provided material", "In the
+  article", "As shown in the document", or any similar wording.
+- NEVER reference specific locations or identifiers from the source
+  material. Do not use cross-references like "See equation (2.5)",
+  "as described in Chapter 3", "refer to Figure 4", "in the example
+  above", "per the preceding paragraph", or anything similar. If
+  something from the source is needed in the question (e.g. a
+  formula, a definition, a specific data point), copy that content
+  directly into the question text instead of pointing the reader
+  elsewhere.
 - Have a brief, factual answer (one or two sentences). The user will
   later be able to ask you to "extend" any answer into a longer,
   more in-depth explanation, so keep these initial answers compact.

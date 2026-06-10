@@ -64,7 +64,20 @@ quiz app.
 Generate between {qty_from} and {qty_to} question/answer pairs total.
 
 Each question should:
-- Be short, clear, and self-contained.
+- Be short, clear, and self-contained. The person answering these
+  questions will NOT have access to the source material, so every
+  question must stand entirely on its own.
+- NEVER reference the source material itself. Do not use phrases like
+  "According to the text", "Based on the provided material", "In the
+  article", "As shown in the document", or any similar wording.
+- NEVER reference specific locations or identifiers from the source
+  material. Do not use cross-references like "See equation (2.5)",
+  "as described in Chapter 3", "refer to Figure 4", "in the example
+  above", "per the preceding paragraph", or anything similar. If
+  something from the source is needed in the question (e.g. a
+  formula, a definition, a specific data point), copy that content
+  directly into the question text instead of pointing the reader
+  elsewhere.
 - Have a brief, factual answer (one or two sentences). The user will
   later be able to ask you to "extend" any answer into a longer,
   more in-depth explanation, so keep these initial answers compact.
@@ -79,7 +92,8 @@ User-selected categories (choose one or more for each question, from
 this list only): {categories}
 
 Source material follows below. Generate questions strictly about this
-material:
+material (but write them as self-contained questions that never mention
+or reference the source material itself):
 
 ---
 """
@@ -482,16 +496,32 @@ def ai_qgen_state():
 @login_required
 def ai_qgen_generate():
     """Trigger AI question generation."""
-    data = request.get_json() or {}
-    text = (data.get("quiz_content") or "").strip()
-    selected_categories = data.get("categories") or []
-    qty_from = data.get("qty_from", 5)
-    qty_to = data.get("qty_to", 10)
-    try_provide_hints = bool(data.get("try_provide_hints", False))
-    UID = current_user.id
+    import tempfile
+    import os
 
-    if not text:
-        return jsonify({"success": False, "error": "Quiz content is required."}), 400
+    if request.is_json:
+        data = request.get_json() or {}
+        text = (data.get("quiz_content") or "").strip()
+        selected_categories = data.get("categories") or []
+        qty_from = data.get("qty_from", 5)
+        qty_to = data.get("qty_to", 10)
+        try_provide_hints = bool(data.get("try_provide_hints", False))
+        file_obj = None
+    else:
+        text = (request.form.get("quiz_content") or "").strip()
+        cats_raw = request.form.get("categories")
+        if cats_raw:
+            try:
+                selected_categories = json.loads(cats_raw)
+            except Exception:
+                selected_categories = request.form.getlist("categories")
+        else:
+            selected_categories = []
+        qty_from = request.form.get("qty_from", 5)
+        qty_to = request.form.get("qty_to", 10)
+        try_provide_hints = request.form.get("try_provide_hints") == "true"
+        file_obj = request.files.get("file")
+
     if not selected_categories:
         return jsonify({"success": False, "error": "At least one category is required."}), 400
 
@@ -507,19 +537,69 @@ def ai_qgen_generate():
     set_session("ai_qgen_category_names", selected_categories)
 
     try:
-        generated = generate_questions(
-            text=text,
-            categories=selected_categories,
-            qty_from=qty_from,
-            qty_to=qty_to,
-            user_id=UID,
-        )
+        UID = current_user.id
+        if file_obj and file_obj.filename:
+            filename = file_obj.filename.lower()
+            if filename.endswith(".pdf"):
+                doc_type = "pdf"
+            elif filename.endswith((".png", ".jpg", ".jpeg")):
+                doc_type = "image"
+            else:
+                return jsonify({
+                    "success": False,
+                    "error": "Unsupported file format. Please upload a PDF or an image (PNG, JPG, JPEG)."
+                }), 400
 
-        if try_provide_hints and generated:
+            import uuid
+            from repz.s3_ext import get_s3
+
+            suffix = os.path.splitext(filename)[1]
+            s3_object_key = f"temp_uploads/{uuid.uuid4()}{suffix}"
+
+            # Save upload to a local temp file so we can upload it to S3
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                file_obj.save(tmp.name)
+                tmp_path = tmp.name
+
             try:
-                generate_hints(generated, UID)
-            except Exception as e:
-                logging.warning("Hint parse failed: %s", e)
+                s3_client = get_s3()
+                content_type = file_obj.content_type or "application/octet-stream"
+                s3_client.upload_file_to_s3(
+                    tmp_path,
+                    ExtraArgs={"ContentType": content_type},
+                    object_name=s3_object_key,
+                )
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+
+            from repz.hatchet_client import trigger_document_question_generation
+
+            generated = trigger_document_question_generation(
+                document_path=s3_object_key,
+                document_type=doc_type,
+                categories=selected_categories,
+                qty_from=qty_from,
+                qty_to=qty_to,
+                user_id=UID,
+                try_hints=try_provide_hints,
+            )
+        else:
+            if not text:
+                return jsonify({"success": False, "error": "Quiz content is required."}), 400
+
+            from repz.hatchet_client import trigger_question_generation
+
+            generated = trigger_question_generation(
+                text_content=text,
+                categories=selected_categories,
+                qty_from=qty_from,
+                qty_to=qty_to,
+                user_id=UID,
+                try_hints=try_provide_hints,
+            )
 
         local_session[SESSION_KEY_GENERATED] = generated
         return jsonify({

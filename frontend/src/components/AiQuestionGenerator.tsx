@@ -16,6 +16,7 @@ export function AiQuestionGenerator() {
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [quizContent, setQuizContent] = useState<string>("");
+  const [file, setFile] = useState<File | null>(null);
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [qtyFrom, setQtyFrom] = useState<number>(5);
   const [qtyTo, setQtyTo] = useState<number>(10);
@@ -54,8 +55,8 @@ export function AiQuestionGenerator() {
 
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quizContent.trim()) {
-      setError("Quiz content is required.");
+    if (!quizContent.trim() && !file) {
+      setError("Quiz content or a document file is required.");
       return;
     }
     if (selectedCats.length === 0) {
@@ -67,16 +68,32 @@ export function AiQuestionGenerator() {
     setError(null);
     setSuccess(null);
 
-    fetch("/ai_question_generator/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    let body: any;
+    let headers: Record<string, string> = {};
+
+    if (file) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("categories", JSON.stringify(selectedCats));
+      formData.append("qty_from", qtyFrom.toString());
+      formData.append("qty_to", qtyTo.toString());
+      formData.append("try_provide_hints", tryProvideHints.toString());
+      body = formData;
+    } else {
+      headers["Content-Type"] = "application/json";
+      body = JSON.stringify({
         quiz_content: quizContent,
         categories: selectedCats,
         qty_from: qtyFrom,
         qty_to: qtyTo,
         try_provide_hints: tryProvideHints,
-      }),
+      });
+    }
+
+    fetch("/ai_question_generator/api/generate", {
+      method: "POST",
+      headers,
+      body,
     })
       .then((res) => res.json())
       .then((data) => {
@@ -93,6 +110,11 @@ export function AiQuestionGenerator() {
         );
         setSuccess(`Successfully generated ${data.generated_questions?.length || 0} question(s).`);
         setQuizContent(""); // Clear text after success
+        setFile(null); // Clear file after success
+        const fileInput = document.getElementById("file_upload") as HTMLInputElement | null;
+        if (fileInput) {
+          fileInput.value = "";
+        }
         setSubmitting(false);
       })
       .catch((err) => {
@@ -336,7 +358,24 @@ export function AiQuestionGenerator() {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="quiz_content" className={styles.label}>Quiz Content</label>
+          <label htmlFor="file_upload" className={styles.label}>Upload Document (Optional)</label>
+          <span className={styles.subLabel}>
+            Upload a PDF or an image (PNG, JPG, JPEG) to generate questions from.
+          </span>
+          <input
+            id="file_upload"
+            type="file"
+            accept=".pdf,image/*"
+            className={styles.fileInput}
+            onChange={(e) => {
+              const selectedFile = e.target.files?.[0] || null;
+              setFile(selectedFile);
+            }}
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="quiz_content" className={styles.label}>Quiz Content {file ? "(Optional)" : ""}</label>
           <span className={styles.subLabel}>
             Have AI create questions for you regarding the following material.
           </span>
@@ -344,10 +383,10 @@ export function AiQuestionGenerator() {
             id="quiz_content"
             className={styles.textarea}
             rows={10}
-            placeholder="Paste or type the source material you'd like questions generated from..."
+            placeholder={file ? "Optional when a document is uploaded..." : "Paste or type the source material you'd like questions generated from..."}
             value={quizContent}
             onChange={(e) => setQuizContent(e.target.value)}
-            required
+            required={!file}
           />
         </div>
 
@@ -517,11 +556,10 @@ export function AiQuestionGenerator() {
 
                 <div className={styles.formGroup}>
                   <span className={styles.label}>Categories</span>
-                  <div className={styles.badgeContainer}>
-                    {gq.categories.map((cat, catIdx) => (
-                      <span key={catIdx} className={styles.badge}>{cat}</span>
-                    ))}
-                  </div>
+                  <CatPicker
+                    selectedCategories={gq.categories}
+                    onChange={(cats) => handleQuestionChange(i, "categories", cats)}
+                  />
                 </div>
 
                 <div className={styles.questionOptions}>
