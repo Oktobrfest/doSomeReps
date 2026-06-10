@@ -162,8 +162,7 @@ export function CatPicker({ selectedCategories, onChange }: CatPickerProps) {
                     onChange={() => handleToggleCheckbox(cat)}
                     style={{ marginRight: "6px", cursor: "pointer" }}
                   />
-                  <label
-                    htmlFor={`cat-checkbox-${cat}`}
+                  <span
                     className="mb-0 text-truncate font-weight-bold"
                     style={{
                       cursor: "pointer",
@@ -172,9 +171,10 @@ export function CatPicker({ selectedCategories, onChange }: CatPickerProps) {
                       flexGrow: 1,
                     }}
                     title={cat}
+                    onClick={() => handleToggleCheckbox(cat)}
                   >
                     {cat}
-                  </label>
+                  </span>
                 </div>
               ))}
             </div>
@@ -281,7 +281,7 @@ export function CatPicker({ selectedCategories, onChange }: CatPickerProps) {
                           style={{ marginRight: "6px", cursor: "pointer" }}
                           onClick={(e) => e.stopPropagation()}
                         />
-                        <label
+                        <span
                           className="mb-0 text-truncate"
                           style={{
                             cursor: "pointer",
@@ -294,7 +294,7 @@ export function CatPicker({ selectedCategories, onChange }: CatPickerProps) {
                           title={cat}
                         >
                           {cat}
-                        </label>
+                        </span>
                       </div>
                     );
                   })}
