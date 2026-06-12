@@ -12,7 +12,7 @@
  * as-is without compilation issues.
  */
 
-const KWS_BASE_URL = self.location.origin + "/static/models/kws";
+let KWS_BASE_URL = "";
 const TARGET_SAMPLE_RATE = 16000;
 
 // ---- Worker state ----
@@ -66,31 +66,65 @@ function normalizeKeyword(input) {
 // ---- Initialization ----
 
 async function initialize() {
+  console.log("[KWS Worker] Starting initialization... Base URL: " + KWS_BASE_URL);
   var debugLogs = [];
 
   // Set up the Emscripten Module object before loading scripts
+  var wasmReadyResolve;
+  var wasmReady = new Promise(function (resolve) {
+    wasmReadyResolve = resolve;
+  });
+
   self.Module = {
     print: function (text) {
+      console.log("[Sherpa-WASM STDOUT] " + text);
       debugLogs.push("[Sherpa-WASM STDOUT] " + text);
     },
     printErr: function (text) {
-      debugLogs.push("[Sherpa-WASM] " + text);
+      console.error("[Sherpa-WASM STDERR] " + text);
+      debugLogs.push("[Sherpa-WASM STDERR] " + text);
     },
     locateFile: function (path) {
-      return KWS_BASE_URL + "/" + path;
+      var resolved = KWS_BASE_URL + "/" + path;
+      console.log("[KWS Worker] locateFile: " + path + " -> " + resolved);
+      return resolved;
+    },
+    mainScriptUrlOrBlob: KWS_BASE_URL + "/sherpa-onnx-wasm-kws-main.js",
+    setStatus: function (text) {
+      console.log("[KWS Worker Status] " + text);
     },
     onRuntimeInitialized: function () {
-      console.log("[KWS Worker] Sherpa WASM runtime initialized.");
+      console.log("[KWS Worker] Sherpa WASM runtime initialized successfully.");
+      if (typeof wasmReadyResolve === "function") {
+        wasmReadyResolve();
+      }
     },
   };
 
   try {
+    console.log("[KWS Worker] Loading sherpa-onnx-kws.js...");
     await loadScript(KWS_BASE_URL + "/sherpa-onnx-kws.js");
+    console.log("[KWS Worker] Loading sherpa-onnx-wasm-kws-main.js...");
     await loadScript(KWS_BASE_URL + "/sherpa-onnx-wasm-kws-main.js");
+
+    console.log("[KWS Worker] Waiting for WASM runtime initialization...");
+    await Promise.race([
+      wasmReady,
+      new Promise(function (_, reject) {
+        setTimeout(function () {
+          reject(new Error("Timed out waiting for Sherpa WASM runtime to initialize."));
+        }, 15000);
+      }),
+    ]);
   } catch (err) {
-    var tail = debugLogs.slice(-5).join("\n");
+    var tail = debugLogs.slice(-10).join("\n");
     throw new Error(
-      "Failed to initialize Sherpa WASM in worker. " + String(err) + "\n" + tail
+      "Failed to initialize Sherpa WASM in worker. Base URL: " +
+        KWS_BASE_URL +
+        "\n" +
+        String(err) +
+        "\n" +
+        tail
     );
   }
 
@@ -99,6 +133,7 @@ async function initialize() {
   }
 
   // Build keyword spotter config
+  console.log("[KWS Worker] Fetching keywords.txt...");
   var res = await fetch(KWS_BASE_URL + "/keywords.txt");
   if (!res.ok) {
     throw new Error(
@@ -106,6 +141,7 @@ async function initialize() {
     );
   }
   var keywordsText = await res.text();
+  console.log("[KWS Worker] keywords.txt fetched successfully. File size: " + keywordsText.length + " bytes.");
 
   var config = {
     featConfig: {
@@ -210,9 +246,12 @@ self.onmessage = async function (event) {
   switch (msg.type) {
     case "init":
       try {
+        KWS_BASE_URL = msg.baseUrl || (self.location.origin + "/static/models/kws");
+        console.log("[KWS Worker] init message received. KWS_BASE_URL set to: " + KWS_BASE_URL);
         await initialize();
         postMsg({ type: "ready" });
       } catch (err) {
+        console.error("[KWS Worker] Init failed:", err);
         postMsg({
           type: "error",
           message: err instanceof Error ? err.message : String(err),
@@ -220,13 +259,22 @@ self.onmessage = async function (event) {
       }
       break;
 
-    case "audio-chunk":
-      if (!recognizer || !stream) return;
-      // The chunk is transferred as an ArrayBuffer; reconstruct Float32Array
-      var samples = new Float32Array(msg.chunk);
-      var sampleRate = cachedInputSampleRate || 44100;
-      processAudioChunk(samples, sampleRate);
-      break;
+      case "audio-chunk":
+        if (!recognizer || !stream) return;
+
+        var samples =
+          msg.chunk instanceof Float32Array
+            ? msg.chunk
+            : new Float32Array(msg.chunk);
+
+        var sampleRate = Number(msg.sampleRate) || cachedInputSampleRate || TARGET_SAMPLE_RATE;
+
+        if (cachedInputSampleRate === 0) {
+          cachedInputSampleRate = sampleRate;
+        }
+
+        processAudioChunk(samples, sampleRate);
+        break;
 
     case "reset":
       if (recognizer && stream) {
