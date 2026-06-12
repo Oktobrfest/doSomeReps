@@ -113,7 +113,7 @@ async function initialize() {
       new Promise(function (_, reject) {
         setTimeout(function () {
           reject(new Error("Timed out waiting for Sherpa WASM runtime to initialize."));
-        }, 15000);
+        }, 120000);
       }),
     ]);
   } catch (err) {
