@@ -42,6 +42,11 @@ export function AudioCommandSystemComponent() {
   const commandManagerRef = useRef(new AudioCommandManager());
   const isStartingRef = useRef(false);
 
+  // Custom logging helper to keep everything consistent
+  const logDebug = (message: string, ...args: any[]) => {
+    console.log(`[AudioCommandSystem] ${message}`, ...args);
+  };
+
   // Clear detected command display after 6 seconds
   useEffect(() => {
     if (!lastCommand) return;
@@ -51,11 +56,13 @@ export function AudioCommandSystemComponent() {
 
   // Build a stable callback-based interface for the KWS worker
   const handleKeyword = useCallback((keyword: string) => {
+    logDebug(`Keyword matched in worker: "${keyword}"`);
     setLastCommand(keyword);
     commandManagerRef.current.triggerCommand(keyword);
 
     // For commands that navigate/submit, stop listening cleanly
     if (keyword === "CORRECT" || keyword === "WRONG") {
+      logDebug(`Command "${keyword}" requires stopping the active audio listener.`);
       stopListeningCleanup();
     }
     // Reset the worker's keyword state after detection to avoid repeats
@@ -64,17 +71,20 @@ export function AudioCommandSystemComponent() {
 
   // Register commands once.
   useEffect(() => {
+    logDebug("Registering all audio commands...");
     const manager = commandManagerRef.current;
     registerAllCommands(manager);
 
     const exitBtn = document.getElementById("exit-audio-mode");
     if (exitBtn) {
       exitBtn.addEventListener("click", () => {
+        logDebug("Exit button clicked; disabling future auto-listen.");
         sessionStorage.setItem("audio_listening_active", "false");
       });
     }
 
     return () => {
+      logDebug("Unmounting component: performing cleanup.");
       stopListeningCleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,8 +93,10 @@ export function AudioCommandSystemComponent() {
   // Auto-start listening if previously active
   useEffect(() => {
     const wasListening = sessionStorage.getItem("audio_listening_active") === "true";
+    logDebug(`Checking auto-start. wasListening: ${wasListening}`);
     if (wasListening) {
       const timer = setTimeout(() => {
+        logDebug("Auto-starting audio listening system...");
         void startListening();
       }, 150);
       return () => clearTimeout(timer);
@@ -103,25 +115,31 @@ export function AudioCommandSystemComponent() {
   // ---- Audio capture cleanup (main thread only) ----
 
   const stopAudioCapture = () => {
+    logDebug("Stopping audio capture stream & nodes...");
     try {
       if (workletNodeRef.current) {
+        logDebug("Disconnecting AudioWorkletNode...");
         workletNodeRef.current.port.onmessage = null;
         workletNodeRef.current.disconnect();
         workletNodeRef.current = null;
       }
       if (sourceRef.current) {
+        logDebug("Disconnecting MediaStreamAudioSourceNode...");
         sourceRef.current.disconnect();
         sourceRef.current = null;
       }
       if (mediaStreamRef.current) {
+        logDebug("Stopping tracks in media stream...");
         mediaStreamRef.current.getTracks().forEach((t) => t.stop());
         mediaStreamRef.current = null;
       }
       if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+        logDebug("Closing AudioContext...");
         void audioCtxRef.current.close();
         audioCtxRef.current = null;
       }
       if (workletUrlRef.current) {
+        logDebug("Revoking AudioWorklet object URL...");
         URL.revokeObjectURL(workletUrlRef.current);
         workletUrlRef.current = null;
       }
@@ -133,16 +151,20 @@ export function AudioCommandSystemComponent() {
   // ---- Full stop: worker + audio capture ----
 
   const stopListeningCleanup = () => {
+    logDebug("Performing stopListeningCleanup...");
     stopAudioCapture();
     if (kwsWorkerRef.current) {
+      logDebug("Stopping and terminating KwsWorkerClient...");
       kwsWorkerRef.current.stop();
       kwsWorkerRef.current = null;
     }
     isStartingRef.current = false;
     setEngineState("idle");
+    logDebug("Listening cleanup complete.");
   };
 
   const stopListening = (manual = false) => {
+    logDebug(`stopListening called. manual: ${manual}`);
     stopListeningCleanup();
     if (manual) {
       sessionStorage.setItem("audio_listening_active", "false");
@@ -161,8 +183,10 @@ export function AudioCommandSystemComponent() {
   // ---- Start listening ----
 
   const startListening = async () => {
+    logDebug(`startListening initiated. isStartingRef: ${isStartingRef.current}, engineState: ${engineState}`);
     if (isStartingRef.current || engineState === "loading") return;
     if (engineState === "listening" || engineState === "ready") {
+      logDebug("Already listening or ready, triggering stop instead.");
       stopListening(true);
       return;
     }
@@ -174,17 +198,19 @@ export function AudioCommandSystemComponent() {
 
     try {
       // 1. Start the KWS Web Worker (handles all WASM/model loading off main thread)
+      logDebug("Instantiating KwsWorkerClient...");
       const kwsWorker = new KwsWorkerClient({
         onKeyword: handleKeyword,
         onReady: () => {
-          // Worker is initialized but we still need audio capture
-          // State will be set to "listening" after audio capture starts
+          logDebug("KWS Worker is ready! Proceeding with audio capture on main thread.");
         },
         onError: (msg) => {
+          console.error("[KwsWorkerClient Callback] Error received from worker:", msg);
           setErrorMsg(msg);
           stopListeningCleanup();
         },
         onStateChange: (state) => {
+          logDebug(`Worker state changed to: ${state}`);
           // Don't override "listening" with "ready" — audio capture is the final step
           if (state === "ready") return;
           setEngineState(state);
@@ -192,10 +218,11 @@ export function AudioCommandSystemComponent() {
       });
 
       kwsWorkerRef.current = kwsWorker;
+      logDebug("Triggering start on KwsWorkerClient...");
       await kwsWorker.start();
 
       // 2. Start microphone capture
-      console.log("Requesting microphone permission...");
+      logDebug("Requesting microphone permission...");
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -205,18 +232,25 @@ export function AudioCommandSystemComponent() {
         },
       });
       mediaStreamRef.current = mediaStream;
+      logDebug("Microphone permission granted.");
 
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioCtx = new AudioContextClass();
+      if (audioCtx.state === "suspended") {
+            logDebug("AudioContext is suspended; resuming now...");
+            await audioCtx.resume();
+          }
       audioCtxRef.current = audioCtx;
 
       inputSampleRateRef.current = audioCtx.sampleRate;
-      console.log(`AudioContext sample rate: ${audioCtx.sampleRate}`);
+      logDebug(`AudioContext active. Sample rate: ${audioCtx.sampleRate}`);
 
       // Register the PCM capture worklet
       const workletUrl = buildWorkletBlobUrl();
       workletUrlRef.current = workletUrl;
+      logDebug("Adding PCM capture worklet module to AudioContext...");
       await audioCtx.audioWorklet.addModule(workletUrl);
+      logDebug("PCM capture worklet module successfully loaded.");
 
       const source = audioCtx.createMediaStreamSource(mediaStream);
       sourceRef.current = source;
@@ -229,19 +263,24 @@ export function AudioCommandSystemComponent() {
       workletNodeRef.current = workletNode;
 
       // Route PCM chunks from the worklet to the KWS worker
-      // The worklet runs on the audio thread, but onmessage fires on main thread.
-      // We immediately forward to the worker (which transfers the buffer, avoiding copy).
+      // To avoid flooding the console, we will only log the first chunk and every 1000th chunk in Dev mode only.
+      let chunkCount = 0;
+      const isDev = import.meta.env.DEV;
       workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
         const chunk = event.data;
         if (!chunk || chunk.length === 0) return;
-        kwsWorkerRef.current?.sendAudioChunk(chunk);
+        chunkCount++;
+        if (isDev && (chunkCount === 1 || chunkCount % 1000 === 0)) {
+          logDebug(`Forwarding audio chunk #${chunkCount} to worker. Size: ${chunk.length} samples.`);
+        }
+        kwsWorkerRef.current?.sendAudioChunk(chunk, audioCtx.sampleRate);
       };
 
       source.connect(workletNode);
 
       setEngineState("listening");
       sessionStorage.setItem("audio_listening_active", "true");
-      console.log("Voice command system started (KWS in Web Worker).");
+      logDebug("Voice command system fully initialized and listening.");
     } catch (err) {
       console.error("Failed to start voice command system:", err);
       setErrorMsg(err instanceof Error ? err.message : String(err));
