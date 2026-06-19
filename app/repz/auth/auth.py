@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Blueprint, redirect, url_for, session, current_app, request, abort, flash
 from flask_login import login_user, logout_user
 from authlib.integrations.flask_client import OAuth
+from authlib.integrations.base_client.errors import MismatchingStateError, OAuthError
 from urllib.parse import urljoin
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Query
@@ -58,7 +59,19 @@ def signup():
 @auth.route("/auth/callback")
 def sso_callback():
  # Why: complete the OIDC flow, exchange code for tokens, fetch user info/claims.
-    token = oauth.authentik.authorize_access_token()
+    try:
+        token = oauth.authentik.authorize_access_token()
+    except MismatchingStateError:
+        current_app.logger.warning(
+            "OIDC state mismatch during callback; likely stale/old login callback URL"
+        )
+        flash("Your login session expired or was stale. Please try logging in again.", category="error")
+        return redirect(url_for("auth.login"))
+    except OAuthError as e:
+        current_app.logger.warning("OIDC callback failed: %s", e)
+        flash("Login failed. Please try again.", category="error")
+        return redirect(url_for("auth.login"))
+
     if not token:
         abort(401)
 
