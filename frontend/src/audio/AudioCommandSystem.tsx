@@ -25,6 +25,12 @@ const AVAILABLE_COMMANDS = [
   "STOP LISTENING"
 ];
 
+// AudioWorklet batching: samples accumulated before posting one frame.
+// 1280 @48k ≈ 26.7ms ≈ ~37 msgs/sec (vs ~375/sec at the 128-sample default).
+// Tune: 512 (lower latency, more msgs) / 1024 / 2048 (less overhead, more latency).
+// Does NOT change sample rate or resampling.
+const PCM_WORKLET_FRAME_SIZE = 1280;
+
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
@@ -285,20 +291,21 @@ export function AudioCommandSystemComponent() {
         numberOfInputs: 1,
         numberOfOutputs: 0,
         channelCount: 1,
+        processorOptions: { frameSize: PCM_WORKLET_FRAME_SIZE },
       });
       workletNodeRef.current = workletNode;
 
-      // Route PCM chunks from the worklet to the KWS worker
-      // To avoid flooding the console, we will only log the first chunk and every 1000th chunk in Dev mode only.
-      let chunkCount = 0;
-      const isDev = import.meta.env.DEV;
+      // One-time confirmation; the [KWS] heartbeat shows the resulting frames/sec.
+      console.log(
+        "[KWS] worklet batching: frame " + PCM_WORKLET_FRAME_SIZE + " samples (~" +
+        ((PCM_WORKLET_FRAME_SIZE / audioCtx.sampleRate) * 1000).toFixed(1) + "ms, ~" +
+        (audioCtx.sampleRate / PCM_WORKLET_FRAME_SIZE).toFixed(0) + " msg/s)"
+      );
+
       workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
         const chunk = event.data;
         if (!chunk || chunk.length === 0) return;
-        chunkCount++;
-        if (isDev && (chunkCount === 1 || chunkCount % 1000 === 0)) {
-          logDebug(`Forwarding audio chunk #${chunkCount} to worker. Size: ${chunk.length} samples.`);
-        }
+        // 2-arg call: the client adds timestamp: Date.now() and transfers the buffer.
         kwsWorkerRef.current?.sendAudioChunk(chunk, audioCtx.sampleRate);
       };
 
