@@ -218,7 +218,6 @@ export function AudioQuiz({
   }, []);
 
   const handleAnswerEnded = useCallback(() => {
-    setAnswerActive(false);
     setAnswerPlaying(false);
   }, []);
 

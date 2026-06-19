@@ -302,9 +302,25 @@ export function AudioCommandSystemComponent() {
         (audioCtx.sampleRate / PCM_WORKLET_FRAME_SIZE).toFixed(0) + " msg/s)"
       );
 
+      let micGatedByPlayback = false;
       workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
         const chunk = event.data;
         if (!chunk || chunk.length === 0) return;
+
+        // STOP listening while the app's own question/answer audio is playing, so the
+        // recognizer can't match keywords spoken by the TTS (the phantom-command cascade).
+        if ((window as any).__audioPlaying) {
+          micGatedByPlayback = true;
+          return;
+        }
+
+        // Playback just ended: flush the recognizer so leftover/tail audio can't
+        // produce a stale match the instant the mic re-opens.
+        if (micGatedByPlayback) {
+          micGatedByPlayback = false;
+          kwsWorkerRef.current?.reset();
+        }
+
         // 2-arg call: the client adds timestamp: Date.now() and transfers the buffer.
         kwsWorkerRef.current?.sendAudioChunk(chunk, audioCtx.sampleRate);
       };

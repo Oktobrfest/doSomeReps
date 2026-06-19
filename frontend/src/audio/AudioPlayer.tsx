@@ -53,19 +53,23 @@ export function AudioPlayer({
     }
 
     if (isPlaying) {
+      (window as any).__audioPlaying = true; // gate the mic while our own audio plays
       const playPromise = activeAudio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
+          (window as any).__audioPlaying = false;
           console.error('Audio play failed:', err);
         });
       }
     } else {
       activeAudio.pause();
+      (window as any).__audioPlaying = false;
     }
 
     // Cleanup: pause active audio if index changes or player unmounts
     return () => {
       activeAudio.pause();
+      (window as any).__audioPlaying = false;
     };
   }, [isPlaying, trackIndex]);
 
