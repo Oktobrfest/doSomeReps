@@ -6,6 +6,12 @@ import type { WorkerState } from "./kwsWorkerClient";
 import { registerAllCommands } from "./commands";
 import styles from "./AudioCommandSystem.module.css";
 import actionStyles from "./ActionButton.module.css";
+import {
+  logMediaStreamDiagnostics,
+  logAudioContextDiagnostics,
+  logAudioDiagnostic,
+  probeAudioContextSampleRateSupport,
+} from "./audioDiagnostics";
 
 const AVAILABLE_COMMANDS = [
   "READ QUESTION",
@@ -222,6 +228,10 @@ export function AudioCommandSystemComponent() {
       await kwsWorker.start();
 
       // 2. Start microphone capture
+      // One-time probe: does this device/browser honor a forced 16k context?
+      // Throwaway contexts only — does NOT touch the live pipeline. Safe to delete later.
+      await probeAudioContextSampleRateSupport(16000);
+
       logDebug("Requesting microphone permission...");
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -234,6 +244,9 @@ export function AudioCommandSystemComponent() {
       mediaStreamRef.current = mediaStream;
       logDebug("Microphone permission granted.");
 
+      // One-time: what did the mic track actually negotiate (rate, channels, AEC/NS/AGC)?
+      logMediaStreamDiagnostics(mediaStream);
+
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioCtx = new AudioContextClass();
       if (audioCtx.state === "suspended") {
@@ -244,6 +257,19 @@ export function AudioCommandSystemComponent() {
 
       inputSampleRateRef.current = audioCtx.sampleRate;
       logDebug(`AudioContext active. Sample rate: ${audioCtx.sampleRate}`);
+
+      // One-time: live context details + does the context rate match the mic track rate?
+      logAudioContextDiagnostics(audioCtx, "Live AudioContext");
+      {
+        const _track = mediaStream.getAudioTracks()[0];
+        const _settings = _track?.getSettings?.() ?? {};
+        logAudioDiagnostic("Sample-rate comparison", {
+          audioCtx_sampleRate: audioCtx.sampleRate,
+          mediaTrack_sampleRate: (_settings as any).sampleRate,
+          mediaTrack_channelCount: (_settings as any).channelCount,
+          note: "If these two rates differ, resampling is using the wrong input rate.",
+        });
+      }
 
       // Register the PCM capture worklet
       const workletUrl = buildWorkletBlobUrl();
