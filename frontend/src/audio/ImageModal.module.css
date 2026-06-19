@@ -1,0 +1,174 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.94);
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalViewport {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.slideTrack {
+  display: flex;
+  transition: transform 0.3s ease;
+  will-change: transform;
+  height: 100%;
+  align-items: center;
+}
+
+.slide {
+  min-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 80px 60px 80px 60px;
+}
+
+.slideImage {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Give arrows more room on mobile by reducing padding */
+@media (max-width: 640px) {
+  .slide {
+    padding: 100px 16px 100px 16px;
+  }
+}
+
+/* Close button */
+.closeBtn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.15s ease;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.closeBtn:active {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* Mobile: even larger close button */
+@media (max-width: 640px) {
+  .closeBtn {
+    width: 64px;
+    height: 64px;
+    top: 12px;
+    right: 12px;
+  }
+}
+
+/* Arrow navigation in modal */
+.modalArrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.15s ease;
+}
+
+.modalArrow:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.modalArrow:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.modalArrowLeft {
+  left: 12px;
+}
+
+.modalArrowRight {
+  right: 12px;
+}
+
+/* Counter in modal */
+.modalCounter {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+/* Dots in modal */
+.modalDots {
+  position: fixed;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.modalDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  transition: background 0.2s ease;
+}
+
+.modalDotActive {
+  background: #fff;
+}
