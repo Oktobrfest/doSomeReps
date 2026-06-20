@@ -1,7 +1,7 @@
 .largeBtn {
   width: 100%;
-  min-height: 180px;
-  height: 180px;
+  min-height: 140px;
+  height: auto;
   border: none;
   border-radius: 18px;
   padding: 24px;
@@ -35,10 +35,10 @@
 }
 
 .hasSlider {
-  min-height: 240px;
+  min-height: 220px;
   height: auto;
-  padding: 16px !important;
-  gap: 8px !important;
+  padding: 16px;
+  gap: 8px;
 }
 
 .btnContent {
@@ -106,8 +106,8 @@
 }
 
 .iconLarge {
-  width: 4rem;
-  height: 4rem;
+  width: 3rem;
+  height: 3rem;
   flex-shrink: 0;
 }
 
@@ -125,13 +125,13 @@
 
 @media (max-width: 640px) {
   .largeBtn {
-    min-height: 140px;
-    height: 140px;
+    min-height: 120px;
+    height: auto;
     font-size: 1.25rem;
   }
 
   .iconLarge {
-    width: 3rem;
-    height: 3rem;
+    width: 2.5rem;
+    height: 2.5rem;
   }
 }

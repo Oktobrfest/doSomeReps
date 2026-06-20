@@ -91,10 +91,13 @@ export class KwsWorkerClient {
 
         // Tell the worker to initialize Sherpa
         const baseUrl = `${window.location.origin}/static/models/kws`;
-        console.log(`[KWS Worker Client] Posting init to worker with baseUrl: ${baseUrl}`);
+        if (import.meta.env.DEV) {
+          console.log(`[KWS Worker Client] Posting init to worker with baseUrl: ${baseUrl}`);
+        }
         this.worker!.postMessage({
           type: "init",
           baseUrl: baseUrl,
+          debug: import.meta.env.DEV,
         });
       });
     };

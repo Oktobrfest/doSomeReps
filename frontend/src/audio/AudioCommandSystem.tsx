@@ -6,6 +6,12 @@ import type { WorkerState } from "./kwsWorkerClient";
 import { registerAllCommands } from "./commands";
 import styles from "./AudioCommandSystem.module.css";
 import actionStyles from "./ActionButton.module.css";
+import {
+  logMediaStreamDiagnostics,
+  logAudioContextDiagnostics,
+  logAudioDiagnostic,
+  probeAudioContextSampleRateSupport,
+} from "./audioDiagnostics";
 
 const AVAILABLE_COMMANDS = [
   "READ QUESTION",
@@ -18,6 +24,12 @@ const AVAILABLE_COMMANDS = [
   "ASK AI",
   "STOP LISTENING"
 ];
+
+// AudioWorklet batching: samples accumulated before posting one frame.
+// 1280 @48k ≈ 26.7ms ≈ ~37 msgs/sec (vs ~375/sec at the 128-sample default).
+// Tune: 512 (lower latency, more msgs) / 1024 / 2048 (less overhead, more latency).
+// Does NOT change sample rate or resampling.
+const PCM_WORKLET_FRAME_SIZE = 1280;
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -44,7 +56,7 @@ export function AudioCommandSystemComponent() {
 
   // Custom logging helper to keep everything consistent
   const logDebug = (message: string, ...args: any[]) => {
-    console.log(`[AudioCommandSystem] ${message}`, ...args);
+    if (import.meta.env.DEV) console.log(`[AudioCommandSystem] ${message}`, ...args);
   };
 
   // Clear detected command display after 6 seconds
@@ -222,6 +234,10 @@ export function AudioCommandSystemComponent() {
       await kwsWorker.start();
 
       // 2. Start microphone capture
+      // One-time probe: does this device/browser honor a forced 16k context?
+      // Throwaway contexts only — does NOT touch the live pipeline. Safe to delete later.
+      await probeAudioContextSampleRateSupport(16000);
+
       logDebug("Requesting microphone permission...");
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -234,6 +250,9 @@ export function AudioCommandSystemComponent() {
       mediaStreamRef.current = mediaStream;
       logDebug("Microphone permission granted.");
 
+      // One-time: what did the mic track actually negotiate (rate, channels, AEC/NS/AGC)?
+      logMediaStreamDiagnostics(mediaStream);
+
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioCtx = new AudioContextClass();
       if (audioCtx.state === "suspended") {
@@ -244,6 +263,19 @@ export function AudioCommandSystemComponent() {
 
       inputSampleRateRef.current = audioCtx.sampleRate;
       logDebug(`AudioContext active. Sample rate: ${audioCtx.sampleRate}`);
+
+      // One-time: live context details + does the context rate match the mic track rate?
+      logAudioContextDiagnostics(audioCtx, "Live AudioContext");
+      {
+        const _track = mediaStream.getAudioTracks()[0];
+        const _settings = _track?.getSettings?.() ?? {};
+        logAudioDiagnostic("Sample-rate comparison", {
+          audioCtx_sampleRate: audioCtx.sampleRate,
+          mediaTrack_sampleRate: (_settings as any).sampleRate,
+          mediaTrack_channelCount: (_settings as any).channelCount,
+          note: "If these two rates differ, resampling is using the wrong input rate.",
+        });
+      }
 
       // Register the PCM capture worklet
       const workletUrl = buildWorkletBlobUrl();
@@ -259,20 +291,39 @@ export function AudioCommandSystemComponent() {
         numberOfInputs: 1,
         numberOfOutputs: 0,
         channelCount: 1,
+        processorOptions: { frameSize: PCM_WORKLET_FRAME_SIZE },
       });
       workletNodeRef.current = workletNode;
 
-      // Route PCM chunks from the worklet to the KWS worker
-      // To avoid flooding the console, we will only log the first chunk and every 1000th chunk in Dev mode only.
-      let chunkCount = 0;
-      const isDev = import.meta.env.DEV;
+      // One-time confirmation; the [KWS] heartbeat shows the resulting frames/sec.
+      if (import.meta.env.DEV) {
+        console.log(
+          "[KWS] worklet batching: frame " + PCM_WORKLET_FRAME_SIZE + " samples (~" +
+          ((PCM_WORKLET_FRAME_SIZE / audioCtx.sampleRate) * 1000).toFixed(1) + "ms, ~" +
+          (audioCtx.sampleRate / PCM_WORKLET_FRAME_SIZE).toFixed(0) + " msg/s)"
+        );
+      }
+
+      let micGatedByPlayback = false;
       workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
         const chunk = event.data;
         if (!chunk || chunk.length === 0) return;
-        chunkCount++;
-        if (isDev && (chunkCount === 1 || chunkCount % 1000 === 0)) {
-          logDebug(`Forwarding audio chunk #${chunkCount} to worker. Size: ${chunk.length} samples.`);
+
+        // STOP listening while the app's own question/answer audio is playing, so the
+        // recognizer can't match keywords spoken by the TTS (the phantom-command cascade).
+        if ((window as any).__audioPlaying) {
+          micGatedByPlayback = true;
+          return;
         }
+
+        // Playback just ended: flush the recognizer so leftover/tail audio can't
+        // produce a stale match the instant the mic re-opens.
+        if (micGatedByPlayback) {
+          micGatedByPlayback = false;
+          kwsWorkerRef.current?.reset();
+        }
+
+        // 2-arg call: the client adds timestamp: Date.now() and transfers the buffer.
         kwsWorkerRef.current?.sendAudioChunk(chunk, audioCtx.sampleRate);
       };
 

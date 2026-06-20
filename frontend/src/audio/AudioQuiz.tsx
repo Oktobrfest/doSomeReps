@@ -3,24 +3,25 @@ import {
   useCallback,
   useMemo,
   useEffect,
+  useRef,
   type ButtonHTMLAttributes,
 } from 'react';
 import { AudioPlayer } from './AudioPlayer';
 import { AudioCommandSystemComponent } from './AudioCommandSystem';
+import { ImageCarousel } from './ImageCarousel';
+import { ImageModal } from './ImageModal';
 import {
   Volume2,
   BookOpen,
-  Check,
-  X,
   Ban,
   Pause,
   Play,
   Edit,
-  Minus,
 } from 'lucide-react';
 import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
 import actionStyles from './ActionButton.module.css';
+import { AnswerButtons } from './AnswerButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
 
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -114,6 +115,47 @@ export function AudioQuiz({
   const [answerRevealed, setAnswerRevealed] = useState(false);
   const [answerPlaying, setAnswerPlaying] = useState(false);
   const [answerActive, setAnswerActive] = useState(false);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImages, setModalImages] = useState<string[]>([]);
+  const [modalStartIndex, setModalStartIndex] = useState(0);
+
+  // Form ref for programmatic submission from modal
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Shared helper to submit the quiz form from the answer buttons.
+  const submitForm = useCallback((name: string, value: string) => {
+    if (!formRef.current) return;
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value;
+    formRef.current.appendChild(input);
+    formRef.current.requestSubmit();
+  }, []);
+
+  const handleCorrect = useCallback(() => {
+    submitForm('correct_submit', 'Correct!');
+  }, [submitForm]);
+
+  const handleWrong = useCallback(() => {
+    submitForm('incorrect_submit', 'Wrong!');
+  }, [submitForm]);
+
+  const handleSlightlyWrong = useCallback(() => {
+    submitForm('incorrect_submit', 'Slightly Wrong');
+  }, [submitForm]);
+
+  const openModal = useCallback((images: string[], startIndex: number) => {
+    setModalImages(images);
+    setModalStartIndex(startIndex);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
 
   const questionAssets = useMemo(() => audioAssets?.question ?? [], [audioAssets]);
   const answerAssets = useMemo(() => audioAssets?.answer ?? [], [audioAssets]);
@@ -218,7 +260,6 @@ export function AudioQuiz({
   }, []);
 
   const handleAnswerEnded = useCallback(() => {
-    setAnswerActive(false);
     setAnswerPlaying(false);
   }, []);
 
@@ -239,7 +280,18 @@ export function AudioQuiz({
   }
 
   return (
-    <form method="post" className={styles.quizContainer}>
+    <>
+      {modalOpen && (
+        <ImageModal
+          images={modalImages}
+          startIndex={modalStartIndex}
+          onClose={closeModal}
+          onCorrect={handleCorrect}
+          onWrong={handleWrong}
+          onSlightlyWrong={handleSlightlyWrong}
+        />
+      )}
+      <form method="post" className={styles.quizContainer} ref={formRef}>
       {csrfToken && <input type="hidden" name="csrf_token" value={csrfToken} />}
       <input type="hidden" name="quizq-id" value={question.quizq_id} />
 
@@ -248,16 +300,16 @@ export function AudioQuiz({
           <AudioCommandSystemComponent />
         </div>
 
-        {question.pics.question_image?.map((pic, i) =>
-          pic ? (
-            <div key={i} className={styles.imageContainer}>
-              <img
-                src={pic}
-                alt="Question"
-                className={styles.questionImage}
-              />
-            </div>
-          ) : null
+        {question.pics.question_image?.some(Boolean) && (
+          <ImageCarousel
+            images={question.pics.question_image}
+            onImageClick={(startIndex) =>
+              openModal(
+                question.pics.question_image!.filter((p): p is string => !!p),
+                startIndex,
+              )
+            }
+          />
         )}
 
         {questionActive ? (
@@ -283,18 +335,15 @@ export function AudioQuiz({
 
         <div className={styles.middleSection}>
           {answerRevealed && question.pics.answer_pics?.some(Boolean) && (
-            <div className={styles.answerImageContainer}>
-              {question.pics.answer_pics?.map((pic, i) =>
-                pic ? (
-                  <img
-                    key={i}
-                    src={pic}
-                    alt="Answer"
-                    className={styles.questionImage}
-                  />
-                ) : null
-              )}
-            </div>
+            <ImageCarousel
+              images={question.pics.answer_pics}
+              onImageClick={(startIndex) =>
+                openModal(
+                  question.pics.answer_pics!.filter((p): p is string => !!p),
+                  startIndex,
+                )
+              }
+            />
           )}
 
           {!answerRevealed && (
@@ -318,46 +367,6 @@ export function AudioQuiz({
               assets={answerAssets}
               onSequenceEnd={handleAnswerEnded}
             />
-          )}
-
-          {answerRevealed && (
-            <div className={styles.btnGroup}>
-              <LargeActionButton
-                type="submit"
-                name="correct_submit"
-                value="Correct!"
-                className={cx(styles.flex1, actionStyles.greenBtn)}
-              >
-                <div className={actionStyles.btnContent}>
-                  <Check className={actionStyles.iconLarge} />
-                  <span>Correct!</span>
-                </div>
-              </LargeActionButton>
-
-              <LargeActionButton
-                type="submit"
-                name="incorrect_submit"
-                value="Wrong!"
-                className={cx(styles.flex1, actionStyles.redBtn)}
-              >
-                <div className={actionStyles.btnContent}>
-                  <X className={actionStyles.iconLarge} />
-                  <span>Wrong!</span>
-                </div>
-              </LargeActionButton>
-
-              <LargeActionButton
-                type="submit"
-                name="incorrect_submit"
-                value="Slightly Wrong"
-                className={cx(styles.flex1, actionStyles.orangeBtn)}
-              >
-                <div className={actionStyles.btnContent}>
-                  <Minus className={actionStyles.iconLarge} />
-                  <span>Slightly Wrong</span>
-                </div>
-              </LargeActionButton>
-            </div>
           )}
         </div>
       </div>
@@ -391,6 +400,14 @@ export function AudioQuiz({
         )}
       </div>
 
+      {answerRevealed && (
+        <AnswerButtons
+          onCorrect={handleCorrect}
+          onWrong={handleWrong}
+          onSlightlyWrong={handleSlightlyWrong}
+        />
+      )}
+
       <div className={styles.adminActions}>
         <LargeActionButton
           type="submit"
@@ -418,5 +435,6 @@ export function AudioQuiz({
         )}
       </div>
     </form>
+    </>
   );
 }
