@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { AudioCommandManager } from "./AudioCommandManager";
 import { buildWorkletBlobUrl } from "./audioCapture";
 import { KwsWorkerClient } from "./kwsWorkerClient";
@@ -614,6 +615,103 @@ export function AudioCommandSystemComponent({
     };
   }, [engineState]);
 
+  // The Ask AI conversation panel is rendered at the bottom of the quiz page
+  // (into #ask-ai-conversation-root) via a portal when that container exists.
+  // When it doesn't (e.g. the standalone command-system entry), fall back to
+  // rendering inline inside the command system container.
+  const [askAiPortalTarget, setAskAiPortalTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const resolve = () => setAskAiPortalTarget(document.getElementById("ask-ai-conversation-root"));
+    resolve();
+    // The container is rendered by a sibling component, so re-check shortly after
+    // mount in case it wasn't in the DOM on the first pass.
+    const timer = window.setTimeout(resolve, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const askAiConversation = (
+    <>
+      {isRecordingAskAi && (
+        <div className={styles.askAiContainer}>
+          <div className={styles.askAiTitle}>
+            <span className={styles.askAiPulse}></span>
+            <span>Recording Ask AI question...</span>
+          </div>
+          <div className={styles.askAiActions}>
+            <button
+              type="button"
+              className={cx(actionStyles.largeBtn, styles.askAiBtnStop)}
+              onClick={stopAndSendAskAi}
+              disabled={isTranscribing}
+            >
+              Stop & Send
+            </button>
+            <button
+              type="button"
+              className={cx(actionStyles.largeBtn, styles.askAiBtnCancel)}
+              onClick={cancelAskAiRecording}
+              disabled={isTranscribing}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isTranscribing && (
+        <div className={styles.askAiContainer}>
+          <div className={styles.askAiTitle}>
+            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
+            <span>Transcribing...</span>
+          </div>
+        </div>
+      )}
+
+      {isThinking && (
+        <div className={styles.askAiContainer}>
+          <div className={styles.askAiTitle}>
+            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
+            <span>Thinking...</span>
+          </div>
+        </div>
+      )}
+
+      {isGeneratingAudio && (
+        <div className={styles.askAiContainer}>
+          <div className={styles.askAiTitle}>
+            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
+            <span>Generating audio...</span>
+          </div>
+        </div>
+      )}
+
+      {askAiError && (
+        <div className={styles.errorMessage}>
+          Ask AI Error: {askAiError}
+        </div>
+      )}
+
+      {askAiTranscript && (
+        <div className={styles.askAiTranscriptBox}>
+          <div className={styles.askAiTranscriptTitle}>Ask AI Transcript:</div>
+          <div className={styles.askAiTranscriptText}>{askAiTranscript}</div>
+        </div>
+      )}
+
+      {askAiAnswer && (
+        <div className={styles.askAiAnswerBox}>
+          <div className={styles.askAiTranscriptTitle}>AI Tutor Answer:</div>
+          <div className={styles.askAiAnswerText}>
+            <MarkdownContent content={askAiAnswer} />
+          </div>
+        </div>
+      )}
+
+      {/* Hidden audio element used to play Piper-generated Ask AI answers. */}
+      <audio ref={askAiAudioRef} preload="none" />
+    </>
+  );
+
   return (
     <div className={styles.voiceCommandContainer}>
       <div className={styles.controlsRow}>
@@ -712,84 +810,9 @@ export function AudioCommandSystemComponent({
         </div>
       )}
 
-      {isRecordingAskAi && (
-        <div className={styles.askAiContainer}>
-          <div className={styles.askAiTitle}>
-            <span className={styles.askAiPulse}></span>
-            <span>Recording Ask AI question...</span>
-          </div>
-          <div className={styles.askAiActions}>
-            <button
-              type="button"
-              className={cx(actionStyles.largeBtn, styles.askAiBtnStop)}
-              onClick={stopAndSendAskAi}
-              disabled={isTranscribing}
-            >
-              Stop & Send
-            </button>
-            <button
-              type="button"
-              className={cx(actionStyles.largeBtn, styles.askAiBtnCancel)}
-              onClick={cancelAskAiRecording}
-              disabled={isTranscribing}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {isTranscribing && (
-        <div className={styles.askAiContainer}>
-          <div className={styles.askAiTitle}>
-            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
-            <span>Transcribing...</span>
-          </div>
-        </div>
-      )}
-
-      {isThinking && (
-        <div className={styles.askAiContainer}>
-          <div className={styles.askAiTitle}>
-            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
-            <span>Thinking...</span>
-          </div>
-        </div>
-      )}
-
-      {isGeneratingAudio && (
-        <div className={styles.askAiContainer}>
-          <div className={styles.askAiTitle}>
-            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
-            <span>Generating audio...</span>
-          </div>
-        </div>
-      )}
-
-      {askAiError && (
-        <div className={styles.errorMessage}>
-          Ask AI Error: {askAiError}
-        </div>
-      )}
-
-      {askAiTranscript && (
-        <div className={styles.askAiTranscriptBox}>
-          <div className={styles.askAiTranscriptTitle}>Ask AI Transcript:</div>
-          <div className={styles.askAiTranscriptText}>{askAiTranscript}</div>
-        </div>
-      )}
-
-      {askAiAnswer && (
-        <div className={styles.askAiAnswerBox}>
-          <div className={styles.askAiTranscriptTitle}>AI Tutor Answer:</div>
-          <div className={styles.askAiAnswerText}>
-            <MarkdownContent content={askAiAnswer} />
-          </div>
-        </div>
-      )}
-
-      {/* Hidden audio element used to play Piper-generated Ask AI answers. */}
-      <audio ref={askAiAudioRef} preload="none" />
+      {askAiPortalTarget
+        ? createPortal(askAiConversation, askAiPortalTarget)
+        : askAiConversation}
     </div>
   );
 }

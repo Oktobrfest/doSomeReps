@@ -437,6 +437,8 @@ export function AudioQuiz({
           </a>
         )}
       </div>
+
+      <div id="ask-ai-conversation-root" className={styles.askAiConversationRoot}></div>
     </form>
     </>
   );
