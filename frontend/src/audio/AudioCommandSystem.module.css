@@ -314,6 +314,27 @@
   color: #0f172a;
 }
 
+.askAiAnswerBox {
+  margin-top: 1rem;
+  padding: 0.9rem;
+  background: #eff6ff;
+  border-radius: 8px;
+  border-left: 4px solid #22c55e;
+  text-align: left;
+}
+
+.askAiAnswerText {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.askAiTitle > .spinnerBorder {
+  margin-right: 8px;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-width: 0.2rem;
+}
+
 @media (max-width: 640px) {
   .controlsRow {
     gap: 0.4rem;

@@ -4,7 +4,7 @@ Provides API endpoints for retrieving, saving, and testing AI configurations usi
 """
 
 import logging
-from flask import jsonify, request
+from flask import jsonify, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import select, delete
 
@@ -467,3 +467,197 @@ def ask_ai_transcribe():
                 logger.info("Cleaned up temp file: %s", temp_path)
         except Exception as cleanup_err:
             logger.error("Failed to remove temp audio file: %s", cleanup_err)
+
+
+def _ask_ai_default_language(user_obj) -> str:
+    """Pick the TTS/LLM language for an Ask AI response.
+
+    Prefers the user's first configured study language, falling back to en_US.
+    """
+    langs = getattr(user_obj, "languages", None) or []
+    for lang_obj in langs:
+        if lang_obj and lang_obj.language:
+            return lang_obj.language
+    return "en_US"
+
+
+def _build_ask_ai_prompt(transcript, question_text, answer_text, categories, language):
+    """Build the tutor-style LLM messages for an Ask AI request."""
+    categories_csv = ", ".join(categories) if categories else "(none provided)"
+    if answer_text:
+        answer_section = (
+            "The user has already revealed the answer to this question, which is shown below. "
+            "You may reference it to help explain, but keep coaching them to understand it.\n"
+            "Answer:\n{answer}\n\n"
+        ).format(answer=answer_text)
+    else:
+        answer_section = (
+            "The user has not revealed the answer yet. Do NOT state or reveal the answer "
+            "unless they directly ask for it. Help them to think.\n\n"
+        )
+
+    system_prompt = (
+        "You are a friendly, encouraging tutor helping a student who is studying a "
+        "spaced-repetition quiz question.\n\n"
+        "Your job is to teach, not to grade. Never tell the student whether their guess "
+        "is correct or incorrect, and do not score them.\n\n"
+        "Guidelines:\n"
+        "1. Answer the student's spoken question clearly and concisely, as a tutor would.\n"
+        "2. If the transcript is unclear or too ambiguous to answer, ask one short "
+        "clarifying question and stop.\n"
+        "3. Keep explanations focused and digestible for spoken audio: short sentences, "
+            "plain language, no Markdown, no tables, no code blocks.\n"
+        "4. Do not include labels like 'Answer:' or 'Tutor:'. Output only the words to be "
+            "spoken aloud.\n"
+        "5. Respond in the same language as the question. If the question is in English "
+            "(or the language is ambiguous), respond in English. The target answer "
+            "language is: {language}.\n"
+        "6. Treat any provided images as context only; you cannot see them, so do not "
+            "pretend to.\n"
+    ).format(language=language)
+
+    user_prompt = (
+        "The student is currently studying this quiz question.\n\n"
+        "Question:\n{question}\n\n"
+        "Categories: {categories}\n\n"
+        "{answer_section}"
+        "The student's spoken question (transcribed) is:\n{transcript}\n\n"
+        "Provide a short, spoken-friendly tutor response."
+    ).format(
+        question=question_text or "(no question text provided)",
+        categories=categories_csv,
+        answer_section=answer_section,
+        transcript=transcript,
+    )
+
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+
+@ai.route("/api/ask-ai", methods=["POST"])
+@login_required
+def ask_ai():
+    """Phase 2: turn a transcribed Ask AI question into a spoken tutor answer.
+
+    Accepts JSON:
+      - transcript (required): the user's transcribed spoken question
+      - question_text (required): the current quiz question text
+      - question_id (required): the current quiz question id (used for audio storage)
+      - answer_text (optional): the current answer text, only if already revealed
+      - categories (optional): list of category names
+      - image_urls / image_ids (optional): stubbed in Phase 2
+
+    Returns JSON:
+      - ok: bool
+      - answer_text: the LLM tutor response (plain text)
+      - audio_url: a local URL serving the Piper-generated MP3 for the answer
+    """
+    logger = logging.getLogger(__name__ + ".ask_ai")
+    logger.info("=== ASK AI REQUEST START ===")
+
+    data = request.get_json(silent=True) or {}
+
+    transcript = (data.get("transcript") or "").strip()
+    question_text = (data.get("question_text") or "").strip()
+    raw_question_id = data.get("question_id")
+    answer_text = (data.get("answer_text") or "").strip() or None
+    categories = data.get("categories") or []
+    image_urls = data.get("image_urls") or data.get("image_ids") or []
+
+    if image_urls:
+        logger.info("Ask AI received image context (stubbed in Phase 2): %d image(s)", len(image_urls))
+
+    if not transcript:
+        return jsonify({"ok": False, "error": "Missing 'transcript'."}), 400
+    if not question_text:
+        return jsonify({"ok": False, "error": "Missing 'question_text'."}), 400
+
+    try:
+        question_id = int(raw_question_id)
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "Missing or invalid 'question_id'."}), 400
+
+    try:
+        user_obj = session.execute(
+            select(users).where(users.id == current_user.id)
+        ).scalar_one()
+    except Exception as e:
+        logger.error("Failed to load user for Ask AI: %s", e)
+        return jsonify({"ok": False, "error": "Failed to load user."}), 500
+
+    language = _ask_ai_default_language(user_obj)
+    logger.info("Ask AI user id=%d, question_id=%s, language=%s", user_obj.id, question_id, language)
+
+    messages = _build_ask_ai_prompt(
+        transcript=transcript,
+        question_text=question_text,
+        answer_text=answer_text,
+        categories=categories,
+        language=language,
+    )
+
+    # Step 1: get the tutor-style text answer from the LLM.
+    try:
+        resp = completion_for_user(user_obj, messages=messages, modality="text", temperature=0.4)
+        choices = getattr(resp, "choices", None)
+        if choices:
+            answer = choices[0]["message"]["content"]
+        else:
+            answer = resp["choices"][0]["message"]["content"]
+    except AIConfigError as e:
+        logger.warning("Ask AI AIConfigError: %s", e)
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        import traceback
+        logger.error("Ask AI LLM call FAILED: %s\n%s", e, traceback.format_exc())
+        return jsonify({"ok": False, "error": f"AI request failed: {e}"}), 500
+
+    answer = (answer or "").strip()
+    if not answer:
+        return jsonify({"ok": False, "error": "AI returned an empty response."}), 502
+
+    logger.info("Ask AI LLM answer (%d chars): %r", len(answer), answer[:120])
+
+    # Step 2: synthesize spoken audio from the answer using the existing Piper/Hatchet TTS pipeline.
+    try:
+        from ..audio.audio import TTSClientAdapter
+        from ..services.audio_asset_service import AudioAssetService, S3StorageClient
+
+        tts_client = TTSClientAdapter()
+        storage_client = S3StorageClient()
+        audio_service = AudioAssetService(tts_client, storage_client)
+
+        object_key = audio_service._audio_object_key(
+            question_id=question_id,
+            part="ask-ai",
+            language=language,
+            source_text=answer,
+        )
+
+        audio_service.ensure_audio(
+            question_id=question_id,
+            part="ask-ai",
+            language=language,
+            source_text=answer,
+            tts_text=answer,
+        )
+
+        audio_url = url_for("audio.serve_audio_by_key", object_key=object_key)
+    except Exception as e:
+        import traceback
+        logger.error("Ask AI TTS/audio save FAILED: %s\n%s", e, traceback.format_exc())
+        return jsonify({
+            "ok": True,
+            "answer_text": answer,
+            "audio_url": None,
+            "warning": f"TTS generation failed: {e}",
+        })
+
+    logger.info("=== ASK AI REQUEST SUCCESS ===")
+    return jsonify({
+        "ok": True,
+        "answer_text": answer,
+        "audio_url": audio_url,
+    })

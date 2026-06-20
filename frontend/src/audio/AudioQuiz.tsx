@@ -297,7 +297,10 @@ export function AudioQuiz({
 
       <div className={styles.actionsSection}>
         <div id="audio-command-root" className={styles.audioCommandRoot}>
-          <AudioCommandSystemComponent />
+          <AudioCommandSystemComponent
+            question={question}
+            answerRevealed={answerRevealed}
+          />
         </div>
 
         {question.pics.question_image?.some(Boolean) && (

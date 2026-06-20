@@ -6,12 +6,19 @@ import type { WorkerState } from "./kwsWorkerClient";
 import { registerAllCommands } from "./commands";
 import styles from "./AudioCommandSystem.module.css";
 import actionStyles from "./ActionButton.module.css";
+import { MarkdownContent } from "../components/MarkdownContent";
+import type { Question } from "./types";
 import {
   logMediaStreamDiagnostics,
   logAudioContextDiagnostics,
   logAudioDiagnostic,
   probeAudioContextSampleRateSupport,
 } from "./audioDiagnostics";
+
+interface AudioCommandSystemComponentProps {
+  question?: Question | null;
+  answerRevealed?: boolean;
+}
 
 const AVAILABLE_COMMANDS = [
   "READ QUESTION",
@@ -35,7 +42,10 @@ function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function AudioCommandSystemComponent() {
+export function AudioCommandSystemComponent({
+  question,
+  answerRevealed,
+}: AudioCommandSystemComponentProps) {
   const [engineState, setEngineState] = useState<WorkerState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
@@ -44,12 +54,16 @@ export function AudioCommandSystemComponent() {
   // Ask AI state
   const [isRecordingAskAi, setIsRecordingAskAi] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [askAiTranscript, setAskAiTranscript] = useState<string | null>(null);
+  const [askAiAnswer, setAskAiAnswer] = useState<string | null>(null);
   const [askAiError, setAskAiError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const askAiChunksRef = useRef<Blob[]>([]);
   const wasListeningBeforeAskAiRef = useRef(false);
+  const askAiAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Refs for audio capture (these stay on the main thread — only PCM routing)
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -365,7 +379,10 @@ export function AudioCommandSystemComponent() {
 
     setIsRecordingAskAi(true);
     setAskAiTranscript(null);
+    setAskAiAnswer(null);
     setAskAiError(null);
+    setIsThinking(false);
+    setIsGeneratingAudio(false);
     askAiChunksRef.current = [];
 
     try {
@@ -444,19 +461,125 @@ export function AudioCommandSystemComponent() {
         console.log("Ask AI Transcript Result:", result.transcript);
         setAskAiTranscript(result.transcript);
         setIsRecordingAskAi(false);
+
+        // Phase 2: send the transcript + quiz context to the LLM, then speak the answer.
+        await requestAskAiAnswer(result.transcript);
       } catch (err) {
         console.error("Failed to transcribe Ask AI audio:", err);
         setAskAiError(err instanceof Error ? err.message : String(err));
       } finally {
         setIsTranscribing(false);
         mediaRecorderRef.current = null;
-        if (wasListeningBeforeAskAiRef.current) {
-          void startListening();
-        }
+        // Note: command listening is intentionally NOT resumed here. It is resumed
+        // after the AI answer audio finishes playing (or on error/cancel) to avoid
+        // the TTS output being picked up by the keyword recognizer.
       }
     };
 
     mediaRecorderRef.current.stop();
+  };
+
+  const resumeCommandListeningIfNeeded = () => {
+    if (wasListeningBeforeAskAiRef.current) {
+      void startListening();
+    }
+  };
+
+  const playAskAiAnswer = (audioUrl: string): Promise<void> => {
+    return new Promise((resolve) => {
+      if (!askAiAudioRef.current) {
+        resolve();
+        return;
+      }
+      const audio = askAiAudioRef.current;
+      audio.src = audioUrl;
+
+      // Gate the mic while our own TTS audio plays so the keyword recognizer
+      // cannot match words spoken by the answer (echo/feedback protection).
+      (window as any).__audioPlaying = true;
+
+      const cleanup = () => {
+        (window as any).__audioPlaying = false;
+        audio.removeEventListener("ended", onEnded);
+        audio.removeEventListener("error", onError);
+      };
+      const onEnded = () => {
+        cleanup();
+        resolve();
+      };
+      const onError = () => {
+        cleanup();
+        resolve();
+      };
+      audio.addEventListener("ended", onEnded);
+      audio.addEventListener("error", onError);
+
+      void audio.play().catch((err) => {
+        console.error("Ask AI answer playback failed:", err);
+        cleanup();
+        resolve();
+      });
+    });
+  };
+
+  const requestAskAiAnswer = async (transcript: string) => {
+    if (!question || !question.question_id) {
+      setAskAiError("No active question context to ask the AI about.");
+      resumeCommandListeningIfNeeded();
+      return;
+    }
+
+    // Send the answer text only if the user has already revealed it on screen.
+    const answerText = answerRevealed ? question.answer : "";
+    const body = {
+      transcript,
+      question_text: question.question_text,
+      question_id: question.question_id,
+      answer_text: answerText,
+      categories: question.categories ?? [],
+      image_urls: (question.pics?.question_image ?? []).filter(Boolean) as string[],
+    };
+
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers["X-CSRF-Token"] = csrfToken;
+      headers["X-CSRFToken"] = csrfToken;
+    }
+
+    setIsThinking(true);
+    setAskAiError(null);
+    setAskAiAnswer(null);
+
+    try {
+      const response = await fetch("/api/ask-ai", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || `Server responded with ${response.status}`);
+      }
+
+      const answer = result.answer_text || "";
+      const audioUrl = result.audio_url || null;
+      setAskAiAnswer(answer);
+      setIsThinking(false);
+
+      if (audioUrl) {
+        setIsGeneratingAudio(true);
+        await playAskAiAnswer(audioUrl);
+        setIsGeneratingAudio(false);
+      }
+    } catch (err) {
+      console.error("Ask AI answer request failed:", err);
+      setAskAiError(err instanceof Error ? err.message : String(err));
+      setIsGeneratingAudio(false);
+    } finally {
+      setIsThinking(false);
+      resumeCommandListeningIfNeeded();
+    }
   };
 
   const cancelAskAiRecording = () => {
@@ -619,7 +742,26 @@ export function AudioCommandSystemComponent() {
       {isTranscribing && (
         <div className={styles.askAiContainer}>
           <div className={styles.askAiTitle}>
-            <span>Transcribing audio...</span>
+            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
+            <span>Transcribing...</span>
+          </div>
+        </div>
+      )}
+
+      {isThinking && (
+        <div className={styles.askAiContainer}>
+          <div className={styles.askAiTitle}>
+            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
+            <span>Thinking...</span>
+          </div>
+        </div>
+      )}
+
+      {isGeneratingAudio && (
+        <div className={styles.askAiContainer}>
+          <div className={styles.askAiTitle}>
+            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
+            <span>Generating audio...</span>
           </div>
         </div>
       )}
@@ -636,6 +778,18 @@ export function AudioCommandSystemComponent() {
           <div className={styles.askAiTranscriptText}>{askAiTranscript}</div>
         </div>
       )}
+
+      {askAiAnswer && (
+        <div className={styles.askAiAnswerBox}>
+          <div className={styles.askAiTranscriptTitle}>AI Tutor Answer:</div>
+          <div className={styles.askAiAnswerText}>
+            <MarkdownContent content={askAiAnswer} />
+          </div>
+        </div>
+      )}
+
+      {/* Hidden audio element used to play Piper-generated Ask AI answers. */}
+      <audio ref={askAiAudioRef} preload="none" />
     </div>
   );
 }
