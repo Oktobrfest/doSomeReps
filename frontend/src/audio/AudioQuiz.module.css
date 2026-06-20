@@ -10,7 +10,6 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 24px;
-  padding-bottom: 180px;
 }
 
 .actionsSection {
@@ -152,7 +151,6 @@
 @media (max-width: 640px) {
   .quizContainer {
     padding: 16px;
-    padding-bottom: 260px;
   }
 
   .adminActions {
