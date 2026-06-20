@@ -1,24 +1,13 @@
 import { Check, X, Minus } from 'lucide-react';
 import type { ButtonHTMLAttributes } from 'react';
 import actionStyles from './ActionButton.module.css';
-
-interface AnswerButtonsProps {
-  className?: string;
-  onCorrect?: () => void;
-  onWrong?: () => void;
-  onSlightlyWrong?: () => void;
-}
+import styles from './AnswerButtons.module.css';
 
 interface AnswerButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant: 'correct' | 'wrong' | 'slightlyWrong';
 }
 
-function AnswerButton({
-  variant,
-  className,
-  children,
-  ...props
-}: AnswerButtonProps) {
+function AnswerButton({ variant, className, children, ...props }: AnswerButtonProps) {
   const variantClass =
     variant === 'correct'
       ? actionStyles.greenBtn
@@ -29,36 +18,55 @@ function AnswerButton({
   return (
     <button
       type="button"
-      className={`${actionStyles.largeBtn} ${variantClass} ${className || ''}`}
+      className={`${styles.btn} ${variantClass} ${className || ''}`}
       {...props}
     >
-      <div className={actionStyles.btnContent}>
-        {variant === 'correct' && <Check className={actionStyles.iconLarge} />}
-        {variant === 'wrong' && <X className={actionStyles.iconLarge} />}
-        {variant === 'slightlyWrong' && <Minus className={actionStyles.iconLarge} />}
-        <span>{children}</span>
-      </div>
+      {variant === 'correct' && <Check className={styles.icon} />}
+      {variant === 'wrong' && <X className={styles.icon} />}
+      {variant === 'slightlyWrong' && <Minus className={styles.icon} />}
+      <span>{children}</span>
     </button>
   );
 }
 
+export interface AnswerButtonsProps {
+  className?: string;
+  size?: 'default' | 'compact';
+  onCorrect?: () => void;
+  onWrong?: () => void;
+  onSlightlyWrong?: () => void;
+}
+
 export function AnswerButtons({
   className,
+  size = 'default',
   onCorrect,
   onWrong,
   onSlightlyWrong,
 }: AnswerButtonsProps) {
   return (
-    <div className={className}>
-      <AnswerButton variant="correct" onClick={onCorrect}>
-        Correct!
-      </AnswerButton>
-      <AnswerButton variant="wrong" onClick={onWrong}>
-        Wrong!
-      </AnswerButton>
-      <AnswerButton variant="slightlyWrong" onClick={onSlightlyWrong}>
-        Slightly Wrong
-      </AnswerButton>
+    <div
+      className={`${styles.container} ${size === 'compact' ? styles.sizeCompact : ''} ${className || ''}`}
+    >
+      {onCorrect && (
+        <AnswerButton variant="correct" onClick={onCorrect} className={styles.correct}>
+          Correct!
+        </AnswerButton>
+      )}
+      {onWrong && (
+        <AnswerButton variant="wrong" onClick={onWrong} className={styles.secondary}>
+          Wrong!
+        </AnswerButton>
+      )}
+      {onSlightlyWrong && (
+        <AnswerButton
+          variant="slightlyWrong"
+          onClick={onSlightlyWrong}
+          className={styles.secondary}
+        >
+          Slightly Wrong
+        </AnswerButton>
+      )}
     </div>
   );
 }

@@ -13,17 +13,15 @@ import { ImageModal } from './ImageModal';
 import {
   Volume2,
   BookOpen,
-  Check,
-  X,
   Ban,
   Pause,
   Play,
   Edit,
-  Minus,
 } from 'lucide-react';
 import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
 import actionStyles from './ActionButton.module.css';
+import { AnswerButtons } from './AnswerButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
 
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -126,39 +124,28 @@ export function AudioQuiz({
   // Form ref for programmatic submission from modal
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Handlers for modal answer buttons
-  const handleModalCorrect = useCallback(() => {
-    if (formRef.current) {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'correct_submit';
-      input.value = 'Correct!';
-      formRef.current.appendChild(input);
-      formRef.current.requestSubmit();
-    }
+  // Shared helper to submit the quiz form from the answer buttons.
+  const submitForm = useCallback((name: string, value: string) => {
+    if (!formRef.current) return;
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value;
+    formRef.current.appendChild(input);
+    formRef.current.requestSubmit();
   }, []);
 
-  const handleModalWrong = useCallback(() => {
-    if (formRef.current) {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'incorrect_submit';
-      input.value = 'Wrong!';
-      formRef.current.appendChild(input);
-      formRef.current.requestSubmit();
-    }
-  }, []);
+  const handleCorrect = useCallback(() => {
+    submitForm('correct_submit', 'Correct!');
+  }, [submitForm]);
 
-  const handleModalSlightlyWrong = useCallback(() => {
-    if (formRef.current) {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'incorrect_submit';
-      input.value = 'Slightly Wrong';
-      formRef.current.appendChild(input);
-      formRef.current.requestSubmit();
-    }
-  }, []);
+  const handleWrong = useCallback(() => {
+    submitForm('incorrect_submit', 'Wrong!');
+  }, [submitForm]);
+
+  const handleSlightlyWrong = useCallback(() => {
+    submitForm('incorrect_submit', 'Slightly Wrong');
+  }, [submitForm]);
 
   const openModal = useCallback((images: string[], startIndex: number) => {
     setModalImages(images);
@@ -299,9 +286,9 @@ export function AudioQuiz({
           images={modalImages}
           startIndex={modalStartIndex}
           onClose={closeModal}
-          onCorrect={handleModalCorrect}
-          onWrong={handleModalWrong}
-          onSlightlyWrong={handleModalSlightlyWrong}
+          onCorrect={handleCorrect}
+          onWrong={handleWrong}
+          onSlightlyWrong={handleSlightlyWrong}
         />
       )}
       <form method="post" className={styles.quizContainer} ref={formRef}>
@@ -381,46 +368,6 @@ export function AudioQuiz({
               onSequenceEnd={handleAnswerEnded}
             />
           )}
-
-          {answerRevealed && (
-            <div className={styles.btnGroup}>
-              <LargeActionButton
-                type="submit"
-                name="correct_submit"
-                value="Correct!"
-                className={cx(styles.flex1, actionStyles.greenBtn)}
-              >
-                <div className={actionStyles.btnContent}>
-                  <Check className={actionStyles.iconLarge} />
-                  <span>Correct!</span>
-                </div>
-              </LargeActionButton>
-
-              <LargeActionButton
-                type="submit"
-                name="incorrect_submit"
-                value="Wrong!"
-                className={cx(styles.flex1, actionStyles.redBtn)}
-              >
-                <div className={actionStyles.btnContent}>
-                  <X className={actionStyles.iconLarge} />
-                  <span>Wrong!</span>
-                </div>
-              </LargeActionButton>
-
-              <LargeActionButton
-                type="submit"
-                name="incorrect_submit"
-                value="Slightly Wrong"
-                className={cx(styles.flex1, actionStyles.orangeBtn)}
-              >
-                <div className={actionStyles.btnContent}>
-                  <Minus className={actionStyles.iconLarge} />
-                  <span>Slightly Wrong</span>
-                </div>
-              </LargeActionButton>
-            </div>
-          )}
         </div>
       </div>
 
@@ -449,47 +396,17 @@ export function AudioQuiz({
             <div className={styles.cardContent}>
               <MarkdownContent content={question.answer} />
             </div>
-
-            <div className={styles.mobileBtnGroup}>
-              <LargeActionButton
-                type="submit"
-                name="correct_submit"
-                value="Correct!"
-                className={cx(styles.mobileFlex1, actionStyles.greenBtn)}
-              >
-                <div className={actionStyles.btnContent}>
-                  <Check className={actionStyles.iconLarge} />
-                  <span>Correct!</span>
-                </div>
-              </LargeActionButton>
-
-              <LargeActionButton
-                type="submit"
-                name="incorrect_submit"
-                value="Wrong!"
-                className={cx(styles.mobileFlex1, actionStyles.redBtn)}
-              >
-                <div className={actionStyles.btnContent}>
-                  <X className={actionStyles.iconLarge} />
-                  <span>Wrong!</span>
-                </div>
-              </LargeActionButton>
-
-              <LargeActionButton
-                type="submit"
-                name="incorrect_submit"
-                value="Slightly Wrong"
-                className={cx(styles.mobileFlex1, actionStyles.orangeBtn)}
-              >
-                <div className={actionStyles.btnContent}>
-                  <Minus className={actionStyles.iconLarge} />
-                  <span>Slightly Wrong</span>
-                </div>
-              </LargeActionButton>
-            </div>
           </div>
         )}
       </div>
+
+      {answerRevealed && (
+        <AnswerButtons
+          onCorrect={handleCorrect}
+          onWrong={handleWrong}
+          onSlightlyWrong={handleSlightlyWrong}
+        />
+      )}
 
       <div className={styles.adminActions}>
         <LargeActionButton

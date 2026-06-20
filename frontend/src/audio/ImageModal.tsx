@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, type TouchEvent, type KeyboardEvent } from 'react';
-import { X, ChevronLeft, ChevronRight, Check, Minus } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './ImageModal.module.css';
+import { AnswerButtons } from './AnswerButtons';
 
 interface ImageModalProps {
   images: string[];
@@ -160,47 +161,13 @@ export function ImageModal({ images, startIndex, onClose, onCorrect, onWrong, on
 
       {/* Answer buttons at the very bottom */}
       {(onCorrect || onWrong || onSlightlyWrong) && (
-        <div className={styles.answerButtons}>
-          {onCorrect && (
-            <button
-              type="button"
-              className={styles.correctBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                onCorrect();
-              }}
-            >
-              <Check size={16} style={{ marginRight: 4 }} />
-              Correct!
-            </button>
-          )}
-          {onWrong && (
-            <button
-              type="button"
-              className={styles.wrongBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                onWrong();
-              }}
-            >
-              <X size={16} style={{ marginRight: 4 }} />
-              Wrong!
-            </button>
-          )}
-          {onSlightlyWrong && (
-            <button
-              type="button"
-              className={styles.slightlyWrongBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSlightlyWrong();
-              }}
-            >
-              <Minus size={16} style={{ marginRight: 4 }} />
-              Slightly Wrong
-            </button>
-          )}
-        </div>
+        <AnswerButtons
+          className={styles.modalAnswerBar}
+          size="compact"
+          onCorrect={onCorrect}
+          onWrong={onWrong}
+          onSlightlyWrong={onSlightlyWrong}
+        />
       )}
     </div>
   );

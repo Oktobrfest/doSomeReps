@@ -10,6 +10,7 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 24px;
+  padding-bottom: 160px;
 }
 
 .actionsSection {
@@ -26,15 +27,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.btnGroup {
-  display: flex;
-  gap: 16px;
-}
-
-.flex1 {
-  flex: 1;
 }
 
 .playableControl {
@@ -57,8 +49,6 @@
 .startBtn:hover {
   box-shadow: 0 8px 20px rgb(0 0 0 / 0.15);
 }
-
-
 
 .contentDivider {
   margin-top: 28px;
@@ -84,9 +74,7 @@
   padding: 4px 11px 3px 11px;
   background: orange;
   color: #111827;
-  /*font-size: 0.875rem;*/
   font-size: clamp(0.8em, 1rem + 1.4vw, 2rem);
-
   font-weight: 600;
 }
 
@@ -131,6 +119,10 @@
   margin-top: 24px;
 }
 
+.flex1 {
+  flex: 1;
+}
+
 .secondaryBtn {
   display: inline-flex;
   align-items: center;
@@ -160,10 +152,7 @@
 @media (max-width: 640px) {
   .quizContainer {
     padding: 16px;
-  }
-
-  .btnGroup {
-    flex-direction: column;
+    padding-bottom: 160px;
   }
 
   .adminActions {
@@ -172,23 +161,5 @@
 
   .secondaryBtn {
     width: 100%;
-  }
-
-  .mobileBtnGroup {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-    padding: 16px;
-    border-top: 1px solid #e5e7eb;
-  }
-
-  .mobileFlex1 {
-    flex: 1;
-  }
-}
-
-@media (min-width: 641px) {
-  .mobileBtnGroup {
-    display: none;
   }
 }
