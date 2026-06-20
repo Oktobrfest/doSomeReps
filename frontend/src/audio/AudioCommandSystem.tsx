@@ -41,6 +41,16 @@ export function AudioCommandSystemComponent() {
   const [lastCommand, setLastCommand] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Ask AI state
+  const [isRecordingAskAi, setIsRecordingAskAi] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [askAiTranscript, setAskAiTranscript] = useState<string | null>(null);
+  const [askAiError, setAskAiError] = useState<string | null>(null);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const askAiChunksRef = useRef<Blob[]>([]);
+  const wasListeningBeforeAskAiRef = useRef(false);
+
   // Refs for audio capture (these stay on the main thread — only PCM routing)
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -341,6 +351,146 @@ export function AudioCommandSystemComponent() {
     }
   };
 
+  const getCsrfToken = () => {
+    const input = document.querySelector('input[name="csrf_token"]') as HTMLInputElement;
+    return input ? input.value : "";
+  };
+
+  const triggerAskAiRecording = async () => {
+    logDebug("Starting Ask AI recording flow...");
+    wasListeningBeforeAskAiRef.current = (engineState === "listening" || sessionStorage.getItem("audio_listening_active") === "true");
+
+    // Stop command listening while Ask AI recording is active so command recognition does not interfere.
+    stopListeningCleanup();
+
+    setIsRecordingAskAi(true);
+    setAskAiTranscript(null);
+    setAskAiError(null);
+    askAiChunksRef.current = [];
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          askAiChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.start();
+      logDebug("MediaRecorder started recording Ask AI question.");
+    } catch (err) {
+      console.error("Failed to start MediaRecorder for Ask AI:", err);
+      setAskAiError(err instanceof Error ? err.message : String(err));
+      setIsRecordingAskAi(false);
+      if (wasListeningBeforeAskAiRef.current) {
+        void startListening();
+      }
+    }
+  };
+
+  const stopAndSendAskAi = () => {
+    logDebug("Stopping Ask AI recording and sending to transcribe...");
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") {
+      return;
+    }
+
+    setIsTranscribing(true);
+
+    mediaRecorderRef.current.onstop = async () => {
+      if (mediaRecorderRef.current) {
+        const stream = mediaRecorderRef.current.stream;
+        stream.getTracks().forEach((track) => track.stop());
+      }
+
+      try {
+        const audioBlob = new Blob(askAiChunksRef.current, { type: "audio/webm" });
+        if (audioBlob.size === 0) {
+          throw new Error("Recorded audio is empty.");
+        }
+
+        logDebug(`Sending audio chunk to Flask backend. Size: ${audioBlob.size} bytes`);
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "ask-ai-question.webm");
+
+        const headers: Record<string, string> = {};
+        const csrfToken = getCsrfToken();
+        if (csrfToken) {
+          headers["X-CSRF-Token"] = csrfToken;
+          headers["X-CSRFToken"] = csrfToken;
+        }
+
+        const response = await fetch("/api/ask-ai/transcribe", {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || `Server responded with ${response.status}`);
+        }
+
+        console.log("Ask AI Transcript Result:", result.transcript);
+        setAskAiTranscript(result.transcript);
+        setIsRecordingAskAi(false);
+      } catch (err) {
+        console.error("Failed to transcribe Ask AI audio:", err);
+        setAskAiError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsTranscribing(false);
+        mediaRecorderRef.current = null;
+        if (wasListeningBeforeAskAiRef.current) {
+          void startListening();
+        }
+      }
+    };
+
+    mediaRecorderRef.current.stop();
+  };
+
+  const cancelAskAiRecording = () => {
+    logDebug("Cancelling Ask AI recording...");
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.onstop = () => {
+        if (mediaRecorderRef.current) {
+          const stream = mediaRecorderRef.current.stream;
+          stream.getTracks().forEach((track) => track.stop());
+        }
+        mediaRecorderRef.current = null;
+      };
+      mediaRecorderRef.current.stop();
+    } else if (mediaRecorderRef.current) {
+      const stream = mediaRecorderRef.current.stream;
+      stream.getTracks().forEach((track) => track.stop());
+      mediaRecorderRef.current = null;
+    }
+
+    setIsRecordingAskAi(false);
+    if (wasListeningBeforeAskAiRef.current) {
+      void startListening();
+    }
+  };
+
+  useEffect(() => {
+    (window as any).audioAskAi = () => {
+      void triggerAskAiRecording();
+    };
+    return () => {
+      delete (window as any).audioAskAi;
+    };
+  }, [engineState]);
+
   return (
     <div className={styles.voiceCommandContainer}>
       <div className={styles.controlsRow}>
@@ -436,6 +586,54 @@ export function AudioCommandSystemComponent() {
       {errorMsg && (
         <div className={styles.errorMessage}>
           ⚠️ {errorMsg}
+        </div>
+      )}
+
+      {isRecordingAskAi && (
+        <div className={styles.askAiContainer}>
+          <div className={styles.askAiTitle}>
+            <span className={styles.askAiPulse}></span>
+            <span>Recording Ask AI question...</span>
+          </div>
+          <div className={styles.askAiActions}>
+            <button
+              type="button"
+              className={cx(actionStyles.largeBtn, styles.askAiBtnStop)}
+              onClick={stopAndSendAskAi}
+              disabled={isTranscribing}
+            >
+              Stop & Send
+            </button>
+            <button
+              type="button"
+              className={cx(actionStyles.largeBtn, styles.askAiBtnCancel)}
+              onClick={cancelAskAiRecording}
+              disabled={isTranscribing}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isTranscribing && (
+        <div className={styles.askAiContainer}>
+          <div className={styles.askAiTitle}>
+            <span>Transcribing audio...</span>
+          </div>
+        </div>
+      )}
+
+      {askAiError && (
+        <div className={styles.errorMessage}>
+          Ask AI Error: {askAiError}
+        </div>
+      )}
+
+      {askAiTranscript && (
+        <div className={styles.askAiTranscriptBox}>
+          <div className={styles.askAiTranscriptTitle}>Ask AI Transcript:</div>
+          <div className={styles.askAiTranscriptText}>{askAiTranscript}</div>
         </div>
       )}
     </div>
