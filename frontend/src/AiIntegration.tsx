@@ -1,17 +1,36 @@
 import React, { useState, useEffect } from "react";
 
-interface AIConfig {
+interface SavedProvider {
+  id: number;
   provider: string;
-  model: string;
   apiBase: string;
   hasKey: boolean;
   maskedKey: string;
+}
+
+interface SavedIntegration {
+  id: number;
+  modality: string;
+  provider_id: number | null;
+  model: string;
+}
+
+interface AIConfig {
+  providers: SavedProvider[];
+  integrations: SavedIntegration[];
   predefinedOptions: Record<string, string[]>;
   modelPrices?: Record<string, string>;
 }
 
+const MODALITIES = [
+  { value: "text", label: "Text Generation (LLM)", desc: "Used for question formulation, chat, and explanation features." },
+  { value: "tts", label: "Text to Speech (TTS)", desc: "Used for reading out questions, answers, and hints." },
+  { value: "stt", label: "Speech to Text / Transcribe", desc: "Used for transcribing voice responses." },
+  { value: "image", label: "Image Generation", desc: "Used for creating illustrative visual aids." }
+];
+
 export default function AiIntegration() {
-  const [activeTab, setActiveTab] = useState<"status" | "config" | "playground">("status");
+  const [activeTab, setActiveTab] = useState<"status" | "providers" | "integrations" | "playground">("status");
   const [config, setConfig] = useState<AIConfig | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
@@ -19,15 +38,20 @@ export default function AiIntegration() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Form states
-  const [formProvider, setFormProvider] = useState<string>("");
-  const [formModel, setFormModel] = useState<string>("");
-  const [formApiBase, setFormApiBase] = useState<string>("");
-  const [formApiKey, setFormApiKey] = useState<string>("");
+  // Provider Form State
+  const [providerName, setProviderName] = useState<string>("");
+  const [customProviderName, setCustomProviderName] = useState<string>("");
+  const [providerApiBase, setProviderApiBase] = useState<string>("");
+  const [providerApiKey, setProviderApiKey] = useState<string>("");
+
+  // Integration Form State
+  const [selectedModality, setSelectedModality] = useState<string>("text");
+  const [integrationProviderId, setIntegrationProviderId] = useState<string>("");
+  const [integrationModel, setIntegrationModel] = useState<string>("");
   const [isCustomModel, setIsCustomModel] = useState<boolean>(false);
-  const [currentModelPrice, setCurrentModelPrice] = useState<string>("N/A");
 
   // Playground states
+  const [playgroundModality, setPlaygroundModality] = useState<string>("text");
   const [prompt, setPrompt] = useState<string>("");
   const [playgroundResponse, setPlaygroundResponse] = useState<string | null>(null);
   const [playgroundError, setPlaygroundError] = useState<string | null>(null);
@@ -49,19 +73,6 @@ export default function AiIntegration() {
         throw new Error(data?.error || `Failed to load configuration (Status: ${res.status})`);
       }
       setConfig(data);
-
-      // Initialize form fields
-      setFormProvider(data.provider);
-      setFormApiBase(data.apiBase);
-
-      // Check if current model is in standard options
-      const stdModels = data.predefinedOptions[data.provider] || [];
-      if (data.model && !stdModels.includes(data.model)) {
-        setIsCustomModel(true);
-      } else {
-        setIsCustomModel(false);
-      }
-      setFormModel(data.model);
     } catch (err: any) {
       setError(err.message || "An unknown error occurred while fetching settings.");
     } finally {
@@ -73,160 +84,163 @@ export default function AiIntegration() {
     fetchConfig();
   }, []);
 
-  // Helper function to get model price with normalization and debugging
-  const getModelPrice = (modelName: string, providerName: string): string => {
-    console.log('=== GET MODEL PRICE DEBUG ===');
-    console.log('Input - Model:', modelName, 'Provider:', providerName);
-
-    if (!config?.modelPrices) {
-      console.log('No modelPrices in config');
-      return "N/A";
+  // Update integration model defaults when modality or provider changes
+  useEffect(() => {
+    if (!config) return;
+    const providerObj = config.providers.find(p => p.id === Number(integrationProviderId));
+    const providerKey = providerObj ? providerObj.provider : "";
+    const stdModels = config.predefinedOptions[providerKey] || [];
+    
+    // Check if there's an existing integration configuration for this modality
+    const existing = config.integrations.find(i => i.modality === selectedModality);
+    if (existing) {
+      setIntegrationProviderId(existing.provider_id ? String(existing.provider_id) : "");
+      setIntegrationModel(existing.model);
+      if (existing.model && !stdModels.includes(existing.model)) {
+        setIsCustomModel(true);
+      } else {
+        setIsCustomModel(false);
+      }
+    } else {
+      setIntegrationProviderId("");
+      setIntegrationModel("");
+      setIsCustomModel(false);
     }
+  }, [selectedModality, config]);
 
-    console.log('Available prices:', config.modelPrices);
+  const handleProviderSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const pName = e.target.value;
+    setProviderName(pName);
+    
+    // Auto populate fields if provider already has config
+    if (config) {
+      const existing = config.providers.find(p => p.provider === pName);
+      if (existing) {
+        setProviderApiBase(existing.apiBase || "");
+      } else {
+        setProviderApiBase("");
+      }
+    }
+    setProviderApiKey("");
+  };
 
-    // Normalize to lowercase for matching
-    const normalizedModel = (modelName || "").trim().toLowerCase();
-    const normalizedProvider = (providerName || "").trim().toLowerCase();
+  const getModelPrice = (modelName: string, providerIdStr: string): string => {
+    if (!config?.modelPrices || !modelName) return "N/A";
+    const providerObj = config.providers.find(p => p.id === Number(providerIdStr));
+    const providerName = providerObj ? providerObj.provider : "";
 
-    console.log('Normalized - Model:', normalizedModel, 'Provider:', normalizedProvider);
+    const normalizedModel = modelName.trim().toLowerCase();
+    const normalizedProvider = providerName.trim().toLowerCase();
 
-    // Try multiple lookup strategies
     const lookupKeys = [
-      modelName, // Original case
-      normalizedModel, // Lowercase
-      `${providerName}/${modelName}`, // With provider prefix
-      `${normalizedProvider}/${normalizedModel}`, // Lowercase with provider
-      modelName.split('/').pop() || modelName, // Just the model part after /
-      (modelName.split('/').pop() || modelName).toLowerCase(), // Lowercase model part
+      modelName,
+      normalizedModel,
+      `${providerName}/${modelName}`,
+      `${normalizedProvider}/${normalizedModel}`,
+      modelName.split('/').pop() || modelName,
+      (modelName.split('/').pop() || modelName).toLowerCase(),
     ];
 
-    console.log('Trying lookup keys:', lookupKeys);
-
     for (const key of lookupKeys) {
-      // Try exact match
       if (config.modelPrices[key]) {
-        console.log('✓ Found price with key:', key, '→', config.modelPrices[key]);
         return config.modelPrices[key];
       }
-
-      // Try case-insensitive match
-      const lowerKey = key.toLowerCase();
-      for (const [priceKey, priceValue] of Object.entries(config.modelPrices)) {
-        if (priceKey.toLowerCase() === lowerKey) {
-          console.log('✓ Found price with case-insensitive match:', priceKey, '→', priceValue);
-          return priceValue;
-        }
-      }
     }
-
-    console.log('✗ No price found for model');
     return "N/A";
   };
 
-  // Update model price whenever formModel or formProvider changes
-  useEffect(() => {
-
-    if (formModel && config) {
-      const price = getModelPrice(formModel, formProvider);
-      console.log('Setting currentModelPrice to:', price);
-      setCurrentModelPrice(price);
-    } else {
-      console.log('Model or config not ready, setting N/A');
-      setCurrentModelPrice("N/A");
+  const handleSaveProvider = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalProvider = providerName === "custom" ? customProviderName.trim() : providerName;
+    if (!finalProvider) {
+      setError("Please specify a provider.");
+      return;
     }
-  }, [formModel, formProvider, config]);
 
-  const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const prov = e.target.value;
-    setFormProvider(prov);
+    setSaving(true);
+    setSuccessMsg(null);
+    setError(null);
 
-    // Auto-select first standard model or empty for custom
-    if (config?.predefinedOptions[prov] && config.predefinedOptions[prov].length > 0) {
-      const firstModel = config.predefinedOptions[prov][0];
-      console.log('Auto-selecting first model:', firstModel);
-      setFormModel(firstModel);
-      setIsCustomModel(false);
-    } else {
-      console.log('No predefined models, using custom');
-      setFormModel("");
-      setIsCustomModel(true);
+    try {
+      const res = await fetch("/integration/api/provider", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: finalProvider,
+          apiBase: providerApiBase,
+          apiKey: providerApiKey,
+        }),
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setSuccessMsg(result.message || "Provider credentials saved successfully!");
+        setProviderApiKey("");
+        setProviderName("");
+        setCustomProviderName("");
+        setProviderApiBase("");
+        await fetchConfig();
+      } else {
+        throw new Error(result.error || "Failed to save provider.");
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleModelChange = (newModel: string) => {
-    setFormModel(newModel);
+  const handleDeleteProvider = async (providerId: number) => {
+    if (!window.confirm("Are you sure you want to delete credentials for this provider? All linked modalities will be unset.")) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await fetch(`/integration/api/provider/${providerId}`, {
+        method: "DELETE",
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setSuccessMsg("Provider deleted successfully.");
+        await fetchConfig();
+      } else {
+        throw new Error(result.error || "Failed to delete provider.");
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSaveConfig = async (e: React.FormEvent) => {
+  const handleSaveIntegration = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setSuccessMsg(null);
     setError(null);
 
     try {
-      const res = await fetch("/integration/api/config", {
+      const res = await fetch("/integration/api/integration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          provider: formProvider,
-          model: formModel,
-          apiBase: formApiBase,
-          apiKey: formApiKey,
+          modality: selectedModality,
+          provider_id: integrationProviderId ? Number(integrationProviderId) : null,
+          model: integrationModel,
         }),
       });
 
-      let result;
-      try {
-        result = await res.json();
-      } catch (jsonErr) {
-        throw new Error(`Failed to save configuration: Server returned a non-JSON response (Status: ${res.status}).`);
-      }
-
+      const result = await res.json();
       if (res.ok && result.success) {
-        setSuccessMsg(result.message || "Configuration saved successfully!");
-        setFormApiKey(""); // Clear password field
-        // Refresh local config state
+        setSuccessMsg(result.message || "Integration configured successfully!");
         await fetchConfig();
       } else {
-        throw new Error(result.error || "Failed to save configuration.");
+        throw new Error(result.error || "Failed to save integration.");
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred while saving.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteKey = async () => {
-    if (!window.confirm("Are you sure you want to delete the saved API key?")) {
-      return;
-    }
-    setSaving(true);
-    setSuccessMsg(null);
-    setError(null);
-
-    try {
-      const res = await fetch("/integration/api/config/key", {
-        method: "DELETE",
-      });
-
-      let result;
-      try {
-        result = await res.json();
-      } catch (jsonErr) {
-        throw new Error(`Failed to delete key: Server returned a non-JSON response (Status: ${res.status}).`);
-      }
-
-      if (res.ok && result.success) {
-        setSuccessMsg(result.message || "API key deleted successfully!");
-        setFormApiKey("");
-        await fetchConfig();
-      } else {
-        throw new Error(result.error || "Failed to delete API key.");
-      }
-    } catch (err: any) {
-      setError(err.message || "An error occurred while deleting the key.");
+      setError(err.message || "An error occurred.");
     } finally {
       setSaving(false);
     }
@@ -245,16 +259,13 @@ export default function AiIntegration() {
       const res = await fetch("/integration/api/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({
+          prompt,
+          modality: playgroundModality,
+        }),
       });
 
-      let data;
-      try {
-        data = await res.json();
-      } catch (jsonErr) {
-        throw new Error(`Failed to generate completion: Server returned a non-JSON response (Status: ${res.status}).`);
-      }
-
+      const data = await res.json();
       if (res.ok && data.success) {
         setPlaygroundResponse(data.response);
         setPlaygroundModelUsed(data.model_used);
@@ -262,28 +273,9 @@ export default function AiIntegration() {
         throw new Error(data.error || "Failed to generate completion.");
       }
     } catch (err: any) {
-      setPlaygroundError(err.message || "An unexpected error occurred during the request.");
+      setPlaygroundError(err.message || "An unexpected error occurred.");
     } finally {
       setTesting(false);
-    }
-  };
-
-  const loadPreset = (preset: string) => {
-    switch (preset) {
-      case "translate":
-        setPrompt("Translate the following sentence into French, Spanish, and German:\n'Knowledge is power, but practice makes perfect.'");
-        break;
-      case "summarize":
-        setPrompt("Summarize the main benefit of using LiteLLM in a single, punchy paragraph.");
-        break;
-      case "quiz":
-        setPrompt("Generate 3 multiple-choice study questions about basic Flask routing with correct answers indicated.");
-        break;
-      case "greet":
-        setPrompt("Say a friendly hello and let me know what model you are!");
-        break;
-      default:
-        break;
     }
   };
 
@@ -301,47 +293,46 @@ export default function AiIntegration() {
       <div className="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
         <div>
           <h2 className="text-primary mb-1">
-            <i className="fa fa-plug mr-2"></i>AI Integration Engine
+            <i className="fa fa-plug mr-2"></i>Multi-Modality AI Orchestrator
           </h2>
         </div>
       </div>
 
-      {/* Navigation tabs */}
       <ul className="nav nav-pills mb-4">
         <li className="nav-item">
           <button
             className={`nav-link border-0 ${activeTab === "status" ? "active bg-primary text-white" : "bg-light text-dark mr-2"}`}
             onClick={() => setActiveTab("status")}
           >
-            <i className="fa fa-dashboard mr-1"></i> Status & Info
+            <i className="fa fa-dashboard mr-1"></i> Dashboard
           </button>
         </li>
         <li className="nav-item">
           <button
-            className={`nav-link border-0 ${activeTab === "config" ? "active bg-primary text-white" : "bg-light text-dark mr-2"}`}
-            onClick={() => {
-              setActiveTab("config");
-              setSuccessMsg(null);
-            }}
+            className={`nav-link border-0 ${activeTab === "providers" ? "active bg-primary text-white" : "bg-light text-dark mr-2"}`}
+            onClick={() => setActiveTab("providers")}
           >
-            <i className="fa fa-gears mr-1"></i> Configurator
+            <i className="fa fa-key mr-1"></i> 1. Credentials & API Keys
+          </button>
+        </li>
+        <li className="nav-item">
+          <button
+            className={`nav-link border-0 ${activeTab === "integrations" ? "active bg-primary text-white" : "bg-light text-dark mr-2"}`}
+            onClick={() => setActiveTab("integrations")}
+          >
+            <i className="fa fa-gears mr-1"></i> 2. Modality Models
           </button>
         </li>
         <li className="nav-item">
           <button
             className={`nav-link border-0 ${activeTab === "playground" ? "active bg-primary text-white" : "bg-light text-dark"}`}
-            onClick={() => {
-              setActiveTab("playground");
-              setPlaygroundError(null);
-              setPlaygroundResponse(null);
-            }}
+            onClick={() => setActiveTab("playground")}
           >
-            <i className="fa fa-flask mr-1"></i> Playground Tester
+            <i className="fa fa-flask mr-1"></i> 3. Playground
           </button>
         </li>
       </ul>
 
-      {/* Global Errors / Messages */}
       {error && (
         <div className="alert alert-danger alert-dismissible fade show mb-4" role="alert">
           <strong>Error:</strong> {error}
@@ -360,80 +351,91 @@ export default function AiIntegration() {
         </div>
       )}
 
-      {/* TAB CONTENTS */}
-
-      {/* Tab: Status & Info */}
+      {/* DASHBOARD TAB */}
       {activeTab === "status" && config && (
         <div className="row">
-          <div className="col-12 mb-4">
-            <div className="card border-primary">
+          <div className="col-md-6 mb-4">
+            <div className="card h-100 border-primary">
               <div className="card-header bg-primary text-white font-weight-bold">
-                <i className="fa fa-info-circle mr-2"></i>Connection Summary
+                <i className="fa fa-key mr-2"></i>Active Providers ({config.providers.length})
               </div>
               <div className="card-body">
-                <table className="table table-borderless m-0">
+                {config.providers.length === 0 ? (
+                  <div className="text-center py-4 text-muted">
+                    <p className="mb-2">No API keys or provider credentials added yet.</p>
+                    <button className="btn btn-sm btn-primary" onClick={() => setActiveTab("providers")}>
+                      Add Credentials
+                    </button>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-sm table-borderless">
+                      <thead>
+                        <tr className="border-bottom">
+                          <th>Provider</th>
+                          <th>Endpoint</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {config.providers.map(p => (
+                          <tr key={p.id}>
+                            <td>
+                              <span className="badge badge-info text-uppercase">{p.provider}</span>
+                            </td>
+                            <td>
+                              <span className="small text-muted">{p.apiBase || "Default"}</span>
+                            </td>
+                            <td>
+                              <span className="text-success small">
+                                <i className="fa fa-check-circle mr-1"></i> Active
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="col-md-6 mb-4">
+            <div className="card h-100 border-success">
+              <div className="card-header bg-success text-white font-weight-bold">
+                <i className="fa fa-sliders mr-2"></i>Modality Mapping
+              </div>
+              <div className="card-body">
+                <table className="table table-sm table-borderless m-0">
                   <tbody>
-                    <tr>
-                      <th className="pl-0 text-muted" style={{ width: "25%" }}>AI Provider:</th>
-                      <td>
-                        {config.provider ? (
-                          <span className="badge badge-info px-2 py-1 font-weight-bold">
-                            {config.provider.toUpperCase()}
-                          </span>
-                        ) : (
-                          <span className="text-danger italic">Not Set</span>
-                        )}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th className="pl-0 text-muted">Model ID:</th>
-                      <td>
-                        {config.model ? (
-                          <code className="text-dark font-weight-bold">{config.model}</code>
-                        ) : (
-                          <span className="text-danger italic">Not Set</span>
-                        )}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th className="pl-0 text-muted">API Base URL:</th>
-                      <td>
-                        {config.apiBase ? (
-                          <code className="text-secondary small">{config.apiBase}</code>
-                        ) : (
-                          <span className="text-muted italic">Default endpoint</span>
-                        )}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th className="pl-0 text-muted">Credential Key:</th>
-                      <td>
-                        {config.hasKey ? (
-                          <span className="text-success font-weight-bold">
-                            <i className="fa fa-check-circle mr-1"></i> Configured ({config.maskedKey})
-                          </span>
-                        ) : (
-                          <span className="text-danger font-weight-bold">
-                            <i className="fa fa-times-circle mr-1"></i> Missing Key
-                          </span>
-                        )}
-                      </td>
-                    </tr>
+                    {MODALITIES.map(m => {
+                      const mapping = config.integrations.find(i => i.modality === m.value);
+                      const providerObj = mapping ? config.providers.find(p => p.id === mapping.provider_id) : null;
+                      return (
+                        <tr key={m.value} className="border-bottom pb-2">
+                          <td className="pl-0 py-2">
+                            <strong>{m.label}</strong>
+                          </td>
+                          <td className="py-2">
+                            {mapping && providerObj ? (
+                              <div>
+                                <span className="badge badge-secondary mr-2 text-uppercase">{providerObj.provider}</span>
+                                <code>{mapping.model}</code>
+                              </div>
+                            ) : (
+                              <span className="text-danger italic small">Unconfigured</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
-
-                <div className="mt-4 p-3 bg-light rounded text-center">
-                  <span className="text-muted d-block small mb-2">Need to verify connection or update endpoints?</span>
-                  <div className="btn-group">
-                    <button className="btn btn-sm btn-outline-primary" onClick={() => setActiveTab("config")}>
-                      <i className="fa fa-edit mr-1"></i>Edit Configuration
-                    </button>
-                    {config.hasKey && config.model && (
-                      <button className="btn btn-sm btn-outline-success" onClick={() => setActiveTab("playground")}>
-                        <i className="fa fa-play mr-1"></i>Run Playground Test
-                      </button>
-                    )}
-                  </div>
+                <div className="text-center mt-4">
+                  <button className="btn btn-sm btn-outline-success" onClick={() => setActiveTab("integrations")}>
+                    Configure Modalities
+                  </button>
                 </div>
               </div>
             </div>
@@ -441,248 +443,250 @@ export default function AiIntegration() {
         </div>
       )}
 
-      {/* Tab: Configuration */}
-      {activeTab === "config" && config && (
-        <div className="card border-0 shadow-sm">
-          <div className="card-body bg-light rounded border">
-            <h5 className="font-weight-bold text-dark mb-4 border-bottom pb-2">
-              Configure Connection Settings
-            </h5>
-            <form onSubmit={handleSaveConfig}>
-              <div className="row">
-                {/* Provider Dropdown */}
-                <div className="col-md-4 form-group">
-                  <label htmlFor="provider-select" className="font-weight-bold small text-secondary">
-                    AI Provider
-                  </label>
-                  <select
-                    id="provider-select"
-                    className="form-control"
-                    value={formProvider}
-                    onChange={handleProviderChange}
-                  >
-                    <option value="">-- Select Provider --</option>
-                    {Object.keys(config.predefinedOptions).map((prov) => (
-                      <option key={prov} value={prov}>
-                        {prov.toUpperCase()}
-                      </option>
-                    ))}
-                    <option value="custom">CUSTOM / OTHER</option>
-                  </select>
-                  <small className="form-text text-muted">
-                    Select a predefined provider, or select custom to specify full paths.
-                  </small>
-                </div>
-
-                {/* Model ID Selection */}
-                <div className="col-md-4 form-group">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <label htmlFor="model-input" className="font-weight-bold small text-secondary m-0">
-                      Model ID
-                    </label>
-                    <div className="form-check m-0">
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        id="custom-model-check"
-                        checked={isCustomModel}
-                        onChange={(e) => {
-                          setIsCustomModel(e.target.checked);
-                          if (!e.target.checked && config.predefinedOptions[formProvider]?.length > 0) {
-                            setFormModel(config.predefinedOptions[formProvider][0]);
-                          }
-                        }}
-                      />
-                      <label className="form-check-label small text-muted" htmlFor="custom-model-check">
-                        Custom entry
-                      </label>
-                    </div>
+      {/* PROVIDERS TAB */}
+      {activeTab === "providers" && config && (
+        <div className="row">
+          <div className="col-md-5 mb-4">
+            <div className="card border">
+              <div className="card-header bg-light font-weight-bold">Add / Edit Credentials</div>
+              <div className="card-body">
+                <form onSubmit={handleSaveProvider}>
+                  <div className="form-group">
+                    <label className="font-weight-bold small">Select Provider</label>
+                    <select className="form-control" value={providerName} onChange={handleProviderSelectChange}>
+                      <option value="">-- Choose Provider --</option>
+                      {Object.keys(config.predefinedOptions).map(p => (
+                        <option key={p} value={p}>{p.toUpperCase()}</option>
+                      ))}
+                      <option value="custom">Other / Custom</option>
+                    </select>
                   </div>
 
-                  {isCustomModel ? (
+                  {providerName === "custom" && (
+                    <div className="form-group">
+                      <label className="font-weight-bold small">Custom Provider ID</label>
+                      <input
+                        type="text"
+                        className="form-control text-lowercase"
+                        placeholder="e.g. together_ai"
+                        value={customProviderName}
+                        onChange={(e) => setCustomProviderName(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label className="font-weight-bold small">Custom API Base URL (Optional)</label>
                     <input
-                      id="model-input"
                       type="text"
-                      className="form-control mt-1"
-                      placeholder="e.g. anthropic/claude-3-5-sonnet-20240620"
-                      value={formModel}
-                      onChange={(e) => handleModelChange(e.target.value)}
+                      className="form-control"
+                      placeholder="Only for Ollama, Local, or Private Proxies"
+                      value={providerApiBase}
+                      onChange={(e) => setProviderApiBase(e.target.value)}
                     />
-                  ) : (
-                    <select
-                      id="model-input"
-                      className="form-control mt-1"
-                      value={formModel}
-                      onChange={(e) => handleModelChange(e.target.value)}
-                    >
-                      {(config.predefinedOptions[formProvider] || []).map((mod) => (
-                        <option key={mod} value={mod}>
-                          {mod}
-                        </option>
-                      ))}
-                      {(!config.predefinedOptions[formProvider] || config.predefinedOptions[formProvider].length === 0) && (
-                        <option value="">No standard models available (check custom)</option>
-                      )}
-                    </select>
-                  )}
-                  <small className="form-text text-muted">
-                    Identifier passed directly to the model selector.
-                  </small>
-                </div>
+                  </div>
 
-                {/* Model Price Column */}
-                <div className="col-md-4 form-group">
-                  <label htmlFor="model-price-display" className="font-weight-bold small text-secondary">
-                    Model Price
-                  </label>
-                  <input
-                    id="model-price-display"
-                    type="text"
-                    className="form-control mt-1"
-                    readOnly
-                    value={currentModelPrice}
-                    style={{ backgroundColor: currentModelPrice !== "N/A" ? "#e7f5e7" : "#f8f9fa" }}
-                  />
-                  <small className="form-text text-muted">
-                    {currentModelPrice !== "N/A" ? "LiteLLM pricing data" : "No pricing data available"}
-                  </small>
-                </div>
-              </div>
+                  <div className="form-group">
+                    <label className="font-weight-bold small">API Key / Credentials Token</label>
+                    <input
+                      type="password"
+                      className="form-control"
+                      placeholder="Enter new key token"
+                      value={providerApiKey}
+                      onChange={(e) => setProviderApiKey(e.target.value)}
+                    />
+                  </div>
 
-              <div className="row mt-3">
-                {/* API Base URL */}
-                <div className="col-md-12 form-group">
-                  <label htmlFor="api-base-input" className="font-weight-bold small text-secondary">
-                    API Base URL (Optional)
-                  </label>
-                  <input
-                    id="api-base-input"
-                    type="text"
-                    className="form-control"
-                    placeholder="e.g. http://localhost:11434/v1 or custom proxy endpoint"
-                    value={formApiBase}
-                    onChange={(e) => setFormApiBase(e.target.value)}
-                  />
-                  <small className="form-text text-muted">
-                    Only required for custom proxies, self-hosted Ollama setups, or private enterprise endpoints.
-                  </small>
-                </div>
-              </div>
-
-              <div className="row mt-3">
-                {/* API Key Input */}
-                <div className="col-md-12 form-group">
-                  <label htmlFor="api-key-input" className="font-weight-bold small text-secondary">
-                    {config.hasKey ? "Update API Key / Secret" : "API Key / Secret"}
-                  </label>
-                  <input
-                    id="api-key-input"
-                    type="password"
-                    className="form-control"
-                    placeholder={config.hasKey ? "•••••••••••••••• (Leave blank to keep existing key)" : "Enter API authentication key"}
-                    value={formApiKey}
-                    onChange={(e) => setFormApiKey(e.target.value)}
-                  />
-                  <small className="form-text text-muted">
-                    Your key will be securely stored and encrypted in the database.
-                  </small>
-                </div>
-              </div>
-
-              <div className="border-top pt-4 mt-4 d-flex justify-content-between">
-                {config.hasKey ? (
-                  <button
-                    type="button"
-                    className="btn btn-outline-danger"
-                    onClick={handleDeleteKey}
-                    disabled={saving}
-                  >
-                    <i className="fa fa-trash mr-2"></i>Delete Key
+                  <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
+                    {saving ? "Saving..." : "Save Provider Credentials"}
                   </button>
-                ) : (
-                  <div></div>
-                )}
-                <button
-                  type="submit"
-                  className="btn btn-primary px-4"
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa fa-save mr-2"></i>Save Configuration
-                    </>
-                  )}
-                </button>
+                </form>
               </div>
-            </form>
+            </div>
+          </div>
+
+          <div className="col-md-7 mb-4">
+            <div className="card">
+              <div className="card-header font-weight-bold">Saved Credentials</div>
+              <div className="card-body p-0">
+                {config.providers.length === 0 ? (
+                  <p className="text-muted text-center py-4">No providers configured yet.</p>
+                ) : (
+                  <table className="table table-striped table-hover m-0">
+                    <thead>
+                      <tr>
+                        <th>Provider</th>
+                        <th>API Base</th>
+                        <th>Key Saved</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {config.providers.map(p => (
+                        <tr key={p.id}>
+                          <td>
+                            <strong className="text-uppercase text-primary">{p.provider}</strong>
+                          </td>
+                          <td>
+                            <code className="small">{p.apiBase || "Default"}</code>
+                          </td>
+                          <td>
+                            <span className="text-success small">
+                              <i className="fa fa-lock mr-1"></i> Yes
+                            </span>
+                          </td>
+                          <td>
+                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteProvider(p.id)}>
+                              <i className="fa fa-trash"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Tab: Playground */}
-      {activeTab === "playground" && config && (
+      {/* INTEGRATIONS TAB */}
+      {activeTab === "integrations" && config && (
         <div className="row">
           <div className="col-md-4 mb-4">
-            <div className="card h-100 border-secondary">
-              <div className="card-header bg-secondary text-white font-weight-bold small py-2">
-                <i className="fa fa-magic mr-1"></i>Preset Helpers
-              </div>
-              <div className="card-body">
-                <p className="small text-muted">
-                  Use one of these preset prompt tasks to instantly load a validation test payload:
-                </p>
-                <div className="list-group">
-                  <button
-                    type="button"
-                    className="list-group-item list-group-item-action py-2 text-left small"
-                    onClick={() => loadPreset("greet")}
-                  >
-                    👋 Simple Connection Greeting
-                  </button>
-                  <button
-                    type="button"
-                    className="list-group-item list-group-item-action py-2 text-left small"
-                    onClick={() => loadPreset("translate")}
-                  >
-                    🌎 Translate Sentence
-                  </button>
-                  <button
-                    type="button"
-                    className="list-group-item list-group-item-action py-2 text-left small"
-                    onClick={() => loadPreset("summarize")}
-                  >
-                    📝 Summary Analysis
-                  </button>
-                  <button
-                    type="button"
-                    className="list-group-item list-group-item-action py-2 text-left small"
-                    onClick={() => loadPreset("quiz")}
-                  >
-                    🧠 Sample Quiz Questions
-                  </button>
+            <div className="card">
+              <div className="card-header bg-light font-weight-bold">Select Modality</div>
+              <div className="card-body p-0">
+                <div className="list-group list-group-flush">
+                  {MODALITIES.map(m => (
+                    <button
+                      key={m.value}
+                      className={`list-group-item list-group-item-action text-left py-3 border-0 ${selectedModality === m.value ? "bg-primary text-white" : ""}`}
+                      onClick={() => setSelectedModality(m.value)}
+                    >
+                      <h6 className="font-weight-bold mb-1">{m.label}</h6>
+                      <p className={`small mb-0 ${selectedModality === m.value ? "text-white-50" : "text-muted"}`}>{m.desc}</p>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
 
           <div className="col-md-8 mb-4">
-            <div className="card h-100">
+            <div className="card border shadow-sm">
+              <div className="card-header font-weight-bold text-capitalize bg-light text-primary">
+                Configure {selectedModality} Generation Modality
+              </div>
               <div className="card-body">
-                <h5 className="font-weight-bold text-dark mb-3">AI Playground</h5>
-
-                {!config.hasKey && (
-                  <div className="alert alert-warning mb-3 small">
-                    <i className="fa fa-exclamation-triangle mr-2"></i>
-                    You have not configured an API Key. Please configure your key in the <strong>Configurator</strong> tab before testing.
+                {config.providers.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted">You must add provider credentials before assigning models to modalities.</p>
+                    <button className="btn btn-sm btn-primary" onClick={() => setActiveTab("providers")}>
+                      Go to Credentials
+                    </button>
                   </div>
-                )}
+                ) : (
+                  <form onSubmit={handleSaveIntegration}>
+                    <div className="form-group">
+                      <label className="font-weight-bold small">Assigned API Provider Key</label>
+                      <select
+                        className="form-control"
+                        value={integrationProviderId}
+                        onChange={(e) => setIntegrationProviderId(e.target.value)}
+                      >
+                        <option value="">-- No Provider Assigned --</option>
+                        {config.providers.map(p => (
+                          <option key={p.id} value={p.id}>{p.provider.toUpperCase()}</option>
+                        ))}
+                      </select>
+                    </div>
 
+                    {integrationProviderId && (
+                      <div className="form-group">
+                        <div className="d-flex justify-content-between align-items-center mb-1">
+                          <label className="font-weight-bold small m-0">Target Model Name</label>
+                          <div className="form-check m-0">
+                            <input
+                              type="checkbox"
+                              className="form-check-input"
+                              id="custom-model-check"
+                              checked={isCustomModel}
+                              onChange={(e) => setIsCustomModel(e.target.checked)}
+                            />
+                            <label className="form-check-label small text-muted" htmlFor="custom-model-check">
+                              Custom model path entry
+                            </label>
+                          </div>
+                        </div>
+
+                        {isCustomModel ? (
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="e.g. gpt-4o-mini"
+                            value={integrationModel}
+                            onChange={(e) => setIntegrationModel(e.target.value)}
+                          />
+                        ) : (
+                          <select
+                            className="form-control"
+                            value={integrationModel}
+                            onChange={(e) => setIntegrationModel(e.target.value)}
+                          >
+                            <option value="">-- Select Predefined Model --</option>
+                            {(config.predefinedOptions[config.providers.find(p => p.id === Number(integrationProviderId))?.provider || ""] || []).map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    )}
+
+                    {integrationModel && (
+                      <div className="form-group p-3 bg-light rounded border">
+                        <span className="font-weight-bold small text-muted">Est. Token Price:</span>
+                        <span className="badge badge-success ml-2 py-1 px-2 font-weight-bold">
+                          {getModelPrice(integrationModel, integrationProviderId)}
+                        </span>
+                      </div>
+                    )}
+
+                    <button type="submit" className="btn btn-success px-4" disabled={saving}>
+                      {saving ? "Saving..." : "Apply Integration Model"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PLAYGROUND TAB */}
+      {activeTab === "playground" && config && (
+        <div className="row">
+          <div className="col-md-12 mb-4">
+            <div className="card">
+              <div className="card-header bg-secondary text-white font-weight-bold">Playground Modality Tester</div>
+              <div className="card-body">
                 <form onSubmit={handleTestPrompt}>
+                  <div className="row mb-3">
+                    <div className="col-md-4">
+                      <label className="font-weight-bold small">Modality</label>
+                      <select
+                        className="form-control"
+                        value={playgroundModality}
+                        onChange={(e) => setPlaygroundModality(e.target.value)}
+                      >
+                        {MODALITIES.map(m => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="form-group mb-3">
                     <textarea
                       className="form-control font-family-monospace"
@@ -690,48 +694,34 @@ export default function AiIntegration() {
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       placeholder="Write your test prompt here... e.g. 'Solve 15 * 12 and explain the solution.'"
-                      disabled={testing || !config.hasKey}
+                      disabled={testing}
                     ></textarea>
                   </div>
+
                   <div className="text-right">
                     <button
                       type="submit"
                       className="btn btn-success px-4"
-                      disabled={testing || !prompt.trim() || !config.hasKey}
+                      disabled={testing || !prompt.trim()}
                     >
-                      {testing ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm mr-2" aria-hidden="true"></span>
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fa fa-paper-plane mr-2"></i>Send Request
-                        </>
-                      )}
+                      {testing ? "Generating..." : "Send Request"}
                     </button>
                   </div>
                 </form>
 
-                {/* Response Block */}
                 {(playgroundResponse || playgroundError || playgroundModelUsed) && (
                   <div className="mt-4 border-top pt-3">
-                    <h6 className="font-weight-bold text-secondary mb-2">
-                      Result Console:
-                    </h6>
-
+                    <h6 className="font-weight-bold text-secondary mb-2">Result Console:</h6>
                     {playgroundModelUsed && (
                       <div className="small mb-2 text-muted">
                         🤖 <strong>Model resolved:</strong> <code>{playgroundModelUsed}</code>
                       </div>
                     )}
-
                     {playgroundError && (
                       <div className="p-3 bg-danger-light text-danger rounded border border-danger small">
                         <strong>Request failed:</strong> {playgroundError}
                       </div>
                     )}
-
                     {playgroundResponse && (
                       <div className="p-3 bg-light text-dark rounded border small whitespace-pre-wrap font-family-monospace shadow-sm">
                         {playgroundResponse}

@@ -164,6 +164,44 @@ class users(UserMixin, Base):
         cascade="all, delete-orphan",
     )
 
+    ai_providers = relationship(
+        "UserAIProvider",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    ai_integrations = relationship(
+        "UserAIIntegration",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+class UserAIProvider(Base):
+    __tablename__ = "user_ai_providers"
+
+    id = sa.Column(sa.Integer, Identity(), primary_key=True, autoincrement=True)
+    user_id = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    provider = sa.Column(sa.String(60), nullable=False)  # e.g., 'openai', 'anthropic', 'custom'
+    api_key = sa.Column(EncryptedString(500), nullable=True)
+    api_base = sa.Column(sa.String(400), nullable=True)
+
+    user = relationship("users", back_populates="ai_providers")
+    integrations = relationship("UserAIIntegration", back_populates="provider_relation", cascade="all, delete-orphan")
+
+
+class UserAIIntegration(Base):
+    __tablename__ = "user_ai_integrations"
+
+    id = sa.Column(sa.Integer, Identity(), primary_key=True, autoincrement=True)
+    user_id = sa.Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    modality = sa.Column(sa.String(50), nullable=False)  # e.g., 'text', 'tts', 'stt', 'image'
+    provider_id = sa.Column(Integer, ForeignKey("user_ai_providers.id", ondelete="SET NULL"), nullable=True)
+    model = sa.Column(sa.String(120), nullable=True)
+
+    user = relationship("users", back_populates="ai_integrations")
+    provider_relation = relationship("UserAIProvider", back_populates="integrations")
+
+
 class languages(Base):
     __tablename__ = "languages"
     language = sa.Column(

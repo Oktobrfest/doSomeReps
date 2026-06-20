@@ -43,11 +43,13 @@ def _build_model_id(provider: Optional[str], model: Optional[str]) -> str:
     return f"{provider}/{model}"
 
 
-def completion_for_user(user, messages: List[Dict[str, str]], **kwargs: Any):
-    """Call `litellm.completion` using the given user's saved settings.
+def completion_for_user(user, messages: List[Dict[str, str]], modality: str = "text", **kwargs: Any):
+    """Call `litellm.completion` using the given user's saved settings for the specified modality.
 
-    `user` must be a `repz.models.users` instance with `ai_provider`,
-    `ai_model`, `ai_api_key` and (optionally) `ai_api_base` populated.
+    `user` must be a `repz.models.users` instance with `ai_integrations` and `ai_providers`.
+    Defaults to 'text' modality. If user does not have a setup for this modality, falls back
+    to the legacy direct user-level columns (ai_provider, ai_model, ai_api_key, etc.)
+    for backward compatibility.
 
     Any extra kwargs are forwarded to `litellm.completion` as-is, so
     callers can pass `temperature`, `max_tokens`, `stream`, etc.
@@ -57,23 +59,35 @@ def completion_for_user(user, messages: List[Dict[str, str]], **kwargs: Any):
     # haven't pip-installed the new requirement).
     import litellm
 
-    api_key = getattr(user, "ai_api_key", None)
+    # Try to find the integration for the given modality
+    integration = None
+    if hasattr(user, "ai_integrations"):
+        integration = next((i for i in user.ai_integrations if i.modality == modality), None)
+
+    if integration and integration.provider_relation:
+        api_key = integration.provider_relation.api_key
+        provider = integration.provider_relation.provider
+        api_base = integration.provider_relation.api_base
+        model = integration.model
+    else:
+        # Fall back to legacy user-level columns
+        api_key = getattr(user, "ai_api_key", None)
+        provider = getattr(user, "ai_provider", None)
+        api_base = getattr(user, "ai_api_base", None)
+        model = getattr(user, "ai_model", None)
+
     if not api_key:
         raise AIConfigError(
-            "No API key configured. Set one on your profile page."
+            f"No API key configured for '{modality}' modality. Set one on your profile page."
         )
 
-    model_id = _build_model_id(
-        getattr(user, "ai_provider", None),
-        getattr(user, "ai_model", None),
-    )
+    model_id = _build_model_id(provider, model)
 
     call_kwargs: Dict[str, Any] = {
         "model": model_id,
         "messages": messages,
         "api_key": api_key,
     }
-    api_base = getattr(user, "ai_api_base", None)
     if api_base:
         call_kwargs["api_base"] = api_base
     call_kwargs.update(kwargs)
