@@ -181,3 +181,80 @@ def test_ai_completion():
             "success": False,
             "error": f"An error occurred while connecting to the AI provider: {str(e)}"
         }), 500
+
+
+TRANSCRIBE_MODEL = "gpt-4o-mini-transcribe"
+
+
+@ai.route("/api/ask-ai/transcribe", methods=["POST"])
+@login_required
+def ask_ai_transcribe():
+    """API endpoint to transcribe Ask AI audio questions."""
+    import os
+    import tempfile
+    import litellm
+
+    if "audio" not in request.files:
+        return jsonify({"ok": False, "error": "No audio file provided in the request."}), 400
+
+    audio_file = request.files["audio"]
+    if audio_file.filename == "":
+        return jsonify({"ok": False, "error": "Empty audio file filename."}), 400
+
+    user_obj = session.execute(
+        select(users).where(users.id == current_user.id)
+    ).scalar_one()
+
+    api_key = getattr(user_obj, "ai_api_key", None)
+    if not api_key:
+        return jsonify({"ok": False, "error": "AI API Key not configured. Please set one on your profile page."}), 400
+
+    # Save to a safe temporary file
+    fd, temp_path = tempfile.mkstemp(suffix=".webm")
+    try:
+        with os.fdopen(fd, "wb") as tmp:
+            audio_file.save(tmp)
+
+        # Ensure the file has data
+        if os.path.getsize(temp_path) == 0:
+            return jsonify({"ok": False, "error": "Audio file is empty."}), 400
+
+        api_base = getattr(user_obj, "ai_api_base", None)
+        transcription_args = {
+            "model": TRANSCRIBE_MODEL,
+            "api_key": api_key,
+        }
+        if api_base:
+            transcription_args["api_base"] = api_base
+
+        with open(temp_path, "rb") as f:
+            transcription_args["file"] = f
+            resp = litellm.transcription(**transcription_args)
+
+        import inspect
+        import asyncio
+        if inspect.iscoroutine(resp):
+            resp = asyncio.run(resp)
+
+        if hasattr(resp, "text"):
+            transcript = resp.text  # type: ignore
+        elif isinstance(resp, dict) and "text" in resp:
+            transcript = resp["text"]
+        else:
+            transcript = str(resp)
+
+        return jsonify({"ok": True, "transcript": transcript})
+
+    except Exception as e:
+        import traceback
+        logging.error(traceback.format_exc())
+        return jsonify({
+            "ok": False,
+            "error": f"Transcription failed: {str(e)}"
+        }), 500
+    finally:
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except Exception as e:
+            logging.error(f"Failed to remove temp audio file: {e}")
