@@ -56,7 +56,7 @@ export function AudioCommandSystemComponent() {
 
   // Custom logging helper to keep everything consistent
   const logDebug = (message: string, ...args: any[]) => {
-    console.log(`[AudioCommandSystem] ${message}`, ...args);
+    if (import.meta.env.DEV) console.log(`[AudioCommandSystem] ${message}`, ...args);
   };
 
   // Clear detected command display after 6 seconds
@@ -296,11 +296,13 @@ export function AudioCommandSystemComponent() {
       workletNodeRef.current = workletNode;
 
       // One-time confirmation; the [KWS] heartbeat shows the resulting frames/sec.
-      console.log(
-        "[KWS] worklet batching: frame " + PCM_WORKLET_FRAME_SIZE + " samples (~" +
-        ((PCM_WORKLET_FRAME_SIZE / audioCtx.sampleRate) * 1000).toFixed(1) + "ms, ~" +
-        (audioCtx.sampleRate / PCM_WORKLET_FRAME_SIZE).toFixed(0) + " msg/s)"
-      );
+      if (import.meta.env.DEV) {
+        console.log(
+          "[KWS] worklet batching: frame " + PCM_WORKLET_FRAME_SIZE + " samples (~" +
+          ((PCM_WORKLET_FRAME_SIZE / audioCtx.sampleRate) * 1000).toFixed(1) + "ms, ~" +
+          (audioCtx.sampleRate / PCM_WORKLET_FRAME_SIZE).toFixed(0) + " msg/s)"
+        );
+      }
 
       let micGatedByPlayback = false;
       workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {

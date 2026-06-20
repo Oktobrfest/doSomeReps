@@ -1,4 +1,5 @@
 export function logAudioDiagnostic(label: string, data: Record<string, unknown>) {
+  if (!import.meta.env.DEV) return;
   const safeData = Object.fromEntries(
     Object.entries(data).map(([key, value]) => {
       if (typeof value === "function") return [key, "[function]"];
@@ -11,6 +12,7 @@ export function logAudioDiagnostic(label: string, data: Record<string, unknown>)
 }
 
 export function logMediaStreamDiagnostics(stream: MediaStream) {
+  if (!import.meta.env.DEV) return;
   const tracks = stream.getAudioTracks();
   logAudioDiagnostic("MediaStream summary", {
     trackCount: tracks.length,
@@ -46,6 +48,7 @@ export function logMediaStreamDiagnostics(stream: MediaStream) {
 }
 
 export function logAudioContextDiagnostics(audioCtx: AudioContext, label = "AudioContext") {
+  if (!import.meta.env.DEV) return;
   logAudioDiagnostic(label, {
     state: audioCtx.state,
     sampleRate: audioCtx.sampleRate,
@@ -62,6 +65,7 @@ export function logAudioContextDiagnostics(audioCtx: AudioContext, label = "Audi
  * honors a forced sample rate. Does NOT touch the live pipeline.
  */
 export async function probeAudioContextSampleRateSupport(requestedRate = 16000) {
+  if (!import.meta.env.DEV) return;
   const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
   if (!AudioContextClass) {
     logAudioDiagnostic("AudioContext probe failed", { error: "AudioContext unavailable" });

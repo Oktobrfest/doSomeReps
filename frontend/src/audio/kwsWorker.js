@@ -340,6 +340,14 @@ self.onmessage = async function (event) {
   switch (msg.type) {
     case "init":
       try {
+        // Silence info logs in prod (keep console.error/warn). Classic workers can't
+        // read import.meta.env, so the dev flag arrives via the init message. This one
+        // override mutes the heartbeat, MATCH lines, startup line, init breadcrumbs,
+        // and Sherpa WASM stdout all at once.
+        if (!msg.debug) {
+          console.log = function () {};
+          console.debug = function () {};
+        }
         KWS_BASE_URL = msg.baseUrl || (self.location.origin + "/static/models/kws");
         console.log("[KWS Worker] init message received. KWS_BASE_URL set to: " + KWS_BASE_URL);
         await initialize();
