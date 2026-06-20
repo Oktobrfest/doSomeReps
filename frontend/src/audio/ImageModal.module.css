@@ -34,7 +34,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: 80px 60px 140px 60px;
+  padding: 80px 60px 180px 60px;
 }
 
 .slideImage {
@@ -50,7 +50,7 @@
 
 @media (max-width: 640px) {
   .slide {
-    padding: 100px 16px 180px 16px;
+    padding: 100px 16px 240px 16px;
   }
 }
 
@@ -129,7 +129,7 @@
 
 .modalCounter {
   position: fixed;
-  bottom: 72px;
+  bottom: 130px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10000;
@@ -146,13 +146,13 @@
 
 @media (max-width: 640px) {
   .modalCounter {
-    bottom: 120px;
+    bottom: 210px;
   }
 }
 
 .modalDots {
   position: fixed;
-  bottom: 100px;
+  bottom: 160px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10000;
@@ -163,7 +163,7 @@
 
 @media (max-width: 640px) {
   .modalDots {
-    bottom: 150px;
+    bottom: 240px;
   }
 }
 

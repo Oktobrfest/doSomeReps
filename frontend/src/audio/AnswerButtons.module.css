@@ -6,9 +6,9 @@
   z-index: 1000;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  gap: 12px;
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.96);
   border-top: 1px solid #e5e7eb;
   box-shadow: 0 -4px 20px rgb(0 0 0 / 0.08);
@@ -17,26 +17,26 @@
 
 .btn {
   flex: 1 1 auto;
-  min-height: 52px;
+  min-height: 94px;
   border: none;
-  border-radius: 12px;
-  padding: 8px 12px;
+  border-radius: 16px;
+  padding: 14px 18px;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: clamp(1rem, 1rem + 1.5vw, 1.6rem);
   font-weight: 700;
   cursor: pointer;
   color: inherit;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 10px;
   min-width: 0;
+  text-align: center;
+  line-height: 1.1;
 }
 
 .btn span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: inline-block;
 }
 
 .correct {
@@ -44,39 +44,39 @@
 }
 
 .secondary {
-  flex: 1 1 calc(50% - 4px);
+  flex: 1 1 calc(50% - 6px);
   min-width: 0;
 }
 
 .icon {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
   flex-shrink: 0;
 }
 
 .sizeCompact {
-  gap: 6px;
-  padding: 8px;
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  gap: 10px;
+  padding: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
 .sizeCompact .btn {
-  min-height: 40px;
-  border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 0.85rem;
+  min-height: 72px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: clamp(0.875rem, 0.875rem + 1.2vw, 1.3rem);
   font-weight: 600;
 }
 
 .sizeCompact .icon {
-  width: 1rem;
-  height: 1rem;
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 @media (min-width: 641px) {
   .container {
     flex-wrap: nowrap;
-    padding: 12px 16px;
+    padding: 16px 20px;
   }
 
   .correct {
