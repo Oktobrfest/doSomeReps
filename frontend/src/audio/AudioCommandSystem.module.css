@@ -1,5 +1,4 @@
 .voiceCommandContainer {
-  margin-bottom: 1rem;
   text-align: center;
 }
 
@@ -150,7 +149,7 @@
 }
 
 .micIcon {
-  font-size: 3.5rem;
+  font-size: 3rem;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -159,8 +158,8 @@
 
 .spinnerGrow,
 .spinnerBorder {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 3rem;
+  height: 3rem;
   display: inline-block;
   border-radius: 50%;
   flex-shrink: 0;
