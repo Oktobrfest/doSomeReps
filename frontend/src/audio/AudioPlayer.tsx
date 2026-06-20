@@ -196,7 +196,7 @@ export function AudioPlayer({
               ◀ Prev
             </button>
             <span className={styles.trackBadge}>
-              <span className={styles.trackLabel}>Track</span>
+              {/*<span className={styles.trackLabel}>Track</span>*/}
               <strong className={styles.trackCurrent}>{trackIndex + 1}</strong>
               <span className={styles.trackSeparator}>/</span>
               <span className={styles.trackTotal}>{assets.length}</span>

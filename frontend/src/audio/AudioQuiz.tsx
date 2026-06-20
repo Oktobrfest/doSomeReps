@@ -3,6 +3,7 @@ import {
   useCallback,
   useMemo,
   useEffect,
+  useRef,
   type ButtonHTMLAttributes,
 } from 'react';
 import { AudioPlayer } from './AudioPlayer';
@@ -121,6 +122,43 @@ export function AudioQuiz({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImages, setModalImages] = useState<string[]>([]);
   const [modalStartIndex, setModalStartIndex] = useState(0);
+
+  // Form ref for programmatic submission from modal
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Handlers for modal answer buttons
+  const handleModalCorrect = useCallback(() => {
+    if (formRef.current) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'correct_submit';
+      input.value = 'Correct!';
+      formRef.current.appendChild(input);
+      formRef.current.requestSubmit();
+    }
+  }, []);
+
+  const handleModalWrong = useCallback(() => {
+    if (formRef.current) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'incorrect_submit';
+      input.value = 'Wrong!';
+      formRef.current.appendChild(input);
+      formRef.current.requestSubmit();
+    }
+  }, []);
+
+  const handleModalSlightlyWrong = useCallback(() => {
+    if (formRef.current) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'incorrect_submit';
+      input.value = 'Slightly Wrong';
+      formRef.current.appendChild(input);
+      formRef.current.requestSubmit();
+    }
+  }, []);
 
   const openModal = useCallback((images: string[], startIndex: number) => {
     setModalImages(images);
@@ -261,9 +299,12 @@ export function AudioQuiz({
           images={modalImages}
           startIndex={modalStartIndex}
           onClose={closeModal}
+          onCorrect={handleModalCorrect}
+          onWrong={handleModalWrong}
+          onSlightlyWrong={handleModalSlightlyWrong}
         />
       )}
-      <form method="post" className={styles.quizContainer}>
+      <form method="post" className={styles.quizContainer} ref={formRef}>
       {csrfToken && <input type="hidden" name="csrf_token" value={csrfToken} />}
       <input type="hidden" name="quizq-id" value={question.quizq_id} />
 
