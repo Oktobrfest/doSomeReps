@@ -377,8 +377,10 @@ def ask_ai_transcribe():
     """API endpoint to transcribe Ask AI audio questions."""
     import os
     import tempfile
+    import time
 
     logger = logging.getLogger(__name__ + ".transcribe")
+    t_total = time.perf_counter()
     logger.info("=== TRANSCRIBE REQUEST START ===")
     logger.info("Request.files keys: %s", list(request.files.keys()))
 
@@ -394,29 +396,37 @@ def ask_ai_transcribe():
         logger.warning("Empty filename")
         return jsonify({"ok": False, "error": "Empty audio file filename."}), 400
 
+    t_user = time.perf_counter()
     user_obj = session.execute(
         select(users).where(users.id == current_user.id)
     ).scalar_one()
     logger.info("User id=%d, loaded OK", user_obj.id)
+    logger.debug("transcribe user_lookup=%.3fs", time.perf_counter() - t_user)
 
+    t_cfg = time.perf_counter()
     api_key, api_base, model = _resolve_stt_config(user_obj)
     logger.info("STT config: model=%r api_base=%r has_key=%s",
                 model, api_base, bool(api_key))
+    logger.debug("transcribe _resolve_stt_config=%.3fs", time.perf_counter() - t_cfg)
 
     if not api_key:
         logger.warning("No API key configured for STT")
         return jsonify({"ok": False, "error": "AI API Key not configured. Please set one on your profile page."}), 400
 
     # Save to a safe temporary file
+    t_tmp = time.perf_counter()
     fd, temp_path = tempfile.mkstemp(suffix=".webm")
     logger.info("Temp file path: %s", temp_path)
+    logger.debug("transcribe mkstemp=%.3fs", time.perf_counter() - t_tmp)
 
     try:
+        t_save = time.perf_counter()
         with os.fdopen(fd, "wb") as tmp:
             audio_file.save(tmp)
 
         file_size = os.path.getsize(temp_path)
         logger.info("Saved audio to disk, size=%d bytes", file_size)
+        logger.debug("transcribe save=%.3fs", time.perf_counter() - t_save)
 
         if file_size == 0:
             logger.warning("Audio file is empty on disk")
@@ -427,8 +437,11 @@ def ask_ai_transcribe():
         # from the model name before sending it in the JSON body.  Providers
         # like DeepInfra require the full "openai/whisper-large-v3" string
         # as the model parameter, so we must bypass LiteLLM for STT.
+        t_openai_import = time.perf_counter()
         from openai import OpenAI
+        logger.debug("transcribe openai import=%.3fs", time.perf_counter() - t_openai_import)
 
+        t_client = time.perf_counter()
         client_kwargs: dict = {"api_key": api_key}
         if api_base:
             # The OpenAI-compatible audio endpoint is underneath api_base.
@@ -438,33 +451,41 @@ def ask_ai_transcribe():
         logger.info("OpenAI client base_url=%s", client_kwargs.get("base_url"))
 
         client = OpenAI(**client_kwargs)
+        logger.debug("transcribe openai client ctor=%.3fs", time.perf_counter() - t_client)
 
         logger.info("Calling client.audio.transcriptions.create with model=%r", model)
+        t_api = time.perf_counter()
         with open(temp_path, "rb") as f:
             resp = client.audio.transcriptions.create(
                 model=model,
                 file=f,
             )
+        api_elapsed = time.perf_counter() - t_api
+        logger.info("[BOTTLENECK CANDIDATE] audio.transcriptions.create took %.3fs", api_elapsed)
 
         # resp is an object with a .text attribute (standard openai shape)
         transcript = resp.text if hasattr(resp, "text") else str(resp)
         logger.info("Transcription result: %r", transcript)
 
-        logger.info("=== TRANSCRIBE REQUEST SUCCESS ===")
+        logger.info("=== TRANSCRIBE REQUEST SUCCESS (total=%.3fs, stt_api=%.3fs) ===",
+                    time.perf_counter() - t_total, api_elapsed)
         return jsonify({"ok": True, "transcript": transcript})
 
     except Exception as e:
         import traceback
-        logger.error("Transcription FAILED: %s\n%s", e, traceback.format_exc())
+        logger.error("Transcription FAILED (total=%.3fs): %s\n%s",
+                    time.perf_counter() - t_total, e, traceback.format_exc())
         return jsonify({
             "ok": False,
             "error": f"Transcription failed: {str(e)}"
         }), 500
     finally:
+        t_clean = time.perf_counter()
         try:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
                 logger.info("Cleaned up temp file: %s", temp_path)
+                logger.debug("transcribe cleanup=%.3fs", time.perf_counter() - t_clean)
         except Exception as cleanup_err:
             logger.error("Failed to remove temp audio file: %s", cleanup_err)
 
@@ -539,12 +560,16 @@ def _build_ask_ai_prompt(transcript, question_text, answer_text, categories, lan
 @ai.route("/api/ask-ai", methods=["POST"])
 @login_required
 def ask_ai():
-    """Phase 2: turn a transcribed Ask AI question into a spoken tutor answer.
+    """Phase 2 step 1: turn a transcribed Ask AI question into a tutor text answer.
+
+    This endpoint only calls the LLM. Synthesis of the spoken audio is a separate
+    step (/api/ask-ai/speak) so the frontend can show distinct progress phases
+    ("Thinking" then "Transcribing: Answer") and the user can see which step is slow.
 
     Accepts JSON:
       - transcript (required): the user's transcribed spoken question
       - question_text (required): the current quiz question text
-      - question_id (required): the current quiz question id (used for audio storage)
+      - question_id (required): the current quiz question id (kept for context/logging)
       - answer_text (optional): the current answer text, only if already revealed
       - categories (optional): list of category names
       - image_urls / image_ids (optional): stubbed in Phase 2
@@ -552,9 +577,14 @@ def ask_ai():
     Returns JSON:
       - ok: bool
       - answer_text: the LLM tutor response (plain text)
-      - audio_url: a local URL serving the Piper-generated MP3 for the answer
+      - language: the language used (for the follow-up speak request)
+
+    Nothing here persists to S3 or the `audio` table; Ask AI conversations are
+    ephemeral. The existing question/answer/hint TTS pipeline is unaffected.
     """
     logger = logging.getLogger(__name__ + ".ask_ai")
+    import time
+    t_total = time.perf_counter()
     logger.info("=== ASK AI REQUEST START ===")
 
     data = request.get_json(silent=True) or {}
@@ -580,16 +610,21 @@ def ask_ai():
         return jsonify({"ok": False, "error": "Missing or invalid 'question_id'."}), 400
 
     try:
+        t_user = time.perf_counter()
         user_obj = session.execute(
             select(users).where(users.id == current_user.id)
         ).scalar_one()
+        logger.debug("ask_ai user_lookup=%.3fs", time.perf_counter() - t_user)
     except Exception as e:
         logger.error("Failed to load user for Ask AI: %s", e)
         return jsonify({"ok": False, "error": "Failed to load user."}), 500
 
+    t_lang = time.perf_counter()
     language = _ask_ai_default_language(user_obj)
+    logger.debug("ask_ai _ask_ai_default_language=%.3fs -> %s", time.perf_counter() - t_lang, language)
     logger.info("Ask AI user id=%d, question_id=%s, language=%s", user_obj.id, question_id, language)
 
+    t_prompt = time.perf_counter()
     messages = _build_ask_ai_prompt(
         transcript=transcript,
         question_text=question_text,
@@ -597,10 +632,13 @@ def ask_ai():
         categories=categories,
         language=language,
     )
+    logger.debug("ask_ai _build_ask_ai_prompt=%.3fs", time.perf_counter() - t_prompt)
 
-    # Step 1: get the tutor-style text answer from the LLM.
+    # Get the tutor-style text answer from the LLM.
     try:
+        t_llm = time.perf_counter()
         resp = completion_for_user(user_obj, messages=messages, modality="text", temperature=0.4)
+        logger.info("[BOTTLENECK CANDIDATE] ask_ai completion_for_user=%.3fs", time.perf_counter() - t_llm)
         choices = getattr(resp, "choices", None)
         if choices:
             answer = choices[0]["message"]["content"]
@@ -619,45 +657,79 @@ def ask_ai():
         return jsonify({"ok": False, "error": "AI returned an empty response."}), 502
 
     logger.info("Ask AI LLM answer (%d chars): %r", len(answer), answer[:120])
-
-    # Step 2: synthesize spoken audio from the answer using the existing Piper/Hatchet TTS pipeline.
-    try:
-        from ..audio.audio import TTSClientAdapter
-        from ..services.audio_asset_service import AudioAssetService, S3StorageClient
-
-        tts_client = TTSClientAdapter()
-        storage_client = S3StorageClient()
-        audio_service = AudioAssetService(tts_client, storage_client)
-
-        object_key = audio_service._audio_object_key(
-            question_id=question_id,
-            part="ask-ai",
-            language=language,
-            source_text=answer,
-        )
-
-        audio_service.ensure_audio(
-            question_id=question_id,
-            part="ask-ai",
-            language=language,
-            source_text=answer,
-            tts_text=answer,
-        )
-
-        audio_url = url_for("audio.serve_audio_by_key", object_key=object_key)
-    except Exception as e:
-        import traceback
-        logger.error("Ask AI TTS/audio save FAILED: %s\n%s", e, traceback.format_exc())
-        return jsonify({
-            "ok": True,
-            "answer_text": answer,
-            "audio_url": None,
-            "warning": f"TTS generation failed: {e}",
-        })
-
-    logger.info("=== ASK AI REQUEST SUCCESS ===")
+    logger.info("=== ASK AI REQUEST SUCCESS (total=%.3fs) ===", time.perf_counter() - t_total)
     return jsonify({
         "ok": True,
         "answer_text": answer,
-        "audio_url": audio_url,
+        "language": language,
+    })
+
+
+@ai.route("/api/ask-ai/speak", methods=["POST"])
+@login_required
+def ask_ai_speak():
+    """Phase 2 step 2: synthesize (ephemeral) spoken audio for an Ask AI answer.
+
+    Accepts JSON:
+      - text (required): the text to speak (the LLM answer from /api/ask-ai)
+      - language (optional): TTS language; defaults to the user's first study language
+
+    Returns JSON:
+      - ok: bool
+      - audio_b64: the Piper-generated MP3, base64-encoded, or null on failure
+      - audio_content_type: "audio/mpeg"
+      - warning (optional): present if TTS failed
+
+    Nothing is persisted to S3 or the `audio` table. Only the real
+    question/answer/hint pipeline writes/stored audio; this is purely ephemeral.
+    """
+    logger = logging.getLogger(__name__ + ".ask_ai_speak")
+    import time
+    t_total = time.perf_counter()
+    logger.info("=== ASK AI SPEAK REQUEST START ===")
+
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    language = (data.get("language") or "").strip() or None
+
+    if not text:
+        return jsonify({"ok": False, "error": "Missing 'text'."}), 400
+
+    if not language:
+        try:
+            user_obj = session.execute(
+                select(users).where(users.id == current_user.id)
+            ).scalar_one()
+            language = _ask_ai_default_language(user_obj)
+        except Exception as e:
+            logger.error("Failed to load user for Ask AI speak: %s", e)
+            return jsonify({"ok": False, "error": "Failed to load user."}), 500
+
+    try:
+        import base64
+        from ..audio.audio import TTSClientAdapter
+
+        t_tts = time.perf_counter()
+        tts_client = TTSClientAdapter()
+        audio_bytes, _metadata = tts_client.create_audio(text=text, language=language)
+        logger.info("[BOTTLENECK CANDIDATE] ask_ai_speak TTSClientAdapter.create_audio=%.3fs (audio_bytes=%d)",
+                    time.perf_counter() - t_tts, len(audio_bytes) if audio_bytes else 0)
+        t_b64 = time.perf_counter()
+        audio_b64 = base64.b64encode(audio_bytes).decode("ascii")
+        logger.debug("ask_ai_speak base64encode=%.3fs", time.perf_counter() - t_b64)
+    except Exception as e:
+        import traceback
+        logger.error("Ask AI TTS generation FAILED: %s\n%s", e, traceback.format_exc())
+        return jsonify({
+            "ok": True,
+            "audio_b64": None,
+            "audio_content_type": "audio/mpeg",
+            "warning": f"TTS generation failed: {e}",
+        })
+
+    logger.info("=== ASK AI SPEAK REQUEST SUCCESS (total=%.3fs) ===", time.perf_counter() - t_total)
+    return jsonify({
+        "ok": True,
+        "audio_b64": audio_b64,
+        "audio_content_type": "audio/mpeg",
     })

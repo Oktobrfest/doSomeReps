@@ -328,6 +328,31 @@
   color: #0f172a;
 }
 
+.askAiAnswerPlayer {
+  margin-top: 0.75rem;
+}
+
+.askAiAnswerPlayerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.askAiAnswerPlayerRow > button {
+  flex-shrink: 0;
+}
+
+.askAiAnswerPlayerRow > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.askAiBtnPlayPause {
+  background-color: #16a34a !important;
+  color: white !important;
+}
+
 .askAiTitle > .spinnerBorder {
   margin-right: 8px;
   width: 1.2rem;
