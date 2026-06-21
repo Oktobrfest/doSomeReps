@@ -7,9 +7,11 @@ import type { WorkerState } from "./kwsWorkerClient";
 import { registerAllCommands } from "./commands";
 import styles from "./AudioCommandSystem.module.css";
 import actionStyles from "./ActionButton.module.css";
+import quizStyles from "./AudioQuiz.module.css";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { AudioPlayer } from "./AudioPlayer";
 import type { AudioAsset, Question } from "./types";
+import { Play, Pause } from "lucide-react";
 import {
   logMediaStreamDiagnostics,
   logAudioContextDiagnostics,
@@ -74,6 +76,7 @@ export function AudioCommandSystemComponent({
   // Audio playback (uses the shared AudioPlayer for seek/pause/etc.)
   const [askAiAudioAssets, setAskAiAudioAssets] = useState<AudioAsset[]>([]);
   const [askAiAudioPlaying, setAskAiAudioPlaying] = useState(false);
+  const [askAiWasEverPlaying, setAskAiWasEverPlaying] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const askAiChunksRef = useRef<Blob[]>([]);
@@ -106,6 +109,24 @@ export function AudioCommandSystemComponent({
     const timer = setTimeout(() => setLastCommand(null), 6000);
     return () => clearTimeout(timer);
   }, [lastCommand]);
+
+  // Register/unregister this component's stop callback for global audio coordination.
+  useEffect(() => {
+    const stopMe = () => {
+      setAskAiAudioPlaying(false);
+    };
+    if (!(window as any).__audioStopCallbacks) {
+      (window as any).__audioStopCallbacks = [];
+    }
+    (window as any).__audioStopCallbacks.push(stopMe);
+    return () => {
+      const arr: Array<(() => void) | undefined> = (window as any).__audioStopCallbacks;
+      if (arr) {
+        const idx = arr.indexOf(stopMe);
+        if (idx >= 0) arr.splice(idx, 1);
+      }
+    };
+  }, []);
 
   // Build a stable callback-based interface for the KWS worker
   const handleKeyword = useCallback((keyword: string) => {
@@ -549,13 +570,17 @@ export function AudioCommandSystemComponent({
     logDebug("Ask AI answer playback ended.");
     askAiPlaybackActiveRef.current = false;
     setAskAiAudioPlaying(false);
-    setAskAiAudioAssets([]);
-    if (askAiBlobUrlRef.current) {
-      URL.revokeObjectURL(askAiBlobUrlRef.current);
-      askAiBlobUrlRef.current = null;
-    }
+    setAskAiWasEverPlaying(false);
+    // Keep askAiAudioAssets intact so the user can replay the AI response.
     resumeCommandListeningIfNeeded();
   };
+
+  // Track whether the AI audio has ever played (for Play vs Resume label).
+  useEffect(() => {
+    if (askAiAudioPlaying) {
+      setAskAiWasEverPlaying(true);
+    }
+  }, [askAiAudioPlaying]);
 
   const requestAskAiAnswer = async (transcript: string) => {
     if (!question || !question.question_id) {
@@ -646,6 +671,12 @@ export function AudioCommandSystemComponent({
         askAiBlobUrlRef.current = blobUrl;
         askAiPlaybackActiveRef.current = true;
         setAskAiAudioAssets([{ url: blobUrl, lang: language || "en_US" }]);
+        // Stop any other audio before starting AI playback.
+        const callbacks: Array<(() => void) | undefined> = (window as any).__audioStopCallbacks;
+        if (Array.isArray(callbacks)) {
+          callbacks.forEach((cb) => { try { cb?.(); } catch { /* ignore */ } });
+        }
+        setAskAiWasEverPlaying(false);
         setAskAiAudioPlaying(true);
         // Listening is resumed by askAiPlaybackEnded() when playback completes
         // (see AudioPlayer onSequenceEnd), NOT here.
@@ -805,19 +836,41 @@ export function AudioCommandSystemComponent({
 
       {askAiAudioAssets.length > 0 && (
         <div className={styles.askAiAnswerPlayer}>
-          <div className={styles.askAiAnswerPlayerRow}>
-            <button
-              type="button"
-              className={cx(actionStyles.largeBtn, styles.askAiBtnPlayPause)}
-              onClick={() => setAskAiAudioPlaying((prev) => !prev)}
+          <div className={quizStyles.playableControl}>
+            <div
+              className={cx(actionStyles.largeBtn, actionStyles.hasSlider, styles.askAiAnswerPlayerBox)}
+              style={{ cursor: 'default' }}
             >
-              {askAiAudioPlaying ? "Pause" : "Play"}
-            </button>
-            <AudioPlayer
-              assets={askAiAudioAssets}
-              isPlaying={askAiAudioPlaying}
-              onSequenceEnd={askAiPlaybackEnded}
-            />
+              <button
+                type="button"
+                onClick={() => setAskAiAudioPlaying((prev) => !prev)}
+                className={quizStyles.playPauseToggleBtn}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'inherit',
+                  font: 'inherit',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: 0,
+                }}
+              >
+                {askAiAudioPlaying ? (
+                  <Pause className={actionStyles.iconLarge} />
+                ) : (
+                  <Play className={actionStyles.iconLarge} />
+                )}
+                <span>{askAiAudioPlaying ? 'Pause' : askAiWasEverPlaying ? 'Resume' : 'Play'}</span>
+              </button>
+
+              <AudioPlayer
+                assets={askAiAudioAssets}
+                isPlaying={askAiAudioPlaying}
+                onSequenceEnd={askAiPlaybackEnded}
+              />
+            </div>
           </div>
           <div className={styles.askAiActions}>
             <button

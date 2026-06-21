@@ -332,6 +332,11 @@
   margin-top: 0.75rem;
 }
 
+.askAiAnswerPlayerBox {
+  background-color: #16a34a !important;
+  color: white !important;
+}
+
 .askAiAnswerPlayerRow {
   display: flex;
   align-items: center;
@@ -346,11 +351,6 @@
 .askAiAnswerPlayerRow > :last-child {
   flex: 1;
   min-width: 0;
-}
-
-.askAiBtnPlayPause {
-  background-color: #16a34a !important;
-  color: white !important;
 }
 
 .askAiTitle > .spinnerBorder {

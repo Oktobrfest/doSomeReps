@@ -111,17 +111,6 @@
   line-height: 1.6;
 }
 
-.adminActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.flex1 {
-  flex: 1;
-}
-
 .askAiConversationRoot {
   width: 100%;
   margin-top: 24px;
@@ -156,10 +145,6 @@
 @media (max-width: 640px) {
   .quizContainer {
     padding: 16px;
-  }
-
-  .adminActions {
-    flex-direction: column;
   }
 
   .secondaryBtn {
