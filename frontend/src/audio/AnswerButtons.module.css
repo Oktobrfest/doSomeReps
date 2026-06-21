@@ -5,21 +5,43 @@
   right: 0;
   z-index: 1000;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
   padding: 16px;
   padding-bottom: max(16px, env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.98);
   border-top: 1px solid #e5e7eb;
-  box-shadow: 0 -4px 20px rgb(0 0 0 / 0.08);
+  box-shadow: 0 -4px 24px rgb(0 0 0 / 0.12);
   box-sizing: border-box;
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.buttonsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Panel States: Hidden (translated completely down), Collapsed (normal), Expanded */
+.stateHidden {
+  transform: translateY(105%);
+}
+
+.stateCollapsed {
+  transform: translateY(0);
+}
+
+.stateExpanded {
+  transform: translateY(0);
 }
 
 /* ---- grip: tiny floating drag indicator above the buttons ---- */
 
 .grip {
   position: absolute;
-  top: -26px;
+  top: -24px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1001;
@@ -27,14 +49,15 @@
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 8px 20px 4px;
-  background: rgba(255, 255, 255, 0.92);
+  padding: 8px 24px 4px;
+  background: rgba(255, 255, 255, 0.98);
   border: 1px solid #e5e7eb;
   border-bottom: none;
   border-radius: 14px 14px 0 0;
   cursor: pointer;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 -3px 10px rgb(0 0 0 / 0.04);
 }
 
 .gripBar {
@@ -51,16 +74,48 @@
   background: #6b7280;
 }
 
+/* ---- Restore arrow if swiped all the way off screen ---- */
+.restoreTab {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1005;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  width: 60px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 -4px 12px rgb(0 0 0 / 0.08);
+}
+
+.restoreArrow {
+  width: 20px;
+  height: 20px;
+  color: #4b5563;
+  animation: bounceUp 1.5s infinite alternate;
+}
+
+@keyframes bounceUp {
+  from { transform: translateY(1px); }
+  to { transform: translateY(-3px); }
+}
+
 /* ---- buttons ---- */
 
 .btn {
   flex: 1 1 auto;
-  min-height: 94px;
+  min-height: 74px;
   border: none;
-  border-radius: 16px;
-  padding: 14px 18px;
+  border-radius: 14px;
+  padding: 12px 16px;
   font: inherit;
-  font-size: clamp(1rem, 1rem + 1.5vw, 1.6rem);
+  font-size: clamp(1rem, 1rem + 1.2vw, 1.45rem);
   font-weight: 700;
   cursor: pointer;
   color: inherit;
@@ -87,34 +142,38 @@
 }
 
 .icon {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 1.95rem;
+  height: 1.95rem;
   flex-shrink: 0;
 }
 
 /* ---- compact size ---- */
 
 .sizeCompact {
-  gap: 10px;
-  padding: 12px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  gap: 8px;
+  padding: 10px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+.sizeCompact .buttonsRow {
+  gap: 8px;
 }
 
 .sizeCompact .btn {
-  min-height: 72px;
+  min-height: 64px;
   border-radius: 12px;
-  padding: 10px 12px;
-  font-size: clamp(0.875rem, 0.875rem + 1.2vw, 1.3rem);
+  padding: 8px 12px;
+  font-size: clamp(0.875rem, 0.875rem + 1vw, 1.25rem);
   font-weight: 600;
 }
 
 .sizeCompact .icon {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.6rem;
+  height: 1.6rem;
 }
 
 .sizeCompact .grip {
-  top: -22px;
+  top: -20px;
   padding: 6px 16px 3px;
 }
 
@@ -129,24 +188,24 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   max-height: 0;
   overflow: hidden;
-  transition: max-height 300ms ease;
+  transition: max-height 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.drawerOpen {
+.stateExpanded .drawer {
   max-height: 250px;
 }
 
 .drawerBtn {
   width: 100%;
-  min-height: 56px;
+  min-height: 50px;
   border: none;
-  border-radius: 14px;
-  padding: 12px 16px;
+  border-radius: 12px;
+  padding: 11px 15px;
   font: inherit;
-  font-size: clamp(0.9rem, 0.9rem + 1vw, 1.2rem);
+  font-size: clamp(0.875rem, 0.875rem + 0.9vw, 1.15rem);
   font-weight: 700;
   cursor: pointer;
   color: inherit;
@@ -173,8 +232,11 @@
 
 @media (min-width: 641px) {
   .container {
-    flex-wrap: nowrap;
     padding: 16px 20px;
+  }
+
+  .buttonsRow {
+    flex-wrap: nowrap;
   }
 
   .correct {
