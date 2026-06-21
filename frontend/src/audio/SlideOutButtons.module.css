@@ -13,51 +13,31 @@
   border-top: 1px solid #e5e7eb;
   box-shadow: 0 -4px 24px rgb(0 0 0 / 0.12);
   box-sizing: border-box;
-  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform;
+  overflow: hidden;
+  transition: height 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: height;
 }
 
-.buttonsRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  width: 100%;
+.container.dragging {
+  transition: none;
 }
-
-/* Panel States: Hidden (translated completely down), Collapsed (normal), Expanded */
-.stateHidden {
-  transform: translateY(105%);
-}
-
-.stateCollapsed {
-  transform: translateY(0);
-}
-
-.stateExpanded {
-  transform: translateY(0);
-}
-
-/* ---- grip: tiny floating drag indicator above the buttons ---- */
 
 .grip {
-  position: absolute;
-  top: -24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1001;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 8px 24px 4px;
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid #e5e7eb;
-  border-bottom: none;
-  border-radius: 14px 14px 0 0;
-  cursor: pointer;
+  padding: 6px 24px;
+  cursor: grab;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 -3px 10px rgb(0 0 0 / 0.04);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.grip:active {
+  cursor: grabbing;
 }
 
 .gripBar {
@@ -74,36 +54,12 @@
   background: #6b7280;
 }
 
-/* ---- Restore arrow if swiped all the way off screen ---- */
-.restoreTab {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1005;
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid #e5e7eb;
-  border-bottom: none;
-  border-radius: 12px 12px 0 0;
-  width: 60px;
-  height: 28px;
+.buttonsRow {
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 -4px 12px rgb(0 0 0 / 0.08);
-}
-
-.restoreArrow {
-  width: 20px;
-  height: 20px;
-  color: #4b5563;
-  animation: bounceUp 1.5s infinite alternate;
-}
-
-@keyframes bounceUp {
-  from { transform: translateY(1px); }
-  to { transform: translateY(-3px); }
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
 }
 
 /* ---- buttons ---- */
@@ -147,55 +103,14 @@
   flex-shrink: 0;
 }
 
-/* ---- compact size ---- */
-
-.sizeCompact {
-  gap: 8px;
-  padding: 10px;
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
-}
-
-.sizeCompact .buttonsRow {
-  gap: 8px;
-}
-
-.sizeCompact .btn {
-  min-height: 64px;
-  border-radius: 12px;
-  padding: 8px 12px;
-  font-size: clamp(0.875rem, 0.875rem + 1vw, 1.25rem);
-  font-weight: 600;
-}
-
-.sizeCompact .icon {
-  width: 1.6rem;
-  height: 1.6rem;
-}
-
-.sizeCompact .grip {
-  top: -20px;
-  padding: 6px 16px 3px;
-}
-
-.sizeCompact .gripBar {
-  width: 20px;
-  height: 2.5px;
-}
-
-/* ---- drawer: extra-action buttons that expand downward ---- */
+/* ---- drawer: extra-action buttons ---- */
 
 .drawer {
+  flex-shrink: 0;
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 300ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.stateExpanded .drawer {
-  max-height: 250px;
 }
 
 .drawerBtn {
@@ -228,11 +143,105 @@
   transform: translateY(0);
 }
 
+/* ---- categories ---- */
+
+.categoriesSection {
+  flex-shrink: 0;
+  width: 100%;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.categoriesSection :global(.card) {
+  margin-bottom: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.categoriesSection :global(.card-header) {
+  background: transparent !important;
+  color: inherit !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.categoriesSection :global(.card-body) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.applyBtn {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 20px;
+  background: #007bff;
+  color: #fff;
+  font: inherit;
+  font-size: clamp(1rem, 1rem + 1.2vw, 1.35rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.applyBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.12);
+}
+
+.applyBtn:active {
+  transform: translateY(0);
+}
+
+/* ---- compact size ---- */
+
+.sizeCompact {
+  gap: 8px;
+  padding: 10px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+.sizeCompact .buttonsRow {
+  gap: 8px;
+}
+
+.sizeCompact .btn {
+  min-height: 64px;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: clamp(0.875rem, 0.875rem + 1vw, 1.25rem);
+  font-weight: 600;
+}
+
+.sizeCompact .icon {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.sizeCompact .grip {
+  padding: 4px 16px;
+}
+
+.sizeCompact .gripBar {
+  width: 20px;
+  height: 2.5px;
+}
+
+.sizeCompact .applyBtn {
+  min-height: 48px;
+}
+
 /* ---- desktop ---- */
 
 @media (min-width: 641px) {
   .container {
     padding: 16px 20px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 
   .buttonsRow {

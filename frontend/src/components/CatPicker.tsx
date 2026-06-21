@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 interface CatPickerProps {
   selectedCategories: string[];
@@ -183,155 +184,157 @@ export function CatPicker({ selectedCategories, onChange }: CatPickerProps) {
       </div>
 
       {/* "See All" Modal */}
-      {showModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            zIndex: 1050,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onClick={() => setShowModal(false)}
-        >
+      {showModal && typeof document !== "undefined" &&
+        createPortal(
           <div
             style={{
-              backgroundColor: "#ffffff",
-              borderRadius: "8px",
-              width: "90%",
-              maxWidth: "800px",
-              maxHeight: "80vh",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              zIndex: 1050,
               display: "flex",
-              flexDirection: "column",
-              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+              alignItems: "center",
+              justifyContent: "center",
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setShowModal(false)}
           >
-            {/* Modal Header */}
             <div
               style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "8px",
+                width: "90%",
+                maxWidth: "800px",
+                maxHeight: "80vh",
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "12px 16px",
-                borderBottom: "1px solid #dee2e6",
+                flexDirection: "column",
+                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
               }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <h5 style={{ margin: 0, fontWeight: "bold" }}>All Categories</h5>
-              <button
-                type="button"
-                className="close"
-                style={{ fontSize: "1.5rem", lineHeight: 1, background: "none", border: "none", cursor: "pointer" }}
-                onClick={() => setShowModal(false)}
-                aria-label="Close"
-              >
-                &times;
-              </button>
-            </div>
-
-            {/* Modal Search */}
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid #dee2e6" }}>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Filter categories..."
-                value={modalSearch}
-                onChange={(e) => setModalSearch(e.target.value)}
-                style={{ color: "#000000" }}
-              />
-            </div>
-
-            {/* Modal Body - Category Grid */}
-            <div style={{ padding: "16px", overflowY: "auto", flex: 1 }}>
+              {/* Modal Header */}
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-                  gap: "8px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "12px 16px",
+                  borderBottom: "1px solid #dee2e6",
                 }}
               >
-                {allCategories
-                  .filter((cat) =>
-                    cat.toLowerCase().includes(modalSearch.toLowerCase())
-                  )
-                  .sort((a, b) => a.localeCompare(b))
-                  .map((cat) => {
-                    const isSelected = selectedCategories.includes(cat);
-                    return (
-                      <div
-                        key={cat}
-                        className="d-flex align-items-center p-2 border rounded shadow-sm"
-                        style={{
-                          backgroundColor: isSelected ? "#ff8c00" : "#ffa500",
-                          borderColor: isSelected ? "#ff8c00" : "#ffa500",
-                          color: "#000000",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => handleToggleCheckbox(cat)}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleToggleCheckbox(cat)}
-                          style={{ marginRight: "6px", cursor: "pointer" }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <span
-                          className="mb-0 text-truncate"
-                          style={{
-                            cursor: "pointer",
-                            fontSize: "0.8rem",
-                            fontWeight: isSelected ? 700 : 500,
-                            userSelect: "none",
-                            flexGrow: 1,
-                            color: "#000000",
-                          }}
-                          title={cat}
-                        >
-                          {cat}
-                        </span>
-                      </div>
-                    );
-                  })}
+                <h5 style={{ margin: 0, fontWeight: "bold" }}>All Categories</h5>
+                <button
+                  type="button"
+                  className="close"
+                  style={{ fontSize: "1.5rem", lineHeight: 1, background: "none", border: "none", cursor: "pointer" }}
+                  onClick={() => setShowModal(false)}
+                  aria-label="Close"
+                >
+                  &times;
+                </button>
               </div>
-              {allCategories.filter((cat) =>
-                cat.toLowerCase().includes(modalSearch.toLowerCase())
-              ).length === 0 && (
-                <p className="text-muted text-center small mt-3">
-                  No matching categories found.
-                </p>
-              )}
-            </div>
 
-            {/* Modal Footer */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "12px 16px",
-                borderTop: "1px solid #dee2e6",
-              }}
-            >
-              <small className="text-muted">
-                {selectedCategories.length} of {allCategories.length} categories selected
-              </small>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setShowModal(false)}
+              {/* Modal Search */}
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid #dee2e6" }}>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Filter categories..."
+                  value={modalSearch}
+                  onChange={(e) => setModalSearch(e.target.value)}
+                  style={{ color: "#000000" }}
+                />
+              </div>
+
+              {/* Modal Body - Category Grid */}
+              <div style={{ padding: "16px", overflowY: "auto", flex: 1 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                    gap: "8px",
+                  }}
+                >
+                  {allCategories
+                    .filter((cat) =>
+                      cat.toLowerCase().includes(modalSearch.toLowerCase())
+                    )
+                    .sort((a, b) => a.localeCompare(b))
+                    .map((cat) => {
+                      const isSelected = selectedCategories.includes(cat);
+                      return (
+                        <div
+                          key={cat}
+                          className="d-flex align-items-center p-2 border rounded shadow-sm"
+                          style={{
+                            backgroundColor: isSelected ? "#ff8c00" : "#ffa500",
+                            borderColor: isSelected ? "#ff8c00" : "#ffa500",
+                            color: "#000000",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => handleToggleCheckbox(cat)}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleCheckbox(cat)}
+                            style={{ marginRight: "6px", cursor: "pointer" }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span
+                            className="mb-0 text-truncate"
+                            style={{
+                              cursor: "pointer",
+                              fontSize: "0.8rem",
+                              fontWeight: isSelected ? 700 : 500,
+                              userSelect: "none",
+                              flexGrow: 1,
+                              color: "#000000",
+                            }}
+                            title={cat}
+                          >
+                            {cat}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+                {allCategories.filter((cat) =>
+                  cat.toLowerCase().includes(modalSearch.toLowerCase())
+                ).length === 0 && (
+                  <p className="text-muted text-center small mt-3">
+                    No matching categories found.
+                  </p>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "12px 16px",
+                  borderTop: "1px solid #dee2e6",
+                }}
               >
-                Done
-              </button>
+                <small className="text-muted">
+                  {selectedCategories.length} of {allCategories.length} categories selected
+                </small>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowModal(false)}
+                >
+                  Done
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

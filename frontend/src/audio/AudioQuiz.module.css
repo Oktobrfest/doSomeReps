@@ -10,7 +10,6 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 24px;
-  padding-bottom: 280px;
 }
 
 .actionsSection {
@@ -117,16 +116,7 @@
   margin-top: 24px;
 }
 
-/* Scoped adjustments for Category Selection on /audio page only */
-:global(#react-categories-root) {
-  margin-bottom: 40px !important; /* Modest clean bottom margin */
-}
 
-:global(#react-categories-root #categories) {
-  max-height: 420px !important; /* Make the category grid 2x taller when shown, but let it collapse naturally */
-  overflow-y: auto !important;
-  padding-right: 6px !important;
-}
 
 .secondaryBtn {
   display: inline-flex;

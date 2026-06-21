@@ -8,12 +8,10 @@
       'audioAssets': audio_assets,
       'currentUsername': user.username,
       'editQuestionUrl': url_for('home.edit_question'),
-      'csrfToken': csrf_token()
+      'csrfToken': csrf_token(),
+      'categoryList': category_list,
+      'selectedCategories': selected_categories if selected_categories != 'Not set' else []
     } | tojson | safe }}
   </script>
   {{ vite_asset("src/audio/audio_quiz_entry.tsx") }}
-  <form method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    {% include "categories.html" %}
-  </form>
 {% endblock %}

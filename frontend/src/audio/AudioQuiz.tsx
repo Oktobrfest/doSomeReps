@@ -21,7 +21,7 @@ import {
 import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
 import actionStyles from './ActionButton.module.css';
-import { AnswerButtons, type ExtraAction } from './AnswerButtons';
+import { SlideOutButtons, type ExtraAction } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
 
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -121,6 +121,8 @@ export function AudioQuiz({
   currentUsername,
   editQuestionUrl,
   csrfToken,
+  categoryList,
+  selectedCategories,
 }: AudioQuizProps) {
   const [questionPlaying, setQuestionPlaying] = useState(false);
   const [questionActive, setQuestionActive] = useState(false);
@@ -133,6 +135,7 @@ export function AudioQuiz({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImages, setModalImages] = useState<string[]>([]);
   const [modalStartIndex, setModalStartIndex] = useState(0);
+  const [slideOutHeight, setSlideOutHeight] = useState(0);
 
   // Form ref for programmatic submission from modal
   const formRef = useRef<HTMLFormElement>(null);
@@ -446,7 +449,10 @@ export function AudioQuiz({
         </div>
       </div>
 
-      <div className={styles.contentDivider}>
+      <div
+        className={styles.contentDivider}
+        style={{ paddingBottom: `${slideOutHeight + 24}px` }}
+      >
         <div className={styles.metaRow}>
           <strong>Level {question.level_no}</strong>
 
@@ -476,11 +482,16 @@ export function AudioQuiz({
       </div>
 
       {answerRevealed && (
-        <AnswerButtons
+        <SlideOutButtons
           onCorrect={handleCorrect}
           onWrong={handleWrong}
           onSlightlyWrong={handleSlightlyWrong}
           extraActions={extraActions}
+          onHeightChange={setSlideOutHeight}
+          expandToTrio
+          showCategories
+          categoryList={categoryList}
+          initialSelectedCategories={selectedCategories}
         />
       )}
 
