@@ -451,7 +451,7 @@ export function AudioQuiz({
 
       <div
         className={styles.contentDivider}
-        style={{ paddingBottom: `${slideOutHeight + 24}px` }}
+        style={{ paddingBottom: `${slideOutHeight + 6}px` }}
       >
         <div className={styles.metaRow}>
           <strong>Level {question.level_no}</strong>

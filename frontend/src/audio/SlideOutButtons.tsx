@@ -134,10 +134,13 @@ export function SlideOutButtons({
   const [currentHeight, setCurrentHeight] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  const autoExpanded = useRef(false);
+
+  // Gesture tracking (refs so event handlers always see current values)
+  const isDraggingRef = useRef(false);
   const startY = useRef(0);
   const startHeight = useRef(0);
-  const didMove = useRef(false);
-  const autoExpanded = useRef(false);
+  const hasDragged = useRef(false);
 
   const measure = useCallback(() => {
     const panel = containerRef.current;
@@ -204,18 +207,20 @@ export function SlideOutButtons({
     }
   }, [expandToTrio, metrics, currentHeight]);
 
-  // Report the resulting visible height back to the parent.
+  // Report the target visible height back to the parent.
+  // During dragging we skip it to avoid layout thrashing; the parent will catch up on release.
   useEffect(() => {
-    if (isDragging || currentHeight == null || !containerRef.current) return;
-    onHeightChange?.(containerRef.current.getBoundingClientRect().height);
+    if (isDragging || currentHeight == null) return;
+    onHeightChange?.(currentHeight);
   }, [currentHeight, isDragging, onHeightChange]);
 
   const handlePointerDown = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
       if (!metrics || !gripRef.current || e.button !== 0) return;
       e.preventDefault();
+      isDraggingRef.current = true;
       setIsDragging(true);
-      didMove.current = false;
+      hasDragged.current = false;
       startY.current = e.clientY;
       startHeight.current = currentHeight ?? metrics.collapsed;
       try {
@@ -229,26 +234,27 @@ export function SlideOutButtons({
 
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
-      if (!isDragging || !metrics) return;
+      if (!isDraggingRef.current || !metrics) return;
       const deltaY = startY.current - e.clientY;
-      if (Math.abs(deltaY) > 3) didMove.current = true;
+      if (Math.abs(deltaY) > 4) hasDragged.current = true;
       const next = Math.max(metrics.collapsed, Math.min(startHeight.current + deltaY, metrics.full));
       setCurrentHeight(next);
     },
-    [isDragging, metrics],
+    [metrics],
   );
 
-  const endDrag = useCallback(() => {
-    if (!isDragging || !metrics) return;
+  const handlePointerUp = useCallback(() => {
+    if (!isDraggingRef.current || !metrics) return;
+    isDraggingRef.current = false;
     setIsDragging(false);
 
-    // A tap on the grip without dragging toggles between collapsed and trio.
-    if (!didMove.current) {
-      setCurrentHeight((prev) =>
-        prev && prev > metrics.collapsed + 5 ? metrics.collapsed : metrics.trio,
-      );
+    if (!hasDragged.current) {
+      // Clean tap: toggle based on the panel height when the press started.
+      // This avoids any stale state/closure issues.
+      const wasOpen = startHeight.current > metrics.collapsed + 2;
+      setCurrentHeight(wasOpen ? metrics.collapsed : metrics.trio);
     }
-  }, [isDragging, metrics]);
+  }, [metrics]);
 
   const containerClasses = [
     styles.container,
@@ -273,8 +279,8 @@ export function SlideOutButtons({
         className={styles.grip}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         role="button"
         aria-label="Drag to resize answer buttons"
       >
