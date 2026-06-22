@@ -135,7 +135,15 @@ export function AudioQuiz({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImages, setModalImages] = useState<string[]>([]);
   const [modalStartIndex, setModalStartIndex] = useState(0);
-  const [slideOutHeight, setSlideOutHeight] = useState(0);
+  const [panelSnap, setPanelSnap] = useState<'collapsed' | 'trio' | 'full'>('collapsed');
+
+  // Fixed answer-text padding mapping chosen to keep the answer readable
+  // without wasting space. No coupling to the live drag height.
+  const answerPaddingBySnap: Record<'collapsed' | 'trio' | 'full', number> = {
+    collapsed: 12,
+    trio: 188,
+    full: 340,
+  };
 
   // Form ref for programmatic submission from modal
   const formRef = useRef<HTMLFormElement>(null);
@@ -451,7 +459,7 @@ export function AudioQuiz({
 
       <div
         className={styles.contentDivider}
-        style={{ paddingBottom: `${slideOutHeight + 6}px` }}
+        style={{ paddingBottom: `${answerPaddingBySnap[panelSnap]}px` }}
       >
         <div className={styles.metaRow}>
           <strong>Level {question.level_no}</strong>
@@ -487,7 +495,7 @@ export function AudioQuiz({
           onWrong={handleWrong}
           onSlightlyWrong={handleSlightlyWrong}
           extraActions={extraActions}
-          onHeightChange={setSlideOutHeight}
+          onSnapChange={setPanelSnap}
           expandToTrio
           showCategories
           categoryList={categoryList}

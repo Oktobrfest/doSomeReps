@@ -51,8 +51,8 @@ export interface SlideOutButtonsProps {
   onWrong?: () => void;
   onSlightlyWrong?: () => void;
   extraActions?: ExtraAction[];
-  /** Called whenever the visible panel height changes (in px). */
-  onHeightChange?: (height: number) => void;
+  /** Called when the panel snaps into a logical zone. */
+  onSnapChange?: (snap: 'collapsed' | 'trio' | 'full') => void;
   /** If true, the panel mounts fully-collapsed and animates open to the answer-button trio. */
   expandToTrio?: boolean;
   /** Embed the category picker at the very bottom of the panel. */
@@ -116,7 +116,7 @@ export function SlideOutButtons({
   onWrong,
   onSlightlyWrong,
   extraActions,
-  onHeightChange,
+  onSnapChange,
   expandToTrio = false,
   showCategories = false,
   categoryList,
@@ -149,10 +149,11 @@ export function SlideOutButtons({
     if (!panel || !grip || !buttons) return;
 
     const panelStyle = getComputedStyle(panel);
+    const padTop = parseFloat(panelStyle.paddingTop) || 0;
     const padBottom = parseFloat(panelStyle.paddingBottom) || 0;
     const gap = parseFloat(panelStyle.gap) || 0;
 
-    const collapsed = grip.offsetHeight + padBottom;
+    const collapsed = padTop + grip.offsetHeight + padBottom;
     let trio = collapsed + gap + buttons.offsetHeight;
     let full = trio;
 
@@ -207,12 +208,23 @@ export function SlideOutButtons({
     }
   }, [expandToTrio, metrics, currentHeight]);
 
-  // Report the target visible height back to the parent.
-  // During dragging we skip it to avoid layout thrashing; the parent will catch up on release.
+  // Determine which logical zone the panel is in and report it to the parent.
+  // We skip updates while dragging so the answer padding stays stable during the gesture.
+  const lastSnap = useRef<'collapsed' | 'trio' | 'full' | null>(null);
   useEffect(() => {
-    if (isDragging || currentHeight == null) return;
-    onHeightChange?.(currentHeight);
-  }, [currentHeight, isDragging, onHeightChange]);
+    if (!metrics || currentHeight == null || isDragging) return;
+
+    let snap: 'collapsed' | 'trio' | 'full' = 'collapsed';
+    const low = (metrics.collapsed + metrics.trio) / 2;
+    const high = (metrics.trio + metrics.full) / 2;
+    if (currentHeight > low) snap = 'trio';
+    if (currentHeight > high) snap = 'full';
+
+    if (snap !== lastSnap.current) {
+      lastSnap.current = snap;
+      onSnapChange?.(snap);
+    }
+  }, [currentHeight, isDragging, metrics, onSnapChange]);
 
   const handlePointerDown = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
