@@ -21,7 +21,7 @@ import {
 import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
 import actionStyles from './ActionButton.module.css';
-import { AnswerButtons } from './AnswerButtons';
+import { SlideOutButtons, type ExtraAction } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
 
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -62,6 +62,19 @@ function LargePlayableControl({
   assets,
   onSequenceEnd,
 }: PlayableControlProps) {
+  const [wasEverPlaying, setWasEverPlaying] = useState(false);
+
+  useEffect(() => {
+    if (isPlaying) {
+      setWasEverPlaying(true);
+    }
+  }, [isPlaying]);
+
+  const handleSequenceEnd = useCallback(() => {
+    setWasEverPlaying(false);
+    onSequenceEnd();
+  }, [onSequenceEnd]);
+
   return (
     <div className={styles.playableControl}>
       <div
@@ -89,13 +102,13 @@ function LargePlayableControl({
           ) : (
             <Play className={actionStyles.iconLarge} />
           )}
-          <span>{isPlaying ? 'Pause' : 'Resume'}</span>
+          <span>{isPlaying ? 'Pause' : wasEverPlaying ? 'Resume' : 'Play'}</span>
         </button>
 
         <AudioPlayer
           assets={assets}
           isPlaying={isPlaying}
-          onSequenceEnd={onSequenceEnd}
+          onSequenceEnd={handleSequenceEnd}
         />
       </div>
     </div>
@@ -108,6 +121,8 @@ export function AudioQuiz({
   currentUsername,
   editQuestionUrl,
   csrfToken,
+  categoryList,
+  selectedCategories,
 }: AudioQuizProps) {
   const [questionPlaying, setQuestionPlaying] = useState(false);
   const [questionActive, setQuestionActive] = useState(false);
@@ -120,9 +135,73 @@ export function AudioQuiz({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImages, setModalImages] = useState<string[]>([]);
   const [modalStartIndex, setModalStartIndex] = useState(0);
+  const [panelSnap, setPanelSnap] = useState<'collapsed' | 'trio' | 'full'>('collapsed');
+
+  // Fixed answer-text padding mapping chosen to keep the answer readable
+  // without wasting space. No coupling to the live drag height.
+  const answerPaddingBySnap: Record<'collapsed' | 'trio' | 'full', number> = {
+    collapsed: 12,
+    trio: 188,
+    full: 340,
+  };
 
   // Form ref for programmatic submission from modal
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Build extra actions for the answer buttons drawer
+  const extraActions = useMemo((): ExtraAction[] => {
+    const actions: ExtraAction[] = [
+      {
+        key: 'exclude',
+        label: 'Exclude',
+        icon: <Ban className={actionStyles.iconLarge} />,
+        variant: 'exclude',
+        submitName: 'exclude-question-button',
+        submitValue: 'exclude',
+      },
+    ];
+
+    if (question?.created_by_username === currentUsername) {
+      actions.push({
+        key: 'edit',
+        label: 'Edit Question',
+        icon: <Edit className={actionStyles.iconLarge} />,
+        variant: 'edit',
+        href: `${editQuestionUrl}?q_id=${question.question_id}`,
+      });
+    }
+
+    return actions;
+  }, [question, currentUsername, editQuestionUrl]);
+
+  // Global audio coordination: only one audio source plays at a time.
+  // Each AudioPlayer-capable component registers a stop callback.
+  // Before any playback starts, all other registered callbacks are called.
+  const stopAllAudio = useCallback(() => {
+    const callbacks: Array<(() => void) | undefined> = (window as any).__audioStopCallbacks;
+    if (Array.isArray(callbacks)) {
+      callbacks.forEach((cb) => { try { cb?.(); } catch { /* ignore */ } });
+    }
+  }, []);
+
+  // Register/unregister this component's stop callback.
+  useEffect(() => {
+    const stopMe = () => {
+      setQuestionPlaying(false);
+      setAnswerPlaying(false);
+    };
+    if (!(window as any).__audioStopCallbacks) {
+      (window as any).__audioStopCallbacks = [];
+    }
+    (window as any).__audioStopCallbacks.push(stopMe);
+    return () => {
+      const arr: Array<(() => void) | undefined> = (window as any).__audioStopCallbacks;
+      if (arr) {
+        const idx = arr.indexOf(stopMe);
+        if (idx >= 0) arr.splice(idx, 1);
+      }
+    };
+  }, []);
 
   // Shared helper to submit the quiz form from the answer buttons.
   const submitForm = useCallback((name: string, value: string) => {
@@ -166,6 +245,8 @@ export function AudioQuiz({
       return;
     }
 
+    stopAllAudio();
+
     if (answerActive) {
       setAnswerActive(false);
       setAnswerPlaying(false);
@@ -174,7 +255,7 @@ export function AudioQuiz({
 
     setQuestionActive(true);
     setQuestionPlaying(true);
-  }, [questionActive, answerActive]);
+  }, [questionActive, answerActive, stopAllAudio]);
 
   useEffect(() => {
     (window as any).audioReadQuestion = handleReadQuestion;
@@ -235,6 +316,8 @@ export function AudioQuiz({
       return;
     }
 
+    stopAllAudio();
+
     setAnswerRevealed(true);
 
     if (questionActive) {
@@ -246,7 +329,7 @@ export function AudioQuiz({
       setAnswerActive(true);
       setAnswerPlaying(true);
     }
-  }, [questionActive, answerActive, answerAssets.length]);
+  }, [questionActive, answerActive, answerAssets.length, stopAllAudio]);
 
   useEffect(() => {
     (window as any).audioGetAnswer = handleGetAnswer;
@@ -297,7 +380,10 @@ export function AudioQuiz({
 
       <div className={styles.actionsSection}>
         <div id="audio-command-root" className={styles.audioCommandRoot}>
-          <AudioCommandSystemComponent />
+          <AudioCommandSystemComponent
+            question={question}
+            answerRevealed={answerRevealed}
+          />
         </div>
 
         {question.pics.question_image?.some(Boolean) && (
@@ -371,7 +457,10 @@ export function AudioQuiz({
         </div>
       </div>
 
-      <div className={styles.contentDivider}>
+      <div
+        className={styles.contentDivider}
+        style={{ paddingBottom: `${answerPaddingBySnap[panelSnap]}px` }}
+      >
         <div className={styles.metaRow}>
           <strong>Level {question.level_no}</strong>
 
@@ -401,39 +490,20 @@ export function AudioQuiz({
       </div>
 
       {answerRevealed && (
-        <AnswerButtons
+        <SlideOutButtons
           onCorrect={handleCorrect}
           onWrong={handleWrong}
           onSlightlyWrong={handleSlightlyWrong}
+          extraActions={extraActions}
+          onSnapChange={setPanelSnap}
+          expandToTrio
+          showCategories
+          categoryList={categoryList}
+          initialSelectedCategories={selectedCategories}
         />
       )}
 
-      <div className={styles.adminActions}>
-        <LargeActionButton
-          type="submit"
-          name="exclude-question-button"
-          value="exclude"
-          className={cx(styles.flex1, actionStyles.redBtn)}
-        >
-          <div className={actionStyles.btnContent}>
-            <Ban className={actionStyles.iconLarge} />
-            <span>Exclude</span>
-          </div>
-        </LargeActionButton>
-
-        {question.created_by_username === currentUsername && (
-          <a
-            href={`${editQuestionUrl}?q_id=${question.question_id}`}
-            className={cx(actionStyles.largeBtn, styles.flex1, actionStyles.cyanBtn)}
-            style={{ textDecoration: 'none' }}
-          >
-            <div className={actionStyles.btnContent}>
-              <Edit className={actionStyles.iconLarge} />
-              <span>Edit Question</span>
-            </div>
-          </a>
-        )}
-      </div>
+      <div id="ask-ai-conversation-root" className={styles.askAiConversationRoot}></div>
     </form>
     </>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { AudioCommandManager } from "./AudioCommandManager";
 import { buildWorkletBlobUrl } from "./audioCapture";
 import { KwsWorkerClient } from "./kwsWorkerClient";
@@ -6,12 +7,22 @@ import type { WorkerState } from "./kwsWorkerClient";
 import { registerAllCommands } from "./commands";
 import styles from "./AudioCommandSystem.module.css";
 import actionStyles from "./ActionButton.module.css";
+import quizStyles from "./AudioQuiz.module.css";
+import { MarkdownContent } from "../components/MarkdownContent";
+import { AudioPlayer } from "./AudioPlayer";
+import type { AudioAsset, Question } from "./types";
+import { Play, Pause } from "lucide-react";
 import {
   logMediaStreamDiagnostics,
   logAudioContextDiagnostics,
   logAudioDiagnostic,
   probeAudioContextSampleRateSupport,
 } from "./audioDiagnostics";
+
+interface AudioCommandSystemComponentProps {
+  question?: Question | null;
+  answerRevealed?: boolean;
+}
 
 const AVAILABLE_COMMANDS = [
   "READ QUESTION",
@@ -35,7 +46,20 @@ function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function AudioCommandSystemComponent() {
+function base64ToBlob(b64: string, contentType: string): Blob {
+  const binary = atob(b64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: contentType });
+}
+
+export function AudioCommandSystemComponent({
+  question,
+  answerRevealed,
+}: AudioCommandSystemComponentProps) {
   const [engineState, setEngineState] = useState<WorkerState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
@@ -43,13 +67,23 @@ export function AudioCommandSystemComponent() {
 
   // Ask AI state
   const [isRecordingAskAi, setIsRecordingAskAi] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  // Single phase label driving the one-at-a-time progress spinner. null = idle.
+  // Phases: "Transcribing: Question", "Thinking", "Transcribing: Answer".
+  const [askAiPhase, setAskAiPhase] = useState<string | null>(null);
   const [askAiTranscript, setAskAiTranscript] = useState<string | null>(null);
+  const [askAiAnswer, setAskAiAnswer] = useState<string | null>(null);
   const [askAiError, setAskAiError] = useState<string | null>(null);
+  // Audio playback (uses the shared AudioPlayer for seek/pause/etc.)
+  const [askAiAudioAssets, setAskAiAudioAssets] = useState<AudioAsset[]>([]);
+  const [askAiAudioPlaying, setAskAiAudioPlaying] = useState(false);
+  const [askAiWasEverPlaying, setAskAiWasEverPlaying] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const askAiChunksRef = useRef<Blob[]>([]);
   const wasListeningBeforeAskAiRef = useRef(false);
+  const askAiAbortRef = useRef<AbortController | null>(null);
+  const askAiPlaybackActiveRef = useRef(false);
+  const askAiBlobUrlRef = useRef<string | null>(null);
 
   // Refs for audio capture (these stay on the main thread — only PCM routing)
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -75,6 +109,24 @@ export function AudioCommandSystemComponent() {
     const timer = setTimeout(() => setLastCommand(null), 6000);
     return () => clearTimeout(timer);
   }, [lastCommand]);
+
+  // Register/unregister this component's stop callback for global audio coordination.
+  useEffect(() => {
+    const stopMe = () => {
+      setAskAiAudioPlaying(false);
+    };
+    if (!(window as any).__audioStopCallbacks) {
+      (window as any).__audioStopCallbacks = [];
+    }
+    (window as any).__audioStopCallbacks.push(stopMe);
+    return () => {
+      const arr: Array<(() => void) | undefined> = (window as any).__audioStopCallbacks;
+      if (arr) {
+        const idx = arr.indexOf(stopMe);
+        if (idx >= 0) arr.splice(idx, 1);
+      }
+    };
+  }, []);
 
   // Build a stable callback-based interface for the KWS worker
   const handleKeyword = useCallback((keyword: string) => {
@@ -363,12 +415,26 @@ export function AudioCommandSystemComponent() {
     // Stop command listening while Ask AI recording is active so command recognition does not interfere.
     stopListeningCleanup();
 
+    // Move focus/scroll to the Ask AI conversation section (rendered at the
+    // bottom of the quiz page) so the user can see the recording controls.
+    const askAiSection = document.getElementById("ask-ai-conversation-root");
+    if (askAiSection) {
+      askAiSection.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Make it focusable for keyboard/screen-reader users without leaving a
+      // focus ring for mouse users; focus it on the next tick after scroll.
+      askAiSection.setAttribute("tabindex", "-1");
+      window.setTimeout(() => askAiSection.focus({ preventScroll: true }), 50);
+    }
+
     setIsRecordingAskAi(true);
     setAskAiTranscript(null);
+    setAskAiAnswer(null);
     setAskAiError(null);
+    setAskAiPhase(null);
     askAiChunksRef.current = [];
 
     try {
+      const t_getUserMedia = performance.now();
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -377,17 +443,25 @@ export function AudioCommandSystemComponent() {
           autoGainControl: true,
         },
       });
+      if (import.meta.env.DEV) console.log(`[AskAI] getUserMedia took ${(performance.now() - t_getUserMedia).toFixed(1)}ms`);
 
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
 
+      let ondataAvailableCount = 0;
+      let ondataAvailableBytes = 0;
       mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
+          ondataAvailableCount += 1;
+          ondataAvailableBytes += e.data.size;
           askAiChunksRef.current.push(e.data);
         }
       };
 
       mediaRecorder.start();
+      // Mark this ref so stopAndSendAskAi can measure stop()→onstop latency.
+      (mediaRecorderRef.current as any).__askAiDataCount = () => ondataAvailableCount;
+      (mediaRecorderRef.current as any).__askAiDataBytes = () => ondataAvailableBytes;
       logDebug("MediaRecorder started recording Ask AI question.");
     } catch (err) {
       console.error("Failed to start MediaRecorder for Ask AI:", err);
@@ -405,9 +479,21 @@ export function AudioCommandSystemComponent() {
       return;
     }
 
-    setIsTranscribing(true);
+    const t_stop = performance.now();
+    (mediaRecorderRef.current as any).__askAiStopT = t_stop;
+
+    // The recording is done as far as the user is concerned; drop the recording
+    // indicator immediately and move to the transcribing phase.
+    setIsRecordingAskAi(false);
+    setAskAiPhase("Transcribing: Question");
 
     mediaRecorderRef.current.onstop = async () => {
+      const t_onstop = performance.now();
+      const mrAny = mediaRecorderRef.current as any;
+      const stopT = mrAny?.__askAiStopT;
+      const stopToOnstop = stopT ? t_onstop - stopT : NaN;
+      if (import.meta.env.DEV) console.log(`[AskAI] stop()→onstop flush=${stopToOnstop.toFixed(1)}ms chunks=${mrAny?.__askAiDataCount?.() ?? "?"} bytes=${mrAny?.__askAiDataBytes?.() ?? "?"}`);
+
       if (mediaRecorderRef.current) {
         const stream = mediaRecorderRef.current.stream;
         stream.getTracks().forEach((track) => track.stop());
@@ -430,37 +516,199 @@ export function AudioCommandSystemComponent() {
           headers["X-CSRFToken"] = csrfToken;
         }
 
+        const abort = new AbortController();
+        askAiAbortRef.current = abort;
+        const t_fetchStart = performance.now();
         const response = await fetch("/api/ask-ai/transcribe", {
           method: "POST",
           headers,
           body: formData,
+          signal: abort.signal,
         });
+        if (import.meta.env.DEV) console.log(`[AskAI] transcribe fetch=${(performance.now() - t_fetchStart).toFixed(1)}ms (status=${response.status})`);
 
         const result = await response.json();
         if (!response.ok || !result.ok) {
           throw new Error(result.error || `Server responded with ${response.status}`);
         }
 
-        console.log("Ask AI Transcript Result:", result.transcript);
+        if (import.meta.env.DEV) console.log(`[AskAI] transcript received (len=${(result.transcript ?? "").length}); total stop→transcript=${(performance.now() - (stopT ?? t_onstop)).toFixed(1)}ms`);
         setAskAiTranscript(result.transcript);
-        setIsRecordingAskAi(false);
+        // Question transcription is complete; the next phase (Thinking) will be
+        // set by requestAskAiAnswer, so clear this phase here.
+        setAskAiPhase(null);
+
+        // Phase 2: send the transcript + quiz context to the LLM, then speak the answer.
+        await requestAskAiAnswer(result.transcript);
       } catch (err) {
-        console.error("Failed to transcribe Ask AI audio:", err);
-        setAskAiError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setIsTranscribing(false);
-        mediaRecorderRef.current = null;
-        if (wasListeningBeforeAskAiRef.current) {
-          void startListening();
+        if ((err as any)?.name === "AbortError") {
+          logDebug("Ask AI transcribe request was cancelled.");
+        } else {
+          console.error("Failed to transcribe Ask AI audio:", err);
+          setAskAiError(err instanceof Error ? err.message : String(err));
         }
+      } finally {
+        setAskAiPhase(null);
+        mediaRecorderRef.current = null;
+        askAiAbortRef.current = null;
+        // Note: command listening is intentionally NOT resumed here. It is resumed
+        // after the AI answer audio finishes playing (or on error/cancel) to avoid
+        // the TTS output being picked up by the keyword recognizer.
       }
     };
 
     mediaRecorderRef.current.stop();
   };
 
-  const cancelAskAiRecording = () => {
-    logDebug("Cancelling Ask AI recording...");
+  const resumeCommandListeningIfNeeded = () => {
+    if (wasListeningBeforeAskAiRef.current) {
+      void startListening();
+    }
+  };
+
+  const askAiPlaybackEnded = () => {
+    logDebug("Ask AI answer playback ended.");
+    askAiPlaybackActiveRef.current = false;
+    setAskAiAudioPlaying(false);
+    setAskAiWasEverPlaying(false);
+    // Keep askAiAudioAssets intact so the user can replay the AI response.
+    resumeCommandListeningIfNeeded();
+  };
+
+  // Track whether the AI audio has ever played (for Play vs Resume label).
+  useEffect(() => {
+    if (askAiAudioPlaying) {
+      setAskAiWasEverPlaying(true);
+    }
+  }, [askAiAudioPlaying]);
+
+  const requestAskAiAnswer = async (transcript: string) => {
+    if (!question || !question.question_id) {
+      setAskAiError("No active question context to ask the AI about.");
+      resumeCommandListeningIfNeeded();
+      return;
+    }
+
+    // Send the answer text only if the user has already revealed it on screen.
+    const answerText = answerRevealed ? question.answer : "";
+    const body = {
+      transcript,
+      question_text: question.question_text,
+      question_id: question.question_id,
+      answer_text: answerText,
+      categories: question.categories ?? [],
+      image_urls: (question.pics?.question_image ?? []).filter(Boolean) as string[],
+    };
+
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers["X-CSRF-Token"] = csrfToken;
+      headers["X-CSRFToken"] = csrfToken;
+    }
+
+    setAskAiPhase("Thinking");
+    setAskAiError(null);
+    setAskAiAnswer(null);
+
+    let answer = "";
+    let language = "";
+    try {
+      const abort = new AbortController();
+      askAiAbortRef.current = abort;
+      const t_llmStart = performance.now();
+      const response = await fetch("/api/ask-ai", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: abort.signal,
+      });
+      if (import.meta.env.DEV) console.log(`[AskAI] LLM fetch=${(performance.now() - t_llmStart).toFixed(1)}ms (status=${response.status})`);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || `Server responded with ${response.status}`);
+      }
+
+      answer = result.answer_text || "";
+      language = result.language || "";
+      setAskAiAnswer(answer);
+      setAskAiPhase(null);
+
+      // Step 2: synthesize the spoken answer. This is its own request so the
+      // user can see the TTS latency separately from the LLM latency.
+      setAskAiPhase("Transcribing: Answer");
+      const speakAbort = new AbortController();
+      askAiAbortRef.current = speakAbort;
+      const t_speakStart = performance.now();
+      const speakResponse = await fetch("/api/ask-ai/speak", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ text: answer, language }),
+        signal: speakAbort.signal,
+      });
+      if (import.meta.env.DEV) console.log(`[AskAI] TTS fetch=${(performance.now() - t_speakStart).toFixed(1)}ms (status=${speakResponse.status})`);
+      const speakResult = await speakResponse.json().catch(() => ({}));
+      if (!speakResponse.ok || !speakResult.ok) {
+        throw new Error(speakResult.error || `Server responded with ${speakResponse.status}`);
+      }
+
+      const audioB64 = speakResult.audio_b64 || null;
+      const contentType = speakResult.audio_content_type || "audio/mpeg";
+      if (speakResult.warning) {
+        console.warn("Ask AI speak warning:", speakResult.warning);
+      }
+      setAskAiPhase(null);
+
+      if (audioB64) {
+        // Hand the synthesized audio to the shared AudioPlayer so the user can
+        // pause/seek/etc. just like question/answer playback.
+        const blob = base64ToBlob(audioB64, contentType);
+        const blobUrl = URL.createObjectURL(blob);
+        // Revoke any previous blob URL before replacing.
+        if (askAiBlobUrlRef.current) {
+          URL.revokeObjectURL(askAiBlobUrlRef.current);
+        }
+        askAiBlobUrlRef.current = blobUrl;
+        askAiPlaybackActiveRef.current = true;
+        setAskAiAudioAssets([{ url: blobUrl, lang: language || "en_US" }]);
+        // Stop any other audio before starting AI playback.
+        const callbacks: Array<(() => void) | undefined> = (window as any).__audioStopCallbacks;
+        if (Array.isArray(callbacks)) {
+          callbacks.forEach((cb) => { try { cb?.(); } catch { /* ignore */ } });
+        }
+        setAskAiWasEverPlaying(false);
+        setAskAiAudioPlaying(true);
+        // Listening is resumed by askAiPlaybackEnded() when playback completes
+        // (see AudioPlayer onSequenceEnd), NOT here.
+      }
+    } catch (err) {
+      if ((err as any)?.name === "AbortError") {
+        logDebug("Ask AI request was cancelled.");
+      } else {
+        console.error("Ask AI answer request failed:", err);
+        setAskAiError(err instanceof Error ? err.message : String(err));
+      }
+    } finally {
+      askAiAbortRef.current = null;
+      setAskAiPhase(null);
+      // Only resume listening here if we did NOT hand off to the audio player.
+      // When playback is active, listening is resumed in askAiPlaybackEnded().
+      if (!askAiPlaybackActiveRef.current) {
+        resumeCommandListeningIfNeeded();
+      }
+    }
+  };
+
+  const cancelAskAi = () => {
+    logDebug("Cancelling Ask AI (any phase)...");
+
+    // Abort any in-flight transcription/LLM/TTS network requests.
+    if (askAiAbortRef.current) {
+      try { askAiAbortRef.current.abort(); } catch { /* ignore */ }
+      askAiAbortRef.current = null;
+    }
+
+    // Stop the recorder if it's still running.
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.onstop = () => {
         if (mediaRecorderRef.current) {
@@ -469,14 +717,26 @@ export function AudioCommandSystemComponent() {
         }
         mediaRecorderRef.current = null;
       };
-      mediaRecorderRef.current.stop();
+      try { mediaRecorderRef.current.stop(); } catch { /* ignore */ }
     } else if (mediaRecorderRef.current) {
       const stream = mediaRecorderRef.current.stream;
       stream.getTracks().forEach((track) => track.stop());
       mediaRecorderRef.current = null;
     }
 
+    // Stop answer playback if it's running.
+    askAiPlaybackActiveRef.current = false;
+    setAskAiAudioPlaying(false);
+    setAskAiAudioAssets([]);
+    if (askAiBlobUrlRef.current) {
+      URL.revokeObjectURL(askAiBlobUrlRef.current);
+      askAiBlobUrlRef.current = null;
+    }
+    // Clear the manual mic gate if it was set during playback.
+    (window as any).__audioPlaying = false;
+
     setIsRecordingAskAi(false);
+    setAskAiPhase(null);
     if (wasListeningBeforeAskAiRef.current) {
       void startListening();
     }
@@ -490,6 +750,141 @@ export function AudioCommandSystemComponent() {
       delete (window as any).audioAskAi;
     };
   }, [engineState]);
+
+  // The Ask AI conversation panel is rendered at the bottom of the quiz page
+  // (into #ask-ai-conversation-root) via a portal when that container exists.
+  // When it doesn't (e.g. the standalone command-system entry), fall back to
+  // rendering inline inside the command system container.
+  const [askAiPortalTarget, setAskAiPortalTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const resolve = () => setAskAiPortalTarget(document.getElementById("ask-ai-conversation-root"));
+    resolve();
+    // The container is rendered by a sibling component, so re-check shortly after
+    // mount in case it wasn't in the DOM on the first pass.
+    const timer = window.setTimeout(resolve, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const askAiConversation = (
+    <>
+      {isRecordingAskAi && (
+        <div className={styles.askAiContainer}>
+          <div className={styles.askAiTitle}>
+            <span className={styles.askAiPulse}></span>
+            <span>Recording Ask AI question...</span>
+          </div>
+          <div className={styles.askAiActions}>
+            <button
+              type="button"
+              className={cx(actionStyles.largeBtn, styles.askAiBtnStop)}
+              onClick={stopAndSendAskAi}
+              disabled={!!askAiPhase}
+            >
+              Stop & Send
+            </button>
+            <button
+              type="button"
+              className={cx(actionStyles.largeBtn, styles.askAiBtnCancel)}
+              onClick={cancelAskAi}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {askAiPhase && (
+        <div className={styles.askAiContainer}>
+          <div className={styles.askAiTitle}>
+            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
+            <span>{askAiPhase}...</span>
+          </div>
+          <div className={styles.askAiActions}>
+            <button
+              type="button"
+              className={cx(actionStyles.largeBtn, styles.askAiBtnCancel)}
+              onClick={cancelAskAi}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+
+      {askAiError && (
+        <div className={styles.errorMessage}>
+          Ask AI Error: {askAiError}
+        </div>
+      )}
+
+      {askAiTranscript && (
+        <div className={styles.askAiTranscriptBox}>
+          <div className={styles.askAiTranscriptTitle}>Ask AI Transcript:</div>
+          <div className={styles.askAiTranscriptText}>{askAiTranscript}</div>
+        </div>
+      )}
+
+      {askAiAnswer && (
+        <div className={styles.askAiAnswerBox}>
+          <div className={styles.askAiTranscriptTitle}>AI Tutor Answer:</div>
+          <div className={styles.askAiAnswerText}>
+            <MarkdownContent content={askAiAnswer} />
+          </div>
+        </div>
+      )}
+
+      {askAiAudioAssets.length > 0 && (
+        <div className={styles.askAiAnswerPlayer}>
+          <div className={quizStyles.playableControl}>
+            <div
+              className={cx(actionStyles.largeBtn, actionStyles.hasSlider, styles.askAiAnswerPlayerBox)}
+              style={{ cursor: 'default' }}
+            >
+              <button
+                type="button"
+                onClick={() => setAskAiAudioPlaying((prev) => !prev)}
+                className={quizStyles.playPauseToggleBtn}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'inherit',
+                  font: 'inherit',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: 0,
+                }}
+              >
+                {askAiAudioPlaying ? (
+                  <Pause className={actionStyles.iconLarge} />
+                ) : (
+                  <Play className={actionStyles.iconLarge} />
+                )}
+                <span>{askAiAudioPlaying ? 'Pause' : askAiWasEverPlaying ? 'Resume' : 'Play'}</span>
+              </button>
+
+              <AudioPlayer
+                assets={askAiAudioAssets}
+                isPlaying={askAiAudioPlaying}
+                onSequenceEnd={askAiPlaybackEnded}
+              />
+            </div>
+          </div>
+          <div className={styles.askAiActions}>
+            <button
+              type="button"
+              className={cx(actionStyles.largeBtn, styles.askAiBtnCancel)}
+              onClick={cancelAskAi}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div className={styles.voiceCommandContainer}>
@@ -589,53 +984,9 @@ export function AudioCommandSystemComponent() {
         </div>
       )}
 
-      {isRecordingAskAi && (
-        <div className={styles.askAiContainer}>
-          <div className={styles.askAiTitle}>
-            <span className={styles.askAiPulse}></span>
-            <span>Recording Ask AI question...</span>
-          </div>
-          <div className={styles.askAiActions}>
-            <button
-              type="button"
-              className={cx(actionStyles.largeBtn, styles.askAiBtnStop)}
-              onClick={stopAndSendAskAi}
-              disabled={isTranscribing}
-            >
-              Stop & Send
-            </button>
-            <button
-              type="button"
-              className={cx(actionStyles.largeBtn, styles.askAiBtnCancel)}
-              onClick={cancelAskAiRecording}
-              disabled={isTranscribing}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {isTranscribing && (
-        <div className={styles.askAiContainer}>
-          <div className={styles.askAiTitle}>
-            <span>Transcribing audio...</span>
-          </div>
-        </div>
-      )}
-
-      {askAiError && (
-        <div className={styles.errorMessage}>
-          Ask AI Error: {askAiError}
-        </div>
-      )}
-
-      {askAiTranscript && (
-        <div className={styles.askAiTranscriptBox}>
-          <div className={styles.askAiTranscriptTitle}>Ask AI Transcript:</div>
-          <div className={styles.askAiTranscriptText}>{askAiTranscript}</div>
-        </div>
-      )}
+      {askAiPortalTarget
+        ? createPortal(askAiConversation, askAiPortalTarget)
+        : askAiConversation}
     </div>
   );
 }

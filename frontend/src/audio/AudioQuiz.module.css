@@ -50,8 +50,8 @@
 }
 
 .contentDivider {
-  margin-top: 28px;
-  padding-top: 24px;
+  margin-top: 6px;
+  padding-top: 4px;
   border-top: 1px solid #ddd;
 }
 
@@ -104,23 +104,21 @@
 
 .cardContent {
   margin: 0;
-  padding: 20px;
+  padding-top: 10px;
+  padding-bottom: 2px;
+  padding-inline: 20px;
   white-space: pre-wrap;
   font-family: inherit;
   font-size: 1rem;
   line-height: 1.6;
 }
 
-.adminActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+.askAiConversationRoot {
+  width: 100%;
   margin-top: 24px;
 }
 
-.flex1 {
-  flex: 1;
-}
+
 
 .secondaryBtn {
   display: inline-flex;
@@ -151,10 +149,6 @@
 @media (max-width: 640px) {
   .quizContainer {
     padding: 16px;
-  }
-
-  .adminActions {
-    flex-direction: column;
   }
 
   .secondaryBtn {

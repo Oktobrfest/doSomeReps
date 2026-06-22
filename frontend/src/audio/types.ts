@@ -32,6 +32,10 @@ export interface AudioQuizProps {
   currentUsername: string;
   editQuestionUrl: string;
   csrfToken?: string;
+  /** Full display names of every available category. */
+  categoryList?: string[];
+  /** Pre-selected categories passed from the server (may be slugs or names). */
+  selectedCategories?: string[];
 }
 
 export type CommandCallback = () => void;

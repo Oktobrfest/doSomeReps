@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, type TouchEvent, type KeyboardEvent } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './ImageModal.module.css';
-import { AnswerButtons } from './AnswerButtons';
+import { SlideOutButtons } from './SlideOutButtons';
 
 interface ImageModalProps {
   images: string[];
@@ -161,9 +161,10 @@ export function ImageModal({ images, startIndex, onClose, onCorrect, onWrong, on
 
       {/* Answer buttons at the very bottom */}
       {(onCorrect || onWrong || onSlightlyWrong) && (
-        <AnswerButtons
+        <SlideOutButtons
           className={styles.modalAnswerBar}
           size="compact"
+          expandToTrio
           onCorrect={onCorrect}
           onWrong={onWrong}
           onSlightlyWrong={onSlightlyWrong}
