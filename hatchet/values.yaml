@@ -1,25 +1,47 @@
-# helm upgrade hatchet-stack hatchet/hatchet-stack -n hatchet -f hatchet/values.yaml
+# hatchet/values.yaml
+# Install/render with:
+# helm upgrade --install hatchet-stack hatchet/hatchet-stack \
+#   -n hatch \
+#   --version 0.11.0 \
+#   -f hatchet/values.yaml
+
+# Hatchet platform/server image tag.
+# This is NOT the Python SDK version.
+# Python app/worker should separately use: hatchet-sdk==1.33.12
+image:
+  tag: "v0.90.2"
 
 postgres:
   enabled: true
+  primary:
+    persistence:
+      storageClass: "local-path"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - jackie
 
 rabbitmq:
-  enabled: false      # using the Postgres-backed queue instead
+  enabled: false
 
 caddy:
   enabled: true
 
-# ── ONE sharedConfig block (you had two; the second clobbered your tag) ────
 sharedConfig:
   enabled: true
 
   image:
-    tag: "v0.86.12"   # chart default is ~v0.84.0; this is a small, safe bump
+    tag: "v0.90.2"
 
-  # These names embed release "hatchet-stack" + namespace "hatchet".
-  # Change either of those and you must change these to match.
+  # Internal service URL for pods/worker tokens.
+  # UI still works through: kubectl -n hatch port-forward svc/caddy 8888:8080
   serverUrl: "http://localhost:8888"
-  grpcBroadcastAddress: "hatchet-stack-engine.hatchet.svc.cluster.local:7070"
+  grpcBroadcastAddress: "hatchet-stack-engine.hatch.svc.cluster.local:7070"
 
   serverAuthCookieDomain: "localhost"
   serverAuthCookieInsecure: "t"
@@ -31,9 +53,6 @@ sharedConfig:
     DATABASE_ENFORCE_UTC_TIMEZONE: "false"
     SERVER_MSGQUEUE_KIND: "postgres"
 
-    # External Postgres? Uncomment and set this (and postgres.enabled: false):
-    # DATABASE_URL: "postgresql://hatchet:hatchet@my-pg-host:5432/hatchet?sslmode=disable"
-
     SERVER_LOGGER_LEVEL: "info"
     SERVER_LOGGER_FORMAT: "console"
     DATABASE_LOGGER_LEVEL: "warn"
@@ -44,45 +63,124 @@ sharedConfig:
     DATABASE_MAX_QUEUE_CONNS: "20"
     DATABASE_MIN_QUEUE_CONNS: "2"
 
-    SERVER_GRPC_INSECURE: "true"
     SERVER_INTERNAL_CLIENT_BASE_STRATEGY: "none"
 
-# ── API server ─────────────────────────────────────────────────────────────
 api:
   enabled: true
   replicaCount: 1
+
+  # Needed because this chart's subcharts use their own sharedConfig/image values.
+  sharedConfig:
+    image:
+      tag: "v0.90.2"
+
+  image:
+    repository: "ghcr.io/hatchet-dev/hatchet/hatchet-api"
+    tag: "v0.90.2"
+
   migrationJob:
     enabled: true
     backoffLimit: 1
     activeDeadlineSeconds: 900
+    image:
+      repository: "ghcr.io/hatchet-dev/hatchet/hatchet-migrate"
+      tag: "v0.90.2"
+
+  seedJob:
+    image:
+      repository: "ghcr.io/hatchet-dev/hatchet/hatchet-admin"
+      tag: "v0.90.2"
+
+  setupJob:
+    image:
+      repository: "ghcr.io/hatchet-dev/hatchet/hatchet-admin"
+      tag: "v0.90.2"
+
   ingress:
     enabled: false
-  resources:
-    requests: { cpu: 100m, memory: 156Mi }
-    limits:   { memory: 512Mi }
 
-# ── Engine / scheduler ─────────────────────────────────────────────────────
+  resources:
+    requests:
+      cpu: 100m
+      memory: 156Mi
+    limits:
+      memory: 512Mi
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - jackie
+
 engine:
   enabled: true
   nameOverride: engine
   replicaCount: 1
+
+  sharedConfig:
+    image:
+      tag: "v0.90.2"
+
+  image:
+    repository: "ghcr.io/hatchet-dev/hatchet/hatchet-engine"
+    tag: "v0.90.2"
+
   ingress:
     enabled: false
-  resources:
-    requests: { cpu: 100m, memory: 156Mi }
-    limits:   { memory: 512Mi }
 
-# ── Frontend dashboard ON ────────────────────────────────────────────────
+  resources:
+    requests:
+      cpu: 100m
+      memory: 156Mi
+    limits:
+      memory: 512Mi
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - jackie
+
 frontend:
   enabled: true
   replicaCount: 1
+
+  sharedConfig:
+    image:
+      tag: "v0.90.2"
+
+  image:
+    repository: "ghcr.io/hatchet-dev/hatchet/hatchet-frontend"
+    tag: "v0.90.2"
+
   ingress:
     enabled: false
-  resources:
-    requests: { cpu: 100m, memory: 128Mi }
-    limits:   { memory: 256Mi }
 
-# ── Jobs ───────────────────────────────────────────────────────────────────
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - jackie
+
 quickstartJob:
   enabled: true
 

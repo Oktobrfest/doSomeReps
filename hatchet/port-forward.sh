@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NS=hatchet
+NS=hatch
 ADDR=0.0.0.0   # use 127.0.0.1 unless LAN/containers truly need it
 
 PIDS=()
