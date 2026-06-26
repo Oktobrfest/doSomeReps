@@ -82,7 +82,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # excluded from requirements.txt (builder stage) because its namespace-
 # package layout does not survive the multi-stage COPY of site-packages.
 # This may upgrade pydantic past litellm's pin; the patch bump is compatible.
-RUN pip install --no-cache-dir hatchet-sdk
+RUN pip install --no-cache-dir "hatchet-sdk==1.33.12"
 
 
 # ARG NODE_ENV=production

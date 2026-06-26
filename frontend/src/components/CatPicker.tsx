@@ -86,7 +86,7 @@ export function CatPicker({ selectedCategories, onChange }: CatPickerProps) {
         {/* Text Entry Field with Autocomplete */}
         <div className="position-relative mb-3">
           <label htmlFor="cat-search-input" className="font-weight-bold text-dark small mb-1 d-block">
-            Search or Add Categories
+            Search Categories
           </label>
           <input
             id="cat-search-input"
