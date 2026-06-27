@@ -26,9 +26,17 @@ export interface Question {
   created_by_username: string;
 }
 
-export interface AudioQuizProps {
+export interface QuizItem {
   question: Question | null;
   audioAssets: AudioAssets | null;
+}
+
+export interface AudioQuizBatchResponse {
+  items: QuizItem[];
+}
+
+export interface AudioQuizProps {
+  initialItems?: QuizItem[];
   currentUsername: string;
   editQuestionUrl: string;
   csrfToken?: string;

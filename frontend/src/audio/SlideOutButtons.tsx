@@ -42,6 +42,7 @@ export interface ExtraAction {
   submitName?: string;
   submitValue?: string;
   href?: string;
+  onClick?: () => void;
 }
 
 export interface SlideOutButtonsProps {
@@ -343,6 +344,20 @@ export function SlideOutButtons({
                 </a>
               );
             }
+
+            if (action.onClick) {
+              return (
+                <button
+                  key={action.key}
+                  type="button"
+                  onClick={action.onClick}
+                  className={className}
+                >
+                  {content}
+                </button>
+              );
+            }
+
             return (
               <button
                 key={action.key}

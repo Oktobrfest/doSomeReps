@@ -1,11 +1,17 @@
-from flask import Response, abort
-from flask_login import login_required
+from flask import Response, abort, jsonify, request
+from flask_login import current_user, login_required
 import tempfile
 from pathlib import Path
 from typing import Optional
 
 from repz.routes import audio
-from repz.services.quiz_service import QuizPageConfig, render_quiz_page
+from repz.services.quiz_service import (
+    QuizPageConfig,
+    render_quiz_page,
+    _get_selected_categories,
+    get_quiz_queue,
+    build_audio_quiz_items,
+)
 from repz.services.audio_asset_service import AudioAssetService, S3StorageClient
 from .create_audio import create_audio
 
@@ -185,3 +191,40 @@ def serve_audio_by_key(object_key):
         download_name=object_key.split('/')[-1],
         conditional=True
     )
+
+
+@audio.route("/audio/quiz-data", methods=["GET"], endpoint="audio_quiz_data")
+@login_required
+def audio_quiz_data():
+    """Return fully-populated audio quiz items for the SPA queue."""
+    storage_client = S3StorageClient()
+    tts_client = TTSClientAdapter()
+    audio_service = AudioAssetService(tts_client, storage_client)
+
+    selected_categories = _get_selected_categories()
+    if selected_categories == "Not set" or not selected_categories:
+        return jsonify({"items": []})
+
+    user_id = current_user.id
+    que_list = get_quiz_queue(user_id, selected_categories)
+    if not que_list:
+        return jsonify({"items": []})
+
+    count = request.args.get("count", 1, type=int)
+    if count < 1:
+        count = 1
+
+    exclude_raw = request.args.get("exclude_quizq_ids", "")
+    exclude_quizq_ids = [
+        x.strip() for x in exclude_raw.split(",") if x.strip()
+    ]
+
+    items = build_audio_quiz_items(
+        que_list=que_list,
+        audio_service=audio_service,
+        user=current_user,
+        count=count,
+        exclude_quizq_ids=exclude_quizq_ids,
+    )
+
+    return jsonify({"items": items})
