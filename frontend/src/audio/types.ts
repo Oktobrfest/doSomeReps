@@ -71,5 +71,9 @@ declare global {
     audioReadQuestion?: () => void;
     audioPause?: () => void;
     audioResume?: () => void;
+    audioCorrect?: () => void;
+    audioWrong?: () => void;
+    audioSlightlyWrong?: () => void;
+    audioGetAnswer?: () => void;
   }
 }

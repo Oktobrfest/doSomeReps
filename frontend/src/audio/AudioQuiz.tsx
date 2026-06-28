@@ -222,9 +222,16 @@ export function AudioQuiz({
   );
 
   const postForm = useCallback(async (formData: FormData) => {
+    const headers: Record<string, string> = {};
+    const token = formData.get('csrf_token');
+    if (token && typeof token === 'string') {
+      headers['X-CSRFToken'] = token;
+    }
+
     const res = await fetch('/audio', {
       method: 'POST',
       body: formData,
+      headers,
       credentials: 'same-origin',
     });
     if (!res.ok) {
@@ -237,18 +244,23 @@ export function AudioQuiz({
   // to keep the queue topped up to two items.
   const advanceQueue = useCallback(
     async (submittedQuizqId: string | number) => {
-      const nextItems = items.filter((item) => {
-        const id = item.question?.quizq_id;
-        return id === undefined || String(id) !== String(submittedQuizqId);
+      let excludeIds: Array<string | number> = [];
+      let count = 2;
+
+      setItems((prevItems) => {
+        const nextItems = prevItems.filter((item) => {
+          const id = item.question?.quizq_id;
+          return id === undefined || String(id) !== String(submittedQuizqId);
+        });
+
+        const newCurrent = nextItems[0] ?? null;
+        excludeIds = newCurrent?.question
+          ? [newCurrent.question.quizq_id]
+          : [];
+        count = newCurrent ? 1 : 2;
+
+        return nextItems;
       });
-
-      const newCurrent = nextItems[0] ?? null;
-      const excludeIds = newCurrent?.question
-        ? [newCurrent.question.quizq_id]
-        : [];
-      const count = newCurrent ? 1 : 2;
-
-      setItems(nextItems);
 
       try {
         const fetched = await fetchBatch(count, excludeIds);
@@ -258,7 +270,7 @@ export function AudioQuiz({
         setError('Could not load the next question. Please try again.');
       }
     },
-    [fetchBatch, items],
+    [fetchBatch],
   );
 
   const submitAnswer = useCallback(
@@ -285,13 +297,34 @@ export function AudioQuiz({
     submitAnswer('correct_submit', 'Correct!');
   }, [submitAnswer]);
 
+  useEffect(() => {
+    (window as any).audioCorrect = handleCorrect;
+    return () => {
+      delete (window as any).audioCorrect;
+    };
+  }, [handleCorrect]);
+
   const handleWrong = useCallback(() => {
     submitAnswer('incorrect_submit', 'Wrong!');
   }, [submitAnswer]);
 
+  useEffect(() => {
+    (window as any).audioWrong = handleWrong;
+    return () => {
+      delete (window as any).audioWrong;
+    };
+  }, [handleWrong]);
+
   const handleSlightlyWrong = useCallback(() => {
     submitAnswer('incorrect_submit', 'Slightly Wrong');
   }, [submitAnswer]);
+
+  useEffect(() => {
+    (window as any).audioSlightlyWrong = handleSlightlyWrong;
+    return () => {
+      delete (window as any).audioSlightlyWrong;
+    };
+  }, [handleSlightlyWrong]);
 
   const handleExclude = useCallback(async () => {
     if (!currentQuestion) return;
