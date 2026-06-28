@@ -40,33 +40,33 @@ spec:
             - name: DOCKER_CONFIG
               value: /kaniko/.docker
           args:
-            - --context=https://codeload.github.com/Oktobrfest/doSomeReps/tar.gz/refs/heads/master          
+            - --context=https://codeload.github.com/Oktobrfest/doSomeReps/tar.gz/refs/heads/master
             - --dockerfile=Dockerfile
             - --build-arg=NODE_ENV=prod
-            - --custom-platform=linux/arm64 
-            # - --custom-platform=linux/amd64 
+            - --custom-platform=linux/arm64
+            # - --custom-platform=linux/amd64
             - --skip-unused-stages
             - --context-sub-path=doSomeReps-master
             - --destination=docker.io/oktobrfest/reps:latest
             # Optional caching:
-            - --cache=false         
+            - --cache=false
             - --cache-repo=docker.io/oktobrfest/reps-cache
             - --compressed-caching=false # for low RAM PCs this is actually faster as 'false'
             - --snapshot-mode=time #redo #full #time is fastest, redo is experimental
             - --verbosity=info
             - --log-format=text
             - --log-timestamp
-            - --push-retry=5 
+            - --push-retry=5
             # - --registry-mirror=https://mirror.gcr.io
             - --registry-mirror=mirror.gcr.io
 
           resources:
             requests:
-              cpu: "500m"            
+              cpu: "250m"
               memory: "3Gi"
               ephemeral-storage: "8Gi"
             limits:
-              cpu: "4000m"           
+              cpu: "4000m"
               memory: "8Gi"
               ephemeral-storage: "10Gi"
 
@@ -75,7 +75,7 @@ spec:
               mountPath: /kaniko/.docker/
             - name: kaniko-cache
               mountPath: /kaniko/cache
-              
+
       volumes:
         - name: docker-config
           secret:
