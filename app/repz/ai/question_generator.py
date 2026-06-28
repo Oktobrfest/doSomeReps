@@ -756,6 +756,8 @@ def ai_qgen_extend_one():
     existing[idx]["hint"] = (item.get("hint") or "").strip() or None
     existing[idx]["answer"] = (item.get("answer") or "").strip()
     existing[idx]["categories"] = item.get("categories") or []
+    existing[idx]["privacy"] = bool(item.get("privacy", False))
+    existing[idx]["auto_que"] = bool(item.get("auto_que", False))
 
     instr = (data.get("extend_text") or "").strip()
 
@@ -793,6 +795,8 @@ def ai_qgen_extend_all():
         existing[i]["hint"] = (item.get("hint") or "").strip() or None
         existing[i]["answer"] = (item.get("answer") or "").strip()
         existing[i]["categories"] = item.get("categories") or []
+        existing[i]["privacy"] = bool(item.get("privacy", False))
+        existing[i]["auto_que"] = bool(item.get("auto_que", False))
 
         instr = (item.get("extend_text") or "").strip()
         try:

@@ -153,12 +153,16 @@ export function AiQuestionGenerator() {
           throw new Error(data.error || "Save failed");
         }
         setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any) => ({
-            ...q,
-            privacy: !!q.privacy,
-            auto_que: !!q.auto_que,
-            extendText: "",
-          }))
+          (data.generated_questions || []).map((q: any, i: number) => {
+            const oldIndex = i < index ? i : i + 1;
+            const oldItem = generatedQuestions[oldIndex];
+            return {
+              ...q,
+              privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
+              auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
+              extendText: oldItem ? oldItem.extendText || "" : "",
+            };
+          })
         );
         setSuccess("Question saved.");
       })
@@ -182,12 +186,16 @@ export function AiQuestionGenerator() {
           throw new Error(data.error || "Delete failed");
         }
         setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any) => ({
-            ...q,
-            privacy: !!q.privacy,
-            auto_que: !!q.auto_que,
-            extendText: "",
-          }))
+          (data.generated_questions || []).map((q: any, i: number) => {
+            const oldIndex = i < index ? i : i + 1;
+            const oldItem = generatedQuestions[oldIndex];
+            return {
+              ...q,
+              privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
+              auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
+              extendText: oldItem ? oldItem.extendText || "" : "",
+            };
+          })
         );
         setSuccess("Question removed.");
       })
@@ -216,12 +224,15 @@ export function AiQuestionGenerator() {
           throw new Error(data.error || "Extend failed");
         }
         setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any) => ({
-            ...q,
-            privacy: !!q.privacy,
-            auto_que: !!q.auto_que,
-            extendText: "",
-          }))
+          (data.generated_questions || []).map((q: any, i: number) => {
+            const oldItem = generatedQuestions[i];
+            return {
+              ...q,
+              privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
+              auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
+              extendText: i === index ? "" : (oldItem ? oldItem.extendText || "" : ""),
+            };
+          })
         );
         setSuccess("Answer extended.");
       })
@@ -245,12 +256,15 @@ export function AiQuestionGenerator() {
           throw new Error(data.error || "Save all failed");
         }
         setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any) => ({
-            ...q,
-            privacy: !!q.privacy,
-            auto_que: !!q.auto_que,
-            extendText: "",
-          }))
+          (data.generated_questions || []).map((q: any) => {
+            const oldItem = generatedQuestions.find((oldQ) => oldQ.question === q.question);
+            return {
+              ...q,
+              privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
+              auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
+              extendText: oldItem ? oldItem.extendText || "" : "",
+            };
+          })
         );
         if (data.saved_count > 0) {
           setSuccess(`Saved ${data.saved_count} question(s) to the database.`);
@@ -299,12 +313,15 @@ export function AiQuestionGenerator() {
       .then((res) => res.json())
       .then((data) => {
         setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any) => ({
-            ...q,
-            privacy: !!q.privacy,
-            auto_que: !!q.auto_que,
-            extendText: "",
-          }))
+          (data.generated_questions || []).map((q: any, i: number) => {
+            const oldItem = generatedQuestions[i];
+            return {
+              ...q,
+              privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
+              auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
+              extendText: oldItem ? oldItem.extendText || "" : "",
+            };
+          })
         );
         if (data.extended_count > 0) {
           setSuccess(`Extended ${data.extended_count} answer(s).`);
