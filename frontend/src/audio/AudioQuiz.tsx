@@ -1,119 +1,15 @@
-import {
-  useState,
-  useCallback,
-  useMemo,
-  useEffect,
-  type ButtonHTMLAttributes,
-} from 'react';
-import { AudioPlayer } from './AudioPlayer';
+import { useMemo } from 'react';
 import { AudioCommandSystemComponent } from './AudioCommandSystem';
 import { ImageCarousel } from './ImageCarousel';
 import { ImageModal } from './ImageModal';
-import {
-  Volume2,
-  BookOpen,
-  Ban,
-  Pause,
-  Play,
-  Edit,
-} from 'lucide-react';
+import { Volume2, BookOpen, Ban, Edit } from 'lucide-react';
 import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
 import actionStyles from './ActionButton.module.css';
 import { SlideOutButtons, type ExtraAction } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { useAudioQuizController } from './useAudioQuizController';
-
-function cx(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
-
-interface LargeActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> { }
-
-function LargeActionButton({
-  className,
-  children,
-  type = 'button',
-  ...props
-}: LargeActionButtonProps) {
-  return (
-    <button
-      type={type}
-      className={cx(actionStyles.largeBtn, className)}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-
-interface PlayableControlProps {
-  onClick: () => void;
-  isPlaying: boolean;
-  className?: string;
-  assets: any[];
-  onSequenceEnd: () => void;
-}
-
-function LargePlayableControl({
-  onClick,
-  isPlaying,
-  className,
-  assets,
-  onSequenceEnd,
-}: PlayableControlProps) {
-  const [wasEverPlaying, setWasEverPlaying] = useState(false);
-
-  useEffect(() => {
-    if (isPlaying) {
-      setWasEverPlaying(true);
-    }
-  }, [isPlaying]);
-
-  const handleSequenceEnd = useCallback(() => {
-    setWasEverPlaying(false);
-    onSequenceEnd();
-  }, [onSequenceEnd]);
-
-  return (
-    <div className={styles.playableControl}>
-      <div
-        className={cx(actionStyles.largeBtn, actionStyles.hasSlider, className)}
-        style={{ cursor: 'default' }}
-      >
-        <button
-          type="button"
-          onClick={onClick}
-          className={styles.playPauseToggleBtn}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'inherit',
-            font: 'inherit',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: 0,
-          }}
-        >
-          {isPlaying ? (
-            <Pause className={actionStyles.iconLarge} />
-          ) : (
-            <Play className={actionStyles.iconLarge} />
-          )}
-          <span>{isPlaying ? 'Pause' : wasEverPlaying ? 'Resume' : 'Play'}</span>
-        </button>
-
-        <AudioPlayer
-          assets={assets}
-          isPlaying={isPlaying}
-          onSequenceEnd={handleSequenceEnd}
-        />
-      </div>
-    </div>
-  );
-}
+import { LargeActionButton, LargePlayableControl } from './AudioControls';
 
 const answerPaddingBySnap: Record<'collapsed' | 'trio' | 'full', number> = {
   collapsed: 12,
@@ -125,20 +21,83 @@ function validImages(images?: Array<string | null>): string[] {
   return images?.filter((image): image is string => Boolean(image)) ?? [];
 }
 
-export function AudioQuiz({
-  initialItems = [],
+export function AudioQuiz(props: AudioQuizProps) {
+  const {
+    currentUsername,
+    editQuestionUrl,
+    csrfToken,
+    categoryList,
+    selectedCategories,
+    initialItems = [],
+  } = props;
+
+  const quiz = useAudioQuizController({ initialItems, csrfToken });
+
+  return (
+    <div className={styles.quizContainer}>
+      {/*
+        Mounted ONCE for the session. The mic + KWS worker live here and must
+        never be torn down by a question change, an empty queue, or a submit.
+        Quiz commands are delivered via props (commandsRef), so this component
+        always sees the latest handlers without re-subscribing.
+      */}
+      <div className={styles.audioCommandRoot}>
+        <AudioCommandSystemComponent
+          question={quiz.currentQuestion}
+          answerRevealed={quiz.answerRevealed}
+          commands={quiz.commandHandlers}
+          commandsDisabled={quiz.isSubmitting}
+        />
+      </div>
+
+      {/*
+        CSRF lives in the shell so getCsrfToken() in the command system still
+        resolves it even while the body is showing the loading spinner.
+      */}
+      {csrfToken && <input type="hidden" name="csrf_token" value={csrfToken} />}
+
+      {quiz.currentQuestion ? (
+        <AudioQuizBody
+          quiz={quiz}
+          currentUsername={currentUsername}
+          editQuestionUrl={editQuestionUrl}
+          categoryList={categoryList}
+          selectedCategories={selectedCategories}
+        />
+      ) : (
+        <div className={styles.centerContainer}>
+          {quiz.error ? (
+            <p className={styles.errorText} role="alert">{quiz.error}</p>
+          ) : (
+            <div className={styles.spinner} role="status">
+              <span className="sr-only">Loading…</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Stable portal target for the command system's Ask-AI UI. */}
+      <div id="ask-ai-conversation-root" className={styles.askAiConversationRoot} />
+    </div>
+  );
+}
+
+interface AudioQuizBodyProps {
+  quiz: ReturnType<typeof useAudioQuizController>;
+  currentUsername: string;
+  editQuestionUrl: string;
+  categoryList?: string[];
+  selectedCategories?: string[];
+}
+
+function AudioQuizBody({
+  quiz,
   currentUsername,
   editQuestionUrl,
-  csrfToken,
   categoryList,
   selectedCategories,
-}: AudioQuizProps) {
-  const quiz = useAudioQuizController({
-    initialItems,
-    csrfToken,
-  });
-
-  const currentQuestion = quiz.currentQuestion;
+}: AudioQuizBodyProps) {
+  const currentQuestion = quiz.currentQuestion!; // guarded by the shell
 
   const extraActions = useMemo((): ExtraAction[] => {
     const actions: ExtraAction[] = [
@@ -151,7 +110,7 @@ export function AudioQuiz({
       },
     ];
 
-    if (currentQuestion?.created_by_username === currentUsername) {
+    if (currentQuestion.created_by_username === currentUsername) {
       actions.push({
         key: 'edit',
         label: 'Edit Question',
@@ -163,22 +122,6 @@ export function AudioQuiz({
 
     return actions;
   }, [currentQuestion, currentUsername, editQuestionUrl, quiz.actions.exclude]);
-
-  if (!currentQuestion) {
-    return (
-      <div className={styles.centerContainer}>
-        {quiz.error ? (
-          <p className={styles.errorText} role="alert">
-            {quiz.error}
-          </p>
-        ) : (
-          <div className={styles.spinner} role="status">
-            <span className="sr-only">Loading…</span>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   const questionImages = validImages(currentQuestion.pics.question_image);
   const answerImages = validImages(currentQuestion.pics.answer_pics);
@@ -196,32 +139,18 @@ export function AudioQuiz({
         />
       )}
 
-      <form method="post" className={styles.quizContainer}>
-        {csrfToken && <input type="hidden" name="csrf_token" value={csrfToken} />}
+      <form method="post">
         <input type="hidden" name="quizq-id" value={currentQuestion.quizq_id} />
 
         {quiz.error && (
-          <p className={styles.errorText} role="alert">
-            {quiz.error}
-          </p>
+          <p className={styles.errorText} role="alert">{quiz.error}</p>
         )}
 
         <div className={styles.actionsSection}>
-          <div className={styles.audioCommandRoot}>
-            <AudioCommandSystemComponent
-              question={currentQuestion}
-              answerRevealed={quiz.answerRevealed}
-              commands={quiz.commandHandlers}
-              commandsDisabled={quiz.isSubmitting}
-            />
-          </div>
-
           {questionImages.length > 0 && (
             <ImageCarousel
               images={questionImages}
-              onImageClick={(startIndex) => {
-                quiz.actions.openModal(questionImages, startIndex);
-              }}
+              onImageClick={(startIndex) => quiz.actions.openModal(questionImages, startIndex)}
             />
           )}
 
@@ -250,9 +179,7 @@ export function AudioQuiz({
             {quiz.answerRevealed && answerImages.length > 0 && (
               <ImageCarousel
                 images={answerImages}
-                onImageClick={(startIndex) => {
-                  quiz.actions.openModal(answerImages, startIndex);
-                }}
+                onImageClick={(startIndex) => quiz.actions.openModal(answerImages, startIndex)}
               />
             )}
 
@@ -288,11 +215,8 @@ export function AudioQuiz({
         >
           <div className={styles.metaRow}>
             <strong>Level {currentQuestion.level_no}</strong>
-
             {currentQuestion.categories.map((cat) => (
-              <span key={cat} className={styles.badge}>
-                {cat}
-              </span>
+              <span key={cat} className={styles.badge}>{cat}</span>
             ))}
           </div>
 
@@ -306,7 +230,6 @@ export function AudioQuiz({
                 <BookOpen className={actionStyles.iconSmall} />
                 The Answer
               </h5>
-
               <div className={styles.cardContent}>
                 <MarkdownContent content={currentQuestion.answer} />
               </div>
@@ -328,8 +251,6 @@ export function AudioQuiz({
             initialSelectedCategories={selectedCategories}
           />
         )}
-
-        <div className={styles.askAiConversationRoot}></div>
       </form>
     </>
   );

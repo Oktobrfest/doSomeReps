@@ -6,7 +6,6 @@ import {
   useLayoutEffect,
 } from 'react';
 
-
 import { createPortal } from "react-dom";
 import { AudioCommandManager } from "./AudioCommandManager";
 import { buildWorkletBlobUrl } from "./audioCapture";
@@ -15,30 +14,20 @@ import type { WorkerState } from "./kwsWorkerClient";
 import { registerAllCommands } from "./commands";
 import styles from "./AudioCommandSystem.module.css";
 import actionStyles from "./ActionButton.module.css";
-import quizStyles from "./AudioQuiz.module.css";
 import { MarkdownContent } from "../components/MarkdownContent";
-import { AudioPlayer } from "./AudioPlayer";
 import type {
   AudioAsset,
   AudioCommandHandlers,
   CommandCallback,
   Question,
 } from './types';
-
-import { Play, Pause } from "lucide-react";
 import {
   logMediaStreamDiagnostics,
   logAudioContextDiagnostics,
   logAudioDiagnostic,
   probeAudioContextSampleRateSupport,
 } from "./audioDiagnostics";
-
-
-
-interface AudioCommandSystemComponentProps {
-  question?: Question | null;
-  answerRevealed?: boolean;
-}
+import { cx, LargePlayableControl } from "./AudioControls";
 
 const AVAILABLE_COMMANDS = [
   "READ QUESTION",
@@ -51,6 +40,8 @@ const AVAILABLE_COMMANDS = [
   "ASK AI",
   "STOP LISTENING"
 ];
+
+// todo: REFACTOR THIS FILE!
 
 interface AudioCommandSystemComponentProps {
   question?: Question | null;
@@ -119,10 +110,6 @@ function resolveQuizCommandHandler(
 const PCM_WORKLET_FRAME_SIZE = 1280;
 const dontListenWhenPlayerAudioPlays = false;
 
-function cx(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(" ");
-}
-
 function base64ToBlob(b64: string, contentType: string): Blob {
   const binary = atob(b64);
   const len = binary.length;
@@ -157,7 +144,6 @@ export function AudioCommandSystemComponent({
   // Audio playback (uses the shared AudioPlayer for seek/pause/etc.)
   const [askAiAudioAssets, setAskAiAudioAssets] = useState<AudioAsset[]>([]);
   const [askAiAudioPlaying, setAskAiAudioPlaying] = useState(false);
-  const [askAiWasEverPlaying, setAskAiWasEverPlaying] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const askAiChunksRef = useRef<Blob[]>([]);
@@ -665,17 +651,9 @@ export function AudioCommandSystemComponent({
     logDebug("Ask AI answer playback ended.");
     askAiPlaybackActiveRef.current = false;
     setAskAiAudioPlaying(false);
-    setAskAiWasEverPlaying(false);
     // Keep askAiAudioAssets intact so the user can replay the AI response.
     resumeCommandListeningIfNeeded();
   };
-
-  // Track whether the AI audio has ever played (for Play vs Resume label).
-  useEffect(() => {
-    if (askAiAudioPlaying) {
-      setAskAiWasEverPlaying(true);
-    }
-  }, [askAiAudioPlaying]);
 
   const requestAskAiAnswer = async (transcript: string) => {
     if (!question || !question.question_id) {
@@ -771,7 +749,6 @@ export function AudioCommandSystemComponent({
         if (Array.isArray(callbacks)) {
           callbacks.forEach((cb) => { try { cb?.(); } catch { /* ignore */ } });
         }
-        setAskAiWasEverPlaying(false);
         setAskAiAudioPlaying(true);
         // Listening is resumed by askAiPlaybackEnded() when playback completes
         // (see AudioPlayer onSequenceEnd), NOT here.
@@ -891,7 +868,7 @@ export function AudioCommandSystemComponent({
       {askAiPhase && (
         <div className={styles.askAiContainer}>
           <div className={styles.askAiTitle}>
-            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
+            <span className={cx(styles.spinnerBorder, styles.spinnerInline)} role="status" aria-hidden="true"></span>
             <span>{askAiPhase}...</span>
           </div>
           <div className={styles.askAiActions}>
@@ -905,7 +882,6 @@ export function AudioCommandSystemComponent({
           </div>
         </div>
       )}
-
 
       {askAiError && (
         <div className={styles.errorMessage}>
@@ -931,42 +907,13 @@ export function AudioCommandSystemComponent({
 
       {askAiAudioAssets.length > 0 && (
         <div className={styles.askAiAnswerPlayer}>
-          <div className={quizStyles.playableControl}>
-            <div
-              className={cx(actionStyles.largeBtn, actionStyles.hasSlider, styles.askAiAnswerPlayerBox)}
-              style={{ cursor: 'default' }}
-            >
-              <button
-                type="button"
-                onClick={() => setAskAiAudioPlaying((prev) => !prev)}
-                className={quizStyles.playPauseToggleBtn}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'inherit',
-                  font: 'inherit',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: 0,
-                }}
-              >
-                {askAiAudioPlaying ? (
-                  <Pause className={actionStyles.iconLarge} />
-                ) : (
-                  <Play className={actionStyles.iconLarge} />
-                )}
-                <span>{askAiAudioPlaying ? 'Pause' : askAiWasEverPlaying ? 'Resume' : 'Play'}</span>
-              </button>
-
-              <AudioPlayer
-                assets={askAiAudioAssets}
-                isPlaying={askAiAudioPlaying}
-                onSequenceEnd={askAiPlaybackEnded}
-              />
-            </div>
-          </div>
+          <LargePlayableControl
+            onClick={() => setAskAiAudioPlaying((prev) => !prev)}
+            isPlaying={askAiAudioPlaying}
+            className={styles.askAiAnswerPlayerBox}
+            assets={askAiAudioAssets}
+            onSequenceEnd={askAiPlaybackEnded}
+          />
           <div className={styles.askAiActions}>
             <button
               type="button"
