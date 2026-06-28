@@ -239,6 +239,13 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
         return maybe_redirect
 
     audio_assets = {}
+    initial_items = []
+
+    if config.mode == "audio" and audio_service is not None and len(que_list) > 0:
+        try:
+            initial_items = build_audio_quiz_items(que_list, audio_service, current_user, count=2)
+        except Exception as e:
+            logging.error(f"❌ Failed to build initial audio quiz items: {e}")
 
     # Audio assets for the SPA are generated on-demand via /audio/quiz-data,
     # so we only generate them here for non-GET requests (e.g. standard quiz mode).
@@ -248,15 +255,13 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
         and audio_service is not None
         and request.method != "GET"
     ):
-        logging.info(f"🎵 Generating audio assets for question {q.get('question_id')}")
-
         try:
             raw_assets = audio_service.ensure_audio_for_quiz_question(
                 q=q,
                 user=current_user,
                 parts=("question", "answer", "hint"),
             )
-            logging.info(f"📦 Service returned raw assets: {raw_assets}")
+            # logging.info(f"Service returned raw assets: {raw_assets}")
         except Exception as e:
             logging.error(f"❌ Failed to generate audio assets: {e}")
             flash(f"Failed to generate audio: {str(e)}", category="error")
@@ -264,8 +269,7 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
 
         audio_assets = _build_audio_assets_for_template(q=q, raw_assets=raw_assets)
 
-        logging.info(f"🎯 Final audio_assets for template: {audio_assets}")
-
+        # logging.info(f"Final audio_assets for template: {audio_assets}")
     template_vars = {
         "title": config.title,
         "description": config.description,
@@ -275,12 +279,13 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
         "selected_categories": selected_categories,
         "cats_due": cats_due,
         "audio_assets": audio_assets,
+        "initial_items": initial_items,
     }
 
     if config.mode == "audio":
-        logging.info(f"🎨 Rendering audio template with assets: {bool(audio_assets)}")
+        logging.info(f"Rendering audio template with assets: {bool(audio_assets)}")
         if q:
-            logging.info(f"📄 Question: {q.get('question_text', '')[:50]}...")
+            logging.info(f"📄 Question: {q.get('question_text', '')[:40]}...")
 
     return render_template(config.template_name, **template_vars)
 
@@ -764,4 +769,3 @@ def build_audio_quiz_items(
         items.append({"question": q, "audioAssets": audio_assets})
 
     return items
-

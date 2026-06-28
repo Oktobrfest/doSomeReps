@@ -343,19 +343,6 @@ export function AudioQuiz({
     }
   }, [advanceQueue, csrfToken, currentQuestion, postForm]);
 
-  const handleStart = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const batch = await fetchBatch(2);
-      setItems(batch);
-    } catch (e) {
-      setError('Could not load the audio quiz. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchBatch]);
-
   const openModal = useCallback((images: string[], startIndex: number) => {
     setModalImages(images);
     setModalStartIndex(startIndex);
@@ -501,19 +488,13 @@ export function AudioQuiz({
   if (!currentQuestion) {
     return (
       <div className={styles.centerContainer}>
-        <button
-          type="button"
-          onClick={handleStart}
-          disabled={isLoading}
-          className={styles.startBtn}
-        >
-          {isLoading ? 'Loading…' : 'Start!'}
-        </button>
-        {error && (
+        {isLoading ? (
+          <span>Loading…</span>
+        ) : error ? (
           <p className={styles.errorText} role="alert">
             {error}
           </p>
-        )}
+        ) : null}
       </div>
     );
   }
