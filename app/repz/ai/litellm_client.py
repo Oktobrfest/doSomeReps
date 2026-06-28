@@ -25,6 +25,177 @@ from litellm import litellm
 import logging
 logger = logging.getLogger(__name__)
 
+# Prevent LiteLLM cost calculation exceptions/warnings for unmapped models
+class DefaultingModelCost(dict):
+    def __getitem__(self, key):
+        if key not in self:
+            return {
+                "max_tokens": 8192,
+                "input_cost_per_token": 0.0,
+                "output_cost_per_token": 0.0,
+                "litellm_provider": "custom",
+                "mode": "chat"
+            }
+        return super().__getitem__(key)
+
+    def get(self, key, default=None):
+        if key not in self:
+            return {
+                "max_tokens": 8192,
+                "input_cost_per_token": 0.0,
+                "output_cost_per_token": 0.0,
+                "litellm_provider": "custom",
+                "mode": "chat"
+            }
+        return super().get(key, default)
+
+litellm.model_cost = DefaultingModelCost(litellm.model_cost or {})
+litellm.suppress_warnings = True
+
+CUSTOM_MODEL_PRICES = {
+    # OpenAI
+    "openai/gpt-5-nano": (0.05, 0.40),
+    "openai/gpt-5.4-nano": (0.20, 0.20),
+    "openai/gpt-5.4-mini": (0.75, 0.75),
+    "openai/gpt-5.4": (2.50, 15.00),
+    "openai/gpt-5.5": (5.00, 30.00),
+    "gpt-5-nano": (0.05, 0.40),
+    "gpt-5.4-nano": (0.20, 0.20),
+    "gpt-5.4-mini": (0.75, 0.75),
+    "gpt-5.4": (2.50, 15.00),
+    "gpt-5.5": (5.00, 30.00),
+
+    # Anthropic
+    "anthropic/claude-haiku-4-5": (1.00, 5.00),
+    "anthropic/claude-sonnet-4-6": (3.00, 15.00),
+    "anthropic/claude-opus-4-7": (5.00, 25.00),
+    "claude-haiku-4-5": (1.00, 5.00),
+    "claude-sonnet-4-6": (3.00, 15.00),
+    "claude-opus-4-7": (5.00, 25.00),
+
+    # Gemini
+    "gemini/gemini-2.5-flash-lite": (0.10, 0.40),
+    "gemini/gemini-2.5-flash": (0.30, 2.50),
+    "gemini/gemini-2.5-pro": (1.25, 5.00),
+    "gemini/gemini-3-pro": (2.00, 12.00),
+    "gemini-2.5-flash-lite": (0.10, 0.40),
+    "gemini-2.5-flash": (0.30, 2.50),
+    "gemini-2.5-pro": (1.25, 5.00),
+    "gemini-3-pro": (2.00, 12.00),
+
+    # DeepSeek
+    "deepseek/deepseek-v4-flash": (0.11, 0.22),
+    "deepseek/deepseek-v4-pro": (0.43, 0.87),
+    "deepseek/deepseek-chat": (0.11, 0.22),
+    "deepseek/deepseek-reasoner": (0.11, 0.22),
+    "deepseek-v4-flash": (0.11, 0.22),
+    "deepseek-v4-pro": (0.43, 0.87),
+    "deepseek-chat": (0.11, 0.22),
+    "deepseek-reasoner": (0.11, 0.22),
+
+    # Kimi
+    "kimi/kimi-k2.5": (0.60, 3.00),
+    "kimi/kimi-k2.6": (0.95, 4.00),
+    "kimi-k2.5": (0.60, 3.00),
+    "kimi-k2.6": (0.95, 4.00),
+
+    # GLM
+    "glm/glm-4.5-flash": (0.0, 0.0),
+    "glm/glm-4.7-flash": (0.0, 0.0),
+    "glm/glm-4.6": (0.43, 1.74),
+    "glm/glm-5": (1.00, 4.00),
+    "glm/glm-5.1": (1.05, 3.50),
+    "glm-4.5-flash": (0.0, 0.0),
+    "glm-4.7-flash": (0.0, 0.0),
+    "glm-4.6": (0.43, 1.74),
+    "glm-5": (1.00, 4.00),
+    "glm-5.1": (1.05, 3.50),
+
+    # Qwen
+    "qwen/qwen3.5-flash": (0.07, 0.26),
+    "qwen/qwen3-coder-next": (0.11, 0.80),
+    "qwen/qwen3.5-plus": (0.30, 1.80),
+    "qwen/qwen3-max-thinking": (0.78, 3.90),
+    "qwen/qwen3.7-max": (2.50, 7.50),
+    "qwen3.5-flash": (0.07, 0.26),
+    "qwen3-coder-next": (0.11, 0.80),
+    "qwen3.5-plus": (0.30, 1.80),
+    "qwen3-max-thinking": (0.78, 3.90),
+    "qwen3.7-max": (2.50, 7.50),
+
+    # Mistral
+    "mistral/mistral-nemo": (0.02, 0.03),
+    "mistral/ministral-8b": (0.05, 0.05),
+    "mistral/mistral-small-3.1": (0.20, 0.60),
+    "mistral/mistral-small-4": (0.20, 0.60),
+    "mistral/codestral": (0.30, 0.90),
+    "mistral/mistral-medium-3": (0.40, 2.00),
+    "mistral/magistral-medium": (0.40, 2.00),
+    "mistral/mistral-large-3": (2.00, 6.00),
+    "mistral-nemo": (0.02, 0.03),
+    "ministral-8b": (0.05, 0.05),
+    "mistral-small-3.1": (0.20, 0.60),
+    "mistral-small-4": (0.20, 0.60),
+    "codestral": (0.30, 0.90),
+    "mistral-medium-3": (0.40, 2.00),
+    "magistral-medium": (0.40, 2.00),
+    "mistral-large-3": (2.00, 6.00),
+
+    # Llama
+    "llama/llama-3.1-8b-instant": (0.05, 0.05),
+    "llama/llama-3.3-70b": (0.15, 0.60),
+    "llama/llama-4-scout": (0.05, 0.05),
+    "llama/llama-4-maverick": (0.15, 0.60),
+    "llama/llama-3.1-405b": (1.00, 3.00),
+    "llama-3.1-8b-instant": (0.05, 0.05),
+    "llama-3.3-70b": (0.15, 0.60),
+    "llama-4-scout": (0.05, 0.05),
+    "llama-4-maverick": (0.15, 0.60),
+    "llama-3.1-405b": (1.00, 3.00),
+
+    # xAI
+    "xai/grok-4.1-fast": (0.20, 0.50),
+    "xai/grok-4.3": (1.25, 2.50),
+    "xai/grok-4.20": (2.00, 6.00),
+    "grok-4.1-fast": (0.20, 0.50),
+    "grok-4.3": (1.25, 2.50),
+    "grok-4.20": (2.00, 6.00),
+
+    # Cohere
+    "cohere/command-r7b": (0.0375, 0.15),
+    "cohere/command-r": (0.15, 0.60),
+    "cohere/command-r-plus": (2.50, 10.00),
+    "command-r7b": (0.0375, 0.15),
+    "command-r": (0.15, 0.60),
+    "command-r-plus": (2.50, 10.00),
+
+    # DeepInfra
+    "deepinfra/deepseek-ai/DeepSeek-V4-Flash": (0.10, 0.20),
+    "deepinfra/deepseek-ai/DeepSeek-V3.2": (0.26, 0.38),
+    "deepinfra/deepseek-ai/DeepSeek-V4-Pro": (1.30, 2.60),
+    "deepinfra/deepseek-ai/DeepSeek-V3.1-Terminus": (0.27, 0.95),
+    "deepinfra/meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo": (0.02, 0.03),
+    "deepinfra/meta-llama/Llama-3.3-70B-Instruct-Turbo": (0.10, 0.32),
+    "deepinfra/meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8": (0.15, 0.60),
+    "deepinfra/Qwen/Qwen3.5-35B-A3B": (0.14, 1.00),
+    "deepinfra/Qwen/Qwen3.6-35B-A3B": (0.15, 0.95),
+    "deepinfra/Qwen/Qwen3-Max": (1.20, 6.00),
+    "deepinfra/moonshotai/Kimi-K2.5": (0.45, 2.25),
+    "deepinfra/zai-org/GLM-5.1": (1.05, 3.50),
+    "deepinfra/nvidia/Nemotron-3-Nano-30B-A3B": (0.05, 0.20),
+    "deepinfra/MiniMaxAI/MiniMax-M2.7": (0.30, 1.20),
+}
+
+for model, (cin, cout) in CUSTOM_MODEL_PRICES.items():
+    provider = model.split("/")[0] if "/" in model else "custom"
+    litellm.model_cost[model] = {
+        "max_tokens": 8192,
+        "input_cost_per_token": cin / 1e6,
+        "output_cost_per_token": cout / 1e6,
+        "litellm_provider": provider,
+        "mode": "chat"
+    }
+
 class AIConfigError(RuntimeError):
     """Raised when the current user hasn't finished configuring AI."""
 
