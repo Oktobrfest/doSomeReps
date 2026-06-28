@@ -41,6 +41,7 @@ const AVAILABLE_COMMANDS = [
 // Tune: 512 (lower latency, more msgs) / 1024 / 2048 (less overhead, more latency).
 // Does NOT change sample rate or resampling.
 const PCM_WORKLET_FRAME_SIZE = 1280;
+const dontListenWhenPlayerAudioPlays = false;
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -134,11 +135,6 @@ export function AudioCommandSystemComponent({
     setLastCommand(keyword);
     commandManagerRef.current.triggerCommand(keyword);
 
-    // For commands that navigate/submit, stop listening cleanly
-    if (keyword === "CORRECT" || keyword === "WRONG") {
-      logDebug(`Command "${keyword}" requires stopping the active audio listener.`);
-      stopListeningCleanup();
-    }
     // Reset the worker's keyword state after detection to avoid repeats
     kwsWorkerRef.current?.reset();
   }, []);
@@ -373,7 +369,7 @@ export function AudioCommandSystemComponent({
 
         // STOP listening while the app's own question/answer audio is playing, so the
         // recognizer can't match keywords spoken by the TTS (the phantom-command cascade).
-        if ((window as any).__audioPlaying) {
+        if (dontListenWhenPlayerAudioPlays && (window as any).__audioPlaying) {
           micGatedByPlayback = true;
           return;
         }
