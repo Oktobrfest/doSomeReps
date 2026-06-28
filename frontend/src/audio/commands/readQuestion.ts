@@ -1,12 +1,13 @@
-import { AudioCommandManager } from "../AudioCommandManager";
+import { AudioCommandManager } from '../AudioCommandManager';
 
 export function registerReadQuestion(manager: AudioCommandManager) {
-  manager.registerCommand("READ QUESTION", () => {
-    console.log(`Executing "READ QUESTION"`);
-    if (typeof window.audioReadQuestion === "function") {
-      window.audioReadQuestion();
-    } else {
-      console.error("window.audioReadQuestion was not found.");
+  manager.registerCommand('READ QUESTION', () => {
+    const audioReadQuestion = (
+      window as unknown as { audioReadQuestion?: () => void }
+    ).audioReadQuestion;
+
+    if (typeof audioReadQuestion === 'function') {
+      audioReadQuestion();
     }
   });
 }

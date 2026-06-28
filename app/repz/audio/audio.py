@@ -6,12 +6,16 @@ from typing import Optional
 
 from repz.routes import audio
 from repz.services.quiz_service import (
+    AnswerVerdict,
     QuizPageConfig,
     render_quiz_page,
     _get_selected_categories,
     get_quiz_queue,
     build_audio_quiz_items,
+    _exclude_quiz_question,
+    _submit_quiz_answer,
 )
+from repz.cache_helper import CacheHelper
 from repz.services.audio_asset_service import AudioAssetService, S3StorageClient
 from .create_audio import create_audio
 
@@ -135,6 +139,87 @@ def audio_quiz():
         ),
         audio_service=audio_service,
     )
+
+
+@audio.route("/audio/api/action", methods=["POST"], endpoint="audio_quiz_action")
+@login_required
+def audio_quiz_action():
+    """
+    JSON mutation endpoint for the audio SPA.
+
+    This intentionally does NOT render /audio and does NOT redirect.
+    The normal non-audio page can keep using the existing form POST route.
+    """
+    data = request.get_json(silent=True) or {}
+
+    action = data.get("action")
+    raw_quizq_id = data.get("quizqId")
+    provided_answer = data.get("providedAnswer")
+
+    try:
+        quizq_id = int(raw_quizq_id)
+    except (TypeError, ValueError):
+        return jsonify({
+            "ok": False,
+            "error": "quizqId is required and must be an integer.",
+        }), 400
+
+    selected_categories = _get_selected_categories()
+    if selected_categories == "Not set" or not selected_categories:
+        return jsonify({
+            "ok": False,
+            "error": "No quiz categories are selected.",
+        }), 400
+
+    cache_helper = CacheHelper(current_user.id)
+    que_list, que_cache_key = cache_helper.get_cached_questions(selected_categories)
+
+    if action == "exclude":
+        _exclude_quiz_question(
+            user_id=current_user.id,
+            quizq_id=quizq_id,
+            que_list=que_list,
+            que_cache_key=que_cache_key,
+        )
+
+        return jsonify({
+            "ok": True,
+            "action": "exclude",
+            "quizqId": quizq_id,
+        })
+
+    if action == "submit":
+        verdict_raw = data.get("verdict")
+
+        try:
+            verdict = AnswerVerdict(verdict_raw)
+        except ValueError:
+            return jsonify({
+                "ok": False,
+                "error": f"Invalid verdict: {verdict_raw!r}",
+            }), 400
+
+        _submit_quiz_answer(
+            user_id=current_user.id,
+            quizq_id=quizq_id,
+            verdict=verdict,
+            provided_answer=provided_answer,
+            que_list=que_list,
+            que_cache_key=que_cache_key,
+            endpoint_name="audio.audio_quiz",
+        )
+
+        return jsonify({
+            "ok": True,
+            "action": "submit",
+            "quizqId": quizq_id,
+            "verdict": verdict.value,
+        })
+
+    return jsonify({
+        "ok": False,
+        "error": f"Invalid action: {action!r}",
+    }), 400
 
 
 @audio.route("/audio/file/<int:audio_id>", methods=["GET"])

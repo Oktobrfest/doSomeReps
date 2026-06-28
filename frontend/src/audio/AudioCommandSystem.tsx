@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+} from 'react';
+
+
 import { createPortal } from "react-dom";
 import { AudioCommandManager } from "./AudioCommandManager";
 import { buildWorkletBlobUrl } from "./audioCapture";
@@ -10,7 +18,13 @@ import actionStyles from "./ActionButton.module.css";
 import quizStyles from "./AudioQuiz.module.css";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { AudioPlayer } from "./AudioPlayer";
-import type { AudioAsset, Question } from "./types";
+import type {
+  AudioAsset,
+  AudioCommandHandlers,
+  CommandCallback,
+  Question,
+} from './types';
+
 import { Play, Pause } from "lucide-react";
 import {
   logMediaStreamDiagnostics,
@@ -18,6 +32,8 @@ import {
   logAudioDiagnostic,
   probeAudioContextSampleRateSupport,
 } from "./audioDiagnostics";
+
+
 
 interface AudioCommandSystemComponentProps {
   question?: Question | null;
@@ -35,6 +51,66 @@ const AVAILABLE_COMMANDS = [
   "ASK AI",
   "STOP LISTENING"
 ];
+
+interface AudioCommandSystemComponentProps {
+  question?: Question | null;
+  answerRevealed?: boolean;
+  commands?: AudioCommandHandlers;
+  commandsDisabled?: boolean;
+}
+
+function useLatestRef<T>(value: T) {
+  const ref = useRef(value);
+
+  useLayoutEffect(() => {
+    ref.current = value;
+  }, [value]);
+
+  return ref;
+}
+
+function normalizeCommand(command: string) {
+  return command.toUpperCase().trim().replace(/\s+/g, ' ');
+}
+
+function resolveQuizCommandHandler(
+  rawCommand: string,
+  handlers: AudioCommandHandlers | undefined,
+): CommandCallback | null {
+  if (!handlers) return null;
+
+  switch (normalizeCommand(rawCommand)) {
+    case 'CORRECT':
+      return handlers.correct;
+
+    case 'WRONG':
+    case 'INCORRECT':
+      return handlers.wrong;
+
+    case 'SLIGHTLY WRONG':
+    case 'SLIGHTLY':
+    case 'PARTIALLY WRONG':
+      return handlers.slightlyWrong;
+
+    case 'GET ANSWER':
+    case 'ANSWER':
+    case 'SHOW ANSWER':
+      return handlers.getAnswer;
+
+    case 'READ QUESTION':
+    case 'QUESTION':
+      return handlers.readQuestion;
+
+    case 'PAUSE':
+      return handlers.pause;
+
+    case 'RESUME':
+      return handlers.resume;
+
+    default:
+      return null;
+  }
+}
 
 // AudioWorklet batching: samples accumulated before posting one frame.
 // 1280 @48k ≈ 26.7ms ≈ ~37 msgs/sec (vs ~375/sec at the 128-sample default).
@@ -58,9 +134,13 @@ function base64ToBlob(b64: string, contentType: string): Blob {
 }
 
 export function AudioCommandSystemComponent({
-  question,
-  answerRevealed,
+  question = null,
+  answerRevealed = false,
+  commands,
+  commandsDisabled = false,
 }: AudioCommandSystemComponentProps) {
+  const commandsRef = useLatestRef(commands);
+  const commandsDisabledRef = useLatestRef(commandsDisabled);
   const [engineState, setEngineState] = useState<WorkerState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
@@ -130,14 +210,33 @@ export function AudioCommandSystemComponent({
   }, []);
 
   // Build a stable callback-based interface for the KWS worker
+  const runCommand = useCallback((keyword: string) => {
+    const quizCommandHandler = resolveQuizCommandHandler(
+      keyword,
+      commandsRef.current,
+    );
+
+    if (quizCommandHandler) {
+      if (!commandsDisabledRef.current) {
+        quizCommandHandler();
+      }
+      return;
+    }
+
+    // Non-quiz commands, such as Ask AI, Reload, Stop Listening, etc., can still
+    // be handled by the existing internal AudioCommandManager registration.
+    commandManagerRef.current.triggerCommand(keyword);
+  }, [commandsRef, commandsDisabledRef]);
+
   const handleKeyword = useCallback((keyword: string) => {
     logDebug(`Keyword matched in worker: "${keyword}"`);
     setLastCommand(keyword);
-    commandManagerRef.current.triggerCommand(keyword);
 
-    // Reset the worker's keyword state after detection to avoid repeats
+    runCommand(keyword);
+
+    // Reset worker state after detection to avoid repeats.
     kwsWorkerRef.current?.reset();
-  }, []);
+  }, [runCommand]);
 
   // Register commands once.
   useEffect(() => {
@@ -314,9 +413,9 @@ export function AudioCommandSystemComponent({
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioCtx = new AudioContextClass();
       if (audioCtx.state === "suspended") {
-            logDebug("AudioContext is suspended; resuming now...");
-            await audioCtx.resume();
-          }
+        logDebug("AudioContext is suspended; resuming now...");
+        await audioCtx.resume();
+      }
       audioCtxRef.current = audioCtx;
 
       inputSampleRateRef.current = audioCtx.sampleRate;
@@ -952,7 +1051,7 @@ export function AudioCommandSystemComponent({
                   onClick={(e) => {
                     e.stopPropagation();
                     setMenuOpen(false);
-                    commandManagerRef.current.triggerCommand(cmd);
+                    runCommand(cmd);
                   }}
                 >
                   {cmd}

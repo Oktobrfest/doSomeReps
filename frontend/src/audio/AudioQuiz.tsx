@@ -17,17 +17,18 @@ import {
   Play,
   Edit,
 } from 'lucide-react';
-import type { AudioQuizProps, QuizItem } from './types';
+import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
 import actionStyles from './ActionButton.module.css';
 import { SlideOutButtons, type ExtraAction } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
+import { useAudioQuizController } from './useAudioQuizController';
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
 
-interface LargeActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {}
+interface LargeActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> { }
 
 function LargeActionButton({
   className,
@@ -114,6 +115,16 @@ function LargePlayableControl({
   );
 }
 
+const answerPaddingBySnap: Record<'collapsed' | 'trio' | 'full', number> = {
+  collapsed: 12,
+  trio: 188,
+  full: 340,
+};
+
+function validImages(images?: Array<string | null>): string[] {
+  return images?.filter((image): image is string => Boolean(image)) ?? [];
+}
+
 export function AudioQuiz({
   initialItems = [],
   currentUsername,
@@ -122,238 +133,13 @@ export function AudioQuiz({
   categoryList,
   selectedCategories,
 }: AudioQuizProps) {
-  // SPA queue: items[0] is the currently displayed question, items[1] is the
-  // next question whose audio assets are already loaded.
-  const [items, setItems] = useState<QuizItem[]>(initialItems);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const quiz = useAudioQuizController({
+    initialItems,
+    csrfToken,
+  });
 
-  const [questionPlaying, setQuestionPlaying] = useState(false);
-  const [questionActive, setQuestionActive] = useState(false);
+  const currentQuestion = quiz.currentQuestion;
 
-  const [answerRevealed, setAnswerRevealed] = useState(false);
-  const [answerPlaying, setAnswerPlaying] = useState(false);
-  const [answerActive, setAnswerActive] = useState(false);
-
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalImages, setModalImages] = useState<string[]>([]);
-  const [modalStartIndex, setModalStartIndex] = useState(0);
-  const [panelSnap, setPanelSnap] = useState<'collapsed' | 'trio' | 'full'>('collapsed');
-
-  // Fixed answer-text padding mapping chosen to keep the answer readable
-  // without wasting space. No coupling to the live drag height.
-  const answerPaddingBySnap: Record<'collapsed' | 'trio' | 'full', number> = {
-    collapsed: 12,
-    trio: 188,
-    full: 340,
-  };
-
-  const currentItem = items[0] ?? null;
-  const currentQuestion = currentItem?.question ?? null;
-
-  const questionAssets = useMemo(
-    () => currentItem?.audioAssets?.question ?? [],
-    [currentItem],
-  );
-  const answerAssets = useMemo(
-    () => currentItem?.audioAssets?.answer ?? [],
-    [currentItem],
-  );
-
-  // Reset per-question UI state whenever the displayed question changes.
-  useEffect(() => {
-    setQuestionPlaying(false);
-    setQuestionActive(false);
-    setAnswerRevealed(false);
-    setAnswerPlaying(false);
-    setAnswerActive(false);
-    setModalOpen(false);
-  }, [currentQuestion?.quizq_id]);
-
-  // Global audio coordination: only one audio source plays at a time.
-  // Each AudioPlayer-capable component registers a stop callback.
-  // Before any playback starts, all other registered callbacks are called.
-  const stopAllAudio = useCallback(() => {
-    const callbacks: Array<(() => void) | undefined> = (window as any).__audioStopCallbacks;
-    if (Array.isArray(callbacks)) {
-      callbacks.forEach((cb) => { try { cb?.(); } catch { /* ignore */ } });
-    }
-  }, []);
-
-  // Register/unregister this component's stop callback.
-  useEffect(() => {
-    const stopMe = () => {
-      setQuestionPlaying(false);
-      setAnswerPlaying(false);
-    };
-    if (!(window as any).__audioStopCallbacks) {
-      (window as any).__audioStopCallbacks = [];
-    }
-    (window as any).__audioStopCallbacks.push(stopMe);
-    return () => {
-      const arr: Array<(() => void) | undefined> = (window as any).__audioStopCallbacks;
-      if (arr) {
-        const idx = arr.indexOf(stopMe);
-        if (idx >= 0) arr.splice(idx, 1);
-      }
-    };
-  }, []);
-
-  // API helpers ---------------------------------------------------------------
-
-  const fetchBatch = useCallback(
-    async (count: number, excludeQuizqIds: Array<string | number> = []) => {
-      const params = new URLSearchParams();
-      params.set('count', String(count));
-      if (excludeQuizqIds.length > 0) {
-        params.set('exclude_quizq_ids', excludeQuizqIds.map(String).join(','));
-      }
-      const res = await fetch(`/audio/quiz-data?${params.toString()}`, {
-        credentials: 'same-origin',
-      });
-      if (!res.ok) {
-        throw new Error(`Failed to load audio quiz data (${res.status})`);
-      }
-      const data = await res.json();
-      return (data.items || []) as QuizItem[];
-    },
-    [],
-  );
-
-  const postForm = useCallback(async (formData: FormData) => {
-    const headers: Record<string, string> = {};
-    const token = formData.get('csrf_token');
-    if (token && typeof token === 'string') {
-      headers['X-CSRFToken'] = token;
-    }
-
-    const res = await fetch('/audio', {
-      method: 'POST',
-      body: formData,
-      headers,
-      credentials: 'same-origin',
-    });
-    if (!res.ok) {
-      throw new Error(`Submission failed (${res.status})`);
-    }
-    // Server returns a redirect; the SPA ignores the redirect body.
-  }, []);
-
-  // Move the queued question into the display slot, then fetch another question
-  // to keep the queue topped up to two items.
-  const advanceQueue = useCallback(
-    async (submittedQuizqId: string | number) => {
-      let excludeIds: Array<string | number> = [];
-      let count = 2;
-
-      setItems((prevItems) => {
-        const nextItems = prevItems.filter((item) => {
-          const id = item.question?.quizq_id;
-          return id === undefined || String(id) !== String(submittedQuizqId);
-        });
-
-        const newCurrent = nextItems[0] ?? null;
-        excludeIds = newCurrent?.question
-          ? [newCurrent.question.quizq_id]
-          : [];
-        count = newCurrent ? 1 : 2;
-
-        return nextItems;
-      });
-
-      try {
-        const fetched = await fetchBatch(count, excludeIds);
-        setItems((prev) => [...prev, ...fetched]);
-        setError(null);
-      } catch (e) {
-        setError('Could not load the next question. Please try again.');
-      }
-    },
-    [fetchBatch],
-  );
-
-  const submitAnswer = useCallback(
-    async (verdictField: string, verdictValue: string) => {
-      if (!currentQuestion) return;
-      const currentQuizqId = currentQuestion.quizq_id;
-
-      setIsLoading(true);
-      try {
-        const formData = new FormData();
-        if (csrfToken) formData.append('csrf_token', csrfToken);
-        formData.append('quizq-id', String(currentQuizqId));
-        formData.append(verdictField, verdictValue);
-        await postForm(formData);
-        await advanceQueue(currentQuizqId);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [advanceQueue, csrfToken, currentQuestion, postForm],
-  );
-
-  const handleCorrect = useCallback(() => {
-    submitAnswer('correct_submit', 'Correct!');
-  }, [submitAnswer]);
-
-  useEffect(() => {
-    (window as any).audioCorrect = handleCorrect;
-    return () => {
-      delete (window as any).audioCorrect;
-    };
-  }, [handleCorrect]);
-
-  const handleWrong = useCallback(() => {
-    submitAnswer('incorrect_submit', 'Wrong!');
-  }, [submitAnswer]);
-
-  useEffect(() => {
-    (window as any).audioWrong = handleWrong;
-    return () => {
-      delete (window as any).audioWrong;
-    };
-  }, [handleWrong]);
-
-  const handleSlightlyWrong = useCallback(() => {
-    submitAnswer('incorrect_submit', 'Slightly Wrong');
-  }, [submitAnswer]);
-
-  useEffect(() => {
-    (window as any).audioSlightlyWrong = handleSlightlyWrong;
-    return () => {
-      delete (window as any).audioSlightlyWrong;
-    };
-  }, [handleSlightlyWrong]);
-
-  const handleExclude = useCallback(async () => {
-    if (!currentQuestion) return;
-    const currentQuizqId = currentQuestion.quizq_id;
-
-    setIsLoading(true);
-    try {
-      const formData = new FormData();
-      if (csrfToken) formData.append('csrf_token', csrfToken);
-      formData.append('quizq-id', String(currentQuizqId));
-      formData.append('exclude-question-button', 'exclude');
-      await postForm(formData);
-      await advanceQueue(currentQuizqId);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [advanceQueue, csrfToken, currentQuestion, postForm]);
-
-  const openModal = useCallback((images: string[], startIndex: number) => {
-    setModalImages(images);
-    setModalStartIndex(startIndex);
-    setModalOpen(true);
-  }, []);
-
-  const closeModal = useCallback(() => {
-    setModalOpen(false);
-  }, []);
-
-  // Build extra actions for the answer buttons drawer
   const extraActions = useMemo((): ExtraAction[] => {
     const actions: ExtraAction[] = [
       {
@@ -361,7 +147,7 @@ export function AudioQuiz({
         label: 'Exclude',
         icon: <Ban className={actionStyles.iconLarge} />,
         variant: 'exclude',
-        onClick: handleExclude,
+        onClick: quiz.actions.exclude,
       },
     ];
 
@@ -376,183 +162,81 @@ export function AudioQuiz({
     }
 
     return actions;
-  }, [currentQuestion, currentUsername, editQuestionUrl, handleExclude]);
-
-  const handleReadQuestion = useCallback(() => {
-    if (questionActive) {
-      setQuestionPlaying((prev) => !prev);
-      return;
-    }
-
-    stopAllAudio();
-
-    if (answerActive) {
-      setAnswerActive(false);
-      setAnswerPlaying(false);
-      setAnswerRevealed(false);
-    }
-
-    setQuestionActive(true);
-    setQuestionPlaying(true);
-  }, [questionActive, answerActive, stopAllAudio]);
-
-  useEffect(() => {
-    (window as any).audioReadQuestion = handleReadQuestion;
-    return () => {
-      delete (window as any).audioReadQuestion;
-    };
-  }, [handleReadQuestion]);
-
-  const handlePause = useCallback(() => {
-    setQuestionPlaying(false);
-    setAnswerPlaying(false);
-  }, []);
-
-  useEffect(() => {
-    (window as any).audioPause = handlePause;
-    return () => {
-      delete (window as any).audioPause;
-    };
-  }, [handlePause]);
-
-  const handleResume = useCallback(() => {
-    if (questionActive) {
-      setQuestionPlaying(true);
-    } else if (answerActive) {
-      setAnswerPlaying(true);
-    }
-  }, [questionActive, answerActive]);
-
-  useEffect(() => {
-    (window as any).audioResume = handleResume;
-    return () => {
-      delete (window as any).audioResume;
-    };
-  }, [handleResume]);
-
-  // Auto-read the question when a new question loads in audio mode.
-  useEffect(() => {
-    if (!currentQuestion || questionAssets.length === 0) return;
-    const wasListening = sessionStorage.getItem('audio_listening_active') === 'true';
-    if (!wasListening) return;
-
-    // Small delay to let the DOM settle before starting audio.
-    const timer = setTimeout(() => {
-      setQuestionActive(true);
-      setQuestionPlaying(true);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [currentQuestion, questionAssets]);
-
-  const handleQuestionEnded = useCallback(() => {
-    setQuestionActive(false);
-    setQuestionPlaying(false);
-  }, []);
-
-  const handleGetAnswer = useCallback(() => {
-    if (answerActive) {
-      setAnswerPlaying((prev) => !prev);
-      return;
-    }
-
-    stopAllAudio();
-
-    setAnswerRevealed(true);
-
-    if (questionActive) {
-      setQuestionActive(false);
-      setQuestionPlaying(false);
-    }
-
-    if (answerAssets.length > 0) {
-      setAnswerActive(true);
-      setAnswerPlaying(true);
-    }
-  }, [questionActive, answerActive, answerAssets.length, stopAllAudio]);
-
-  useEffect(() => {
-    (window as any).audioGetAnswer = handleGetAnswer;
-    return () => {
-      delete (window as any).audioGetAnswer;
-    };
-  }, [handleGetAnswer]);
-
-  const handleAnswerToggle = useCallback(() => {
-    setAnswerPlaying((prev) => !prev);
-  }, []);
-
-  const handleAnswerEnded = useCallback(() => {
-    setAnswerPlaying(false);
-  }, []);
+  }, [currentQuestion, currentUsername, editQuestionUrl, quiz.actions.exclude]);
 
   if (!currentQuestion) {
     return (
       <div className={styles.centerContainer}>
-        {isLoading ? (
-          <span>Loading…</span>
-        ) : error ? (
+        {quiz.error ? (
           <p className={styles.errorText} role="alert">
-            {error}
+            {quiz.error}
           </p>
-        ) : null}
+        ) : (
+          <div className={styles.spinner} role="status">
+            <span className="sr-only">Loading…</span>
+          </div>
+        )}
       </div>
     );
   }
 
+  const questionImages = validImages(currentQuestion.pics.question_image);
+  const answerImages = validImages(currentQuestion.pics.answer_pics);
+
   return (
     <>
-      {modalOpen && (
+      {quiz.modalOpen && (
         <ImageModal
-          images={modalImages}
-          startIndex={modalStartIndex}
-          onClose={closeModal}
-          onCorrect={handleCorrect}
-          onWrong={handleWrong}
-          onSlightlyWrong={handleSlightlyWrong}
+          images={quiz.modalImages}
+          startIndex={quiz.modalStartIndex}
+          onClose={quiz.actions.closeModal}
+          onCorrect={quiz.actions.correct}
+          onWrong={quiz.actions.wrong}
+          onSlightlyWrong={quiz.actions.slightlyWrong}
         />
       )}
+
       <form method="post" className={styles.quizContainer}>
         {csrfToken && <input type="hidden" name="csrf_token" value={csrfToken} />}
         <input type="hidden" name="quizq-id" value={currentQuestion.quizq_id} />
 
-        {error && (
+        {quiz.error && (
           <p className={styles.errorText} role="alert">
-            {error}
+            {quiz.error}
           </p>
         )}
 
         <div className={styles.actionsSection}>
-          <div id="audio-command-root" className={styles.audioCommandRoot}>
+          <div className={styles.audioCommandRoot}>
             <AudioCommandSystemComponent
               question={currentQuestion}
-              answerRevealed={answerRevealed}
+              answerRevealed={quiz.answerRevealed}
+              commands={quiz.commandHandlers}
+              commandsDisabled={quiz.isSubmitting}
             />
           </div>
 
-          {currentQuestion.pics.question_image?.some(Boolean) && (
+          {questionImages.length > 0 && (
             <ImageCarousel
-              images={currentQuestion.pics.question_image}
-              onImageClick={(startIndex) =>
-                openModal(
-                  currentQuestion.pics.question_image!.filter((p): p is string => !!p),
-                  startIndex,
-                )
-              }
+              images={questionImages}
+              onImageClick={(startIndex) => {
+                quiz.actions.openModal(questionImages, startIndex);
+              }}
             />
           )}
 
-          {questionActive ? (
+          {quiz.questionActive ? (
             <LargePlayableControl
-              onClick={handleReadQuestion}
-              isPlaying={questionPlaying}
+              onClick={quiz.actions.readQuestion}
+              isPlaying={quiz.questionPlaying}
               className={actionStyles.orangeBtn}
-              assets={questionAssets}
-              onSequenceEnd={handleQuestionEnded}
+              assets={quiz.questionAssets}
+              onSequenceEnd={quiz.actions.questionEnded}
             />
           ) : (
             <LargeActionButton
-              onClick={handleReadQuestion}
-              disabled={questionAssets.length === 0}
+              onClick={quiz.actions.readQuestion}
+              disabled={quiz.questionAssets.length === 0 || quiz.isSubmitting}
               className={actionStyles.orangeBtn}
             >
               <div className={actionStyles.btnContent}>
@@ -563,22 +247,20 @@ export function AudioQuiz({
           )}
 
           <div className={styles.middleSection}>
-            {answerRevealed && currentQuestion.pics.answer_pics?.some(Boolean) && (
+            {quiz.answerRevealed && answerImages.length > 0 && (
               <ImageCarousel
-                images={currentQuestion.pics.answer_pics}
-                onImageClick={(startIndex) =>
-                  openModal(
-                    currentQuestion.pics.answer_pics!.filter((p): p is string => !!p),
-                    startIndex,
-                  )
-                }
+                images={answerImages}
+                onImageClick={(startIndex) => {
+                  quiz.actions.openModal(answerImages, startIndex);
+                }}
               />
             )}
 
-            {!answerRevealed && (
+            {!quiz.answerRevealed && (
               <LargeActionButton
                 id="audio-get-answer-btn"
-                onClick={handleGetAnswer}
+                onClick={quiz.actions.getAnswer}
+                disabled={quiz.isSubmitting}
                 className={actionStyles.blueBtn}
               >
                 <div className={actionStyles.btnContent}>
@@ -588,13 +270,13 @@ export function AudioQuiz({
               </LargeActionButton>
             )}
 
-            {answerActive && (
+            {quiz.answerActive && (
               <LargePlayableControl
-                onClick={handleAnswerToggle}
-                isPlaying={answerPlaying}
+                onClick={quiz.actions.toggleAnswerAudio}
+                isPlaying={quiz.answerPlaying}
                 className={actionStyles.blueBtn}
-                assets={answerAssets}
-                onSequenceEnd={handleAnswerEnded}
+                assets={quiz.answerAssets}
+                onSequenceEnd={quiz.actions.answerEnded}
               />
             )}
           </div>
@@ -602,7 +284,7 @@ export function AudioQuiz({
 
         <div
           className={styles.contentDivider}
-          style={{ paddingBottom: `${answerPaddingBySnap[panelSnap]}px` }}
+          style={{ paddingBottom: `${answerPaddingBySnap[quiz.panelSnap]}px` }}
         >
           <div className={styles.metaRow}>
             <strong>Level {currentQuestion.level_no}</strong>
@@ -618,7 +300,7 @@ export function AudioQuiz({
             <MarkdownContent content={currentQuestion.question_text} />
           </div>
 
-          {answerRevealed && (
+          {quiz.answerRevealed && (
             <div className={styles.card}>
               <h5 className={styles.cardTitle}>
                 <BookOpen className={actionStyles.iconSmall} />
@@ -632,13 +314,14 @@ export function AudioQuiz({
           )}
         </div>
 
-        {answerRevealed && (
+        {quiz.answerRevealed && (
           <SlideOutButtons
-            onCorrect={handleCorrect}
-            onWrong={handleWrong}
-            onSlightlyWrong={handleSlightlyWrong}
+            disabled={quiz.isSubmitting}
+            onCorrect={quiz.actions.correct}
+            onWrong={quiz.actions.wrong}
+            onSlightlyWrong={quiz.actions.slightlyWrong}
             extraActions={extraActions}
-            onSnapChange={setPanelSnap}
+            onSnapChange={quiz.actions.setPanelSnap}
             expandToTrio
             showCategories
             categoryList={categoryList}
@@ -646,7 +329,7 @@ export function AudioQuiz({
           />
         )}
 
-        <div id="ask-ai-conversation-root" className={styles.askAiConversationRoot}></div>
+        <div className={styles.askAiConversationRoot}></div>
       </form>
     </>
   );

@@ -16,7 +16,12 @@ interface SlideOutActionButtonProps extends ButtonHTMLAttributes<HTMLButtonEleme
   variant: 'correct' | 'wrong' | 'slightlyWrong';
 }
 
-function SlideOutActionButton({ variant, className, children, ...props }: SlideOutActionButtonProps) {
+function SlideOutActionButton({
+  variant,
+  className,
+  children,
+  ...props
+}: SlideOutActionButtonProps) {
   const variantClass =
     variant === 'correct'
       ? actionStyles.greenBtn
@@ -25,7 +30,11 @@ function SlideOutActionButton({ variant, className, children, ...props }: SlideO
         : actionStyles.orangeBtn;
 
   return (
-    <button type="button" className={`${styles.btn} ${variantClass} ${className || ''}`} {...props}>
+    <button
+      type="button"
+      className={`${styles.btn} ${variantClass} ${className || ''}`}
+      {...props}
+    >
       {variant === 'correct' && <Check className={styles.icon} />}
       {variant === 'wrong' && <X className={styles.icon} />}
       {variant === 'slightlyWrong' && <Minus className={styles.icon} />}
@@ -48,19 +57,15 @@ export interface ExtraAction {
 export interface SlideOutButtonsProps {
   className?: string;
   size?: 'default' | 'compact';
+  disabled?: boolean;
   onCorrect?: () => void;
   onWrong?: () => void;
   onSlightlyWrong?: () => void;
   extraActions?: ExtraAction[];
-  /** Called when the panel snaps into a logical zone. */
   onSnapChange?: (snap: 'collapsed' | 'trio' | 'full') => void;
-  /** If true, the panel mounts fully-collapsed and animates open to the answer-button trio. */
   expandToTrio?: boolean;
-  /** Embed the category picker at the very bottom of the panel. */
   showCategories?: boolean;
-  /** All category names, used to normalise initial selection slugs. */
   categoryList?: string[];
-  /** Initial selected category values (may be slugs or full names). */
   initialSelectedCategories?: string[];
 }
 
@@ -72,11 +77,15 @@ interface Metrics {
 
 function normaliseCategories(initial?: string[], all?: string[]) {
   if (!initial) return [];
+
   const known = new Set(all ?? []);
+
   return initial.map((raw) => {
     if (known.has(raw)) return raw;
+
     const decoded = raw.replace(/_/g, ' ');
     if (known.has(decoded)) return decoded;
+
     return decoded;
   });
 }
@@ -84,9 +93,11 @@ function normaliseCategories(initial?: string[], all?: string[]) {
 function CategoriesSection({
   categoryList,
   initialSelectedCategories,
+  disabled = false,
 }: {
   categoryList?: string[];
   initialSelectedCategories?: string[];
+  disabled?: boolean;
 }) {
   const [selected, setSelected] = useState<string[]>(() =>
     normaliseCategories(initialSelectedCategories, categoryList),
@@ -95,14 +106,17 @@ function CategoriesSection({
   return (
     <div className={styles.categoriesSection}>
       <CatPicker selectedCategories={selected} onChange={setSelected} />
+
       <button
         type="submit"
         name="apply-categories"
         value="Apply"
         className={styles.applyBtn}
+        disabled={disabled}
       >
         Apply Categories
       </button>
+
       {selected.map((cat) => (
         <input key={cat} type="hidden" name="category_name" value={cat} />
       ))}
@@ -113,6 +127,7 @@ function CategoriesSection({
 export function SlideOutButtons({
   className,
   size = 'default',
+  disabled = false,
   onCorrect,
   onWrong,
   onSlightlyWrong,
@@ -123,7 +138,7 @@ export function SlideOutButtons({
   categoryList,
   initialSelectedCategories,
 }: SlideOutButtonsProps) {
-  const hasExtra = extraActions && extraActions.length > 0;
+  const hasExtra = Boolean(extraActions?.length);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gripRef = useRef<HTMLDivElement | null>(null);
@@ -137,7 +152,6 @@ export function SlideOutButtons({
 
   const autoExpanded = useRef(false);
 
-  // Gesture tracking (refs so event handlers always see current values)
   const isDraggingRef = useRef(false);
   const startY = useRef(0);
   const startHeight = useRef(0);
@@ -147,6 +161,7 @@ export function SlideOutButtons({
     const panel = containerRef.current;
     const grip = gripRef.current;
     const buttons = buttonsRowRef.current;
+
     if (!panel || !grip || !buttons) return;
 
     const panelStyle = getComputedStyle(panel);
@@ -161,6 +176,7 @@ export function SlideOutButtons({
     if (drawerRef.current) {
       full += gap + drawerRef.current.offsetHeight;
     }
+
     if (categoriesRef.current) {
       full += gap + categoriesRef.current.offsetHeight;
     }
@@ -168,56 +184,63 @@ export function SlideOutButtons({
     setMetrics({ collapsed, trio, full });
   }, []);
 
-  // Measure on mount and whenever the underlying content changes size.
   useEffect(() => {
     measure();
 
     if (typeof ResizeObserver === 'undefined') return;
 
-    const targets = [gripRef.current, buttonsRowRef.current, drawerRef.current, categoriesRef.current].filter(
-      Boolean,
-    ) as Element[];
+    const targets = [
+      gripRef.current,
+      buttonsRowRef.current,
+      drawerRef.current,
+      categoriesRef.current,
+    ].filter(Boolean) as Element[];
 
-    const ro = new ResizeObserver(measure);
-    targets.forEach((el) => ro.observe(el));
+    const resizeObserver = new ResizeObserver(measure);
+    targets.forEach((el) => resizeObserver.observe(el));
 
     const handleResize = () => measure();
     window.addEventListener('resize', handleResize);
 
     return () => {
-      ro.disconnect();
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
     };
   }, [measure, showCategories, hasExtra]);
 
-  // Clamp current height into the new bounds whenever metrics change.
   useEffect(() => {
     if (!metrics) return;
+
     setCurrentHeight((prev) => {
       if (prev == null) return metrics.collapsed;
       return Math.max(metrics.collapsed, Math.min(prev, metrics.full));
     });
   }, [metrics]);
 
-  // Expand from fully-collapsed up to the trio height when requested.
   useEffect(() => {
-    if (expandToTrio && metrics && currentHeight === metrics.collapsed && !autoExpanded.current) {
+    if (
+      expandToTrio &&
+      metrics &&
+      currentHeight === metrics.collapsed &&
+      !autoExpanded.current
+    ) {
       autoExpanded.current = true;
+
       requestAnimationFrame(() => {
         setCurrentHeight(metrics.trio);
       });
     }
   }, [expandToTrio, metrics, currentHeight]);
 
-  // Determine which logical zone the panel is in and report it to the parent.
-  // We skip updates while dragging so the answer padding stays stable during the gesture.
   const lastSnap = useRef<'collapsed' | 'trio' | 'full' | null>(null);
+
   useEffect(() => {
     if (!metrics || currentHeight == null || isDragging) return;
 
     let snap: 'collapsed' | 'trio' | 'full' = 'collapsed';
     const low = (metrics.collapsed + metrics.trio) / 2;
     const high = (metrics.trio + metrics.full) / 2;
+
     if (currentHeight > low) snap = 'trio';
     if (currentHeight > high) snap = 'full';
 
@@ -229,28 +252,37 @@ export function SlideOutButtons({
 
   const handlePointerDown = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
-      if (!metrics || !gripRef.current || e.button !== 0) return;
+      if (disabled || !metrics || !gripRef.current || e.button !== 0) return;
+
       e.preventDefault();
+
       isDraggingRef.current = true;
       setIsDragging(true);
       hasDragged.current = false;
       startY.current = e.clientY;
       startHeight.current = currentHeight ?? metrics.collapsed;
+
       try {
         gripRef.current.setPointerCapture(e.pointerId);
       } catch {
-        /* ignore */
+        // Ignore capture failures.
       }
     },
-    [currentHeight, metrics],
+    [currentHeight, disabled, metrics],
   );
 
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
       if (!isDraggingRef.current || !metrics) return;
+
       const deltaY = startY.current - e.clientY;
       if (Math.abs(deltaY) > 4) hasDragged.current = true;
-      const next = Math.max(metrics.collapsed, Math.min(startHeight.current + deltaY, metrics.full));
+
+      const next = Math.max(
+        metrics.collapsed,
+        Math.min(startHeight.current + deltaY, metrics.full),
+      );
+
       setCurrentHeight(next);
     },
     [metrics],
@@ -258,12 +290,11 @@ export function SlideOutButtons({
 
   const handlePointerUp = useCallback(() => {
     if (!isDraggingRef.current || !metrics) return;
+
     isDraggingRef.current = false;
     setIsDragging(false);
 
     if (!hasDragged.current) {
-      // Clean tap: toggle based on the panel height when the press started.
-      // This avoids any stale state/closure issues.
       const wasOpen = startHeight.current > metrics.collapsed + 2;
       setCurrentHeight(wasOpen ? metrics.collapsed : metrics.trio);
     }
@@ -296,6 +327,7 @@ export function SlideOutButtons({
         onPointerCancel={handlePointerUp}
         role="button"
         aria-label="Drag to resize answer buttons"
+        aria-disabled={disabled}
       >
         <span className={styles.gripBar} />
         <span className={styles.gripBar} />
@@ -304,17 +336,40 @@ export function SlideOutButtons({
 
       <div ref={buttonsRowRef} className={styles.buttonsRow}>
         {onCorrect && (
-          <SlideOutActionButton variant="correct" onClick={onCorrect} className={styles.correct}>
+          <SlideOutActionButton
+            variant="correct"
+            name="correct_submit"
+            value="Correct!"
+            onClick={onCorrect}
+            disabled={disabled}
+            className={styles.correct}
+          >
             Correct!
           </SlideOutActionButton>
         )}
+
         {onWrong && (
-          <SlideOutActionButton variant="wrong" onClick={onWrong} className={styles.secondary}>
+          <SlideOutActionButton
+            variant="wrong"
+            name="incorrect_submit"
+            value="Wrong!"
+            onClick={onWrong}
+            disabled={disabled}
+            className={styles.secondary}
+          >
             Wrong!
           </SlideOutActionButton>
         )}
+
         {onSlightlyWrong && (
-          <SlideOutActionButton variant="slightlyWrong" onClick={onSlightlyWrong} className={styles.secondary}>
+          <SlideOutActionButton
+            variant="slightlyWrong"
+            name="incorrect_submit"
+            value="Slightly Wrong"
+            onClick={onSlightlyWrong}
+            disabled={disabled}
+            className={styles.secondary}
+          >
             Slightly Wrong
           </SlideOutActionButton>
         )}
@@ -322,23 +377,29 @@ export function SlideOutButtons({
 
       {hasExtra && (
         <div ref={drawerRef} className={styles.drawer}>
-          {extraActions.map((action) => {
-            const className = `${styles.drawerBtn} ${
+          {extraActions!.map((action) => {
+            const drawerClassName = `${styles.drawerBtn} ${
               action.variant === 'exclude' ? actionStyles.redBtn : actionStyles.cyanBtn
             }`;
+
             const content = (
               <div className={actionStyles.btnContent}>
                 {action.icon}
                 <span>{action.label}</span>
               </div>
             );
+
             if (action.href) {
               return (
                 <a
                   key={action.key}
-                  href={action.href}
-                  className={className}
+                  href={disabled ? undefined : action.href}
+                  aria-disabled={disabled}
+                  className={drawerClassName}
                   style={{ textDecoration: 'none' }}
+                  onClick={(e) => {
+                    if (disabled) e.preventDefault();
+                  }}
                 >
                   {content}
                 </a>
@@ -351,7 +412,8 @@ export function SlideOutButtons({
                   key={action.key}
                   type="button"
                   onClick={action.onClick}
-                  className={className}
+                  disabled={disabled}
+                  className={drawerClassName}
                 >
                   {content}
                 </button>
@@ -364,7 +426,8 @@ export function SlideOutButtons({
                 type="submit"
                 name={action.submitName}
                 value={action.submitValue}
-                className={className}
+                disabled={disabled}
+                className={drawerClassName}
               >
                 {content}
               </button>
@@ -378,6 +441,7 @@ export function SlideOutButtons({
           <CategoriesSection
             categoryList={categoryList}
             initialSelectedCategories={initialSelectedCategories}
+            disabled={disabled}
           />
         </div>
       )}
