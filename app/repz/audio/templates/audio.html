@@ -4,8 +4,7 @@
   <div id="audio-quiz-root"></div>
   <script id="audio-quiz-data" type="application/json">
     {{ {
-      'question': q,
-      'audioAssets': audio_assets,
+      'initialItems': initial_items,
       'currentUsername': user.username,
       'editQuestionUrl': url_for('home.edit_question'),
       'csrfToken': csrf_token(),

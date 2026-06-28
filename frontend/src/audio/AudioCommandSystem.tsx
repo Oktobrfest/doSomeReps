@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+} from 'react';
+
 import { createPortal } from "react-dom";
 import { AudioCommandManager } from "./AudioCommandManager";
 import { buildWorkletBlobUrl } from "./audioCapture";
@@ -7,22 +14,20 @@ import type { WorkerState } from "./kwsWorkerClient";
 import { registerAllCommands } from "./commands";
 import styles from "./AudioCommandSystem.module.css";
 import actionStyles from "./ActionButton.module.css";
-import quizStyles from "./AudioQuiz.module.css";
 import { MarkdownContent } from "../components/MarkdownContent";
-import { AudioPlayer } from "./AudioPlayer";
-import type { AudioAsset, Question } from "./types";
-import { Play, Pause } from "lucide-react";
+import type {
+  AudioAsset,
+  AudioCommandHandlers,
+  CommandCallback,
+  Question,
+} from './types';
 import {
   logMediaStreamDiagnostics,
   logAudioContextDiagnostics,
   logAudioDiagnostic,
   probeAudioContextSampleRateSupport,
 } from "./audioDiagnostics";
-
-interface AudioCommandSystemComponentProps {
-  question?: Question | null;
-  answerRevealed?: boolean;
-}
+import { cx, LargePlayableControl } from "./AudioControls";
 
 const AVAILABLE_COMMANDS = [
   "READ QUESTION",
@@ -36,15 +41,74 @@ const AVAILABLE_COMMANDS = [
   "STOP LISTENING"
 ];
 
+// todo: REFACTOR THIS FILE!
+
+interface AudioCommandSystemComponentProps {
+  question?: Question | null;
+  answerRevealed?: boolean;
+  commands?: AudioCommandHandlers;
+  commandsDisabled?: boolean;
+}
+
+function useLatestRef<T>(value: T) {
+  const ref = useRef(value);
+
+  useLayoutEffect(() => {
+    ref.current = value;
+  }, [value]);
+
+  return ref;
+}
+
+function normalizeCommand(command: string) {
+  return command.toUpperCase().trim().replace(/\s+/g, ' ');
+}
+
+function resolveQuizCommandHandler(
+  rawCommand: string,
+  handlers: AudioCommandHandlers | undefined,
+): CommandCallback | null {
+  if (!handlers) return null;
+
+  switch (normalizeCommand(rawCommand)) {
+    case 'CORRECT':
+      return handlers.correct;
+
+    case 'WRONG':
+    case 'INCORRECT':
+      return handlers.wrong;
+
+    case 'SLIGHTLY WRONG':
+    case 'SLIGHTLY':
+    case 'PARTIALLY WRONG':
+      return handlers.slightlyWrong;
+
+    case 'GET ANSWER':
+    case 'ANSWER':
+    case 'SHOW ANSWER':
+      return handlers.getAnswer;
+
+    case 'READ QUESTION':
+    case 'QUESTION':
+      return handlers.readQuestion;
+
+    case 'PAUSE':
+      return handlers.pause;
+
+    case 'RESUME':
+      return handlers.resume;
+
+    default:
+      return null;
+  }
+}
+
 // AudioWorklet batching: samples accumulated before posting one frame.
 // 1280 @48k ≈ 26.7ms ≈ ~37 msgs/sec (vs ~375/sec at the 128-sample default).
 // Tune: 512 (lower latency, more msgs) / 1024 / 2048 (less overhead, more latency).
 // Does NOT change sample rate or resampling.
 const PCM_WORKLET_FRAME_SIZE = 1280;
-
-function cx(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(" ");
-}
+const dontListenWhenPlayerAudioPlays = false;
 
 function base64ToBlob(b64: string, contentType: string): Blob {
   const binary = atob(b64);
@@ -57,9 +121,13 @@ function base64ToBlob(b64: string, contentType: string): Blob {
 }
 
 export function AudioCommandSystemComponent({
-  question,
-  answerRevealed,
+  question = null,
+  answerRevealed = false,
+  commands,
+  commandsDisabled = false,
 }: AudioCommandSystemComponentProps) {
+  const commandsRef = useLatestRef(commands);
+  const commandsDisabledRef = useLatestRef(commandsDisabled);
   const [engineState, setEngineState] = useState<WorkerState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
@@ -76,7 +144,6 @@ export function AudioCommandSystemComponent({
   // Audio playback (uses the shared AudioPlayer for seek/pause/etc.)
   const [askAiAudioAssets, setAskAiAudioAssets] = useState<AudioAsset[]>([]);
   const [askAiAudioPlaying, setAskAiAudioPlaying] = useState(false);
-  const [askAiWasEverPlaying, setAskAiWasEverPlaying] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const askAiChunksRef = useRef<Blob[]>([]);
@@ -129,19 +196,33 @@ export function AudioCommandSystemComponent({
   }, []);
 
   // Build a stable callback-based interface for the KWS worker
+  const runCommand = useCallback((keyword: string) => {
+    const quizCommandHandler = resolveQuizCommandHandler(
+      keyword,
+      commandsRef.current,
+    );
+
+    if (quizCommandHandler) {
+      if (!commandsDisabledRef.current) {
+        quizCommandHandler();
+      }
+      return;
+    }
+
+    // Non-quiz commands, such as Ask AI, Reload, Stop Listening, etc., can still
+    // be handled by the existing internal AudioCommandManager registration.
+    commandManagerRef.current.triggerCommand(keyword);
+  }, [commandsRef, commandsDisabledRef]);
+
   const handleKeyword = useCallback((keyword: string) => {
     logDebug(`Keyword matched in worker: "${keyword}"`);
     setLastCommand(keyword);
-    commandManagerRef.current.triggerCommand(keyword);
 
-    // For commands that navigate/submit, stop listening cleanly
-    if (keyword === "CORRECT" || keyword === "WRONG") {
-      logDebug(`Command "${keyword}" requires stopping the active audio listener.`);
-      stopListeningCleanup();
-    }
-    // Reset the worker's keyword state after detection to avoid repeats
+    runCommand(keyword);
+
+    // Reset worker state after detection to avoid repeats.
     kwsWorkerRef.current?.reset();
-  }, []);
+  }, [runCommand]);
 
   // Register commands once.
   useEffect(() => {
@@ -318,9 +399,9 @@ export function AudioCommandSystemComponent({
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioCtx = new AudioContextClass();
       if (audioCtx.state === "suspended") {
-            logDebug("AudioContext is suspended; resuming now...");
-            await audioCtx.resume();
-          }
+        logDebug("AudioContext is suspended; resuming now...");
+        await audioCtx.resume();
+      }
       audioCtxRef.current = audioCtx;
 
       inputSampleRateRef.current = audioCtx.sampleRate;
@@ -373,7 +454,7 @@ export function AudioCommandSystemComponent({
 
         // STOP listening while the app's own question/answer audio is playing, so the
         // recognizer can't match keywords spoken by the TTS (the phantom-command cascade).
-        if ((window as any).__audioPlaying) {
+        if (dontListenWhenPlayerAudioPlays && (window as any).__audioPlaying) {
           micGatedByPlayback = true;
           return;
         }
@@ -570,17 +651,9 @@ export function AudioCommandSystemComponent({
     logDebug("Ask AI answer playback ended.");
     askAiPlaybackActiveRef.current = false;
     setAskAiAudioPlaying(false);
-    setAskAiWasEverPlaying(false);
     // Keep askAiAudioAssets intact so the user can replay the AI response.
     resumeCommandListeningIfNeeded();
   };
-
-  // Track whether the AI audio has ever played (for Play vs Resume label).
-  useEffect(() => {
-    if (askAiAudioPlaying) {
-      setAskAiWasEverPlaying(true);
-    }
-  }, [askAiAudioPlaying]);
 
   const requestAskAiAnswer = async (transcript: string) => {
     if (!question || !question.question_id) {
@@ -676,7 +749,6 @@ export function AudioCommandSystemComponent({
         if (Array.isArray(callbacks)) {
           callbacks.forEach((cb) => { try { cb?.(); } catch { /* ignore */ } });
         }
-        setAskAiWasEverPlaying(false);
         setAskAiAudioPlaying(true);
         // Listening is resumed by askAiPlaybackEnded() when playback completes
         // (see AudioPlayer onSequenceEnd), NOT here.
@@ -796,7 +868,7 @@ export function AudioCommandSystemComponent({
       {askAiPhase && (
         <div className={styles.askAiContainer}>
           <div className={styles.askAiTitle}>
-            <span className={styles.spinnerBorder} role="status" aria-hidden="true" style={{ width: '1.2rem', height: '1.2rem' }}></span>
+            <span className={cx(styles.spinnerBorder, styles.spinnerInline)} role="status" aria-hidden="true"></span>
             <span>{askAiPhase}...</span>
           </div>
           <div className={styles.askAiActions}>
@@ -810,7 +882,6 @@ export function AudioCommandSystemComponent({
           </div>
         </div>
       )}
-
 
       {askAiError && (
         <div className={styles.errorMessage}>
@@ -836,42 +907,13 @@ export function AudioCommandSystemComponent({
 
       {askAiAudioAssets.length > 0 && (
         <div className={styles.askAiAnswerPlayer}>
-          <div className={quizStyles.playableControl}>
-            <div
-              className={cx(actionStyles.largeBtn, actionStyles.hasSlider, styles.askAiAnswerPlayerBox)}
-              style={{ cursor: 'default' }}
-            >
-              <button
-                type="button"
-                onClick={() => setAskAiAudioPlaying((prev) => !prev)}
-                className={quizStyles.playPauseToggleBtn}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'inherit',
-                  font: 'inherit',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: 0,
-                }}
-              >
-                {askAiAudioPlaying ? (
-                  <Pause className={actionStyles.iconLarge} />
-                ) : (
-                  <Play className={actionStyles.iconLarge} />
-                )}
-                <span>{askAiAudioPlaying ? 'Pause' : askAiWasEverPlaying ? 'Resume' : 'Play'}</span>
-              </button>
-
-              <AudioPlayer
-                assets={askAiAudioAssets}
-                isPlaying={askAiAudioPlaying}
-                onSequenceEnd={askAiPlaybackEnded}
-              />
-            </div>
-          </div>
+          <LargePlayableControl
+            onClick={() => setAskAiAudioPlaying((prev) => !prev)}
+            isPlaying={askAiAudioPlaying}
+            className={styles.askAiAnswerPlayerBox}
+            assets={askAiAudioAssets}
+            onSequenceEnd={askAiPlaybackEnded}
+          />
           <div className={styles.askAiActions}>
             <button
               type="button"
@@ -956,7 +998,7 @@ export function AudioCommandSystemComponent({
                   onClick={(e) => {
                     e.stopPropagation();
                     setMenuOpen(false);
-                    commandManagerRef.current.triggerCommand(cmd);
+                    runCommand(cmd);
                   }}
                 >
                   {cmd}

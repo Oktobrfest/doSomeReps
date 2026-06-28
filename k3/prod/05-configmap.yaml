@@ -32,3 +32,7 @@ data:
 
   GUNICORN_WORKERS: "3"
   GUNICORN_THREADS: "3"
+
+  HATCHET_CLIENT_HOST_PORT: "hatchet-stack-engine.hatch.svc.cluster.local:7070"
+  HATCHET_CLIENT_SERVER_URL: "http://hatchet-stack-api.hatch.svc.cluster.local:8080"
+  HATCHET_CLIENT_TLS_STRATEGY: "none"

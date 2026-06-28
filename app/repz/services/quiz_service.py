@@ -239,17 +239,29 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
         return maybe_redirect
 
     audio_assets = {}
+    initial_items = []
 
-    if config.mode == "audio" and q and audio_service is not None:
-        logging.info(f"🎵 Generating audio assets for question {q.get('question_id')}")
+    if config.mode == "audio" and audio_service is not None and len(que_list) > 0:
+        try:
+            initial_items = build_audio_quiz_items(que_list, audio_service, current_user, count=2)
+        except Exception as e:
+            logging.error(f"❌ Failed to build initial audio quiz items: {e}")
 
+    # Audio assets for the SPA are generated on-demand via /audio/quiz-data,
+    # so we only generate them here for non-GET requests (e.g. standard quiz mode).
+    if (
+        config.mode == "audio"
+        and q
+        and audio_service is not None
+        and request.method != "GET"
+    ):
         try:
             raw_assets = audio_service.ensure_audio_for_quiz_question(
                 q=q,
                 user=current_user,
                 parts=("question", "answer", "hint"),
             )
-            logging.info(f"📦 Service returned raw assets: {raw_assets}")
+            # logging.info(f"Service returned raw assets: {raw_assets}")
         except Exception as e:
             logging.error(f"❌ Failed to generate audio assets: {e}")
             flash(f"Failed to generate audio: {str(e)}", category="error")
@@ -257,8 +269,7 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
 
         audio_assets = _build_audio_assets_for_template(q=q, raw_assets=raw_assets)
 
-        logging.info(f"🎯 Final audio_assets for template: {audio_assets}")
-
+        # logging.info(f"Final audio_assets for template: {audio_assets}")
     template_vars = {
         "title": config.title,
         "description": config.description,
@@ -268,12 +279,13 @@ def render_quiz_page(config: QuizPageConfig, audio_service=None):
         "selected_categories": selected_categories,
         "cats_due": cats_due,
         "audio_assets": audio_assets,
+        "initial_items": initial_items,
     }
 
     if config.mode == "audio":
-        logging.info(f"🎨 Rendering audio template with assets: {bool(audio_assets)}")
+        logging.info(f"Rendering audio template with assets: {bool(audio_assets)}")
         if q:
-            logging.info(f"📄 Question: {q.get('question_text', '')[:50]}...")
+            logging.info(f"📄 Question: {q.get('question_text', '')[:40]}...")
 
     return render_template(config.template_name, **template_vars)
 
@@ -668,3 +680,92 @@ def _select_next_question_or_redirect(
 
     q = random.choice(sorted_que_list)
     return q, None
+
+
+def pick_next_questions(
+    que_list: list[dict[str, Any]],
+    count: int = 1,
+    exclude_quizq_ids: list[str | int] | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Return up to `count` distinct questions from the same priority slice used by
+    the page renderer.  Optionally excludes one or more quizq_ids (e.g. the
+    currently displayed question) so the queued question is never the same.
+    """
+    if not que_list or count <= 0:
+        return []
+
+    sorted_que_list = sorted(
+        que_list,
+        key=lambda k: (k["last_ansered"] is None, k["last_ansered"]),
+    )
+
+    if len(sorted_que_list) > 30:
+        sorted_que_list = sorted_que_list[:17]
+    else:
+        sorted_que_list = sorted_que_list[:7]
+
+    exclude_set = {str(x) for x in (exclude_quizq_ids or [])}
+    candidates = [
+        q for q in sorted_que_list
+        if str(q.get("quizq_id")) not in exclude_set
+    ]
+
+    if len(candidates) <= count:
+        return candidates
+
+    return random.sample(candidates, count)
+
+
+def get_quiz_queue(
+    user_id: int,
+    selected_categories: list[str] | str,
+) -> list[dict[str, Any]]:
+    """
+    Load the user's cached quiz queue for the selected categories, rebuilding
+    it from the database when the cache is empty.
+    """
+    if selected_categories == "Not set" or not selected_categories:
+        return []
+
+    cache_helper = CacheHelper(user_id)
+    que_list, que_cache_key = cache_helper.get_cached_questions(selected_categories)
+
+    if len(que_list) < 1:
+        selected_cats = [remove_underscore(x) for x in selected_categories]
+        que_list = get_quizes(selected_cats, user_id)
+        cache.set(que_cache_key, que_list, timeout=600)
+
+    return que_list
+
+
+def build_audio_quiz_items(
+    que_list: list[dict[str, Any]],
+    audio_service,
+    user,
+    count: int = 1,
+    exclude_quizq_ids: list[str | int] | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Build fully-populated SPA quiz items ({question, audioAssets}) for the next
+    `count` questions in the queue.  Audio generation failures are logged and do
+    not block the item from being returned.
+    """
+    questions = pick_next_questions(que_list, count, exclude_quizq_ids)
+    items: list[dict[str, Any]] = []
+
+    for q in questions:
+        try:
+            raw_assets = audio_service.ensure_audio_for_quiz_question(
+                q=q,
+                user=user,
+                parts=("question", "answer", "hint"),
+            )
+        except Exception as e:
+            logging.error(f"❌ Failed to generate audio assets for quizq {q.get('quizq_id')}: {e}")
+            raw_assets = {}
+
+        audio_assets = _build_audio_assets_for_template(q=q, raw_assets=raw_assets)
+        items.append({"question": q, "audioAssets": audio_assets})
+
+    return items

@@ -118,6 +118,29 @@
   margin-top: 24px;
 }
 
+.errorText {
+  color: #dc2626;
+  font-weight: 600;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.spinner {
+  width: 3rem;
+  height: 3rem;
+  display: inline-block;
+  border-radius: 50%;
+  border: 0.25rem solid #2563eb;
+  border-right-color: transparent;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 
 
 .secondaryBtn {
@@ -154,4 +177,24 @@
   .secondaryBtn {
     width: 100%;
   }
+}
+
+.audioCommandRoot {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.playableControlInner { cursor: default; }
+
+.playPauseToggleBtn {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  outline: none;   /* you already have .playPauseToggleBtn — merge into it */
 }

@@ -1,12 +1,11 @@
-import { AudioCommandManager } from "../AudioCommandManager";
+import { AudioCommandManager } from '../AudioCommandManager';
 
 export function registerResume(manager: AudioCommandManager) {
-  manager.registerCommand("RESUME", () => {
-    console.log(`Executing "RESUME"`);
-    if (typeof window.audioResume === "function") {
-      window.audioResume();
-    } else {
-      console.error("window.audioResume was not found.");
+  manager.registerCommand('RESUME', () => {
+    const audioResume = (window as unknown as { audioResume?: () => void }).audioResume;
+
+    if (typeof audioResume === 'function') {
+      audioResume();
     }
   });
 }
