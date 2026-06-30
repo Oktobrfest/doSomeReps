@@ -26,7 +26,7 @@ class PcmCaptureProcessor extends AudioWorkletProcessor {
         const frame = this.buffer;
         this.buffer = new Float32Array(this.frameSize); // reallocate before transfer
         this.offset = 0;
-        this.port.postMessage(frame, [frame.buffer]);   // transfer (cheap; the real win is fewer messages)
+        this.port.postMessage({ frame, captureTs: Date.now() }, [frame.buffer]);   // transfer (cheap; the real win is fewer messages)
       }
     }
     // Partial tail on teardown is intentionally dropped.
