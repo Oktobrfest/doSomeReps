@@ -451,7 +451,7 @@ export function AiQuestionGenerator() {
             onChange={(e) => setTryProvideHints(e.target.checked)}
           />
           <div>
-            <span className={styles.checkboxLabel}>Try to provide hints</span>
+            <span className={styles.checkboxLabel}>Try to use hints</span>
             <span className={styles.subLabel} style={{ marginTop: "4px" }}>
               If checked, a separate AI call will be made to generate hints for the questions it considers difficult enough to warrant one. Easy questions won't get a hint.
             </span>

@@ -184,12 +184,14 @@ def _create_workflow():
                 qty_from=input.qty_from,
                 qty_to=input.qty_to,
                 user_id=input.user_id,
+                try_hints=input.try_hints,
             )
-            if input.try_hints and generated:
-                try:
-                    generate_hints(generated, input.user_id)
-                except Exception as e:
-                    ctx.log(_log(f"Hint generation failed: {e}"))
+            if input.try_hints:
+                if generated:
+                    try:
+                        generate_hints(generated, input.user_id)
+                    except Exception as e:
+                        ctx.log(_log(f"Hint generation failed: {e}"))
 
             ctx.log(_log(f"Generated {len(generated)} questions via Hatchet for user_id={input.user_id}"))
             return {"questions": generated}
@@ -262,12 +264,14 @@ def _create_workflow():
                 qty_from=input.qty_from,
                 qty_to=input.qty_to,
                 user_id=input.user_id,
+                try_hints=input.try_hints,
             )
-            if input.try_hints and generated:
-                try:
-                    generate_hints(generated, input.user_id)
-                except Exception as e:
-                    ctx.log(_log(f"Hint generation failed: {e}"))
+            if input.try_hints:
+                if generated:
+                    try:
+                        generate_hints(generated, input.user_id)
+                    except Exception as e:
+                        ctx.log(_log(f"Hint generation failed: {e}"))
 
             ctx.log(_log(f"Generated {len(generated)} questions from doc via Hatchet for user_id={input.user_id}"))
             return {"questions": generated}
