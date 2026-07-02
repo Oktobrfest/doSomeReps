@@ -944,9 +944,11 @@ export function AudioCommandSystemComponent({
     </>
   );
 
-  return (
-    <div className={styles.voiceCommandContainer}>
-      <div className={styles.controlsRow}>
+  const isListening = engineState === "listening";
+
+  const renderControls = (isBanner: boolean) => {
+    return (
+      <div className={cx(styles.controlsRow, isBanner && styles.bannerControlsRow)}>
         <div className={styles.splitButtonContainer}>
           <button
             type="button"
@@ -955,12 +957,13 @@ export function AudioCommandSystemComponent({
             className={cx(
               actionStyles.largeBtn,
               styles.mainSplitBtn,
-              engineState === "listening" && cx(actionStyles.redBtn, styles.pulseListening),
+              isListening && cx(actionStyles.redBtn, styles.pulseListening),
               engineState === "loading" && actionStyles.orangeBtn,
-              engineState === "idle" && actionStyles.greenBtn
+              engineState === "idle" && actionStyles.greenBtn,
+              isBanner && styles.bannerMainSplitBtn
             )}
           >
-            {engineState === "listening" ? (
+            {isListening ? (
               <div className={styles.btnContentCol}>
                 <div className={actionStyles.btnContent}>
                   <span className={styles.spinnerGrow} role="status" aria-hidden="true"></span>
@@ -994,9 +997,10 @@ export function AudioCommandSystemComponent({
             className={cx(
               actionStyles.largeBtn,
               styles.menuSplitBtn,
-              engineState === "listening" && actionStyles.redBtn,
+              isListening && actionStyles.redBtn,
               engineState === "loading" && actionStyles.orangeBtn,
-              engineState === "idle" && actionStyles.greenBtn
+              engineState === "idle" && actionStyles.greenBtn,
+              isBanner && styles.bannerMenuSplitBtn
             )}
             title="Available commands"
           >
@@ -1024,7 +1028,7 @@ export function AudioCommandSystemComponent({
           )}
         </div>
 
-        {engineState === "listening" && (
+        {isListening && (
           <button
             type="button"
             className={styles.stopButton}
@@ -1035,6 +1039,18 @@ export function AudioCommandSystemComponent({
           </button>
         )}
       </div>
+    );
+  };
+
+  return (
+    <div className={cx(styles.voiceCommandContainer, isListening && styles.voiceCommandContainerListening)}>
+      {isListening ? (
+        <div className={styles.listeningBanner}>
+          {renderControls(true)}
+        </div>
+      ) : (
+        renderControls(false)
+      )}
 
       {errorMsg && (
         <div className={styles.errorMessage}>
