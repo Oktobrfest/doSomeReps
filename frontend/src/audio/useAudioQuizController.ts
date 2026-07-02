@@ -586,7 +586,7 @@ export function useAudioQuizController({
   }, [currentQuestion?.quizq_id]);
 
   useEffect(() => {
-    if (!currentQuestion || questionAssets.length === 0) return;
+    if (!currentQuestion || questionAssets.length === 0 || ui.isSubmitting) return;
 
     const wasListening = sessionStorage.getItem('audio_listening_active') === 'true';
     if (!wasListening) return;
@@ -596,7 +596,7 @@ export function useAudioQuizController({
     }, 100);
 
     return () => window.clearTimeout(timer);
-  }, [currentQuestion?.quizq_id, questionAssets.length, readQuestion]);
+  }, [currentQuestion?.quizq_id, questionAssets.length, readQuestion, ui.isSubmitting]);
 
   const actions = useMemo(
     () => ({
