@@ -119,6 +119,23 @@ class GeneratedQuestionSet(BaseModel):
     questions: List[GeneratedQA]
 
 
+class GeneratedQAWithoutHint(BaseModel):
+    question: str = Field(..., description="The quiz question text.")
+    answer: str = Field(..., description="A short, factual answer.")
+    categories: List[str] = Field(
+        ...,
+        min_length=1,
+        description=(
+            "One or more categories chosen from the user-selected list. "
+            "Must contain at least one entry; never empty."
+        ),
+    )
+
+
+class GeneratedQuestionSetWithoutHint(BaseModel):
+    questions: List[GeneratedQAWithoutHint]
+
+
 class GeneratedHint(BaseModel):
     """One hint slot, paired by index to an input question."""
 
@@ -158,9 +175,9 @@ def _strip_json_fence(content: str) -> str:
     return content
 
 
-def _parse_question_set(resp: Any) -> GeneratedQuestionSet:
+def _parse_question_set(resp: Any, response_format=GeneratedQuestionSet) -> Any:
     raw = _strip_json_fence(_extract_message_content(resp))
-    return GeneratedQuestionSet.model_validate_json(raw)
+    return response_format.model_validate_json(raw)
 
 
 def _parse_hint_set(resp: Any) -> GeneratedHintSet:
@@ -184,6 +201,7 @@ def generate_questions(
     qty_from: int,
     qty_to: int,
     user_id: int,
+    try_hints: bool = False,
 ) -> List[Dict[str, Any]]:
     """Generate QA pairs from source text.
 
@@ -193,6 +211,7 @@ def generate_questions(
         qty_from: Minimum number of questions to generate.
         qty_to: Maximum number of questions to generate.
         user_id: The user's ID (used to look up their AI config).
+        try_hints: Whether hints should be generated in the schema.
 
     Returns:
         List of question dicts (each with 'question', 'answer', 'categories',
@@ -217,15 +236,20 @@ def generate_questions(
     )
     full_prompt = prompt_header + (text or "")
 
-    logger.info("Generating %d-%d questions for user %d", qty_from, qty_to, user_id)
+    logger.info("Generating %d-%d questions for user %d (try_hints=%s)", qty_from, qty_to, user_id, try_hints)
 
+    fmt = GeneratedQuestionSet if try_hints else GeneratedQuestionSetWithoutHint
     resp = completion_for_user(
         user,
         messages=[{"role": "user", "content": full_prompt}],
-        response_format=GeneratedQuestionSet,
+        response_format=fmt,
     )
-    qset = _parse_question_set(resp)
+    qset = _parse_question_set(resp, response_format=fmt)
     generated: List[Dict[str, Any]] = [q.model_dump() for q in qset.questions]
+
+    if not try_hints:
+        for q in generated:
+            q["hint"] = None
 
     logger.info("Generated %d questions for user %d", len(generated), user_id)
     return generated

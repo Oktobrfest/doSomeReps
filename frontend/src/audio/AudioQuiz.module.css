@@ -89,6 +89,7 @@
   border-radius: 16px;
   background: #fff;
   overflow: hidden;
+  scroll-margin-top: 90px;
 }
 
 .cardTitle {

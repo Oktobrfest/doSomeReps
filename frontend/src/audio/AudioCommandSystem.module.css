@@ -383,3 +383,75 @@
   width: 1.2rem;
   height: 1.2rem;
 }
+
+.listeningBanner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  background-color: #0f172a;
+  border-bottom: 2px solid #ef4444;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: slideDown 0.2s ease-out;
+}
+
+.voiceCommandContainerListening {
+  margin: 0 !important;
+  margin-bottom: -28px !important;
+  padding: 0 !important;
+  height: 0 !important;
+}
+
+.bannerControlsRow {
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+  gap: 0.5rem;
+}
+
+.bannerMainSplitBtn {
+  min-height: 50px !important;
+  padding: 8px 16px !important;
+  border-radius: 8px 0 0 8px !important;
+  font-size: 1.1rem !important;
+}
+
+.bannerMenuSplitBtn {
+  min-height: 50px !important;
+  border-radius: 0 8px 8px 0 !important;
+  font-size: 1.2rem !important;
+  min-width: 45px !important;
+}
+
+.listeningBanner .spinnerGrow {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+}
+
+.listeningBanner .btnContentCol {
+  gap: 0.15rem;
+}
+
+.listeningBanner .detectedInside {
+  margin-top: 0.1rem;
+  font-size: 0.85rem;
+}
+
+.listeningBanner .commandBadgeInside {
+  font-size: 0.8rem;
+  padding: 0.1rem 0.35rem;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

@@ -121,11 +121,12 @@ export class KwsWorkerClient {
    * Send a raw PCM audio chunk to the worker for keyword spotting.
    * The chunk should be Float32Array PCM samples.
    */
-  sendAudioChunk(chunk: Float32Array, sampleRate: number): void {
+  sendAudioChunk(chunk: Float32Array, sampleRate: number, timestamp?: number): void {
     if (!this.worker || (this._state !== "ready" && this._state !== "listening")) return;
+    const ts = timestamp ?? Date.now();
     // Transfer ownership of the buffer to avoid copying
     this.worker.postMessage(
-      { type: "audio-chunk", chunk, sampleRate },
+      { type: "audio-chunk", chunk, sampleRate, timestamp: ts },
       [chunk.buffer]
     );
   }

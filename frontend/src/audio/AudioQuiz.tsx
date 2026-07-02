@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { AudioCommandSystemComponent } from './AudioCommandSystem';
 import { ImageCarousel } from './ImageCarousel';
 import { ImageModal } from './ImageModal';
@@ -98,6 +98,13 @@ function AudioQuizBody({
   selectedCategories,
 }: AudioQuizBodyProps) {
   const currentQuestion = quiz.currentQuestion!; // guarded by the shell
+  const answerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (quiz.answerRevealed && answerRef.current) {
+      answerRef.current.focus();
+    }
+  }, [quiz.answerRevealed]);
 
   const extraActions = useMemo((): ExtraAction[] => {
     const actions: ExtraAction[] = [
@@ -225,7 +232,12 @@ function AudioQuizBody({
           </div>
 
           {quiz.answerRevealed && (
-            <div className={styles.card}>
+            <div
+              ref={answerRef}
+              tabIndex={-1}
+              className={styles.card}
+              style={{ outline: 'none' }}
+            >
               <h5 className={styles.cardTitle}>
                 <BookOpen className={actionStyles.iconSmall} />
                 The Answer

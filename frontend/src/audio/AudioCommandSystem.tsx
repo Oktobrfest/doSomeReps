@@ -108,7 +108,11 @@ function resolveQuizCommandHandler(
 // Tune: 512 (lower latency, more msgs) / 1024 / 2048 (less overhead, more latency).
 // Does NOT change sample rate or resampling.
 const PCM_WORKLET_FRAME_SIZE = 1280;
-const dontListenWhenPlayerAudioPlays = false;
+const dontListenWhenPlayerAudioPlays = true;
+
+// Drop audio older than this — captured during a main-thread stall. Kept just
+// under the worker's own 350ms backstop so the two layers agree.
+const STALE_CHUNK_MS = 300;
 
 function base64ToBlob(b64: string, contentType: string): Blob {
   const binary = atob(b64);
@@ -448,26 +452,38 @@ export function AudioCommandSystemComponent({
       }
 
       let micGatedByPlayback = false;
-      workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
-        const chunk = event.data;
+      let staleGap = false;
+      workletNode.port.onmessage = (
+        event: MessageEvent<{ frame: Float32Array; captureTs: number }>
+      ) => {
+        const { frame: chunk, captureTs } = event.data;
         if (!chunk || chunk.length === 0) return;
 
-        // STOP listening while the app's own question/answer audio is playing, so the
-        // recognizer can't match keywords spoken by the TTS (the phantom-command cascade).
+        // Pre-drop audio captured during a main-thread stall. captureTs is from the
+        // audio thread, so it stays accurate even though THIS handler is exactly what
+        // gets delayed when the main thread janks (flushSync verdict + question swap +
+        // autoplay). Without it, a stall drains a burst of seconds-old frames at once
+        // and the worker fires every buffered command in turn. Dropping here also
+        // skips the transfer for frames the worker would discard anyway.
+        if (Date.now() - captureTs > STALE_CHUNK_MS) {
+          staleGap = true;
+          return;
+        }
+
         if (dontListenWhenPlayerAudioPlays && (window as any).__audioPlaying) {
           micGatedByPlayback = true;
           return;
         }
 
-        // Playback just ended: flush the recognizer so leftover/tail audio can't
-        // produce a stale match the instant the mic re-opens.
-        if (micGatedByPlayback) {
+        // Resuming after any drop (stall or playback): flush partial recognizer state
+        // so the discontinuity can't emit a phantom partial match.
+        if (micGatedByPlayback || staleGap) {
           micGatedByPlayback = false;
+          staleGap = false;
           kwsWorkerRef.current?.reset();
         }
 
-        // 2-arg call: the client adds timestamp: Date.now() and transfers the buffer.
-        kwsWorkerRef.current?.sendAudioChunk(chunk, audioCtx.sampleRate);
+        kwsWorkerRef.current?.sendAudioChunk(chunk, audioCtx.sampleRate, captureTs);
       };
 
       source.connect(workletNode);
@@ -928,9 +944,11 @@ export function AudioCommandSystemComponent({
     </>
   );
 
-  return (
-    <div className={styles.voiceCommandContainer}>
-      <div className={styles.controlsRow}>
+  const isListening = engineState === "listening";
+
+  const renderControls = (isBanner: boolean) => {
+    return (
+      <div className={cx(styles.controlsRow, isBanner && styles.bannerControlsRow)}>
         <div className={styles.splitButtonContainer}>
           <button
             type="button"
@@ -939,12 +957,13 @@ export function AudioCommandSystemComponent({
             className={cx(
               actionStyles.largeBtn,
               styles.mainSplitBtn,
-              engineState === "listening" && cx(actionStyles.redBtn, styles.pulseListening),
+              isListening && cx(actionStyles.redBtn, styles.pulseListening),
               engineState === "loading" && actionStyles.orangeBtn,
-              engineState === "idle" && actionStyles.greenBtn
+              engineState === "idle" && actionStyles.greenBtn,
+              isBanner && styles.bannerMainSplitBtn
             )}
           >
-            {engineState === "listening" ? (
+            {isListening ? (
               <div className={styles.btnContentCol}>
                 <div className={actionStyles.btnContent}>
                   <span className={styles.spinnerGrow} role="status" aria-hidden="true"></span>
@@ -978,9 +997,10 @@ export function AudioCommandSystemComponent({
             className={cx(
               actionStyles.largeBtn,
               styles.menuSplitBtn,
-              engineState === "listening" && actionStyles.redBtn,
+              isListening && actionStyles.redBtn,
               engineState === "loading" && actionStyles.orangeBtn,
-              engineState === "idle" && actionStyles.greenBtn
+              engineState === "idle" && actionStyles.greenBtn,
+              isBanner && styles.bannerMenuSplitBtn
             )}
             title="Available commands"
           >
@@ -1008,7 +1028,7 @@ export function AudioCommandSystemComponent({
           )}
         </div>
 
-        {engineState === "listening" && (
+        {isListening && (
           <button
             type="button"
             className={styles.stopButton}
@@ -1019,6 +1039,18 @@ export function AudioCommandSystemComponent({
           </button>
         )}
       </div>
+    );
+  };
+
+  return (
+    <div className={cx(styles.voiceCommandContainer, isListening && styles.voiceCommandContainerListening)}>
+      {isListening ? (
+        <div className={styles.listeningBanner}>
+          {renderControls(true)}
+        </div>
+      ) : (
+        renderControls(false)
+      )}
 
       {errorMsg && (
         <div className={styles.errorMessage}>

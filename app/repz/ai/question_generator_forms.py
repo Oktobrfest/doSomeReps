@@ -26,7 +26,7 @@ class AIQuestionGenForm(FlaskForm):
     # model to generate hints for the difficult questions from the
     # first call. Optional - off by default.
     try_provide_hints = BooleanField(
-        "Try to provide hints",
+        "Try to use hints",
         default=False,
     )
     submit = SubmitField("Get AI Questions!")
