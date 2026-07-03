@@ -85,6 +85,7 @@ def init_app():
         from repz.ai import profile as _ai_profile  # noqa: F401
         from repz.ai import question_generator as _ai_question_generator  # noqa: F401
         from repz.ai import integration as _ai_integration  # noqa: F401
+        from repz.ai import ask_ai as _ai_ask_ai  # noqa: F401
         from repz.routes import ai
         from repz.audio.audio import audio  # noqa: F401
 
