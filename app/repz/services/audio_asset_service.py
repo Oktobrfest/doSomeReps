@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app.repz.ai.prompts import GENERATE_TTS_AUDIO_TEXT
 from repz.database import session
 from repz.models import audio
 from repz.aws_s3 import S3
@@ -206,9 +207,16 @@ Avoid difficult rarely used words and jargon.
     ) -> str:
         language_instruction = self._language_tts_instruction(language)
 
+        prompt = GENERATE_TTS_AUDIO_TEXT.format(
+            language_instruction=language_instruction,
+            language=language,
+            part=part,
+            source_text=source_text
+        )
+
         response: Any = completion_for_user(
             user,
-            [{"role": "user", "content": GENERATE_TTS_AUDIO_TEXT}],
+            [{"role": "user", "content": prompt}],
             temperature=0.1,
         )
 

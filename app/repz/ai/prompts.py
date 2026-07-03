@@ -236,7 +236,7 @@ this question, include one - otherwise leave the hint empty.
 
 
 ###### END GENERATE TEXT FOR AUDIO ###########
-GENERATE_TTS_AUDIO_TEXT = f"""
+GENERATE_TTS_AUDIO_TEXT = """
 You are preparing text for a Text-to-Speech system.
 
 Task:
@@ -262,8 +262,15 @@ Rules:
 8. Remove formatting marks, section separators, and awkward symbols.
 9. If the target language is not en_US, translate the text into the target language.
 10. If the target language is Spanish, the output must be Spanish, not English.
-11. If formulas are present and too long or complex, omit or rewrite them so a beginner can follow.
-12. Do not include more than three formulas, and only include short formulas.
+11. If formulas are present then omit them unless you find it impossible to convey
+the meaning of the overall concept without a very short formula, in that case
+then explain it in plain words instead of reading symbols.
+"11. If formulas are present then omit them unless you find it impossible to convey "
+"the meaning of the overall concept without a very short formula, in that case "
+"then explain it in plain words instead of reading symbols. "
+"Ultimately, Avoid formulas whenever possible because they are hard to understand in spoken audio. "
+"When you asbolutely must include a formula make sure you write them out so it can be comprehended when spoken. "
+"So E=Mc2 would be energy is equal to the mass times the speed of light squared, and x_i would become x sub i\n"
 """
 
 ###### END GENERATE TEXT FOR AUDIO ###########
