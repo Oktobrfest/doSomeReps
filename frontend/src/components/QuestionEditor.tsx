@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
 import { CatPicker } from "./CatPicker";
+import { ExtendButton, type ExtendPayload } from "./ExtendButton";
 
 interface PicData {
   pic_string: string;
@@ -64,6 +65,7 @@ export function QuestionEditor({
   const [hintFiles, setHintFiles] = useState<File[]>([]);
   const [answerFiles, setAnswerFiles] = useState<File[]>([]);
   const [deleting, setDeleting] = useState(false);
+  const [extending, setExtending] = useState(false);
 
   // Fetch question data when questionId changes
   useEffect(() => {
@@ -217,6 +219,46 @@ export function QuestionEditor({
       setError(err instanceof Error ? err.message : "Failed to delete question.");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleExtend = async ({ customInstructions, selectedOptions }: ExtendPayload) => {
+    if (!questionId) return;
+
+    setExtending(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/ai_question_generator/api/extend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question_id: questionId,
+          question: {
+            question: questionText,
+            hint: hintText,
+            answer: answerText,
+            categories: selectedCats,
+          },
+          custom_instructions: customInstructions,
+          options: selectedOptions,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Extend failed");
+      }
+
+      setAnswerText(data.question?.answer ?? answerText);
+      setHintText(data.question?.hint ?? hintText);
+      toast.success("Answer extended with AI.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Extend failed";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setExtending(false);
     }
   };
 
@@ -679,7 +721,7 @@ export function QuestionEditor({
               </div>
             </div>
 
-            <div className="border-top pt-3 mt-3 d-flex justify-content-between">
+            <div className="border-top pt-3 mt-3 d-flex justify-content-between align-items-center">
               <button
                 type="button"
                 className="btn btn-danger"
@@ -688,13 +730,19 @@ export function QuestionEditor({
               >
                 {deleting ? "Deleting..." : "Delete Question"}
               </button>
-              <button
-                type="submit"
-                className="btn btn-primary px-5"
-                disabled={saving}
-              >
-                {saving ? "Saving..." : "Save Question"}
-              </button>
+              <div className="d-flex align-items-center" style={{ gap: "8px" }}>
+                <ExtendButton
+                  onExtend={handleExtend}
+                  disabled={!questionId || extending}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-primary px-5"
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Save Question"}
+                </button>
+              </div>
             </div>
           </form>
         </div>

@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from app.repz.ai.prompts import GENERATE_TTS_AUDIO_TEXT
+from repz.ai.prompts import GENERATE_TTS_AUDIO_TEXT
 from repz.database import session
 from repz.models import audio
 from repz.aws_s3 import S3

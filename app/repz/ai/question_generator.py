@@ -29,7 +29,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.sql import func
 
-from app.repz.ai.prompts import EXTEND_PROMPT_TEMPLATE
+from repz.ai.prompts import (
+    BASE_EXTEND_PROMPT,
+    EXTEND_OPTIONS,
+    build_extend_instructions,
+)
 from repz.routes import ai
 
 from ..bluehelpers import (
@@ -173,11 +177,44 @@ def _parse_hint_set(resp: Any) -> GeneratedHintSet:
 
 def _parse_extended_answer(resp: Any) -> ExtendedAnswer:
     raw = _strip_json_fence(_extract_message_content(resp))
-    return ExtendedAnswer.model_validate_json(raw)
+    try:
+        return ExtendedAnswer.model_validate_json(raw)
+    except Exception:
+        # Some models may return the SHORT ANSWER / LONG ANSWER text
+        # format instead of JSON despite response_format being set.
+        # Parse the text format as a fallback.
+        return _parse_text_extended_answer(raw)
 
 
-def _extend_one(item: Dict[str, Any], user_instructions: str) -> None:
-    """Call the AI to extend a single generated-question item in place.
+_SHORT_ANSWER_RE = re.compile(
+    r"^SHORT ANSWER:\s*\n(.*?)\n+\nLONG ANSWER:\s*\n(.*)",
+    re.DOTALL,
+)
+
+
+def _parse_text_extended_answer(raw: str) -> ExtendedAnswer:
+    """Parse a SHORT ANSWER / LONG ANSWER text response into ExtendedAnswer."""
+    m = _SHORT_ANSWER_RE.match(raw.strip())
+    if m:
+        short = m.group(1).strip()
+        long = m.group(2).strip()
+        # Strip off any trailing hint section if present
+        hint = None
+        hint_match = re.search(r"\nHINT:\s*\n(.*)", long, re.DOTALL)
+        if hint_match:
+            long = long[: hint_match.start()].strip()
+            hint = hint_match.group(1).strip()
+        return ExtendedAnswer(short_answer=short, long_answer=long, hint=hint)
+    # If we can't parse it, raise a clearer error
+    raise ValueError(f"Could not parse extended answer: {raw[:200]!r}")
+
+
+def _extend_one(
+    item: Dict[str, Any],
+    custom_instructions: str = "",
+    selected_options: Optional[List[str]] = None,
+) -> None:
+    """Call the AI to extend a single question item in place.
 
     Updates `item["answer"]` with a SHORT ANSWER / LONG ANSWER layout,
     and overwrites `item["hint"]` only when the model produces one.
@@ -186,16 +223,9 @@ def _extend_one(item: Dict[str, Any], user_instructions: str) -> None:
     cats = item.get("categories") or []
     cats_str = ", ".join(cats) if cats else "(general)"
 
-    instr_block = ""
-    if user_instructions:
-        # Surrounded by blank lines so it slots cleanly into the
-        # template between "Current answer:" and the formatting rules.
-        instr_block = (
-            "\nAdditional user instructions for this extension:\n"
-            f"{user_instructions}\n"
-        )
+    instr_block = build_extend_instructions(custom_instructions, selected_options)
 
-    prompt = EXTEND_PROMPT_TEMPLATE.format(
+    prompt = BASE_EXTEND_PROMPT.format(
         categories=cats_str,
         question=item.get("question", "") or "",
         current_answer=item.get("answer", "") or "",
@@ -604,37 +634,101 @@ def ai_qgen_delete_all():
 @ai.route("/ai_question_generator/api/extend", methods=["POST"])
 @login_required
 def ai_qgen_extend_one():
-    """Extend a single generated question's answer using AI."""
+    """Extend a single generated or saved question's answer using AI."""
     data = request.get_json() or {}
+
     try:
-        idx = int(data.get("index"))
+        idx = int(data["index"]) if data.get("index") is not None else None
     except (TypeError, ValueError):
-        return jsonify({"success": False, "error": "Invalid index."}), 400
+        idx = None
 
-    existing = list(local_session.get(SESSION_KEY_GENERATED, []))
-    if not (0 <= idx < len(existing)):
-        return jsonify({"success": False, "error": "Question not found."}), 404
+    question_id_raw = data.get("question_id")
+    question_id = None
+    if isinstance(question_id_raw, int):
+        question_id = question_id_raw
+    elif isinstance(question_id_raw, str) and question_id_raw.isdigit():
+        question_id = int(question_id_raw)
 
-    # Fetch updated question details from user's edit
-    item = data.get("question") or {}
-    existing[idx]["question"] = (item.get("question") or "").strip()
-    existing[idx]["hint"] = (item.get("hint") or "").strip() or None
-    existing[idx]["answer"] = (item.get("answer") or "").strip()
-    existing[idx]["categories"] = item.get("categories") or []
-    existing[idx]["privacy"] = bool(item.get("privacy", False))
-    existing[idx]["auto_que"] = bool(item.get("auto_que", False))
+    custom_instructions = (
+        data.get("custom_instructions") or data.get("extend_text") or ""
+    ).strip()
+    selected_options = (
+        data.get("options") if isinstance(data.get("options"), list) else []
+    )
 
-    instr = (data.get("extend_text") or "").strip()
+    if idx is not None:
+        existing = list(local_session.get(SESSION_KEY_GENERATED, []))
+        if not (0 <= idx < len(existing)):
+            return jsonify({"success": False, "error": "Question not found."}), 404
 
-    try:
-        _extend_one(existing[idx], instr)
-        local_session[SESSION_KEY_GENERATED] = existing
-        return jsonify({"success": True, "generated_questions": existing})
-    except AIConfigError as e:
-        return jsonify({"success": False, "error": str(e)}), 400
-    except Exception as e:
-        logging.exception("Extend failed")
-        return jsonify({"success": False, "error": f"Extend failed: {e}"}), 500
+        # Fetch updated question details from user's edit
+        item = data.get("question") or {}
+        existing[idx]["question"] = (item.get("question") or "").strip()
+        existing[idx]["hint"] = (item.get("hint") or "").strip() or None
+        existing[idx]["answer"] = (item.get("answer") or "").strip()
+        existing[idx]["categories"] = item.get("categories") or []
+        existing[idx]["privacy"] = bool(item.get("privacy", False))
+        existing[idx]["auto_que"] = bool(item.get("auto_que", False))
+
+        try:
+            _extend_one(existing[idx], custom_instructions, selected_options)
+            local_session[SESSION_KEY_GENERATED] = existing
+            return jsonify({"success": True, "generated_questions": existing})
+        except AIConfigError as e:
+            return jsonify({"success": False, "error": str(e)}), 400
+        except Exception as e:
+            logging.exception("Extend failed")
+            return jsonify({"success": False, "error": f"Extend failed: {e}"}), 500
+
+    if question_id is not None:
+        q = db_session.query(question).filter_by(question_id=question_id).first()
+        if not q:
+            return jsonify({"success": False, "error": "Question not found."}), 404
+
+        incoming = data.get("question") or {}
+        working = {
+            "question": (incoming.get("question") or "").strip() or q.question_text,
+            "answer": (incoming.get("answer") or "").strip() or q.answer,
+            "hint": (incoming.get("hint") or "").strip() or q.hint,
+            "categories": incoming.get("categories")
+            or [c.category_name for c in q.categories],
+        }
+
+        try:
+            _extend_one(working, custom_instructions, selected_options)
+        except AIConfigError as e:
+            return jsonify({"success": False, "error": str(e)}), 400
+        except Exception as e:
+            logging.exception("Extend failed")
+            return jsonify({"success": False, "error": f"Extend failed: {e}"}), 500
+
+        q.answer = working["answer"]
+        q.hint = working["hint"] or None
+        db_session.commit()
+
+        return jsonify({
+            "success": True,
+            "question": {
+                "id": q.question_id,
+                "question_text": q.question_text,
+                "answer": q.answer,
+                "hint": q.hint,
+                "categories": [c.category_name for c in q.categories],
+                "privacy": q.privacy,
+            },
+        })
+
+    return jsonify({"success": False, "error": "Invalid request: provide 'index' or 'question_id'."}), 400
+
+
+@ai.route("/ai_question_generator/api/extend-options", methods=["GET"])
+@login_required
+def ai_qgen_extend_options():
+    """Return the UI labels for the extend-model checkboxes."""
+    return jsonify({
+        "success": True,
+        "options": [{"key": o["key"], "label": o["label"]} for o in EXTEND_OPTIONS],
+    })
 
 
 @ai.route("/ai_question_generator/api/extend_all", methods=["POST"])

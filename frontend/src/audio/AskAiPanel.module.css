@@ -1,0 +1,130 @@
+.askAiPanel {
+  margin-top: 1rem;
+}
+
+.askAiContainer {
+  padding: 1.25rem;
+  background: #f8fafc;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.askAiTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.askAiPulse {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: askAiPulsing 1s ease-in-out infinite alternate;
+}
+
+@keyframes askAiPulsing {
+  from { opacity: 0.4; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1.1); }
+}
+
+.askAiActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.askAiBtnStop {
+  background-color: #ef4444 !important;
+  color: white !important;
+}
+
+.askAiBtnCancel {
+  background-color: #64748b !important;
+  color: white !important;
+}
+
+.askAiTranscriptBox {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f1f5f9;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+  text-align: left;
+}
+
+.askAiTranscriptTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 0.25rem;
+}
+
+.askAiTranscriptText {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.askAiAnswerBox {
+  margin-top: 1rem;
+  padding: 0.9rem;
+  background: #eff6ff;
+  border-radius: 8px;
+  border-left: 4px solid #22c55e;
+  text-align: left;
+}
+
+.askAiAnswerText {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.askAiAnswerPlayer {
+  margin-top: 0.75rem;
+}
+
+.askAiAnswerPlayerBox {
+  background-color: #16a34a !important;
+  color: white !important;
+}
+
+.spinnerBorder {
+  width: 3rem;
+  height: 3rem;
+  display: inline-block;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 0.25rem solid currentColor;
+  border-right-color: transparent;
+  animation: spinnerBorder 0.75s linear infinite;
+}
+
+.spinnerInline {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-width: 0.2rem;
+  margin-right: 8px;
+}
+
+@keyframes spinnerBorder {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorMessage {
+  margin-top: 0.5rem;
+  color: #dc3545;
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: pre-wrap;
+}

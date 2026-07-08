@@ -1,6 +1,6 @@
 
-from app.repz.audio.audio import TTSClientAdapter
-from app.repz.services.audio_asset_service import AudioAssetService, S3StorageClient
+from repz.audio.audio import TTSClientAdapter
+from repz.services.audio_asset_service import AudioAssetService, S3StorageClient
 
 
 def test_audio_serving():

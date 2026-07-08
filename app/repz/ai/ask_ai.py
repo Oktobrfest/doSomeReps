@@ -113,7 +113,8 @@ def ask_ai_transcribe():
         if api_base:
             # The OpenAI-compatible audio endpoint is underneath api_base.
             # api_base is e.g. "https://api.deepinfra.com/v1/openai"
-            client_kwargs["base_url"] = api_base.rstrip("/")
+            # Ensure it ends with a single trailing slash so URL path segments join correctly.
+            client_kwargs["base_url"] = api_base.rstrip("/") + "/"
 
         logger.info("OpenAI client base_url=%s", client_kwargs.get("base_url"))
 

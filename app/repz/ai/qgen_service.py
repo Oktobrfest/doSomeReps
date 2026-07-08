@@ -5,12 +5,18 @@ Contains stateless functions that do not depend on Flask request or session cont
 
 import json
 import logging
+import re
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from app.repz.ai.prompts import EXTEND_PROMPT_TEMPLATE, HINT_GENERATION_PROMPT_TEMPLATE, QUESTION_GENERATION_PROMPT_TEMPLATE
+from repz.ai.prompts import (
+    BASE_EXTEND_PROMPT,
+    HINT_GENERATION_PROMPT_TEMPLATE,
+    QUESTION_GENERATION_PROMPT_TEMPLATE,
+    build_extend_instructions,
+)
 
 from ..bluehelpers import remove_underscore
 from ..database import session as db_session
@@ -123,7 +129,25 @@ def _parse_hint_set(resp: Any) -> GeneratedHintSet:
 
 def _parse_extended_answer(resp: Any) -> ExtendedAnswer:
     raw = _strip_json_fence(_extract_message_content(resp))
-    return ExtendedAnswer.model_validate_json(raw)
+    try:
+        return ExtendedAnswer.model_validate_json(raw)
+    except Exception:
+        # Fallback: model returned SHORT ANSWER / LONG ANSWER text format.
+        m = re.match(
+            r"^SHORT ANSWER:\s*\n(.*?)\n+\nLONG ANSWER:\s*\n(.*)",
+            raw.strip(),
+            re.DOTALL,
+        )
+        if m:
+            short = m.group(1).strip()
+            long = m.group(2).strip()
+            hint = None
+            hint_match = re.search(r"\nHINT:\s*\n(.*)", long, re.DOTALL)
+            if hint_match:
+                long = long[: hint_match.start()].strip()
+                hint = hint_match.group(1).strip()
+            return ExtendedAnswer(short_answer=short, long_answer=long, hint=hint)
+        raise ValueError(f"Could not parse extended answer: {raw[:200]!r}")
 
 
 def _get_user_by_id(user_id: int):
@@ -244,14 +268,12 @@ def extend_question(
 
     cats_str = ", ".join(categories) if categories else "(general)"
 
-    instr_block = ""
-    if user_instructions:
-        instr_block = (
-            "\nAdditional user instructions for this extension:\n"
-            f"{user_instructions}\n"
-        )
+    instr_block = build_extend_instructions(
+        custom_instructions=user_instructions or "",
+        # No selected options from this call path - defaults to "default".
+    )
 
-    prompt = EXTEND_PROMPT_TEMPLATE.format(
+    prompt = BASE_EXTEND_PROMPT.format(
         categories=cats_str,
         question=question_text,
         current_answer=current_answer,

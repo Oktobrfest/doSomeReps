@@ -3,6 +3,8 @@ import {
   useRef,
   useEffect,
   useCallback,
+  forwardRef,
+  useImperativeHandle,
   type ButtonHTMLAttributes,
   type ReactNode,
   type PointerEvent,
@@ -69,6 +71,11 @@ export interface SlideOutButtonsProps {
   initialSelectedCategories?: string[];
 }
 
+export interface SlideOutButtonsHandle {
+  /** Snap the panel back to the collapsed position. */
+  collapse: () => void;
+}
+
 interface Metrics {
   collapsed: number;
   trio: number;
@@ -124,20 +131,23 @@ function CategoriesSection({
   );
 }
 
-export function SlideOutButtons({
-  className,
-  size = 'default',
-  disabled = false,
-  onCorrect,
-  onWrong,
-  onSlightlyWrong,
-  extraActions,
-  onSnapChange,
-  expandToTrio = false,
-  showCategories = false,
-  categoryList,
-  initialSelectedCategories,
-}: SlideOutButtonsProps) {
+export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtonsProps>(function SlideOutButtons(
+  {
+    className,
+    size = 'default',
+    disabled = false,
+    onCorrect,
+    onWrong,
+    onSlightlyWrong,
+    extraActions,
+    onSnapChange,
+    expandToTrio = false,
+    showCategories = false,
+    categoryList,
+    initialSelectedCategories,
+  }: SlideOutButtonsProps,
+  ref,
+) {
   const hasExtra = Boolean(extraActions?.length);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -149,6 +159,15 @@ export function SlideOutButtons({
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [currentHeight, setCurrentHeight] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    collapse: () => {
+      autoExpanded.current = false;
+      if (metrics) {
+        setCurrentHeight(metrics.collapsed);
+      }
+    },
+  }), [metrics]);
 
   const autoExpanded = useRef(false);
 
@@ -447,4 +466,4 @@ export function SlideOutButtons({
       )}
     </div>
   );
-}
+});

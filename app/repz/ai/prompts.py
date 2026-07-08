@@ -1,4 +1,5 @@
 # All AI prompts go here:
+from typing import List, Optional
 ##### ASK AI PROMPTS: ######
 SYSTEM_PROMPT = (
     "You are a tutor teaching a student.\n"
@@ -8,6 +9,9 @@ SYSTEM_PROMPT = (
     "clarifying question and stop.\n"
     "3. Keep explanations focused and digestible for spoken audio: short sentences, "
     "plain language, no Markdown, no tables, no code blocks or formulas.\n"
+    "4. Note that the audio transcription may have garbled the words the student"
+    " is saying. So if the question doesn't fit the overall question content, in that case try your best"
+    " to interpert it based on question content"
 )
 
 ANSWER_SECTION_REVEALED = (
@@ -196,7 +200,14 @@ Questions to consider follow below (JSON):
 ---
 """
 
-EXTEND_PROMPT_TEMPLATE = """\
+
+# --- Common extend UI options -----------------------------------------
+#
+# These back the checkboxes in the shared React "Extend" component.
+# `label` is shown to the user; `prompt` is appended to the AI prompt
+# when the option is selected.
+
+BASE_EXTEND_PROMPT = """\
 You are extending an existing study question's answer into a more
 detailed, explanatory version, for use in a spaced-repetition quiz
 app. Stay focused on the question and the topic / category it sits
@@ -204,19 +215,35 @@ in - do NOT deviate into unrelated material.
 
 The topic is {categories}.
 
+Keep spacing TIGHT between paragraphs. Put a single blank line
+between distinct sub-sections where applicable.
+The user has requested an AI-assisted change to this study question.
+Incorporate the selected options below while staying focused on the question and its topic.
+
+Use the appropriate Markdown for each kind of content that make the answer more readable and
+professional, but don't force it if it's not needed:
+    LaTeX math (`$...$` / `$$...$$`) for formulas,
+    fenced code blocks with language tags for code,
+    `mermaid` fenced blocks for diagrams,
+    Use <sub>...</sub> and <sup>...</sup> for subscript/superscript when needed.
+    Standard Markdown supported.
+
 Question:
 {question}
 
 Current answer:
 {current_answer}
 {user_instructions_block}
+"""
+
+
+DEFAULT_EXTEND_PROMPT_TEMPLATE = """\
 Write a more detailed, explanatory answer for the question above.
 Stick to the question and the topic; do not wander outside that
 category.
 
 Format your output EXACTLY in the following layout. Keep spacing
-TIGHT between paragraphs within a section. Put a single blank line
-between distinct sub-sections where applicable. Use the literal
+TIGHT between paragraphs within a section. Use the literal
 labels shown below:
 
 SHORT ANSWER:
@@ -228,8 +255,118 @@ keep paragraph spacing tight. Use a blank line only between distinct
 sub-sections within the long answer.]
 
 Optionally, if a hint would meaningfully help a learner approach
-this question, include one - otherwise leave the hint empty.
+this question, include one - otherwise leave the hint empty, however do not
+give the answer away in the hint!
 """
+
+
+EXTEND_OPTIONS: List[dict] = [
+    {
+        "key": "default",
+        "label": "Use Long Answer, Short Answer format.",
+        "prompt": DEFAULT_EXTEND_PROMPT_TEMPLATE,
+    },
+    {
+        "key": "rephrase",
+        "label": "rephrase this question.",
+        "prompt": "Improve this question content so it is clear, well-structured, and easy to read and understand.",
+    },
+    {
+        "key": "reformat",
+        "label": "Re-format this question.",
+        "prompt": "Re-format this answer content so it is clear, well-structured, and easy to read while preserving the original meaning.",
+    },
+    {
+        "key": "focus_question",
+        "label": "Focus on the 'question' text.",
+        "prompt": "Focus your changes primarily on improving the question text. You may leave the answer mostly unchanged unless doing so makes the question unclear.",
+    },
+    {
+        "key": "focus_answer",
+        "label": "Focus on the 'answer' text.",
+        "prompt": "Focus your changes primarily on improving and clarifying the answer text. Keep the question substantially the same unless it must be adjusted to match a better answer.",
+    },
+    {
+        "key": "provide_hint",
+        "label": "Provide a helpful hint.",
+        "prompt": "Provide a short, useful hint that nudges the learner toward the answer without giving it away outright.",
+    },
+    {
+        "key": "fact_check",
+        "label": "Fact-check this question.",
+        "prompt": "Carefully fact-check the question and answer. Correct any inaccuracies and note what changed if anything was wrong.",
+    },
+    {
+        "key": "shorten",
+        "label": "Shorten this up.",
+        "prompt": "Shorten the answer to just the essential answer to the question!",
+    },
+    {
+        "key": "improve",
+        "label": "Improve this answer.",
+        "prompt": "Improve the wording, phrasing, and overall clarity of the answer. Use active, concise language suitable for studying. Make sure it's informative, take liberty to re-word the answer, explain better, and/or give a more in depth and accurate answer.",
+    },
+    {
+        "key": "redo_markup",
+        "label": "Redo the markup and formatting.",
+        "prompt": """The markup for this answer has serious shortcomings.
+        Re-do the formatting so it is clean,
+        well-organized, and Make the answer look polished and professional.
+        Supported formatting:
+        - LaTeX math with $...$ or $$...$$ for formulas
+        - fenced code blocks with language tags for code
+        - fenced `mermaid` blocks for diagrams
+        - GFM pipe tables for tabular data
+        - <sub>...</sub> and <sup>...</sup> where needed
+        - basic Markdown lists, bold, and italics
+        But do not force advanced formatting. Keep the answer clean, readable, and appropriate for the content."""
+    },
+    {
+        "key": "add_mermaid",
+        "label": "Add a Mermaid diagram.",
+        "prompt": "Add a Mermaid diagram (using a triple-backtick fenced block tagged `mermaid`) to help visualize or explain the answer content. Use an appropriate diagram type: flowchart, sequence, class, or graph. Make the diagram clear, well-labeled, and directly relevant to the question topic.",
+    },
+]
+
+
+def build_extend_instructions(
+    custom_instructions: str = "",
+    selected_options: Optional[List[str]] = None,
+) -> str:
+    """Build the user-instructions block for the extend prompt.
+
+    Uses the selected option prompts and any free-text instructions
+    supplied by the user. When no options are selected, the "default"
+    option (short-answer / long-answer format) is automatically included.
+    Returns just the options block string - the caller is responsible for
+    injecting it into BASE_EXTEND_PROMPT's {user_instructions_block}.
+    """
+    selected_options = selected_options or []
+
+    # Always include the "default" option when nothing else is selected.
+    if not selected_options:
+        selected_options = ["default"]
+
+    option_map = {opt["key"]: opt["prompt"] for opt in EXTEND_OPTIONS}
+
+    parts = []
+
+    option_prompts = [
+        option_map[key] for key in selected_options if key in option_map
+    ]
+    if option_prompts:
+        parts.append("Selected options:")
+        parts.extend(f"- {p.strip()}" for p in option_prompts)
+
+    custom = (custom_instructions or "").strip()
+    if custom:
+        parts.append(f"Additional user instructions for this extension:\n{custom}")
+
+    if not parts:
+        return ""
+
+    return "\n\n" + "\n\n".join(parts) + "\n"
+
 
 ############## END QUESTION GEN PROMPTS ##########
 

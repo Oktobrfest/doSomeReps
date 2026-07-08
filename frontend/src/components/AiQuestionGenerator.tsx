@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CatPicker } from "./CatPicker";
+import { ExtendButton, type ExtendPayload } from "./ExtendButton";
 import styles from "./AiQuestionGenerator.module.css";
 
 interface GeneratedQuestion {
@@ -9,7 +10,7 @@ interface GeneratedQuestion {
   categories: string[];
   privacy?: boolean;
   auto_que?: boolean;
-  extendText?: string;
+
 }
 
 export function AiQuestionGenerator() {
@@ -39,7 +40,6 @@ export function AiQuestionGenerator() {
             ...q,
             privacy: !!q.privacy,
             auto_que: !!q.auto_que,
-            extendText: "",
           }))
         );
         if (Array.isArray(data.selected_categories)) {
@@ -105,7 +105,6 @@ export function AiQuestionGenerator() {
             ...q,
             privacy: !!q.privacy,
             auto_que: !!q.auto_que,
-            extendText: "",
           }))
         );
         setSuccess(`Successfully generated ${data.generated_questions?.length || 0} question(s).`);
@@ -160,7 +159,6 @@ export function AiQuestionGenerator() {
               ...q,
               privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
               auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
-              extendText: oldItem ? oldItem.extendText || "" : "",
             };
           })
         );
@@ -193,7 +191,6 @@ export function AiQuestionGenerator() {
               ...q,
               privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
               auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
-              extendText: oldItem ? oldItem.extendText || "" : "",
             };
           })
         );
@@ -204,41 +201,47 @@ export function AiQuestionGenerator() {
       });
   };
 
-  const handleExtendOne = (index: number) => {
+  const handleExtendOne = async (
+    index: number,
+    payload: ExtendPayload
+  ): Promise<void> => {
     setError(null);
     setSuccess(null);
     const item = generatedQuestions[index];
 
-    fetch("/ai_question_generator/api/extend", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        index,
-        question: item,
-        extend_text: item.extendText || "",
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data.success) {
-          throw new Error(data.error || "Extend failed");
-        }
-        setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any, i: number) => {
-            const oldItem = generatedQuestions[i];
-            return {
-              ...q,
-              privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
-              auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
-              extendText: i === index ? "" : (oldItem ? oldItem.extendText || "" : ""),
-            };
-          })
-        );
-        setSuccess("Answer extended.");
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Extend failed");
+    try {
+      const res = await fetch("/ai_question_generator/api/extend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          index,
+          question: item,
+          custom_instructions: payload.customInstructions,
+          options: payload.selectedOptions,
+        }),
       });
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Extend failed");
+      }
+
+      setGeneratedQuestions(
+        (data.generated_questions || []).map((q: any, i: number) => {
+          const oldItem = generatedQuestions[i];
+          return {
+            ...q,
+            privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
+            auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
+          };
+        })
+      );
+      setSuccess("Answer extended.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Extend failed";
+      setError(msg);
+      throw err;
+    }
   };
 
   const handleSaveAll = () => {
@@ -262,7 +265,6 @@ export function AiQuestionGenerator() {
               ...q,
               privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
               auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
-              extendText: oldItem ? oldItem.extendText || "" : "",
             };
           })
         );
@@ -319,7 +321,6 @@ export function AiQuestionGenerator() {
               ...q,
               privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
               auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
-              extendText: oldItem ? oldItem.extendText || "" : "",
             };
           })
         );
@@ -624,20 +625,9 @@ export function AiQuestionGenerator() {
                     Delete
                   </button>
 
-                  <input
-                    type="text"
-                    className={styles.extendInput}
-                    placeholder="extend instructions (optional)"
-                    value={gq.extendText || ""}
-                    onChange={(e) => handleQuestionChange(i, "extendText", e.target.value)}
+                  <ExtendButton
+                    onExtend={(payload) => handleExtendOne(i, payload)}
                   />
-                  <button
-                    type="button"
-                    className={`${styles.btn} ${styles.btnInfo} ${styles.btnSm}`}
-                    onClick={() => handleExtendOne(i)}
-                  >
-                    Extend
-                  </button>
                 </div>
               </div>
             ))}
