@@ -5,10 +5,18 @@ Contains stateless functions that do not depend on Flask request or session cont
 
 import json
 import logging
+import re
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+
+from repz.ai.prompts import (
+    BASE_EXTEND_PROMPT,
+    HINT_GENERATION_PROMPT_TEMPLATE,
+    QUESTION_GENERATION_PROMPT_TEMPLATE,
+    build_extend_instructions,
+)
 
 from ..bluehelpers import remove_underscore
 from ..database import session as db_session
@@ -17,109 +25,6 @@ from .litellm_client import completion_for_user
 
 logger = logging.getLogger(__name__)
 
-
-# --- Prompt templates -------------------------------------------------
-
-QUESTION_GENERATION_PROMPT_TEMPLATE = """\
-You are an assistant that creates short, basic study questions and
-answers from supplied source material, for use in a spaced-repetition
-quiz app.
-
-Generate between {qty_from} and {qty_to} question/answer pairs total.
-
-Each question should:
-- Be short, clear, and self-contained. The person answering these
-  questions will NOT have access to the source material, so every
-  question must stand entirely on its own.
-- NEVER reference the source material itself. Do not use phrases like
-  "According to the text", "Based on the provided material", "In the
-  article", "As shown in the document", or any similar wording.
-- NEVER reference specific locations or identifiers from the source
-  material. Do not use cross-references like "See equation (2.5)",
-  "as described in Chapter 3", "refer to Figure 4", "in the example
-  above", "per the preceding paragraph", or anything similar. If
-  something from the source is needed in the question (e.g. a
-  formula, a definition, a specific data point), copy that content
-  directly into the question text instead of pointing the reader
-  elsewhere.
-- Have a brief, factual answer (one or two sentences). The user will
-  later be able to ask you to "extend" any answer into a longer,
-  more in-depth explanation, so keep these initial answers compact.
-- Be tagged with one or more categories from the user-selected list
-  below. EVERY generated question MUST include at least one category
-  from that list (never zero). A question can have multiple
-  categories when more than one applies. You decide which of the
-  user-selected categories best fit each question. Do NOT invent new
-  categories or use any value outside the user-selected list.
-
-User-selected categories (choose one or more for each question, from
-this list only): {categories}
-
-Source material follows below. Generate questions strictly about this
-material:
-
----
-"""
-
-HINT_GENERATION_PROMPT_TEMPLATE = """\
-You are an assistant that writes optional study hints for quiz
-questions in a spaced-repetition app. You will be given a list of
-questions (with their answers) that were generated previously.
-
-For each question, decide whether the question is difficult enough
-that a hint would actually help a learner who is stuck. ONLY produce
-a hint when the question warrants one - if a question is easy,
-straightforward, or its answer is obvious from the wording, return
-no hint (null) for that item.
-
-When you do produce a hint:
-- Keep it short (one sentence is ideal).
-- Nudge the learner toward the answer without giving the answer
-  away outright.
-- Do not restate the answer or include the answer text verbatim.
-
-Return one hint entry per input question, in the same order as the
-input, so they can be matched up by position.
-
-Questions to consider follow below (JSON):
-
----
-"""
-
-EXTEND_PROMPT_TEMPLATE = """\
-You are extending an existing study question's answer into a more
-detailed, explanatory version, for use in a spaced-repetition quiz
-app. Stay focused on the question and the topic / category it sits
-in - do NOT deviate into unrelated material.
-
-The topic is {categories}.
-
-Question:
-{question}
-
-Current answer:
-{current_answer}
-{user_instructions_block}
-Write a more detailed, explanatory answer for the question above.
-Stick to the question and the topic; do not wander outside that
-category.
-
-Format your output EXACTLY in the following layout. Keep spacing
-TIGHT between paragraphs within a section. Put a single blank line
-between distinct sub-sections where applicable. Use the literal
-labels shown below:
-
-SHORT ANSWER:
-[A concise summary answer. One to two sentences.]
-
-LONG ANSWER:
-[A more detailed, explanatory answer. Multiple paragraphs are fine;
-keep paragraph spacing tight. Use a blank line only between distinct
-sub-sections within the long answer.]
-
-Optionally, if a hint would meaningfully help a learner approach
-this question, include one - otherwise leave the hint empty.
-"""
 
 
 # --- Pydantic Schemas -------------------------------------------------
@@ -224,7 +129,25 @@ def _parse_hint_set(resp: Any) -> GeneratedHintSet:
 
 def _parse_extended_answer(resp: Any) -> ExtendedAnswer:
     raw = _strip_json_fence(_extract_message_content(resp))
-    return ExtendedAnswer.model_validate_json(raw)
+    try:
+        return ExtendedAnswer.model_validate_json(raw)
+    except Exception:
+        # Fallback: model returned SHORT ANSWER / LONG ANSWER text format.
+        m = re.match(
+            r"^SHORT ANSWER:\s*\n(.*?)\n+\nLONG ANSWER:\s*\n(.*)",
+            raw.strip(),
+            re.DOTALL,
+        )
+        if m:
+            short = m.group(1).strip()
+            long = m.group(2).strip()
+            hint = None
+            hint_match = re.search(r"\nHINT:\s*\n(.*)", long, re.DOTALL)
+            if hint_match:
+                long = long[: hint_match.start()].strip()
+                hint = hint_match.group(1).strip()
+            return ExtendedAnswer(short_answer=short, long_answer=long, hint=hint)
+        raise ValueError(f"Could not parse extended answer: {raw[:200]!r}")
 
 
 def _get_user_by_id(user_id: int):
@@ -345,14 +268,12 @@ def extend_question(
 
     cats_str = ", ".join(categories) if categories else "(general)"
 
-    instr_block = ""
-    if user_instructions:
-        instr_block = (
-            "\nAdditional user instructions for this extension:\n"
-            f"{user_instructions}\n"
-        )
+    instr_block = build_extend_instructions(
+        custom_instructions=user_instructions or "",
+        # No selected options from this call path - defaults to "default".
+    )
 
-    prompt = EXTEND_PROMPT_TEMPLATE.format(
+    prompt = BASE_EXTEND_PROMPT.format(
         categories=cats_str,
         question=question_text,
         current_answer=current_answer,

@@ -54,6 +54,10 @@ export interface AudioCommandHandlers {
   readQuestion: CommandCallback;
   pause: CommandCallback;
   resume: CommandCallback;
+  /** Triggered by the "ASK AI" voice command. The argument tells the handler
+   *  whether command listening was active before Ask AI started, so it can
+   *  request a resume when the user finishes. */
+  askAi?: (wasListening: boolean) => void;
 }
 
 export type EngineState = 'idle' | 'loading' | 'listening' | 'error';

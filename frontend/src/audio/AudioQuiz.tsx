@@ -1,5 +1,6 @@
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useCallback, RefObject } from 'react';
 import { AudioCommandSystemComponent } from './AudioCommandSystem';
+import type { AudioCommandSystemHandle } from './AudioCommandSystem';
 import { ImageCarousel } from './ImageCarousel';
 import { ImageModal } from './ImageModal';
 import { Volume2, BookOpen, Ban, Edit } from 'lucide-react';
@@ -7,9 +8,12 @@ import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
 import actionStyles from './ActionButton.module.css';
 import { SlideOutButtons, type ExtraAction } from './SlideOutButtons';
+import type { SlideOutButtonsHandle } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { useAudioQuizController } from './useAudioQuizController';
 import { LargeActionButton, LargePlayableControl } from './AudioControls';
+import { useAskAi } from './useAskAi';
+import { AskAiPanel } from './AskAiPanel';
 
 const answerPaddingBySnap: Record<'collapsed' | 'trio' | 'full', number> = {
   collapsed: 12,
@@ -33,6 +37,39 @@ export function AudioQuiz(props: AudioQuizProps) {
 
   const quiz = useAudioQuizController({ initialItems, csrfToken });
 
+  const commandSystemRef = useRef<AudioCommandSystemHandle>(null);
+  const slideOutRef = useRef<SlideOutButtonsHandle>(null);
+
+  const askAi = useAskAi({
+    question: quiz.currentQuestion,
+    answerRevealed: quiz.answerRevealed,
+    onResumeListening: useCallback(() => {
+      commandSystemRef.current?.resumeListening();
+    }, []),
+  });
+
+  const commandHandlers = useMemo(
+    () => ({
+      ...quiz.commandHandlers,
+      askAi: askAi.actions.start,
+    }),
+    [quiz.commandHandlers, askAi.actions.start],
+  );
+
+  const prevAskAiActiveRef = useRef(false);
+  useEffect(() => {
+    if (askAi.isActive && !prevAskAiActiveRef.current) {
+      const el = document.getElementById('ask-ai-conversation-root');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.setAttribute('tabindex', '-1');
+        window.setTimeout(() => el.focus({ preventScroll: true }), 50);
+      }
+      slideOutRef.current?.collapse();
+    }
+    prevAskAiActiveRef.current = askAi.isActive;
+  }, [askAi.isActive]);
+
   return (
     <div className={styles.quizContainer}>
       {/*
@@ -43,10 +80,9 @@ export function AudioQuiz(props: AudioQuizProps) {
       */}
       <div className={styles.audioCommandRoot}>
         <AudioCommandSystemComponent
-          question={quiz.currentQuestion}
-          answerRevealed={quiz.answerRevealed}
-          commands={quiz.commandHandlers}
+          commands={commandHandlers}
           commandsDisabled={quiz.isSubmitting}
+          ref={commandSystemRef}
         />
       </div>
 
@@ -63,6 +99,7 @@ export function AudioQuiz(props: AudioQuizProps) {
           editQuestionUrl={editQuestionUrl}
           categoryList={categoryList}
           selectedCategories={selectedCategories}
+          slideOutRef={slideOutRef}
         />
       ) : (
         <div className={styles.centerContainer}>
@@ -76,8 +113,10 @@ export function AudioQuiz(props: AudioQuizProps) {
         </div>
       )}
 
-      {/* Stable portal target for the command system's Ask-AI UI. */}
-      <div id="ask-ai-conversation-root" className={styles.askAiConversationRoot} />
+      {/* Ask AI conversation UI rendered at the bottom of the quiz page. */}
+      <div id="ask-ai-conversation-root" className={styles.askAiConversationRoot}>
+        <AskAiPanel state={askAi} />
+      </div>
     </div>
   );
 }
@@ -88,6 +127,7 @@ interface AudioQuizBodyProps {
   editQuestionUrl: string;
   categoryList?: string[];
   selectedCategories?: string[];
+  slideOutRef: RefObject<SlideOutButtonsHandle>;
 }
 
 function AudioQuizBody({
@@ -96,6 +136,7 @@ function AudioQuizBody({
   editQuestionUrl,
   categoryList,
   selectedCategories,
+  slideOutRef,
 }: AudioQuizBodyProps) {
   const currentQuestion = quiz.currentQuestion!; // guarded by the shell
   const answerRef = useRef<HTMLDivElement>(null);
@@ -251,6 +292,7 @@ function AudioQuizBody({
 
         {quiz.answerRevealed && (
           <SlideOutButtons
+            ref={slideOutRef}
             disabled={quiz.isSubmitting}
             onCorrect={quiz.actions.correct}
             onWrong={quiz.actions.wrong}

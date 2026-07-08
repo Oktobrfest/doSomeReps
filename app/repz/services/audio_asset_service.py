@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from repz.ai.prompts import GENERATE_TTS_AUDIO_TEXT
 from repz.database import session
 from repz.models import audio
 from repz.aws_s3 import S3
@@ -204,42 +205,14 @@ Avoid difficult rarely used words and jargon.
         language: str,
         user,
     ) -> str:
-        """
-        Generate one TTS-friendly string for one quiz part.
-
-        This intentionally returns plain text, not JSON.
-        """
         language_instruction = self._language_tts_instruction(language)
 
-        prompt = f"""
-You are preparing text for a Text-to-Speech system.
-
-Task:
-Rewrite the quiz {part} below into the final text that should be spoken aloud.
-
-Target language:
-{language}
-
-Language instructions:
-{language_instruction}
-
-Original {part}:
-{source_text}
-
-Rules:
-1. Return only the final spoken text.
-2. Do not return JSON.
-3. Do not use Markdown.
-4. Do not include labels like "Question:", "Answer:", "Hint:", "Short answer:", or "ANSWER:".
-5. Preserve the meaning and facts.
-6. Make the text natural and easy to understand when spoken aloud.
-7. Expand abbreviations that may be pronounced incorrectly.
-8. Remove formatting marks, section separators, and awkward symbols.
-9. If the target language is not en_US, translate the text into the target language.
-10. If the target language is Spanish, the output must be Spanish, not English.
-11. If formulas are present and too long or complex, omit or rewrite them so a beginner can follow.
-12. Do not include more than three formulas, and only include short formulas.
-"""
+        prompt = GENERATE_TTS_AUDIO_TEXT.format(
+            language_instruction=language_instruction,
+            language=language,
+            part=part,
+            source_text=source_text
+        )
 
         response: Any = completion_for_user(
             user,
