@@ -31,6 +31,8 @@ export interface QuizItem {
 
 export interface AudioQuizBatchResponse {
   items: QuizItem[];
+  queueExhausted?: boolean;
+  message?: string;
 }
 
 export interface AudioQuizProps {
@@ -82,10 +84,9 @@ declare global {
     Module?: any;
 
     /**
-     * Still used as a coarse audio coordination bridge between quiz audio and
-     * Ask AI playback. This is not used for quiz commands anymore.
+     * Coarse audio coordination bridge between quiz audio and
+     * Ask AI playback.
      */
     __audioStopCallbacks?: Array<(() => void) | undefined>;
-    __audioPlaying?: boolean;
   }
 }

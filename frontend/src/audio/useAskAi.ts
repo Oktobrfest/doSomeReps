@@ -377,7 +377,6 @@ export function useAskAi({
     }
 
     resetPlayback();
-    window.__audioPlaying = false;
 
     setIsRecording(false);
     setPhase(null);

@@ -67,7 +67,6 @@ function normalizeCommand(command: string) {
 // Tune: 512 (lower latency, more msgs) / 1024 / 2048 (less overhead, more latency).
 // Does NOT change sample rate or resampling.
 const PCM_WORKLET_FRAME_SIZE = 1280;
-const dontListenWhenPlayerAudioPlays = true;
 
 // Drop audio older than this — captured during a main-thread stall. Kept just
 // under the worker's own 350ms backstop so the two layers agree.
@@ -436,7 +435,6 @@ export const AudioCommandSystemComponent = forwardRef<
         );
       }
 
-      let micGatedByPlayback = false;
       let staleGap = false;
       workletNode.port.onmessage = (
         event: MessageEvent<{ frame: Float32Array; captureTs: number }>,
@@ -455,15 +453,9 @@ export const AudioCommandSystemComponent = forwardRef<
           return;
         }
 
-        if (dontListenWhenPlayerAudioPlays && (window as any).__audioPlaying) {
-          micGatedByPlayback = true;
-          return;
-        }
-
-        // Resuming after any drop (stall or playback): flush partial recognizer state
+        // Resuming after a stall: flush partial recognizer state
         // so the discontinuity can't emit a phantom partial match.
-        if (micGatedByPlayback || staleGap) {
-          micGatedByPlayback = false;
+        if (staleGap) {
           staleGap = false;
           kwsWorkerRef.current?.reset();
         }

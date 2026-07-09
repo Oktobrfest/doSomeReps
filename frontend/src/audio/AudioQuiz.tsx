@@ -25,6 +25,43 @@ function validImages(images?: Array<string | null>): string[] {
   return images?.filter((image): image is string => Boolean(image)) ?? [];
 }
 
+interface AudioQuizEmptyProps {
+  message: string;
+  categoryList?: string[];
+  selectedCategories?: string[];
+}
+
+function AudioQuizEmpty({ message, categoryList, selectedCategories }: AudioQuizEmptyProps) {
+  const selectedNormalized = (selectedCategories ?? []).map((c) => c.replace(/_/g, ' '));
+  const unselected = (categoryList ?? []).filter(
+    (cat) => !selectedNormalized.includes(cat),
+  );
+
+  return (
+    <div className={styles.centerContainer} style={{ flexDirection: 'column', gap: '24px', textAlign: 'center', padding: '24px' }}>
+      <div style={{ maxWidth: '560px' }}>
+        <p style={{ fontSize: '1.1rem', lineHeight: '1.7', margin: 0 }}>{message}</p>
+      </div>
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <a
+          href="/quemore"
+          className={styles.secondaryBtn}
+        >
+          Que More Questions
+        </a>
+        {unselected.length > 0 && (
+          <a
+            href="/select_categories"
+            className={styles.secondaryBtn}
+          >
+            Select More Categories
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AudioQuiz(props: AudioQuizProps) {
   const {
     currentUsername,
@@ -100,6 +137,12 @@ export function AudioQuiz(props: AudioQuizProps) {
           categoryList={categoryList}
           selectedCategories={selectedCategories}
           slideOutRef={slideOutRef}
+        />
+      ) : quiz.queueExhausted ? (
+        <AudioQuizEmpty
+          message={quiz.queueExhaustedMessage}
+          categoryList={categoryList}
+          selectedCategories={selectedCategories}
         />
       ) : (
         <div className={styles.centerContainer}>

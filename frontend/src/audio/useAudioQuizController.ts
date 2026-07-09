@@ -32,6 +32,8 @@ interface AudioQuizUiState {
   audioPlaying: boolean;
   modal: ModalState;
   panelSnap: PanelSnap;
+  queueExhausted: boolean;
+  queueExhaustedMessage: string;
 }
 
 type AudioQuizUiAction =
@@ -39,6 +41,7 @@ type AudioQuizUiAction =
   | { type: 'SUBMIT_FINISHED' }
   | { type: 'SUBMIT_FAILED'; message: string }
   | { type: 'QUEUE_FETCH_FAILED'; message: string }
+  | { type: 'QUEUE_EXHAUSTED'; message: string }
   | { type: 'QUESTION_CHANGED' }
   | { type: 'QUESTION_AUDIO_TOGGLE_OR_START' }
   | { type: 'QUESTION_AUDIO_ENDED' }
@@ -78,6 +81,8 @@ const initialUiState: AudioQuizUiState = {
     startIndex: 0,
   },
   panelSnap: 'collapsed',
+  queueExhausted: false,
+  queueExhaustedMessage: '',
 };
 
 function reducer(state: AudioQuizUiState, action: AudioQuizUiAction): AudioQuizUiState {
@@ -221,6 +226,15 @@ function reducer(state: AudioQuizUiState, action: AudioQuizUiAction): AudioQuizU
       return {
         ...state,
         panelSnap: action.snap,
+      };
+
+    case 'QUEUE_EXHAUSTED':
+      return {
+        ...state,
+        queueExhausted: true,
+        queueExhaustedMessage: action.message,
+        activeAudio: null,
+        audioPlaying: false,
       };
 
     default:
@@ -372,7 +386,7 @@ export function useAudioQuizController({
       }
 
       const data = (await response.json()) as AudioQuizBatchResponse;
-      return data.items ?? [];
+      return data;
     },
     [],
   );
@@ -420,10 +434,18 @@ export function useAudioQuizController({
           .filter((id): id is string | number => id != null),
       ];
 
-      const fetched = await fetchBatch(count, excludeQuizqIds);
+      const data = await fetchBatch(count, excludeQuizqIds);
+      const fetched = data.items ?? [];
       const latestItems = itemsRef.current;
 
-      commitItems(dedupeItems(latestItems, fetched));
+      if (fetched.length === 0 && latestItems.length === 0 && data.queueExhausted) {
+        dispatch({
+          type: 'QUEUE_EXHAUSTED',
+          message: data.message || 'No more questions are available.',
+        });
+      } else {
+        commitItems(dedupeItems(latestItems, fetched));
+      }
     },
     [commitItems, fetchBatch],
   );
@@ -585,6 +607,36 @@ export function useAudioQuizController({
     dispatch({ type: 'QUESTION_CHANGED' });
   }, [currentQuestion?.quizq_id]);
 
+  // On mount, if no items were passed from the server, fetch the initial batch.
+  useEffect(() => {
+    if (initialItems.length > 0) return;
+
+    let cancelled = false;
+    fetchBatch(QUEUE_TARGET_SIZE, []).then((data) => {
+      if (cancelled) return;
+      const fetched = data.items ?? [];
+      if (fetched.length === 0 && data.queueExhausted) {
+        dispatch({
+          type: 'QUEUE_EXHAUSTED',
+          message: data.message || 'No more questions are available.',
+        });
+      } else {
+        commitItems(fetched);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        dispatch({
+          type: 'QUEUE_FETCH_FAILED',
+          message: 'Could not load quiz questions. Please try again.',
+        });
+      }
+    });
+
+    return () => { cancelled = true; };
+  // Only run on mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!currentQuestion || questionAssets.length === 0 || ui.isSubmitting) return;
 
@@ -675,6 +727,8 @@ export function useAudioQuizController({
     modalStartIndex: ui.modal.startIndex,
 
     panelSnap: ui.panelSnap,
+    queueExhausted: ui.queueExhausted,
+    queueExhaustedMessage: ui.queueExhaustedMessage,
 
     actions,
     commandHandlers,
