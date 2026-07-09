@@ -15,6 +15,7 @@ from repz.services.quiz_service import (
     _exclude_quiz_question,
     _submit_quiz_answer,
 )
+from repz.bluehelpers import get_all_categories, get_quizes, tally_que_catz
 from repz.cache_helper import CacheHelper
 from repz.services.audio_asset_service import AudioAssetService, S3StorageClient
 from .create_audio import create_audio
@@ -236,12 +237,10 @@ def audio_quiz_data():
 
     selected_categories = _get_selected_categories()
     if selected_categories == "Not set" or not selected_categories:
-        return jsonify({"items": []})
+        return jsonify({"items": [], "queueExhausted": True, "message": "You need to select some question categories."})
 
     user_id = current_user.id
     que_list = get_quiz_queue(user_id, selected_categories)
-    if not que_list:
-        return jsonify({"items": []})
 
     count = request.args.get("count", 1, type=int)
     if count < 1:
@@ -252,6 +251,9 @@ def audio_quiz_data():
         x.strip() for x in exclude_raw.split(",") if x.strip()
     ]
 
+    if not que_list:
+        return jsonify({"items": [], "queueExhausted": True, "message": "No quiz questions are available."})
+
     items = build_audio_quiz_items(
         que_list=que_list,
         audio_service=audio_service,
@@ -260,4 +262,34 @@ def audio_quiz_data():
         exclude_quizq_ids=exclude_quizq_ids,
     )
 
-    return jsonify({"items": items})
+    if not items:
+        # All remaining questions matched the exclude list, so queue is effectively exhausted.
+        category_list = get_all_categories()
+        # Normalize: selected_categories may have underscores, category_list uses spaces.
+        selected_normalized = [c.replace("_", " ") for c in (selected_categories if isinstance(selected_categories, list) else [])]
+        unselected = [c for c in category_list if c not in selected_normalized]
+        if unselected:
+            unselected_cat_quizes = get_quizes(unselected, user_id)
+            if unselected_cat_quizes:
+                cats_w_quizes = tally_que_catz(unselected_cat_quizes)
+                cats_due_txt = ""
+                for cat, num in cats_w_quizes.items():
+                    cats_due_txt += f"{cat}: {num}, "
+                msg_txt = (
+                    "No more questions in your selected categories are currently due. "
+                    "Either que more questions for those categories or select the "
+                    "following categories which have questions due: "
+                )
+                return jsonify({
+                    "items": [],
+                    "queueExhausted": True,
+                    "message": msg_txt + cats_due_txt,
+                })
+
+        return jsonify({
+            "items": [],
+            "queueExhausted": True,
+            "message": "Congradulations! You've completed all the questions currently due! You have two options: Either wait for the questions you've already answered to come due again, or to start answering more questions immediately you need to expand your training que!",
+        })
+
+    return jsonify({"items": items, "queueExhausted": False, "message": ""})
