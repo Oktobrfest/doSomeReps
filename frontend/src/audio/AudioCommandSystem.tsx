@@ -70,7 +70,7 @@ const PCM_WORKLET_FRAME_SIZE = 1280;
 
 // Drop audio older than this — captured during a main-thread stall. Kept just
 // under the worker's own 350ms backstop so the two layers agree.
-const STALE_CHUNK_MS = 1000;
+const STALE_CHUNK_MS = 300;
 
 export const AudioCommandSystemComponent = forwardRef<
   AudioCommandSystemHandle,
@@ -423,7 +423,8 @@ export const AudioCommandSystemComponent = forwardRef<
       workletNodeRef.current = workletNode;
 
       // One-time confirmation; the [KWS] heartbeat shows the resulting frames/sec.
-      if (import.meta.env.DEV) {
+      // if (import.meta.env.DEV) {
+      if (true) {
         console.log(
           '[KWS] worklet batching: frame ' +
             PCM_WORKLET_FRAME_SIZE +
@@ -441,6 +442,16 @@ export const AudioCommandSystemComponent = forwardRef<
       ) => {
         const { frame: chunk, captureTs } = event.data;
         if (!chunk || chunk.length === 0) return;
+
+        // CHANGED THIS- temporary: prove whether frames arrive on the main thread and how stale they are
+        (window as any).__kwsRecv = ((window as any).__kwsRecv || 0) + 1;
+        if ((window as any).__kwsRecv % 20 === 0) {
+          console.log(
+            '[KWS main] frames recv=' + (window as any).__kwsRecv +
+            ' age=' + (Date.now() - captureTs) + 'ms' +
+            ' staleLimit=' + STALE_CHUNK_MS,
+          );
+        }
 
         // Pre-drop audio captured during a main-thread stall. captureTs is from the
         // audio thread, so it stays accurate even though THIS handler is exactly what
