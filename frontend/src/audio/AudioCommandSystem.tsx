@@ -423,8 +423,7 @@ export const AudioCommandSystemComponent = forwardRef<
       workletNodeRef.current = workletNode;
 
       // One-time confirmation; the [KWS] heartbeat shows the resulting frames/sec.
-      // if (import.meta.env.DEV) {
-      if (true) {
+      if (import.meta.env.DEV) {
         console.log(
           '[KWS] worklet batching: frame ' +
             PCM_WORKLET_FRAME_SIZE +
@@ -436,6 +435,7 @@ export const AudioCommandSystemComponent = forwardRef<
         );
       }
 
+      let lastFrameAt = 0;
       let staleGap = false;
       workletNode.port.onmessage = (
         event: MessageEvent<{ frame: Float32Array; captureTs: number }>,
@@ -445,7 +445,7 @@ export const AudioCommandSystemComponent = forwardRef<
 
         // CHANGED THIS- temporary: prove whether frames arrive on the main thread and how stale they are
         (window as any).__kwsRecv = ((window as any).__kwsRecv || 0) + 1;
-        if ((window as any).__kwsRecv % 20 === 0) {
+        if ((window as any).__kwsRecv % 200 === 0) {
           console.log(
             '[KWS main] frames recv=' + (window as any).__kwsRecv +
             ' age=' + (Date.now() - captureTs) + 'ms' +
@@ -472,6 +472,16 @@ export const AudioCommandSystemComponent = forwardRef<
         }
 
         kwsWorkerRef.current?.sendAudioChunk(chunk, audioCtx.sampleRate, captureTs);
+
+         const now = Date.now();
+        if (lastFrameAt !== 0) {
+          const gap = now - lastFrameAt;
+          if (gap > 150) {
+            console.log('[KWS main] GAP ' + gap + 'ms (age=' + (now - captureTs) + 'ms)');
+          }
+        }
+        lastFrameAt = now;
+
       };
 
       source.connect(workletNode);

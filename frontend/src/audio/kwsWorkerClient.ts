@@ -75,8 +75,8 @@ export class KwsWorkerClient {
             };
             resolve();
           } else if (msg.type === "error") {
-            this.setState("error");
-            this.callbacks.onError(msg.message);
+            // # Reject the current initialization attempt without
+            // triggering AudioCommandSystem cleanup because start() retries once.
             reject(new Error(msg.message));
           }
         };
@@ -84,21 +84,30 @@ export class KwsWorkerClient {
         this.worker!.onmessage = handleFirstMessage;
         this.worker!.onerror = (err) => {
           console.error("[KWS Worker Client] Worker error:", err);
-          this.setState("error");
-          this.callbacks.onError(`Worker error: ${err.message}`);
+
+          if (this._state === "ready" || this._state === "listening") {
+            // # CHANGED THIS- Preserve the existing error reporting behavior
+            // when the worker fails after initialization has already succeeded.
+            this.setState("error");
+            this.callbacks.onError(`Worker error: ${err.message}`);
+            return;
+          }
+
+          // # CHANGED THIS- During initialization, reject only the current
+          // attempt so start() can perform its existing retry without the
+          // component terminating the worker client.
           reject(new Error(`Worker error: ${err.message}`));
         };
 
         // Tell the worker to initialize Sherpa
         const baseUrl = `${window.location.origin}/static/models/kws`;
-        // if (import.meta.env.DEV) {
-        if (true) {
+        if (isDev) {
           console.log(`[KWS Worker Client] Posting init to worker with baseUrl: ${baseUrl}`);
         }
         this.worker!.postMessage({
           type: "init",
           baseUrl: baseUrl,
-          debug: true, // import.meta.env.DEV,
+          debug: isDev,
         });
       });
     };
