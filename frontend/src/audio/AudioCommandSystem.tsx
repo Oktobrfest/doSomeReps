@@ -70,7 +70,7 @@ const PCM_WORKLET_FRAME_SIZE = 1280;
 
 // Drop audio older than this — captured during a main-thread stall. Kept just
 // under the worker's own 350ms backstop so the two layers agree.
-const STALE_CHUNK_MS = 300;
+const STALE_CHUNK_MS = 1000;
 
 export const AudioCommandSystemComponent = forwardRef<
   AudioCommandSystemHandle,
