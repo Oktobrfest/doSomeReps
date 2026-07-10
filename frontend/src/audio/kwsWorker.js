@@ -171,7 +171,7 @@ async function initialize() {
       new Promise(function (_, reject) {
         setTimeout(function () {
           reject(new Error("Timed out waiting for Sherpa WASM runtime to initialize."));
-        }, 120000);
+            }, 240000);
       }),
     ]);
   } catch (err) {
@@ -365,7 +365,7 @@ self.onmessage = async function (event) {
         if (!recognizer || !stream) return;
 
         // Drop gate — UNCHANGED behavior. Counter + summary call are the only additions.
-        if (msg.timestamp && Date.now() - msg.timestamp > 350) {
+        if (msg.timestamp && Date.now() - msg.timestamp > 1000) {
           win.dropped++;
           try { recognizer.reset(stream); } catch (e) {}
           maybeLogSummary();
