@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
 import { CatPicker } from "./CatPicker";
 import { ExtendButton, type ExtendPayload } from "./ExtendButton";
+import styles from "./QuestionEditor.module.css";
 
 interface PicData {
   pic_string: string;
@@ -376,17 +377,17 @@ export function QuestionEditor({
   }
 
   return (
-    <div className="container py-4">
+    <div className={styles.editorContainer}>
       <Toaster richColors position="top-right" />
-      <div className="card shadow-sm border-0">
-        <div className="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
-            <h4 className="mb-0">
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+            <h4>
               <i className="fa fa-edit mr-2"></i>Edit Question
             </h4>
             {onClose && (
               <button
                 type="button"
-                className="btn btn-sm btn-outline-light"
+                className={styles.closeBtn}
                 onClick={onClose}
               >
                 Close
@@ -394,7 +395,7 @@ export function QuestionEditor({
             )}
           </div>
 
-        <div className="card-body bg-light">
+        <div className={styles.cardBody}>
           {successMsg && (
             <div className="alert alert-success alert-dismissible fade show" role="alert">
               <strong>Success!</strong> {successMsg}
@@ -421,14 +422,14 @@ export function QuestionEditor({
             <div className="row">
               {/* Form Input fields */}
               <div className="col-md-12">
-                <div className="form-group mb-4">
-                  <label htmlFor="react-q-text" className="font-weight-bold text-dark">
+                <div className={`${styles.formSection} ${styles.questionSection}`}>
+                  <label htmlFor="react-q-text" className={styles.label}>
                     Question Text
                   </label>
                   <textarea
                     id="react-q-text"
-                    className="form-control"
-                    rows={4}
+                    className={`${styles.textarea} ${styles.questionTextarea}`}
+                    rows={6}
                     value={questionText}
                     onChange={(e) => setQuestionText(e.target.value)}
                     maxLength={1500}
@@ -442,12 +443,11 @@ export function QuestionEditor({
                         <span className="small font-weight-bold text-secondary">Existing Question Images:</span>
                         <div className="d-flex flex-wrap gap-2 mt-1">
                           {pics.question.map((p) => (
-                            <div key={p.pic_id} className="position-relative m-1" style={{ width: "80px", height: "80px" }}>
-                              <img src={p.pic_string} alt="question" className="img-thumbnail w-100 h-100" style={{ objectFit: "cover" }} />
+                            <div key={p.pic_id} className={styles.imageContainer}>
+                              <img src={p.pic_string} alt="question" className={styles.image} />
                               <button
                                 type="button"
-                                className="btn btn-danger btn-sm position-absolute"
-                                style={{ top: "-5px", right: "-5px", padding: "1px 6px", borderRadius: "50%" }}
+                                className={styles.deleteImageBtn}
                                 onClick={() => removeExistingPic("question", p.pic_id)}
                                 title="Delete Image"
                               >
@@ -459,16 +459,16 @@ export function QuestionEditor({
                       </div>
                     )}
 
-                    <div className="custom-file mt-2">
+                    <div className={styles.customFileWrapper}>
                       <input
                         type="file"
-                        className="custom-file-input"
+                        className={styles.customFileInput}
                         id="react-q-file"
                         multiple
                         accept="image/*"
                         onChange={(e) => handleFileChange(e, setQuestionFiles)}
                       />
-                      <label className="custom-file-label" htmlFor="react-q-file">
+                      <label className={styles.customFileLabel} htmlFor="react-q-file">
                         {questionFiles.length > 0 ? `${questionFiles.length} file(s) selected` : "Add Question Images"}
                       </label>
                     </div>
@@ -477,12 +477,11 @@ export function QuestionEditor({
                     {questionFiles.length > 0 && (
                       <div className="d-flex flex-wrap mt-2">
                         {questionFiles.map((file, idx) => (
-                          <div key={idx} className="position-relative m-1" style={{ width: "60px", height: "60px" }}>
-                            <img src={URL.createObjectURL(file)} className="img-thumbnail w-100 h-100" style={{ objectFit: "cover" }} />
+                          <div key={idx} className={styles.previewContainer}>
+                            <img src={URL.createObjectURL(file)} className={styles.image} />
                             <button
                               type="button"
-                              className="btn btn-warning btn-sm position-absolute"
-                              style={{ top: "-5px", right: "-5px", padding: "1px 5px", borderRadius: "50%", fontSize: "10px" }}
+                              className={styles.removeFileBtn}
                               onClick={() => removeNewFile(idx, questionFiles, setQuestionFiles)}
                               title="Remove selected file"
                             >
@@ -495,14 +494,14 @@ export function QuestionEditor({
                   </div>
                 </div>
 
-                <div className="form-group mb-4">
-                  <label htmlFor="react-hint-text" className="font-weight-bold text-dark">
+                <div className={`${styles.formSection} ${styles.hintSection}`}>
+                  <label htmlFor="react-hint-text" className={styles.label}>
                     Hint
                   </label>
                   <textarea
                     id="react-hint-text"
-                    className="form-control"
-                    rows={2}
+                    className={`${styles.textarea} ${styles.hintTextarea}`}
+                    rows={3}
                     value={hintText}
                     onChange={(e) => setHintText(e.target.value)}
                     maxLength={2000}
@@ -515,12 +514,11 @@ export function QuestionEditor({
                         <span className="small font-weight-bold text-secondary">Existing Hint Images:</span>
                         <div className="d-flex flex-wrap gap-2 mt-1">
                           {pics.hint.map((p) => (
-                            <div key={p.pic_id} className="position-relative m-1" style={{ width: "80px", height: "80px" }}>
-                              <img src={p.pic_string} alt="hint" className="img-thumbnail w-100 h-100" style={{ objectFit: "cover" }} />
+                            <div key={p.pic_id} className={styles.imageContainer}>
+                              <img src={p.pic_string} alt="hint" className={styles.image} />
                               <button
                                 type="button"
-                                className="btn btn-danger btn-sm position-absolute"
-                                style={{ top: "-5px", right: "-5px", padding: "1px 6px", borderRadius: "50%" }}
+                                className={styles.deleteImageBtn}
                                 onClick={() => removeExistingPic("hint", p.pic_id)}
                                 title="Delete Image"
                               >
@@ -532,16 +530,16 @@ export function QuestionEditor({
                       </div>
                     )}
 
-                    <div className="custom-file mt-2">
+                    <div className={styles.customFileWrapper}>
                       <input
                         type="file"
-                        className="custom-file-input"
+                        className={styles.customFileInput}
                         id="react-hint-file"
                         multiple
                         accept="image/*"
                         onChange={(e) => handleFileChange(e, setHintFiles)}
                       />
-                      <label className="custom-file-label" htmlFor="react-hint-file">
+                      <label className={styles.customFileLabel} htmlFor="react-hint-file">
                         {hintFiles.length > 0 ? `${hintFiles.length} file(s) selected` : "Add Hint Images"}
                       </label>
                     </div>
@@ -550,12 +548,11 @@ export function QuestionEditor({
                     {hintFiles.length > 0 && (
                       <div className="d-flex flex-wrap mt-2">
                         {hintFiles.map((file, idx) => (
-                          <div key={idx} className="position-relative m-1" style={{ width: "60px", height: "60px" }}>
-                            <img src={URL.createObjectURL(file)} className="img-thumbnail w-100 h-100" style={{ objectFit: "cover" }} />
+                          <div key={idx} className={styles.previewContainer}>
+                            <img src={URL.createObjectURL(file)} className={styles.image} />
                             <button
                               type="button"
-                              className="btn btn-warning btn-sm position-absolute"
-                              style={{ top: "-5px", right: "-5px", padding: "1px 5px", borderRadius: "50%", fontSize: "10px" }}
+                              className={styles.removeFileBtn}
                               onClick={() => removeNewFile(idx, hintFiles, setHintFiles)}
                               title="Remove selected file"
                             >
@@ -568,14 +565,14 @@ export function QuestionEditor({
                   </div>
                 </div>
 
-                <div className="form-group mb-4">
-                  <label htmlFor="react-answer-text" className="font-weight-bold text-dark">
+                <div className={`${styles.formSection} ${styles.answerSection}`}>
+                  <label htmlFor="react-answer-text" className={styles.label}>
                     The Answer
                   </label>
                   <textarea
                     id="react-answer-text"
-                    className="form-control"
-                    rows={4}
+                    className={`${styles.textarea} ${styles.answerTextarea}`}
+                    rows={8}
                     value={answerText}
                     onChange={(e) => setAnswerText(e.target.value)}
                     maxLength={4000}
@@ -589,12 +586,11 @@ export function QuestionEditor({
                         <span className="small font-weight-bold text-secondary">Existing Answer Images:</span>
                         <div className="d-flex flex-wrap gap-2 mt-1">
                           {pics.answer.map((p) => (
-                            <div key={p.pic_id} className="position-relative m-1" style={{ width: "80px", height: "80px" }}>
-                              <img src={p.pic_string} alt="answer" className="img-thumbnail w-100 h-100" style={{ objectFit: "cover" }} />
+                            <div key={p.pic_id} className={styles.imageContainer}>
+                              <img src={p.pic_string} alt="answer" className={styles.image} />
                               <button
                                 type="button"
-                                className="btn btn-danger btn-sm position-absolute"
-                                style={{ top: "-5px", right: "-5px", padding: "1px 6px", borderRadius: "50%" }}
+                                className={styles.deleteImageBtn}
                                 onClick={() => removeExistingPic("answer", p.pic_id)}
                                 title="Delete Image"
                               >
@@ -606,16 +602,16 @@ export function QuestionEditor({
                       </div>
                     )}
 
-                    <div className="custom-file mt-2">
+                    <div className={styles.customFileWrapper}>
                       <input
                         type="file"
-                        className="custom-file-input"
+                        className={styles.customFileInput}
                         id="react-answer-file"
                         multiple
                         accept="image/*"
                         onChange={(e) => handleFileChange(e, setAnswerFiles)}
                       />
-                      <label className="custom-file-label" htmlFor="react-answer-file">
+                      <label className={styles.customFileLabel} htmlFor="react-answer-file">
                         {answerFiles.length > 0 ? `${answerFiles.length} file(s) selected` : "Add Answer Images"}
                       </label>
                     </div>
@@ -624,12 +620,11 @@ export function QuestionEditor({
                     {answerFiles.length > 0 && (
                       <div className="d-flex flex-wrap mt-2">
                         {answerFiles.map((file, idx) => (
-                          <div key={idx} className="position-relative m-1" style={{ width: "60px", height: "60px" }}>
-                            <img src={URL.createObjectURL(file)} className="img-thumbnail w-100 h-100" style={{ objectFit: "cover" }} />
+                          <div key={idx} className={styles.previewContainer}>
+                            <img src={URL.createObjectURL(file)} className={styles.image} />
                             <button
                               type="button"
-                              className="btn btn-warning btn-sm position-absolute"
-                              style={{ top: "-5px", right: "-5px", padding: "1px 5px", borderRadius: "50%", fontSize: "10px" }}
+                              className={styles.removeFileBtn}
                               onClick={() => removeNewFile(idx, answerFiles, setAnswerFiles)}
                               title="Remove selected file"
                             >
@@ -643,11 +638,11 @@ export function QuestionEditor({
                 </div>
 
                 {/* Audio Assets Section */}
-                <div className="card border-info mb-4">
-                  <div className="card-header bg-info text-white font-weight-bold py-2 d-flex align-items-center">
+                <div className={styles.audioCard}>
+                  <div className={styles.audioHeader}>
                     <i className="fa fa-volume-up mr-2"></i>Audio Assets
                   </div>
-                  <div className="card-body">
+                  <div className={styles.audioBody}>
                     {audioFiles.length === 0 ? (
                       <p className="text-muted mb-0">No audio assets generated for this question yet.</p>
                     ) : (
@@ -671,12 +666,12 @@ export function QuestionEditor({
                                 <td className="align-middle text-uppercase">
                                   <code>{aud.language}</code>
                                 </td>
-                                <td className="align-middle small text-truncate" style={{ maxWidth: "200px" }}>
+                                <td className={`align-middle small ${styles.snippetCell}`}>
                                   {aud.audio_text || "N/A"}
                                 </td>
                                 <td className="align-middle text-center">
                                   {aud.public_url ? (
-                                    <audio src={aud.public_url} controls style={{ height: "30px", width: "180px" }} />
+                                    <audio src={aud.public_url} controls className={styles.audioPlayer} />
                                   ) : (
                                     <span className="text-muted">No URL</span>
                                   )}
@@ -706,38 +701,38 @@ export function QuestionEditor({
                   onChange={setSelectedCats}
                 />
 
-                <div className="form-group form-check mt-4">
+                <div className={styles.privacyGroup}>
                   <input
                     type="checkbox"
-                    className="form-check-input"
+                    className={styles.privacyCheckbox}
                     id="react-privacy"
                     checked={privacy}
                     onChange={(e) => setPrivacy(e.target.checked)}
                   />
-                  <label className="form-check-label font-weight-bold" htmlFor="react-privacy">
+                  <label className={styles.privacyLabel} htmlFor="react-privacy">
                     Make Question Private
                   </label>
                 </div>
               </div>
             </div>
 
-            <div className="border-top pt-3 mt-3 d-flex justify-content-between align-items-center">
+            <div className={styles.buttonFooter}>
               <button
                 type="button"
-                className="btn btn-danger"
+                className={`${styles.actionBtn} ${styles.redBtn}`}
                 onClick={handleDelete}
                 disabled={deleting || !questionId}
               >
                 {deleting ? "Deleting..." : "Delete Question"}
               </button>
-              <div className="d-flex align-items-center" style={{ gap: "8px" }}>
+              <div className={styles.rightButtons}>
                 <ExtendButton
                   onExtend={handleExtend}
                   disabled={!questionId || extending}
                 />
                 <button
                   type="submit"
-                  className="btn btn-primary px-5"
+                  className={`${styles.actionBtn} ${styles.blueBtn}`}
                   disabled={saving}
                 >
                   {saving ? "Saving..." : "Save Question"}
