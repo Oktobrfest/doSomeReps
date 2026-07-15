@@ -317,7 +317,7 @@ EXTEND_OPTIONS: List[dict] = [
         - fenced code blocks with language tags for code
         - fenced `mermaid` blocks for diagrams
         - GFM pipe tables for tabular data
-        - <sub>...</sub> and <sup>...</sup> where needed
+        - Use _..._ for subscript and ^...^ for superscript. 
         - basic Markdown lists, bold, and italics
         But do not force advanced formatting. Keep the answer clean, readable, and appropriate for the content."""
     },
@@ -407,7 +407,7 @@ then explain it in plain words instead of reading symbols.
 "then explain it in plain words instead of reading symbols. "
 "Ultimately, Avoid formulas whenever possible because they are hard to understand in spoken audio. "
 "When you asbolutely must include a formula make sure you write them out so it can be comprehended when spoken. "
-"So E=Mc2 would be energy is equal to the mass times the speed of light squared, and x_i would become x sub i\n"
+"So E=Mc2 would be energy is equal to the mass times the speed of light squared; x_i or x_..i.._ would become x sub i"
 """
 
 ###### END GENERATE TEXT FOR AUDIO ###########
