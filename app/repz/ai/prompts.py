@@ -225,7 +225,7 @@ professional, but don't force it if it's not needed:
     LaTeX math (`$...$` / `$$...$$`) for formulas,
     fenced code blocks with language tags for code,
     `mermaid` fenced blocks for diagrams,
-    Use <sub>...</sub> and <sup>...</sup> for subscript/superscript when needed.
+    Use _..._ for subscript and ^...^ for superscript when needed. 
     Standard Markdown supported.
 
 Question:

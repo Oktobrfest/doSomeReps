@@ -122,6 +122,19 @@ def saveq():
     # commit the changes to the database
     session.commit()
 
+    # Clear the user's cached quiz queue so they see the updated question details
+    try:
+        from repz.bluehelpers import get_session
+        from repz.cache_helper import CacheHelper
+        from flask_login import current_user
+        selected_categories = get_session("quiz_category_names")
+        if selected_categories and selected_categories != "Not set":
+            cache_helper = CacheHelper(current_user.id)
+            key = cache_helper.generate_cache_key(selected_categories)
+            cache.delete(key)
+    except Exception as e:
+        print("Error clearing quiz cache on saveq:", e)
+
     msg = "Question Saved"
     flash(msg, category="success")
     return msg
@@ -304,6 +317,20 @@ def deleteq():
 
     session.delete(q)
     session.commit()
+
+    # Clear the user's cached quiz queue so they don't see the deleted question details
+    try:
+        from repz.bluehelpers import get_session
+        from repz.cache_helper import CacheHelper
+        from flask_login import current_user
+        selected_categories = get_session("quiz_category_names")
+        if selected_categories and selected_categories != "Not set":
+            cache_helper = CacheHelper(current_user.id)
+            key = cache_helper.generate_cache_key(selected_categories)
+            cache.delete(key)
+    except Exception as e:
+        print("Error clearing quiz cache on deleteq:", e)
+
     msg = "Question Deleted"
     flash(msg, category="success")
     return msg

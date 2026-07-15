@@ -28,7 +28,7 @@ function EditQuestionReact() {
   };
 
   const handleSaved = () => {
-    handleBack();
+    window.location.reload();
   };
 
   return (

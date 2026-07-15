@@ -6,6 +6,7 @@ import remarkSub from "remark-sub";
 import remarkSuper from "remark-super";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
 import typescript from "highlight.js/lib/languages/typescript";
 import javascript from "highlight.js/lib/languages/javascript";
 import xml from "highlight.js/lib/languages/xml";
@@ -64,6 +65,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkMath, remarkSub, remarkSuper]}
       rehypePlugins={[
+        rehypeRaw,
         rehypeKatex,
         [
           rehypeHighlight,
