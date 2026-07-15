@@ -1,7 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 30000; /* Raise above the listening banner (10000) */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,10 +55,10 @@
 }
 
 .closeBtn {
-  position: fixed;
+  position: absolute;
   top: 16px;
   right: 16px;
-  z-index: 10001;
+  z-index: 20001; /* Raise above listening banner (10000) */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -72,6 +72,25 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: background 0.15s ease;
+}
+
+/* Create a solid background in the upper right 1/3rd to cover the listening banner */
+.closeBtn::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 33.33vw;
+  height: 88px;
+  background: rgba(0, 0, 0, 0.94);
+  z-index: -1;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .closeBtn::before {
+    height: 100px;
+  }
 }
 
 .closeBtn:hover {

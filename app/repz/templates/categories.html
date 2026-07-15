@@ -71,6 +71,21 @@
       const [newListName, setNewListName] = React.useState('');
       const [isSaving, setIsSaving] = React.useState(false);
       const [selectedListId, setSelectedListId] = React.useState('');
+      const [isCreateMode, setIsCreateMode] = React.useState(false);
+
+      const selectedList = React.useMemo(() => {
+        return savedLists.find(l => l.id.toString() === selectedListId);
+      }, [savedLists, selectedListId]);
+
+      const hasChanges = React.useMemo(() => {
+        if (!selectedList) return false;
+        const savedSlugs = new Set(selectedList.categories.map(cat => cat.replace(/ /g, '_')));
+        if (savedSlugs.size !== checkedCats.size) return true;
+        for (let slug of checkedCats) {
+          if (!savedSlugs.has(slug)) return true;
+        }
+        return false;
+      }, [selectedList, checkedCats]);
 
       // Fetch saved category lists on mount
       React.useEffect(() => {
@@ -148,6 +163,14 @@
       const handleCreateList = (e) => {
         e.preventDefault();
         if (!newListName.trim()) return;
+
+        const lowerNewName = newListName.trim().toLowerCase();
+        const nameExists = savedLists.some(list => list.name.trim().toLowerCase() === lowerNewName);
+        if (nameExists) {
+          alert('A category list with this name already exists. Please choose a unique name.');
+          return;
+        }
+
         setIsSaving(true);
 
         const payload = {
@@ -172,11 +195,37 @@
               });
               setSelectedListId(newList.id.toString());
               setNewListName('');
+              setIsCreateMode(false);
             } else if (newList.error) {
               alert(newList.error);
             }
           })
           .catch(err => console.error('Error creating list:', err))
+          .finally(() => setIsSaving(false));
+      };
+
+      const handleSaveChangesToList = () => {
+        if (!selectedListId) return;
+        setIsSaving(true);
+
+        const payload = {
+          categories: Array.from(checkedCats)
+        };
+
+        fetch(`/api/category-lists/${selectedListId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+          .then(res => res.json())
+          .then(updatedList => {
+            if (updatedList.id) {
+              setSavedLists(prev => prev.map(l => l.id === updatedList.id ? updatedList : l));
+            } else if (updatedList.error) {
+              alert(updatedList.error);
+            }
+          })
+          .catch(err => console.error('Error saving changes to list:', err))
           .finally(() => setIsSaving(false));
       };
 
@@ -251,54 +300,88 @@
 
           // Dropdown selection & actions for Saved Lists (same form style as create new list form!)
           !hideSavedLists && e('div', {
-            className: 'mb-3 d-flex align-items-center',
+            className: 'mb-3 border border-secondary rounded p-3 bg-light d-flex align-items-center',
             style: { gap: '6px', flexWrap: 'wrap' }
           },
-            e('select', {
-              className: 'form-control form-control-sm',
-              value: selectedListId,
-              onChange: handleListDropdownChange,
-              style: { maxWidth: '200px', fontSize: '0.8rem', height: '31px', color: '#000000' }
-            },
-              e('option', { value: '' }, '-- Select Saved List --'),
-              savedLists.map(list =>
-                e('option', { key: list.id, value: list.id.toString() }, `${list.name}${list.is_default ? ' ★' : ''}`)
-              )
-            ),
-            selectedListId && e('button', {
-              type: 'button',
-              className: 'btn btn-secondary btn-sm', // Same Select All style button
-              onClick: handleSetDefault,
-              title: 'Set selected list as default',
-              style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
-            }, 'Set Default'),
-            selectedListId && e('button', {
-              type: 'button',
-              className: 'btn btn-secondary btn-sm', // Same Select All style button
-              onClick: handleDeleteList,
-              title: 'Delete selected list',
-              style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
-            }, 'Delete'),
+            !isCreateMode ? [
+              e('select', {
+                key: 'list-dropdown',
+                className: 'form-control form-control-sm',
+                value: selectedListId,
+                onChange: handleListDropdownChange,
+                style: { maxWidth: '200px', fontSize: '0.8rem', height: '31px', color: '#000000' }
+              },
+                e('option', { value: '' }, '-- Select Saved List --'),
+                savedLists.map(list =>
+                  e('option', { key: list.id, value: list.id.toString() }, `${list.name}${list.is_default ? ' ★' : ''}`)
+                )
+              ),
+              selectedListId && e('button', {
+                key: 'set-default-btn',
+                type: 'button',
+                className: 'btn btn-secondary btn-sm', // Same Select All style button
+                onClick: handleSetDefault,
+                title: 'Set selected list as default',
+                style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
+              }, 'Set Default'),
+              selectedListId && e('button', {
+                key: 'delete-list-btn',
+                type: 'button',
+                className: 'btn btn-secondary btn-sm', // Same Select All style button
+                onClick: handleDeleteList,
+                title: 'Delete selected list',
+                style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
+              }, 'Delete'),
+              selectedListId && hasChanges && e('button', {
+                key: 'save-changes-btn',
+                type: 'button',
+                className: 'btn btn-success btn-sm',
+                onClick: handleSaveChangesToList,
+                title: 'Save changes to this list',
+                style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
+              }, 'Save Changes to List'),
 
-            // Thin divider
-            e('div', { style: { borderLeft: '1px solid rgba(0,0,0,0.15)', height: '20px', margin: '0 4px' } }),
+              // Thin divider
+              e('div', { key: 'divider', style: { borderLeft: '1px solid rgba(0,0,0,0.15)', height: '20px', margin: '0 4px' } }),
 
-            // Create list input and button (harmonized on the same line)
-            e('input', {
-              type: 'text',
-              className: 'form-control form-control-sm',
-              placeholder: 'Save selection as...',
-              value: newListName,
-              onChange: (e) => setNewListName(e.target.value),
-              style: { maxWidth: '200px', fontSize: '0.8rem', height: '31px', color: '#000000' }
-            }),
-            e('button', {
-              type: 'button',
-              onClick: handleCreateList,
-              className: 'btn btn-secondary btn-sm', // Same Select All style button
-              disabled: isSaving || !newListName.trim() || checkedCats.size === 0,
-              style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
-            }, 'Save List')
+              // Create New List trigger button
+              e('button', {
+                key: 'create-new-list-trigger',
+                type: 'button',
+                onClick: () => setIsCreateMode(true),
+                className: 'btn btn-secondary btn-sm',
+                style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
+              }, 'Create New List')
+            ] : [
+              // Create list input and button (harmonized on the same line)
+              e('input', {
+                key: 'new-list-name-input',
+                type: 'text',
+                className: 'form-control form-control-sm',
+                placeholder: 'Save selection as...',
+                value: newListName,
+                onChange: (e) => setNewListName(e.target.value),
+                style: { maxWidth: '200px', fontSize: '0.8rem', height: '31px', color: '#000000' }
+              }),
+              e('button', {
+                key: 'save-list-btn',
+                type: 'button',
+                onClick: handleCreateList,
+                className: 'btn btn-secondary btn-sm', // Same Select All style button
+                disabled: isSaving || !newListName.trim() || checkedCats.size === 0,
+                style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
+              }, 'Save List'),
+              e('button', {
+                key: 'cancel-create-btn',
+                type: 'button',
+                onClick: () => {
+                  setIsCreateMode(false);
+                  setNewListName('');
+                },
+                className: 'btn btn-secondary btn-sm',
+                style: { fontSize: '0.8rem', fontWeight: '600', height: '31px', padding: '4px 12px', color: '#ffffff' }
+              }, 'Cancel')
+            ]
           ),
 
           // Selection grid of category checkboxes (With font color set to black)
