@@ -80,16 +80,6 @@ export function ImageModal({ images, startIndex, onClose, onCorrect, onWrong, on
       className={styles.backdrop}
       onClick={handleBackdropClick}
     >
-      {/* Close button */}
-      <button
-        type="button"
-        className={styles.closeBtn}
-        onClick={onClose}
-        aria-label="Close"
-      >
-        <X size={28} />
-      </button>
-
       <div
         className={styles.modalViewport}
         onTouchStart={handleTouchStart}
@@ -158,6 +148,16 @@ export function ImageModal({ images, startIndex, onClose, onCorrect, onWrong, on
           </>
         )}
       </div>
+
+      {/* Close button */}
+      <button
+        type="button"
+        className={styles.closeBtn}
+        onClick={onClose}
+        aria-label="Close"
+      >
+        <X size={28} />
+      </button>
 
       {/* Answer buttons at the very bottom */}
       {(onCorrect || onWrong || onSlightlyWrong) && (
