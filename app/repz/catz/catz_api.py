@@ -83,6 +83,38 @@ def create_category_list():
         'categories': [c.category_name for c in new_list.categories]
     }), 201
 
+@catz_api.route('/api/category-lists/<int:list_id>', methods=['PUT'])
+@login_required
+def update_category_list(list_id):
+    cl = session.get(category_lists, list_id)
+    if not cl or cl.user_id != current_user.id:
+        return jsonify({'error': 'List not found'}), 404
+
+    req_data = request.get_json() or {}
+    selected_slugs = req_data.get('categories', [])
+
+    db_categories = session.execute(select(category)).scalars().all()
+    slug_map = {c.category_name.replace(" ", "_"): c for c in db_categories}
+
+    chosen_cats = []
+    for slug in selected_slugs:
+        cat_obj = slug_map.get(slug)
+        if not cat_obj:
+            direct_name = remove_underscore(slug)
+            cat_obj = next((c for c in db_categories if c.category_name == direct_name or c.category_name == slug), None)
+        if cat_obj:
+            chosen_cats.append(cat_obj)
+
+    cl.categories = chosen_cats
+    session.commit()
+
+    return jsonify({
+        'id': cl.id,
+        'name': cl.category_list_name,
+        'is_default': bool(cl.is_default),
+        'categories': [c.category_name for c in cl.categories]
+    })
+
 @catz_api.route('/api/category-lists/<int:list_id>', methods=['DELETE'])
 @login_required
 def delete_category_list(list_id):
