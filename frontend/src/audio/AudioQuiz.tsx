@@ -186,7 +186,8 @@ function AudioQuizBody({
 
   useEffect(() => {
     if (quiz.answerRevealed && answerRef.current) {
-      answerRef.current.focus();
+      answerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      answerRef.current.focus({ preventScroll: true });
     }
   }, [quiz.answerRevealed]);
 
