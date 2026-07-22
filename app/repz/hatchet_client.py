@@ -122,6 +122,7 @@ def trigger_question_generation(
     qty_to: int,
     user_id: int,
     try_hints: bool = False,
+    avoid_duplicates: bool = False,
 ) -> list[dict]:
     """Trigger question generation from raw text on Hatchet and wait for results."""
     logger.info("Triggering question generation via Hatchet for user_id=%s", user_id)
@@ -135,6 +136,7 @@ def trigger_question_generation(
                 qty_to=qty_to,
                 user_id=user_id,
                 try_hints=try_hints,
+                avoid_duplicates=avoid_duplicates,
             ),
             wait_for_result=True,
         )
@@ -152,6 +154,7 @@ def trigger_document_question_generation(
     qty_to: int,
     user_id: int,
     try_hints: bool = False,
+    avoid_duplicates: bool = False,
 ) -> list[dict]:
     """Trigger question generation from a document on Hatchet and wait for results."""
     logger.info("Triggering document question generation via Hatchet for user_id=%s", user_id)
@@ -166,6 +169,7 @@ def trigger_document_question_generation(
                 qty_to=qty_to,
                 user_id=user_id,
                 try_hints=try_hints,
+                avoid_duplicates=avoid_duplicates,
             ),
             wait_for_result=True,
         )

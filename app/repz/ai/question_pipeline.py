@@ -202,6 +202,7 @@ def generate_questions(
     qty_to: int,
     user_id: int,
     try_hints: bool = False,
+    avoid_duplicates: bool = False,
 ) -> List[Dict[str, Any]]:
     """Generate QA pairs from source text.
 
@@ -212,6 +213,7 @@ def generate_questions(
         qty_to: Maximum number of questions to generate.
         user_id: The user's ID (used to look up their AI config).
         try_hints: Whether hints should be generated in the schema.
+        avoid_duplicates: Whether to avoid generating duplicate questions.
 
     Returns:
         List of question dicts (each with 'question', 'answer', 'categories',
@@ -225,6 +227,39 @@ def generate_questions(
     if user is None:
         raise ValueError(f"User {user_id} not found")
 
+    existing_clause = ""
+    if avoid_duplicates:
+        from ..models import question, category
+        stmt = (
+            select(question.question_text)
+            .join(question.categories)
+            .where(category.category_name.in_(categories))
+            .where(question.created_by == user_id)
+        )
+        existing_questions = db_session.execute(stmt).scalars().all()
+
+        if existing_questions:
+            # deduplicate, filter empty/null, slice to 140 chars max, and limit to 250 items
+            processed_existing = []
+            seen = set()
+            for q in existing_questions:
+                if q:
+                    q_stripped = q.strip()
+                    if q_stripped:
+                        q_cropped = q_stripped[:140]
+                        if q_cropped not in seen:
+                            seen.add(q_cropped)
+                            processed_existing.append(q_cropped)
+            
+            limited_existing = processed_existing[:250]
+            if limited_existing:
+                existing_clause = (
+                    "\n\nCRITICAL CONSTRAINT:\n"
+                    "Do NOT generate any questions that are identical, highly similar, or cover the exact "
+                    "same concept as the following existing questions:\n"
+                    + "\n".join(f"- {q}" for q in limited_existing)
+                )
+
     # Build the prompt: template (with categories + range) followed
     # by the user's pasted material. We use spaced category names in
     # the prompt for better AI readability.
@@ -234,11 +269,11 @@ def generate_questions(
         qty_to=qty_to,
         categories=", ".join(spaced_cats),
     )
-    full_prompt = prompt_header + (text or "")
+    full_prompt = prompt_header + (text or "") + existing_clause
 
     logger.info("Generating %d-%d questions for user %d (try_hints=%s)", qty_from, qty_to, user_id, try_hints)
 
-    fmt = GeneratedQuestionSet if try_hints else GeneratedQuestionSetWithoutHint
+    fmt = GeneratedQuestionSetWithoutHint
     resp = completion_for_user(
         user,
         messages=[{"role": "user", "content": full_prompt}],
@@ -247,9 +282,8 @@ def generate_questions(
     qset = _parse_question_set(resp, response_format=fmt)
     generated: List[Dict[str, Any]] = [q.model_dump() for q in qset.questions]
 
-    if not try_hints:
-        for q in generated:
-            q["hint"] = None
+    for q in generated:
+        q["hint"] = None
 
     logger.info("Generated %d questions for user %d", len(generated), user_id)
     return generated

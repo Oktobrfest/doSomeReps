@@ -185,6 +185,7 @@ def _create_workflow():
                 qty_to=input.qty_to,
                 user_id=input.user_id,
                 try_hints=input.try_hints,
+                avoid_duplicates=input.avoid_duplicates,
             )
             if input.try_hints:
                 if generated:
@@ -265,6 +266,7 @@ def _create_workflow():
                 qty_to=input.qty_to,
                 user_id=input.user_id,
                 try_hints=input.try_hints,
+                avoid_duplicates=input.avoid_duplicates,
             )
             if input.try_hints:
                 if generated:

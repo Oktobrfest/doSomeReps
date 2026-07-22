@@ -22,6 +22,7 @@ export function AiQuestionGenerator() {
   const [qtyFrom, setQtyFrom] = useState<number>(5);
   const [qtyTo, setQtyTo] = useState<number>(10);
   const [tryProvideHints, setTryProvideHints] = useState<boolean>(false);
+  const [avoidDuplicates, setAvoidDuplicates] = useState<boolean>(false);
 
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +79,7 @@ export function AiQuestionGenerator() {
       formData.append("qty_from", qtyFrom.toString());
       formData.append("qty_to", qtyTo.toString());
       formData.append("try_provide_hints", tryProvideHints.toString());
+      formData.append("avoid_duplicates", avoidDuplicates.toString());
       body = formData;
     } else {
       headers["Content-Type"] = "application/json";
@@ -87,6 +89,7 @@ export function AiQuestionGenerator() {
         qty_from: qtyFrom,
         qty_to: qtyTo,
         try_provide_hints: tryProvideHints,
+        avoid_duplicates: avoidDuplicates,
       });
     }
 
@@ -303,37 +306,65 @@ export function AiQuestionGenerator() {
       });
   };
 
-  const handleExtendAll = () => {
+  const handleExtendAll = async () => {
     setError(null);
     setSuccess(null);
+    setSubmitting(true);
 
-    fetch("/ai_question_generator/api/extend_all", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ questions: generatedQuestions }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any, i: number) => {
-            const oldItem = generatedQuestions[i];
-            return {
-              ...q,
-              privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
-              auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
-            };
-          })
-        );
-        if (data.extended_count > 0) {
-          setSuccess(`Extended ${data.extended_count} answer(s).`);
+    let extendedCount = 0;
+    let failureCount = 0;
+    const errorsList: string[] = [];
+
+    // Make a copy of current questions state so we can mutate and update sequentially
+    const updatedQuestions = [...generatedQuestions];
+
+    for (let i = 0; i < updatedQuestions.length; i++) {
+      const item = updatedQuestions[i];
+      try {
+        const res = await fetch("/ai_question_generator/api/extend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            index: i,
+            question: item,
+            custom_instructions: "",
+            options: [],
+          }),
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error(data.error || "Extend failed");
         }
-        if (data.errors && data.errors.length > 0) {
-          setError(data.errors.join(". "));
+
+        // The endpoint returns the entire generated_questions array.
+        // We extract the newly extended question at index i.
+        if (data.generated_questions && data.generated_questions[i]) {
+          const newQuestionData = data.generated_questions[i];
+          updatedQuestions[i] = {
+            ...newQuestionData,
+            privacy: !!item.privacy,
+            auto_que: !!item.auto_que,
+          };
+          // Update the list state in real-time as each question completes
+          setGeneratedQuestions([...updatedQuestions]);
         }
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Extend all failed");
-      });
+        extendedCount++;
+      } catch (err) {
+        failureCount++;
+        const msg = err instanceof Error ? err.message : "Extend failed";
+        errorsList.push(`Question #${i + 1}: ${msg}`);
+      }
+    }
+
+    setSubmitting(false);
+
+    if (extendedCount > 0) {
+      setSuccess(`Successfully extended ${extendedCount} answer(s).`);
+    }
+    if (failureCount > 0) {
+      setError(`Failed to extend ${failureCount} answer(s): ${errorsList.join("; ")}`);
+    }
   };
 
   const handleMasterToggleChange = (field: "auto_que" | "privacy", checked: boolean) => {
@@ -455,6 +486,21 @@ export function AiQuestionGenerator() {
             <span className={styles.checkboxLabel}>Try to use hints</span>
             <span className={styles.subLabel} style={{ marginTop: "4px" }}>
               If checked, a separate AI call will be made to generate hints for the questions it considers difficult enough to warrant one. Easy questions won't get a hint.
+            </span>
+          </div>
+        </label>
+
+        <label className={styles.checkboxContainer}>
+          <input
+            type="checkbox"
+            className={styles.checkbox}
+            checked={avoidDuplicates}
+            onChange={(e) => setAvoidDuplicates(e.target.checked)}
+          />
+          <div>
+            <span className={styles.checkboxLabel}>Avoid duplicates</span>
+            <span className={styles.subLabel} style={{ marginTop: "4px" }}>
+              If checked, existing questions under these categories will be queried and passed to the AI to prevent generating duplicate questions.
             </span>
           </div>
         </label>
