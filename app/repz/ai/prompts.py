@@ -58,7 +58,14 @@ For each question, decide whether the question is difficult enough
 that a hint would actually help a learner who is stuck. ONLY produce
 a hint when the question warrants one - if a question is easy,
 straightforward, or its answer is obvious from the wording, return
-no hint (null) for that item.
+no hint (null) for that item
+
+A hint is NOT:
+- feedback or praise;
+- an evaluation of a student's response;
+- the answer;
+- a restatement of the answer;
+- a phrase such as "correct", "incorrect", "good job", or "try again".
 
 When you do produce a hint:
 - Keep it short (one sentence is ideal).
@@ -121,9 +128,6 @@ LONG ANSWER:
 [A more detailed, explanatory answer. Multiple paragraphs are fine;
 keep paragraph spacing tight. Use a blank line only between distinct
 sub-sections within the long answer.]
-
-Optionally, if a hint would meaningfully help a learner approach
-this question, include one - otherwise leave the hint empty.
 """
 
 ############# END QUESTION GENERATOR PROMPTS ############
@@ -225,7 +229,7 @@ professional, but don't force it if it's not needed:
     LaTeX math (`$...$` / `$$...$$`) for formulas,
     fenced code blocks with language tags for code,
     `mermaid` fenced blocks for diagrams,
-    Use _..._ for subscript and ^...^ for superscript when needed. 
+    Use _..._ for subscript and ^...^ for superscript when needed.
     Standard Markdown supported.
 
 Question:
@@ -317,7 +321,7 @@ EXTEND_OPTIONS: List[dict] = [
         - fenced code blocks with language tags for code
         - fenced `mermaid` blocks for diagrams
         - GFM pipe tables for tabular data
-        - Use _..._ for subscript and ^...^ for superscript. 
+        - Use _..._ for subscript and ^...^ for superscript.
         - basic Markdown lists, bold, and italics
         But do not force advanced formatting. Keep the answer clean, readable, and appropriate for the content."""
     },

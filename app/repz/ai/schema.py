@@ -14,6 +14,7 @@ class DocumentGenInput(BaseModel):
     qty_to: int = Field(..., description="Maximum number of questions to generate.")
     user_id: int = Field(..., description="User ID for loading AI settings and saving ownership.")
     try_hints: bool = Field(default=False, description="Whether to also generate hints.")
+    avoid_duplicates: bool = Field(default=False, description="Whether to avoid generating duplicate questions.")
 
 
 class QuestionGenInput(BaseModel):
@@ -25,3 +26,4 @@ class QuestionGenInput(BaseModel):
     qty_to: int = Field(..., description="Maximum number of questions to generate.")
     user_id: int = Field(..., description="User ID for loading AI settings and saving ownership.")
     try_hints: bool = Field(default=False, description="Whether to also generate hints.")
+    avoid_duplicates: bool = Field(default=False, description="Whether to avoid generating duplicate questions.")

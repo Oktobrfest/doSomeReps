@@ -401,6 +401,7 @@ def ai_qgen_generate():
         qty_from = data.get("qty_from", 5)
         qty_to = data.get("qty_to", 10)
         try_provide_hints = bool(data.get("try_provide_hints", False))
+        avoid_duplicates = bool(data.get("avoid_duplicates", False))
         file_obj = None
     else:
         text = (request.form.get("quiz_content") or "").strip()
@@ -415,6 +416,7 @@ def ai_qgen_generate():
         qty_from = request.form.get("qty_from", 5)
         qty_to = request.form.get("qty_to", 10)
         try_provide_hints = request.form.get("try_provide_hints") == "true"
+        avoid_duplicates = request.form.get("avoid_duplicates") == "true"
         file_obj = request.files.get("file")
 
     if not selected_categories:
@@ -480,6 +482,7 @@ def ai_qgen_generate():
                 qty_to=qty_to,
                 user_id=UID,
                 try_hints=try_provide_hints,
+                avoid_duplicates=avoid_duplicates,
             )
         else:
             if not text:
@@ -494,6 +497,7 @@ def ai_qgen_generate():
                 qty_to=qty_to,
                 user_id=UID,
                 try_hints=try_provide_hints,
+                avoid_duplicates=avoid_duplicates,
             )
 
         local_session[SESSION_KEY_GENERATED] = generated

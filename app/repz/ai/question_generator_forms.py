@@ -29,4 +29,8 @@ class AIQuestionGenForm(FlaskForm):
         "Try to use hints",
         default=False,
     )
+    avoid_duplicates = BooleanField(
+        "Avoid duplicates",
+        default=False,
+    )
     submit = SubmitField("Get AI Questions!")

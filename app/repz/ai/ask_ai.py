@@ -31,9 +31,12 @@ def _resolve_stt_config(user_obj):
             integration.provider_relation.api_base or None,
             integration.model or TRANSCRIBE_MODEL,
         )
+    # Default STT uses the user's OpenAI API key directly.  Don't reuse the
+    # legacy text/chat ai_api_base here: it often points to OpenRouter,
+    # DeepSeek, proxies, etc. that do not implement /v1/audio/transcriptions.
     return (
         getattr(user_obj, "ai_api_key", None),
-        getattr(user_obj, "ai_api_base", None),
+        None,
         TRANSCRIBE_MODEL,
     )
 
@@ -116,8 +119,25 @@ def ask_ai_transcribe():
             # Ensure it ends with a single trailing slash so URL path segments join correctly.
             client_kwargs["base_url"] = api_base.rstrip("/") + "/"
 
-        logger.info("OpenAI client base_url=%s", client_kwargs.get("base_url"))
-
+        logger.info("OpenAI client base_url argument=%s", client_kwargs.get("base_url"))
+        
+        client = OpenAI(**client_kwargs)
+        
+        logger.info(
+            "Resolved STT configuration: model=%r db_api_base=%r "
+            "env_OPENAI_BASE_URL=%r final_client_base_url=%s",
+            model,
+            api_base,
+            os.getenv("OPENAI_BASE_URL"),
+            client.base_url,
+        )
+        
+        logger.debug(
+            "transcribe openai client ctor=%.3fs",
+            time.perf_counter() - t_client,
+        )
+        
+        logger.info("Calling client.audio.transcriptions.create with model=%r", model)
         client = OpenAI(**client_kwargs)
         logger.debug("transcribe openai client ctor=%.3fs", time.perf_counter() - t_client)
 
