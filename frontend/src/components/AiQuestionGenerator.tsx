@@ -454,7 +454,13 @@ export function AiQuestionGenerator() {
                 min={0}
                 max={50}
                 value={qtyFrom}
-                onChange={(e) => setQtyFrom(parseInt(e.target.value, 10) || 0)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10) || 0;
+                  setQtyFrom(val);
+                  if (qtyTo < val + 1) {
+                    setQtyTo(val + 1);
+                  }
+                }}
               />
               <span className={styles.subLabel}>at least this many</span>
             </div>
@@ -465,10 +471,14 @@ export function AiQuestionGenerator() {
                 id="qty_to"
                 type="number"
                 className={styles.input}
-                min={0}
+                min={Math.max(1, qtyFrom + 1)}
                 max={50}
                 value={qtyTo}
-                onChange={(e) => setQtyTo(parseInt(e.target.value, 10) || 0)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10) || 0;
+                  const minTo = Math.max(1, qtyFrom + 1);
+                  setQtyTo(Math.max(val, minTo));
+                }}
               />
               <span className={styles.subLabel}>up to this many</span>
             </div>
@@ -511,6 +521,7 @@ export function AiQuestionGenerator() {
             className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`}
             disabled={submitting}
           >
+            {submitting && <span className={styles.btnSpinner} />}
             {submitting ? "Generating Questions..." : "Get AI Questions!"}
           </button>
         </div>
