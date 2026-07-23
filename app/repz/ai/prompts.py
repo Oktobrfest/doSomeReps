@@ -51,14 +51,14 @@ USER_PROMPT = (
 # appended to the END of this template before sending.
 HINT_GENERATION_PROMPT_TEMPLATE = """\
 You are an assistant that writes optional study hints for quiz
-questions in a spaced-repetition app. You will be given a list of
-questions (with their answers) that were generated previously.
+questions. You will be given a list of
+questions (with their answers).
 
 For each question, decide whether the question is difficult enough
 that a hint would actually help a learner who is stuck. ONLY produce
 a hint when the question warrants one - if a question is easy,
 straightforward, or its answer is obvious from the wording, return
-no hint (null) for that item
+no hint (null) for that item.
 
 A hint is NOT:
 - feedback or praise;
@@ -179,31 +179,6 @@ or reference the source material itself):
 
 ---
 """
-
-HINT_GENERATION_PROMPT_TEMPLATE = """\
-You are an assistant that writes optional study hints for quiz
-questions in a spaced-repetition app. You will be given a list of
-questions (with their answers) that were generated previously.
-
-For each question, decide whether the question is difficult enough
-that a hint would actually help a learner who is stuck. ONLY produce
-a hint when the question warrants one - if a question is easy,
-straightforward, or its answer is obvious from the wording, return
-no hint (null) for that item.
-
-When you do produce a hint:
-- Keep it short (one sentence is ideal).
-- Nudge the learner toward the answer without giving the answer
-  away outright.
-- Do not restate the answer or include the answer text verbatim.
-
-Return one hint entry per input question, in the same order as the
-input, so they can be matched up by position.
-
-Questions to consider follow below (JSON):
----
-"""
-
 
 # --- Common extend UI options -----------------------------------------
 #
