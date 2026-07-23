@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { AiQuestionGenerator } from "./components/AiQuestionGenerator";
-import "./index.css";
+import { AiQuestionGenerator } from "../ai_question_generator/AiQuestionGenerator";
+import "../index.css";
 
 const rootElement = document.getElementById("ai-question-generator-root");
 if (rootElement) {

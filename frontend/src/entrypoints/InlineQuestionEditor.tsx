@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
-import { QuestionEditor } from "./components/QuestionEditor";
-import "./index.css";
+import { QuestionEditor } from "../question_editor/QuestionEditor";
+import "../index.css";
 
 function InlineQuestionEditor() {
   const [questionId, setQuestionId] = useState<number | null>(null);

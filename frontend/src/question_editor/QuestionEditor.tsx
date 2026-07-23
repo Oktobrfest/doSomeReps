@@ -1,46 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
-import { CatPicker } from "./CatPicker";
-import { ExtendButton, type ExtendPayload } from "./ExtendButton";
+import { CatPicker } from "../components/CatPicker";
+import { ExtendButton, type ExtendPayload } from "../components/ExtendButton";
+import {
+  deleteAudio,
+  deleteQuestion,
+  extendQuestion,
+  getQuestion,
+  saveQuestion,
+} from "./question_editor_api";
+import type {
+  AudioData,
+  PicsByType,
+  QuestionEditorProps,
+  QuestionUpdatePayload,
+} from "./question_editor_types";
 import styles from "./QuestionEditor.module.css";
-
-interface PicData {
-  pic_string: string;
-  pic_id: number;
-}
-
-interface PicsByType {
-  hint: PicData[];
-  answer: PicData[];
-  question: PicData[];
-}
-
-interface AudioData {
-  audio_id: number;
-  part: string;
-  audio_text: string;
-  public_url: string;
-  language: string;
-  object_key: string;
-}
-
-interface QuestionData {
-  id: number;
-  question_text: string;
-  hint: string;
-  answer: string;
-  privacy: boolean;
-  categories: string[];
-  pics_by_type: PicsByType;
-  audio_files?: AudioData[];
-}
-
-interface QuestionEditorProps {
-  questionId: number | null;
-  onDeleted?: () => void;
-  onSaved?: () => void;
-  onClose?: () => void;
-}
 
 export function QuestionEditor({
   questionId,
@@ -88,15 +63,7 @@ export function QuestionEditor({
     setLoading(true);
     setError(null);
 
-    fetch("/getq", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(questionId),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load question details.");
-        return res.json() as Promise<QuestionData>;
-      })
+    getQuestion(questionId)
       .then((qData) => {
         setQuestionText(qData.question_text || "");
         setHintText(qData.hint || "");
@@ -160,16 +127,7 @@ export function QuestionEditor({
 
   const handleAudioDelete = async (audioId: number) => {
     try {
-      const res = await fetch("/delete_audio", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ audio_id: audioId }),
-      });
-      if (!res.ok) {
-        throw new Error("Failed to delete audio asset.");
-      }
+      await deleteAudio(audioId);
       setAudioFiles((prev) => prev.filter((aud) => aud.audio_id !== audioId));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete audio.");
@@ -192,15 +150,7 @@ export function QuestionEditor({
 
     setDeleting(true);
     try {
-      const res = await fetch("/deleteq", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: questionId }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to delete the question.");
-      }
+      await deleteQuestion(questionId);
 
       setSuccessMsg("Question deleted successfully!");
       // Clear the form
@@ -210,7 +160,7 @@ export function QuestionEditor({
       setPrivacy(false);
       setPics({ hint: [], answer: [], question: [] });
       setAudioFiles([]);
-      
+
       if (onDeleted) {
         setTimeout(() => {
           onDeleted();
@@ -230,26 +180,15 @@ export function QuestionEditor({
     setError(null);
 
     try {
-      const res = await fetch("/ai_question_generator/api/extend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question_id: questionId,
-          question: {
-            question: questionText,
-            hint: hintText,
-            answer: answerText,
-            categories: selectedCats,
-          },
-          custom_instructions: customInstructions,
-          options: selectedOptions,
-        }),
+      const data = await extendQuestion({
+        questionId,
+        questionText,
+        hintText,
+        answerText,
+        categories: selectedCats,
+        customInstructions,
+        selectedOptions,
       });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Extend failed");
-      }
 
       setAnswerText(data.question?.answer ?? answerText);
       setHintText(data.question?.hint ?? hintText);
@@ -291,7 +230,7 @@ export function QuestionEditor({
     setError(null);
     setSuccessMsg(null);
 
-    const payload = {
+    const payload: QuestionUpdatePayload = {
       id: questionId,
       question_text: questionText,
       hint: hintText,
@@ -305,50 +244,29 @@ export function QuestionEditor({
       },
     };
 
-    const formData = new FormData();
-    formData.append("updated_question", JSON.stringify(payload));
-
-    // Append new files
-    questionFiles.forEach((file) => {
-      formData.append("question_image", file);
-    });
-    hintFiles.forEach((file) => {
-      formData.append("hint_image", file);
-    });
-    answerFiles.forEach((file) => {
-      formData.append("answer_pics", file);
-    });
 
     try {
-      const res = await fetch("/saveq", {
-        method: "POST",
-        body: formData,
+      await saveQuestion({
+        payload,
+        questionFiles,
+        hintFiles,
+        answerFiles,
       });
-
-      if (!res.ok) {
-        const errorText = await res.text().catch(() => "");
-        throw new Error(errorText || "Failed to save the question.");
-      }
 
       toast.success("Question saved successfully!");
       // Clear newly uploaded files states after successful save
       setQuestionFiles([]);
       setHintFiles([]);
       setAnswerFiles([]);
-      
+
       // Reload details from API to get the correct current state with new pictures S3 URLs
-      fetch("/getq", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(questionId),
-      })
-        .then((res) => res.json() as Promise<QuestionData>)
+      getQuestion(questionId)
         .then((qData) => {
           setPics(qData.pics_by_type || { hint: [], answer: [], question: [] });
           setAudioFiles(qData.audio_files || []);
         })
         .catch(console.error);
-      
+
       if (onSaved) {
         onSaved();
       }
