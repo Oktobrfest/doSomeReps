@@ -390,3 +390,10 @@ then explain it in plain words instead of reading symbols.
 """
 
 ###### END GENERATE TEXT FOR AUDIO ###########
+
+
+IDENTICAL_QUESTION_CONSTRAINT = """\
+Do NOT generate any questions that are identical or near
+identical as the following existing questions:\n
+"""
+# Prompt constant for identical question constraint

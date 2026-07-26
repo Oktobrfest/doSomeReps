@@ -279,18 +279,18 @@ export function QuestionEditor({
 
   if (loading) {
     return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="sr-only">Loading...</span>
+      <div className={styles.loadingState}>
+        <div className={styles.spinner} role="status">
+          <span className={styles.srOnly}>Loading...</span>
         </div>
-        <p className="mt-3 text-muted">Loading question data...</p>
+        <p className={styles.loadingText}>Loading question data...</p>
       </div>
     );
   }
 
   if (!questionId && !loading) {
     return (
-      <p className="text-muted mt-5 pt-5 text-center">Select a question from the search results to edit it.</p>
+      <p className={styles.emptyState}>Select a question from the search results to edit it.</p>
     );
   }
 
@@ -300,7 +300,7 @@ export function QuestionEditor({
       <div className={styles.card}>
         <div className={styles.cardHeader}>
             <h4>
-              <i className="fa fa-edit mr-2"></i>Edit Question
+              <i className={`fa fa-edit ${styles.iconSpacing}`}></i>Edit Question
             </h4>
             {onClose && (
               <button
@@ -315,11 +315,11 @@ export function QuestionEditor({
 
         <div className={styles.cardBody}>
           {successMsg && (
-            <div className="alert alert-success alert-dismissible fade show" role="alert">
+            <div className={`${styles.alert} ${styles.alertSuccess}`} role="alert">
               <strong>Success!</strong> {successMsg}
               <button
                 type="button"
-                className="close"
+                className={styles.alertCloseButton}
                 onClick={() => setSuccessMsg(null)}
               >
                 <span>&times;</span>
@@ -328,18 +328,18 @@ export function QuestionEditor({
           )}
 
           {error && (
-            <div className="alert alert-danger alert-dismissible fade show" role="alert">
+            <div className={`${styles.alert} ${styles.alertError}`} role="alert">
               <strong>Error!</strong> {error}
-              <button type="button" className="close" onClick={() => setError(null)}>
+              <button type="button" className={styles.alertCloseButton} onClick={() => setError(null)}>
                 <span>&times;</span>
               </button>
             </div>
           )}
 
           <form onSubmit={handleSave}>
-            <div className="row">
+            <div className={styles.formRow}>
               {/* Form Input fields */}
-              <div className="col-md-12">
+              <div className={styles.formColumn}>
                 <div className={`${styles.formSection} ${styles.questionSection}`}>
                   <label htmlFor="react-q-text" className={styles.label}>
                     Question Text
@@ -355,11 +355,11 @@ export function QuestionEditor({
                   />
 
                   {/* Question Images Section */}
-                  <div className="mt-3">
+                  <div className={styles.mediaSection}>
                     {pics.question.length > 0 && (
-                      <div className="mb-2">
-                        <span className="small font-weight-bold text-secondary">Existing Question Images:</span>
-                        <div className="d-flex flex-wrap gap-2 mt-1">
+                      <div className={styles.existingMediaSection}>
+                        <span className={styles.existingMediaLabel}>Existing Question Images:</span>
+                        <div className={styles.mediaGrid}>
                           {pics.question.map((p) => (
                             <div key={p.pic_id} className={styles.imageContainer}>
                               <img src={p.pic_string} alt="question" className={styles.image} />
@@ -393,7 +393,7 @@ export function QuestionEditor({
 
                     {/* New Question Files Previews */}
                     {questionFiles.length > 0 && (
-                      <div className="d-flex flex-wrap mt-2">
+                      <div className={styles.previewGrid}>
                         {questionFiles.map((file, idx) => (
                           <div key={idx} className={styles.previewContainer}>
                             <img src={URL.createObjectURL(file)} className={styles.image} />
@@ -426,11 +426,11 @@ export function QuestionEditor({
                   />
 
                   {/* Hint Images Section */}
-                  <div className="mt-3">
+                  <div className={styles.mediaSection}>
                     {pics.hint.length > 0 && (
-                      <div className="mb-2">
-                        <span className="small font-weight-bold text-secondary">Existing Hint Images:</span>
-                        <div className="d-flex flex-wrap gap-2 mt-1">
+                      <div className={styles.existingMediaSection}>
+                        <span className={styles.existingMediaLabel}>Existing Hint Images:</span>
+                        <div className={styles.mediaGrid}>
                           {pics.hint.map((p) => (
                             <div key={p.pic_id} className={styles.imageContainer}>
                               <img src={p.pic_string} alt="hint" className={styles.image} />
@@ -464,7 +464,7 @@ export function QuestionEditor({
 
                     {/* New Hint Files Previews */}
                     {hintFiles.length > 0 && (
-                      <div className="d-flex flex-wrap mt-2">
+                      <div className={styles.previewGrid}>
                         {hintFiles.map((file, idx) => (
                           <div key={idx} className={styles.previewContainer}>
                             <img src={URL.createObjectURL(file)} className={styles.image} />
@@ -498,11 +498,11 @@ export function QuestionEditor({
                   />
 
                   {/* Answer Images Section */}
-                  <div className="mt-3">
+                  <div className={styles.mediaSection}>
                     {pics.answer.length > 0 && (
-                      <div className="mb-2">
-                        <span className="small font-weight-bold text-secondary">Existing Answer Images:</span>
-                        <div className="d-flex flex-wrap gap-2 mt-1">
+                      <div className={styles.existingMediaSection}>
+                        <span className={styles.existingMediaLabel}>Existing Answer Images:</span>
+                        <div className={styles.mediaGrid}>
                           {pics.answer.map((p) => (
                             <div key={p.pic_id} className={styles.imageContainer}>
                               <img src={p.pic_string} alt="answer" className={styles.image} />
@@ -536,7 +536,7 @@ export function QuestionEditor({
 
                     {/* New Answer Files Previews */}
                     {answerFiles.length > 0 && (
-                      <div className="d-flex flex-wrap mt-2">
+                      <div className={styles.previewGrid}>
                         {answerFiles.map((file, idx) => (
                           <div key={idx} className={styles.previewContainer}>
                             <img src={URL.createObjectURL(file)} className={styles.image} />
@@ -558,14 +558,14 @@ export function QuestionEditor({
                 {/* Audio Assets Section */}
                 <div className={styles.audioCard}>
                   <div className={styles.audioHeader}>
-                    <i className="fa fa-volume-up mr-2"></i>Audio Assets
+                    <i className={`fa fa-volume-up ${styles.iconSpacing}`}></i>Audio Assets
                   </div>
                   <div className={styles.audioBody}>
                     {audioFiles.length === 0 ? (
-                      <p className="text-muted mb-0">No audio assets generated for this question yet.</p>
+                      <p className={styles.emptyAudioText}>No audio assets generated for this question yet.</p>
                     ) : (
-                      <div className="table-responsive">
-                        <table className="table table-sm table-bordered table-striped mb-0">
+                      <div className={styles.tableResponsive}>
+                        <table className={styles.audioTable}>
                           <thead>
                             <tr>
                               <th>Part</th>
@@ -578,26 +578,26 @@ export function QuestionEditor({
                           <tbody>
                             {audioFiles.map((aud) => (
                               <tr key={aud.audio_id}>
-                                <td className="align-middle text-capitalize">
-                                  <span className="badge badge-secondary">{aud.part}</span>
+                                <td className={`${styles.tableCell} ${styles.capitalize}`}>
+                                  <span className={styles.badge}>{aud.part}</span>
                                 </td>
-                                <td className="align-middle text-uppercase">
+                                <td className={`${styles.tableCell} ${styles.uppercase}`}>
                                   <code>{aud.language}</code>
                                 </td>
-                                <td className={`align-middle small ${styles.snippetCell}`}>
+                                <td className={`${styles.tableCell} ${styles.smallCell} ${styles.snippetCell}`}>
                                   {aud.audio_text || "N/A"}
                                 </td>
-                                <td className="align-middle text-center">
+                                <td className={`${styles.tableCell} ${styles.centerCell}`}>
                                   {aud.public_url ? (
                                     <audio src={aud.public_url} controls className={styles.audioPlayer} />
                                   ) : (
-                                    <span className="text-muted">No URL</span>
+                                    <span className={styles.mutedText}>No URL</span>
                                   )}
                                 </td>
-                                <td className="align-middle text-center">
+                                <td className={`${styles.tableCell} ${styles.centerCell}`}>
                                   <button
                                     type="button"
-                                    className="btn btn-danger btn-sm"
+                                    className={styles.audioDeleteBtn}
                                     onClick={() => handleAudioDelete(aud.audio_id)}
                                     title="Delete Audio"
                                   >

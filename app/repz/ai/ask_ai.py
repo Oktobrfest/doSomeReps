@@ -190,8 +190,10 @@ def _ask_ai_default_language(user_obj) -> str:
     return "en_US"
 
 
-def _build_ask_ai_prompt(transcript, question_text, answer_text, categories, language):
+def _build_ask_ai_prompt(transcript, question_text, answer_text, categories, language, history=None):
     """Build the tutor-style LLM messages for an Ask AI request."""
+    if history is None:
+        history = []
     categories_csv = ", ".join(categories) if categories else "(none provided)"
     if answer_text:
         answer_section = ANSWER_SECTION_REVEALED.format(answer=answer_text)
@@ -200,17 +202,39 @@ def _build_ask_ai_prompt(transcript, question_text, answer_text, categories, lan
 
     system_prompt = SYSTEM_PROMPT
 
-    user_prompt = USER_PROMPT.format(
-        question=question_text or "(no question text provided)",
-        categories=categories_csv,
-        answer_section=answer_section,
-        transcript=transcript,
-    )
-
-    return [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt},
-    ]
+    if not history:
+        user_prompt = USER_PROMPT.format(
+            question=question_text or "(no question text provided)",
+            categories=categories_csv,
+            answer_section=answer_section,
+            transcript=transcript,
+        )
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+    else:
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Format the first user interaction with the full template and context
+        first_item = history[0]
+        user_prompt = USER_PROMPT.format(
+            question=question_text or "(no question text provided)",
+            categories=categories_csv,
+            answer_section=answer_section,
+            transcript=first_item.get("transcript") or "",
+        )
+        messages.append({"role": "user", "content": user_prompt})
+        messages.append({"role": "assistant", "content": first_item.get("answer") or ""})
+        
+        # Append subsequent QA pairs in order
+        for item in history[1:]:
+            messages.append({"role": "user", "content": item.get("transcript") or ""})
+            messages.append({"role": "assistant", "content": item.get("answer") or ""})
+            
+        # Append current transcript as the new user message
+        messages.append({"role": "user", "content": transcript})
+        return messages
 
 
 @ai.route("/api/ask-ai", methods=["POST"])
@@ -251,6 +275,7 @@ def ask_ai():
     answer_text = (data.get("answer_text") or "").strip() or None
     categories = data.get("categories") or []
     image_urls = data.get("image_urls") or data.get("image_ids") or []
+    history = data.get("history") or []
 
     if image_urls:
         logger.info("Ask AI received image context (stubbed in Phase 2): %d image(s)", len(image_urls))
@@ -287,6 +312,7 @@ def ask_ai():
         answer_text=answer_text,
         categories=categories,
         language=language,
+        history=history,
     )
     logger.debug("ask_ai _build_ask_ai_prompt=%.3fs", time.perf_counter() - t_prompt)
 

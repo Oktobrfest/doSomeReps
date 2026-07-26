@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { MarkdownContent } from "./components/MarkdownContent";
+import { MarkdownContent } from "../components/MarkdownContent";
 
 interface QuizMarkdownData {
   questionText?: string;

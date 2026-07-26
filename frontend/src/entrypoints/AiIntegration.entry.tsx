@@ -1,10 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
-import "./index.css";
+import AiIntegration from "../AiIntegration";
+import "../index.css";
 
 ReactDOM.createRoot(document.getElementById("ai-integration-root")!).render(
   <React.StrictMode>
-    <App />
+    <AiIntegration />
   </React.StrictMode>
 );

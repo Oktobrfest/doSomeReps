@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
-import ReactDOM from "react-dom/client";
-import { QuestionEditor } from "../question_editor/QuestionEditor";
-import "../index.css";
+import { useEffect, useState } from "react";
 
-function EditQuestionReact() {
+import { QuestionEditor } from "./QuestionEditor";
+
+
+export function EditQuestionReact() {
   const [questionId, setQuestionId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -48,15 +48,5 @@ function EditQuestionReact() {
         onSaved={handleSaved}
       />
     </div>
-  );
-}
-
-const rootElement = document.getElementById("react-edit-question-root");
-if (rootElement) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <EditQuestionReact />
-    </React.StrictMode>
   );
 }

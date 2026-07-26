@@ -13,6 +13,14 @@ interface UseAskAiOptions {
   onResumeListening?: () => void;
 }
 
+export interface AskAiTurn {
+  id: string;
+  transcript: string;
+  answer: string;
+  audioAssets: AudioAsset[];
+  audioPlaying: boolean;
+}
+
 export interface AskAiState {
   isActive: boolean;
   isRecording: boolean;
@@ -22,12 +30,17 @@ export interface AskAiState {
   error: string | null;
   audioAssets: AudioAsset[];
   audioPlaying: boolean;
+  history: AskAiTurn[];
   actions: {
     start: (wasListening: boolean) => Promise<void>;
     stopAndSend: () => void;
     cancel: () => void;
+    cancelSession: () => void;
     toggleAudio: () => void;
     playbackEnded: () => void;
+    toggleHistoryAudio: (id: string) => void;
+    historyPlaybackEnded: (id: string) => void;
+    discardTurn: (id: string) => void;
   };
 }
 
@@ -43,6 +56,7 @@ export function useAskAi({
   const [error, setError] = useState<string | null>(null);
   const [audioAssets, setAudioAssets] = useState<AudioAsset[]>([]);
   const [audioPlaying, setAudioPlaying] = useState(false);
+  const [history, setHistory] = useState<AskAiTurn[]>([]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -138,6 +152,191 @@ export function useAskAi({
     [resumeIfNeeded],
   );
 
+  const cancel = useCallback(() => {
+    logDebug('Cancelling Ask AI (any phase)...');
+
+    if (abortRef.current) {
+      try {
+        abortRef.current.abort();
+      } catch {
+        /* ignore */
+      }
+      abortRef.current = null;
+    }
+
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.onstop = () => {
+        stopTracks(recorder);
+        mediaRecorderRef.current = null;
+      };
+      try {
+        recorder.stop();
+      } catch {
+        /* ignore */
+      }
+    } else if (recorder) {
+      stopTracks(recorder);
+      mediaRecorderRef.current = null;
+    }
+
+    resetPlayback();
+
+    setIsRecording(false);
+    setPhase(null);
+    setTranscript(null);
+    setAnswer(null);
+    setError(null);
+    resumeIfNeeded();
+  }, [resetPlayback, resumeIfNeeded, stopTracks]);
+
+  const requestAnswer = useCallback(
+    async (transcriptText: string) => {
+      if (!question || !question.question_id) {
+        setError('No active question context to ask the AI about.');
+        resumeIfNeeded();
+        return;
+      }
+
+      const answerTextVal = answerRevealed ? question.answer : '';
+      const historyPayload = history.map((turn) => ({
+        transcript: turn.transcript,
+        answer: turn.answer,
+      }));
+
+      const body = {
+        transcript: transcriptText,
+        question_text: question.question_text,
+        question_id: question.question_id,
+        answer_text: answerTextVal,
+        categories: question.categories ?? [],
+        image_urls: (question.pics?.question_image ?? []).filter(Boolean) as string[],
+        history: historyPayload,
+      };
+
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+        headers['X-CSRFToken'] = csrfToken;
+      }
+
+      setPhase('Thinking');
+      setError(null);
+      setAnswer(null);
+
+      try {
+        const abort = new AbortController();
+        abortRef.current = abort;
+        const t_llmStart = performance.now();
+        const response = await fetch('/api/ask-ai', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+          signal: abort.signal,
+        });
+        if (import.meta.env.DEV) {
+          console.log(
+            `[AskAI] LLM fetch=${(performance.now() - t_llmStart).toFixed(1)}ms (status=${response.status})`,
+          );
+        }
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || `Server responded with ${response.status}`);
+        }
+
+        const answerText = result.answer_text || '';
+        const language = result.language || '';
+        setAnswer(answerText);
+        setPhase(null);
+
+        let audioB64: string | null = null;
+        let contentType = 'audio/mpeg';
+
+        try {
+          setPhase('Transcribing: Answer');
+          const speakAbort = new AbortController();
+          abortRef.current = speakAbort;
+          const t_speakStart = performance.now();
+          const speakResponse = await fetch('/api/ask-ai/speak', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ text: answerText, language }),
+            signal: speakAbort.signal,
+          });
+          if (import.meta.env.DEV) {
+            console.log(
+              `[AskAI] TTS fetch=${(performance.now() - t_speakStart).toFixed(1)}ms (status=${speakResponse.status})`,
+            );
+          }
+
+          const speakResult = await speakResponse.json().catch(() => ({}));
+          if (speakResponse.ok && speakResult.ok) {
+            audioB64 = speakResult.audio_b64 || null;
+            contentType = speakResult.audio_content_type || 'audio/mpeg';
+            if (speakResult.warning) {
+              console.warn('Ask AI speak warning:', speakResult.warning);
+            }
+          }
+        } catch (err) {
+          console.error('Ask AI speak call failed:', err);
+        } finally {
+          setPhase(null);
+        }
+
+        const newTurnId = Math.random().toString(36).substring(7);
+        if (audioB64) {
+          const blob = base64ToBlob(audioB64, contentType);
+          const blobUrl = URL.createObjectURL(blob);
+
+          window.__audioStopCallbacks?.forEach((cb) => {
+            try {
+              cb?.();
+            } catch {
+              /* ignore */
+            }
+          });
+
+          const newTurn: AskAiTurn = {
+            id: newTurnId,
+            transcript: transcriptText,
+            answer: answerText,
+            audioAssets: [{ url: blobUrl, lang: language || 'en_US' }],
+            audioPlaying: true,
+          };
+          setHistory((prev) => [...prev, newTurn]);
+        } else {
+          const newTurn: AskAiTurn = {
+            id: newTurnId,
+            transcript: transcriptText,
+            answer: answerText,
+            audioAssets: [],
+            audioPlaying: false,
+          };
+          setHistory((prev) => [...prev, newTurn]);
+        }
+
+        setTranscript(null);
+        setAnswer(null);
+      } catch (err) {
+        if ((err as any)?.name === 'AbortError') {
+          logDebug('Ask AI answer request was cancelled.');
+        } else {
+          console.error('Ask AI answer request failed:', err);
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      } finally {
+        abortRef.current = null;
+        setPhase(null);
+        if (!playbackActiveRef.current) {
+          resumeIfNeeded();
+        }
+      }
+    },
+    [answerRevealed, question, resumeIfNeeded, history],
+  );
+
   const stopAndSend = useCallback(() => {
     logDebug('Stopping Ask AI recording and sending to transcribe...');
     const recorder = mediaRecorderRef.current;
@@ -225,166 +424,18 @@ export function useAskAi({
     };
 
     recorder.stop();
-  }, [stopTracks]);
+  }, [stopTracks, requestAnswer]);
 
-  const requestAnswer = useCallback(
-    async (transcriptText: string) => {
-      if (!question || !question.question_id) {
-        setError('No active question context to ask the AI about.');
-        resumeIfNeeded();
-        return;
-      }
+  const cancelSession = useCallback(() => {
+    cancel();
+    setHistory([]);
+  }, [cancel]);
 
-      const answerText = answerRevealed ? question.answer : '';
-      const body = {
-        transcript: transcriptText,
-        question_text: question.question_text,
-        question_id: question.question_id,
-        answer_text: answerText,
-        categories: question.categories ?? [],
-        image_urls: (question.pics?.question_image ?? []).filter(Boolean) as string[],
-      };
-
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const csrfToken = getCsrfToken();
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-        headers['X-CSRFToken'] = csrfToken;
-      }
-
-      setPhase('Thinking');
-      setError(null);
-      setAnswer(null);
-
-      try {
-        const abort = new AbortController();
-        abortRef.current = abort;
-        const t_llmStart = performance.now();
-        const response = await fetch('/api/ask-ai', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(body),
-          signal: abort.signal,
-        });
-        if (import.meta.env.DEV) {
-          console.log(
-            `[AskAI] LLM fetch=${(performance.now() - t_llmStart).toFixed(1)}ms (status=${response.status})`,
-          );
-        }
-
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.ok) {
-          throw new Error(result.error || `Server responded with ${response.status}`);
-        }
-
-        const answerText = result.answer_text || '';
-        const language = result.language || '';
-        setAnswer(answerText);
-        setPhase(null);
-
-        setPhase('Transcribing: Answer');
-        const speakAbort = new AbortController();
-        abortRef.current = speakAbort;
-        const t_speakStart = performance.now();
-        const speakResponse = await fetch('/api/ask-ai/speak', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ text: answerText, language }),
-          signal: speakAbort.signal,
-        });
-        if (import.meta.env.DEV) {
-          console.log(
-            `[AskAI] TTS fetch=${(performance.now() - t_speakStart).toFixed(1)}ms (status=${speakResponse.status})`,
-          );
-        }
-
-        const speakResult = await speakResponse.json().catch(() => ({}));
-        if (!speakResponse.ok || !speakResult.ok) {
-          throw new Error(speakResult.error || `Server responded with ${speakResponse.status}`);
-        }
-
-        const audioB64 = speakResult.audio_b64 || null;
-        const contentType = speakResult.audio_content_type || 'audio/mpeg';
-        if (speakResult.warning) {
-          console.warn('Ask AI speak warning:', speakResult.warning);
-        }
-        setPhase(null);
-
-        if (audioB64) {
-          const blob = base64ToBlob(audioB64, contentType);
-          const blobUrl = URL.createObjectURL(blob);
-          revokeCurrentBlobUrl();
-          blobUrlRef.current = blobUrl;
-          playbackActiveRef.current = true;
-          setAudioAssets([{ url: blobUrl, lang: language || 'en_US' }]);
-
-          const callbacks = window.__audioStopCallbacks;
-          if (Array.isArray(callbacks)) {
-            callbacks.forEach((cb) => {
-              try {
-                cb?.();
-              } catch {
-                /* ignore */
-              }
-            });
-          }
-          setAudioPlaying(true);
-        }
-      } catch (err) {
-        if ((err as any)?.name === 'AbortError') {
-          logDebug('Ask AI answer request was cancelled.');
-        } else {
-          console.error('Ask AI answer request failed:', err);
-          setError(err instanceof Error ? err.message : String(err));
-        }
-      } finally {
-        abortRef.current = null;
-        setPhase(null);
-        if (!playbackActiveRef.current) {
-          resumeIfNeeded();
-        }
-      }
-    },
-    [answerRevealed, question, resumeIfNeeded, revokeCurrentBlobUrl],
-  );
-
-  const cancel = useCallback(() => {
-    logDebug('Cancelling Ask AI (any phase)...');
-
-    if (abortRef.current) {
-      try {
-        abortRef.current.abort();
-      } catch {
-        /* ignore */
-      }
-      abortRef.current = null;
-    }
-
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== 'inactive') {
-      recorder.onstop = () => {
-        stopTracks(recorder);
-        mediaRecorderRef.current = null;
-      };
-      try {
-        recorder.stop();
-      } catch {
-        /* ignore */
-      }
-    } else if (recorder) {
-      stopTracks(recorder);
-      mediaRecorderRef.current = null;
-    }
-
-    resetPlayback();
-
-    setIsRecording(false);
-    setPhase(null);
-    setTranscript(null);
-    setAnswer(null);
-    setError(null);
-    resumeIfNeeded();
-  }, [resetPlayback, resumeIfNeeded, stopTracks]);
+  // Handle question changes: clear history and cancel active requests
+  useEffect(() => {
+    cancel();
+    setHistory([]);
+  }, [question?.question_id, cancel]);
 
   const playbackEnded = useCallback(() => {
     logDebug('Ask AI answer playback ended.');
@@ -397,9 +448,44 @@ export function useAskAi({
     setAudioPlaying((prev) => !prev);
   }, []);
 
+  const toggleHistoryAudio = useCallback((id: string) => {
+    setHistory((prev) =>
+      prev.map((turn) => {
+        if (turn.id === id) {
+          const nextPlaying = !turn.audioPlaying;
+          if (nextPlaying) {
+            window.__audioStopCallbacks?.forEach((cb) => {
+              try {
+                cb?.();
+              } catch {
+                /* ignore */
+              }
+            });
+          }
+          return { ...turn, audioPlaying: nextPlaying };
+        } else {
+          return { ...turn, audioPlaying: false };
+        }
+      }),
+    );
+  }, []);
+
+  const historyPlaybackEnded = useCallback((id: string) => {
+    setHistory((prev) =>
+      prev.map((turn) => (turn.id === id ? { ...turn, audioPlaying: false } : turn)),
+    );
+  }, []);
+
+  const discardTurn = useCallback((id: string) => {
+    setHistory((prev) => prev.filter((turn) => turn.id !== id));
+  }, []);
+
   useEffect(() => {
     const stopMe = () => {
       setAudioPlaying(false);
+      setHistory((prev) =>
+        prev.map((turn) => (turn.audioPlaying ? { ...turn, audioPlaying: false } : turn)),
+      );
     };
     if (!window.__audioStopCallbacks) {
       window.__audioStopCallbacks = [];
@@ -414,7 +500,13 @@ export function useAskAi({
     };
   }, []);
 
-  const isActive = isRecording || phase !== null || transcript !== null || answer !== null || error !== null;
+  const isActive =
+    isRecording ||
+    phase !== null ||
+    transcript !== null ||
+    answer !== null ||
+    error !== null ||
+    history.length > 0;
 
   return {
     isActive,
@@ -425,12 +517,17 @@ export function useAskAi({
     error,
     audioAssets,
     audioPlaying,
+    history,
     actions: {
       start,
       stopAndSend,
       cancel,
+      cancelSession,
       toggleAudio,
       playbackEnded,
+      toggleHistoryAudio,
+      historyPlaybackEnded,
+      discardTurn,
     },
   };
 }
