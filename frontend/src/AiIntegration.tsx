@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import styles from "./AiIntegration.module.css";
 
 interface SavedProvider {
   id: number;
@@ -281,71 +282,75 @@ export default function AiIntegration() {
 
   if (loading && !config) {
     return (
-      <div className="text-center my-5 py-5">
-        <div className="spinner-border text-primary" role="status"></div>
-        <p className="mt-3 text-muted font-weight-bold">Fetching current AI status...</p>
+      <div className={`${styles.textCenter} ${styles.my5} ${styles.py5}`}>
+        <div className={styles.spinner} role="status"></div>
+        <p className={`${styles.textMuted} ${styles.bold}`} style={{ marginTop: "1rem" }}>Fetching current AI status...</p>
       </div>
     );
   }
 
   return (
-    <div className="container py-3">
-      <div className="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
+    <div className={styles.container}>
+      <div className={styles.header}>
         <div>
-          <h2 className="text-primary mb-1">
-            <i className="fa fa-plug mr-2"></i>Multi-Modality AI Orchestrator
+          <h2 className={styles.title}>
+            <i className="fa fa-plug" style={{ marginRight: "0.5rem" }}></i>Multi-Modality AI Orchestrator
           </h2>
         </div>
       </div>
 
-      <ul className="nav nav-pills mb-4">
-        <li className="nav-item">
+      <ul className={styles.tabList}>
+        <li className={styles.tabItem}>
           <button
-            className={`nav-link border-0 ${activeTab === "status" ? "active bg-primary text-white" : "bg-light text-dark mr-2"}`}
+            className={`${styles.tabBtn} ${activeTab === "status" ? styles.tabBtnActive : ""}`}
             onClick={() => setActiveTab("status")}
           >
-            <i className="fa fa-dashboard mr-1"></i> Dashboard
+            <i className="fa fa-dashboard"></i> Dashboard
           </button>
         </li>
-        <li className="nav-item">
+        <li className={styles.tabItem}>
           <button
-            className={`nav-link border-0 ${activeTab === "providers" ? "active bg-primary text-white" : "bg-light text-dark mr-2"}`}
+            className={`${styles.tabBtn} ${activeTab === "providers" ? styles.tabBtnActive : ""}`}
             onClick={() => setActiveTab("providers")}
           >
-            <i className="fa fa-key mr-1"></i> 1. Credentials & API Keys
+            <i className="fa fa-key"></i> 1. Credentials & API Keys
           </button>
         </li>
-        <li className="nav-item">
+        <li className={styles.tabItem}>
           <button
-            className={`nav-link border-0 ${activeTab === "integrations" ? "active bg-primary text-white" : "bg-light text-dark mr-2"}`}
+            className={`${styles.tabBtn} ${activeTab === "integrations" ? styles.tabBtnActive : ""}`}
             onClick={() => setActiveTab("integrations")}
           >
-            <i className="fa fa-gears mr-1"></i> 2. Modality Models
+            <i className="fa fa-gears"></i> 2. Modality Models
           </button>
         </li>
-        <li className="nav-item">
+        <li className={styles.tabItem}>
           <button
-            className={`nav-link border-0 ${activeTab === "playground" ? "active bg-primary text-white" : "bg-light text-dark"}`}
+            className={`${styles.tabBtn} ${activeTab === "playground" ? styles.tabBtnActive : ""}`}
             onClick={() => setActiveTab("playground")}
           >
-            <i className="fa fa-flask mr-1"></i> 3. Playground
+            <i className="fa fa-flask"></i> 3. Playground
           </button>
         </li>
       </ul>
 
       {error && (
-        <div className="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-          <strong>Error:</strong> {error}
-          <button type="button" className="close" onClick={() => setError(null)}>
+        <div className={`${styles.alert} ${styles.alertError}`} role="alert">
+          <div>
+            <strong>Error:</strong> {error}
+          </div>
+          <button type="button" className={styles.alertClose} onClick={() => setError(null)}>
             <span>&times;</span>
           </button>
         </div>
       )}
 
       {successMsg && (
-        <div className="alert alert-success alert-dismissible fade show mb-4" role="alert">
-          <strong>Success!</strong> {successMsg}
-          <button type="button" className="close" onClick={() => setSuccessMsg(null)}>
+        <div className={`${styles.alert} ${styles.alertSuccess}`} role="alert">
+          <div>
+            <strong>Success!</strong> {successMsg}
+          </div>
+          <button type="button" className={styles.alertClose} onClick={() => setSuccessMsg(null)}>
             <span>&times;</span>
           </button>
         </div>
@@ -353,90 +358,86 @@ export default function AiIntegration() {
 
       {/* DASHBOARD TAB */}
       {activeTab === "status" && config && (
-        <div className="row">
-          <div className="col-md-6 mb-4">
-            <div className="card h-100 border-primary">
-              <div className="card-header bg-primary text-white font-weight-bold">
-                <i className="fa fa-key mr-2"></i>Active Providers ({config.providers.length})
-              </div>
-              <div className="card-body">
-                {config.providers.length === 0 ? (
-                  <div className="text-center py-4 text-muted">
-                    <p className="mb-2">No API keys or provider credentials added yet.</p>
-                    <button className="btn btn-sm btn-primary" onClick={() => setActiveTab("providers")}>
-                      Add Credentials
-                    </button>
-                  </div>
-                ) : (
-                  <div className="table-responsive">
-                    <table className="table table-sm table-borderless">
-                      <thead>
-                        <tr className="border-bottom">
-                          <th>Provider</th>
-                          <th>Endpoint</th>
-                          <th>Status</th>
+        <div className={styles.dashboardGrid}>
+          <div className={`${styles.card} ${styles.cardPrimary}`}>
+            <div className={`${styles.cardHeader} ${styles.cardHeaderPrimary}`}>
+              <i className="fa fa-key" style={{ marginRight: "0.5rem" }}></i>Active Providers ({config.providers.length})
+            </div>
+            <div className={styles.cardBody}>
+              {config.providers.length === 0 ? (
+                <div className={`${styles.textCenter} ${styles.textMuted}`} style={{ padding: "1.5rem 0" }}>
+                  <p style={{ marginBottom: "0.5rem" }}>No API keys or provider credentials added yet.</p>
+                  <button className={`${styles.btn} ${styles.btnPrimary} ${styles.small}`} onClick={() => setActiveTab("providers")}>
+                    Add Credentials
+                  </button>
+                </div>
+              ) : (
+                <div className={styles.tableResponsive}>
+                  <table className={`${styles.table} ${styles.tableBorderless}`}>
+                    <thead>
+                      <tr>
+                        <th>Provider</th>
+                        <th>Endpoint</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {config.providers.map(p => (
+                        <tr key={p.id}>
+                          <td>
+                            <span className={`${styles.badge} ${styles.badgeInfo}`}>{p.provider}</span>
+                          </td>
+                          <td>
+                            <span className={`${styles.small} ${styles.textMuted}`}>{p.apiBase || "Default"}</span>
+                          </td>
+                          <td>
+                            <span className={`${styles.textSuccess} ${styles.small}`}>
+                              <i className="fa fa-check-circle" style={{ marginRight: "0.25rem" }}></i> Active
+                            </span>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {config.providers.map(p => (
-                          <tr key={p.id}>
-                            <td>
-                              <span className="badge badge-info text-uppercase">{p.provider}</span>
-                            </td>
-                            <td>
-                              <span className="small text-muted">{p.apiBase || "Default"}</span>
-                            </td>
-                            <td>
-                              <span className="text-success small">
-                                <i className="fa fa-check-circle mr-1"></i> Active
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="col-md-6 mb-4">
-            <div className="card h-100 border-success">
-              <div className="card-header bg-success text-white font-weight-bold">
-                <i className="fa fa-sliders mr-2"></i>Modality Mapping
-              </div>
-              <div className="card-body">
-                <table className="table table-sm table-borderless m-0">
-                  <tbody>
-                    {MODALITIES.map(m => {
-                      const mapping = config.integrations.find(i => i.modality === m.value);
-                      const providerObj = mapping ? config.providers.find(p => p.id === mapping.provider_id) : null;
-                      return (
-                        <tr key={m.value} className="border-bottom pb-2">
-                          <td className="pl-0 py-2">
-                            <strong>{m.label}</strong>
-                          </td>
-                          <td className="py-2">
-                            {mapping && providerObj ? (
-                              <div>
-                                <span className="badge badge-secondary mr-2 text-uppercase">{providerObj.provider}</span>
-                                <code>{mapping.model}</code>
-                              </div>
-                            ) : (
-                              <span className="text-danger italic small">Unconfigured</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                <div className="text-center mt-4">
-                  <button className="btn btn-sm btn-outline-success" onClick={() => setActiveTab("integrations")}>
-                    Configure Modalities
-                  </button>
-                </div>
+          <div className={`${styles.card} ${styles.cardSuccess}`}>
+            <div className={`${styles.cardHeader} ${styles.cardHeaderSuccess}`}>
+              <i className="fa fa-sliders" style={{ marginRight: "0.5rem" }}></i>Modality Mapping
+            </div>
+            <div className={styles.cardBody}>
+              <table className={`${styles.table} ${styles.tableBorderless}`}>
+                <tbody>
+                  {MODALITIES.map(m => {
+                    const mapping = config.integrations.find(i => i.modality === m.value);
+                    const providerObj = mapping ? config.providers.find(p => p.id === mapping.provider_id) : null;
+                    return (
+                      <tr key={m.value}>
+                        <td style={{ paddingLeft: 0 }}>
+                          <strong>{m.label}</strong>
+                        </td>
+                        <td>
+                          {mapping && providerObj ? (
+                            <div>
+                              <span className={`${styles.badge} ${styles.badgeSecondary}`} style={{ marginRight: "0.5rem" }}>{providerObj.provider}</span>
+                              <code>{mapping.model}</code>
+                            </div>
+                          ) : (
+                            <span className={`${styles.textDanger} ${styles.italic} ${styles.small}`}>Unconfigured</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div className={styles.textCenter} style={{ marginTop: "1.5rem" }}>
+                <button className={`${styles.btn} ${styles.btnOutlineSuccess} ${styles.small}`} onClick={() => setActiveTab("integrations")}>
+                  Configure Modalities
+                </button>
               </div>
             </div>
           </div>
@@ -445,74 +446,72 @@ export default function AiIntegration() {
 
       {/* PROVIDERS TAB */}
       {activeTab === "providers" && config && (
-        <div className="row">
-          <div className="col-md-5 mb-4">
-            <div className="card border">
-              <div className="card-header bg-light font-weight-bold">Add / Edit Credentials</div>
-              <div className="card-body">
-                <form onSubmit={handleSaveProvider}>
-                  <div className="form-group">
-                    <label className="font-weight-bold small">Select Provider</label>
-                    <select className="form-control" value={providerName} onChange={handleProviderSelectChange}>
-                      <option value="">-- Choose Provider --</option>
-                      {Object.keys(config.predefinedOptions).map(p => (
-                        <option key={p} value={p}>{p.toUpperCase()}</option>
-                      ))}
-                      <option value="custom">Other / Custom</option>
-                    </select>
-                  </div>
+        <div className={styles.credentialsGrid}>
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>Add / Edit Credentials</div>
+            <div className={styles.cardBody}>
+              <form onSubmit={handleSaveProvider}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Select Provider</label>
+                  <select className={styles.formControl} value={providerName} onChange={handleProviderSelectChange}>
+                    <option value="">-- Choose Provider --</option>
+                    {Object.keys(config.predefinedOptions).map(p => (
+                      <option key={p} value={p}>{p.toUpperCase()}</option>
+                    ))}
+                    <option value="custom">Other / Custom</option>
+                  </select>
+                </div>
 
-                  {providerName === "custom" && (
-                    <div className="form-group">
-                      <label className="font-weight-bold small">Custom Provider ID</label>
-                      <input
-                        type="text"
-                        className="form-control text-lowercase"
-                        placeholder="e.g. together_ai"
-                        value={customProviderName}
-                        onChange={(e) => setCustomProviderName(e.target.value)}
-                      />
-                    </div>
-                  )}
-
-                  <div className="form-group">
-                    <label className="font-weight-bold small">Custom API Base URL (Optional)</label>
+                {providerName === "custom" && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Custom Provider ID</label>
                     <input
                       type="text"
-                      className="form-control"
-                      placeholder="Only for Ollama, Local, or Private Proxies"
-                      value={providerApiBase}
-                      onChange={(e) => setProviderApiBase(e.target.value)}
+                      className={`${styles.formControl} ${styles.formControlLowercase}`}
+                      placeholder="e.g. together_ai"
+                      value={customProviderName}
+                      onChange={(e) => setCustomProviderName(e.target.value)}
                     />
                   </div>
+                )}
 
-                  <div className="form-group">
-                    <label className="font-weight-bold small">API Key / Credentials Token</label>
-                    <input
-                      type="password"
-                      className="form-control"
-                      placeholder="Enter new key token"
-                      value={providerApiKey}
-                      onChange={(e) => setProviderApiKey(e.target.value)}
-                    />
-                  </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Custom API Base URL (Optional)</label>
+                  <input
+                    type="text"
+                    className={styles.formControl}
+                    placeholder="Only for Ollama, Local, or Private Proxies"
+                    value={providerApiBase}
+                    onChange={(e) => setProviderApiBase(e.target.value)}
+                  />
+                </div>
 
-                  <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
-                    {saving ? "Saving..." : "Save Provider Credentials"}
-                  </button>
-                </form>
-              </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>API Key / Credentials Token</label>
+                  <input
+                    type="password"
+                    className={styles.formControl}
+                    placeholder="Enter new key token"
+                    value={providerApiKey}
+                    onChange={(e) => setProviderApiKey(e.target.value)}
+                  />
+                </div>
+
+                <button type="submit" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnBlock}`} disabled={saving}>
+                  {saving ? "Saving..." : "Save Provider Credentials"}
+                </button>
+              </form>
             </div>
           </div>
 
-          <div className="col-md-7 mb-4">
-            <div className="card">
-              <div className="card-header font-weight-bold">Saved Credentials</div>
-              <div className="card-body p-0">
-                {config.providers.length === 0 ? (
-                  <p className="text-muted text-center py-4">No providers configured yet.</p>
-                ) : (
-                  <table className="table table-striped table-hover m-0">
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>Saved Credentials</div>
+            <div className={styles.cardBodyNoPadding}>
+              {config.providers.length === 0 ? (
+                <p className={`${styles.textMuted} ${styles.textCenter}`} style={{ padding: "1.5rem 0" }}>No providers configured yet.</p>
+              ) : (
+                <div className={styles.tableResponsive}>
+                  <table className={`${styles.table} ${styles.tableStriped} ${styles.tableHover}`}>
                     <thead>
                       <tr>
                         <th>Provider</th>
@@ -525,18 +524,18 @@ export default function AiIntegration() {
                       {config.providers.map(p => (
                         <tr key={p.id}>
                           <td>
-                            <strong className="text-uppercase text-primary">{p.provider}</strong>
+                            <strong className={`${styles.textPrimary}`} style={{ textTransform: "uppercase" }}>{p.provider}</strong>
                           </td>
                           <td>
-                            <code className="small">{p.apiBase || "Default"}</code>
+                            <code>{p.apiBase || "Default"}</code>
                           </td>
                           <td>
-                            <span className="text-success small">
-                              <i className="fa fa-lock mr-1"></i> Yes
+                            <span className={`${styles.textSuccess} ${styles.small}`}>
+                              <i className="fa fa-lock" style={{ marginRight: "0.25rem" }}></i> Yes
                             </span>
                           </td>
                           <td>
-                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteProvider(p.id)}>
+                            <button className={`${styles.btn} ${styles.btnOutlineDanger}`} onClick={() => handleDeleteProvider(p.id)}>
                               <i className="fa fa-trash"></i>
                             </button>
                           </td>
@@ -544,8 +543,8 @@ export default function AiIntegration() {
                       ))}
                     </tbody>
                   </table>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -553,112 +552,108 @@ export default function AiIntegration() {
 
       {/* INTEGRATIONS TAB */}
       {activeTab === "integrations" && config && (
-        <div className="row">
-          <div className="col-md-4 mb-4">
-            <div className="card">
-              <div className="card-header bg-light font-weight-bold">Select Modality</div>
-              <div className="card-body p-0">
-                <div className="list-group list-group-flush">
-                  {MODALITIES.map(m => (
-                    <button
-                      key={m.value}
-                      className={`list-group-item list-group-item-action text-left py-3 border-0 ${selectedModality === m.value ? "bg-primary text-white" : ""}`}
-                      onClick={() => setSelectedModality(m.value)}
-                    >
-                      <h6 className="font-weight-bold mb-1">{m.label}</h6>
-                      <p className={`small mb-0 ${selectedModality === m.value ? "text-white-50" : "text-muted"}`}>{m.desc}</p>
-                    </button>
-                  ))}
-                </div>
+        <div className={styles.integrationsGrid}>
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>Select Modality</div>
+            <div className={styles.cardBodyNoPadding}>
+              <div className={styles.listGroup}>
+                {MODALITIES.map(m => (
+                  <button
+                    key={m.value}
+                    className={`${styles.listGroupItem} ${selectedModality === m.value ? styles.listGroupItemActive : ""}`}
+                    onClick={() => setSelectedModality(m.value)}
+                  >
+                    <h6 className={styles.bold} style={{ margin: "0 0 4px 0", fontSize: "0.95rem" }}>{m.label}</h6>
+                    <p className={styles.small} style={{ margin: 0, color: selectedModality === m.value ? "rgba(255, 255, 255, 0.8)" : "#718096" }}>{m.desc}</p>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          <div className="col-md-8 mb-4">
-            <div className="card border shadow-sm">
-              <div className="card-header font-weight-bold text-capitalize bg-light text-primary">
-                Configure {selectedModality} Generation Modality
-              </div>
-              <div className="card-body">
-                {config.providers.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-muted">You must add provider credentials before assigning models to modalities.</p>
-                    <button className="btn btn-sm btn-primary" onClick={() => setActiveTab("providers")}>
-                      Go to Credentials
-                    </button>
+          <div className={styles.card}>
+            <div className={`${styles.cardHeader} ${styles.textPrimary}`} style={{ textTransform: "capitalize" }}>
+              Configure {selectedModality} Generation Modality
+            </div>
+            <div className={styles.cardBody}>
+              {config.providers.length === 0 ? (
+                <div className={styles.textCenter} style={{ padding: "1.5rem 0" }}>
+                  <p className={styles.textMuted}>You must add provider credentials before assigning models to modalities.</p>
+                  <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setActiveTab("providers")}>
+                    Go to Credentials
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSaveIntegration}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Assigned API Provider Key</label>
+                    <select
+                      className={styles.formControl}
+                      value={integrationProviderId}
+                      onChange={(e) => setIntegrationProviderId(e.target.value)}
+                    >
+                      <option value="">-- No Provider Assigned --</option>
+                      {config.providers.map(p => (
+                        <option key={p.id} value={p.id}>{p.provider.toUpperCase()}</option>
+                      ))}
+                    </select>
                   </div>
-                ) : (
-                  <form onSubmit={handleSaveIntegration}>
-                    <div className="form-group">
-                      <label className="font-weight-bold small">Assigned API Provider Key</label>
-                      <select
-                        className="form-control"
-                        value={integrationProviderId}
-                        onChange={(e) => setIntegrationProviderId(e.target.value)}
-                      >
-                        <option value="">-- No Provider Assigned --</option>
-                        {config.providers.map(p => (
-                          <option key={p.id} value={p.id}>{p.provider.toUpperCase()}</option>
-                        ))}
-                      </select>
-                    </div>
 
-                    {integrationProviderId && (
-                      <div className="form-group">
-                        <div className="d-flex justify-content-between align-items-center mb-1">
-                          <label className="font-weight-bold small m-0">Target Model Name</label>
-                          <div className="form-check m-0">
-                            <input
-                              type="checkbox"
-                              className="form-check-input"
-                              id="custom-model-check"
-                              checked={isCustomModel}
-                              onChange={(e) => setIsCustomModel(e.target.checked)}
-                            />
-                            <label className="form-check-label small text-muted" htmlFor="custom-model-check">
-                              Custom model path entry
-                            </label>
-                          </div>
-                        </div>
-
-                        {isCustomModel ? (
+                  {integrationProviderId && (
+                    <div className={styles.formGroup}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                        <label className={styles.formLabel} style={{ margin: 0 }}>Target Model Name</label>
+                        <div className={styles.formCheck}>
                           <input
-                            type="text"
-                            className="form-control"
-                            placeholder="e.g. gpt-4o-mini"
-                            value={integrationModel}
-                            onChange={(e) => setIntegrationModel(e.target.value)}
+                            type="checkbox"
+                            className={styles.formCheckInput}
+                            id="custom-model-check"
+                            checked={isCustomModel}
+                            onChange={(e) => setIsCustomModel(e.target.checked)}
                           />
-                        ) : (
-                          <select
-                            className="form-control"
-                            value={integrationModel}
-                            onChange={(e) => setIntegrationModel(e.target.value)}
-                          >
-                            <option value="">-- Select Predefined Model --</option>
-                            {(config.predefinedOptions[config.providers.find(p => p.id === Number(integrationProviderId))?.provider || ""] || []).map(m => (
-                              <option key={m} value={m}>{m}</option>
-                            ))}
-                          </select>
-                        )}
+                          <label className={styles.formCheckLabel} htmlFor="custom-model-check">
+                            Custom model path entry
+                          </label>
+                        </div>
                       </div>
-                    )}
 
-                    {integrationModel && (
-                      <div className="form-group p-3 bg-light rounded border">
-                        <span className="font-weight-bold small text-muted">Est. Token Price:</span>
-                        <span className="badge badge-success ml-2 py-1 px-2 font-weight-bold">
-                          {getModelPrice(integrationModel, integrationProviderId)}
-                        </span>
-                      </div>
-                    )}
+                      {isCustomModel ? (
+                        <input
+                          type="text"
+                          className={styles.formControl}
+                          placeholder="e.g. gpt-4o-mini"
+                          value={integrationModel}
+                          onChange={(e) => setIntegrationModel(e.target.value)}
+                        />
+                      ) : (
+                        <select
+                          className={styles.formControl}
+                          value={integrationModel}
+                          onChange={(e) => setIntegrationModel(e.target.value)}
+                        >
+                          <option value="">-- Select Predefined Model --</option>
+                          {(config.predefinedOptions[config.providers.find(p => p.id === Number(integrationProviderId))?.provider || ""] || []).map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
 
-                    <button type="submit" className="btn btn-success px-4" disabled={saving}>
-                      {saving ? "Saving..." : "Apply Integration Model"}
-                    </button>
-                  </form>
-                )}
-              </div>
+                  {integrationModel && (
+                    <div className={styles.priceContainer} style={{ marginBottom: "1.25rem" }}>
+                      <span className={`${styles.formLabel} ${styles.textMuted}`} style={{ display: "inline-block", margin: 0 }}>Est. Token Price:</span>
+                      <span className={`${styles.badge} ${styles.badgeSuccess}`} style={{ marginLeft: "0.5rem" }}>
+                        {getModelPrice(integrationModel, integrationProviderId)}
+                      </span>
+                    </div>
+                  )}
+
+                  <button type="submit" className={`${styles.btn} ${styles.btnSuccess}`} style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem" }} disabled={saving}>
+                    {saving ? "Saving..." : "Apply Integration Model"}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>
@@ -666,70 +661,69 @@ export default function AiIntegration() {
 
       {/* PLAYGROUND TAB */}
       {activeTab === "playground" && config && (
-        <div className="row">
-          <div className="col-md-12 mb-4">
-            <div className="card">
-              <div className="card-header bg-secondary text-white font-weight-bold">Playground Modality Tester</div>
-              <div className="card-body">
-                <form onSubmit={handleTestPrompt}>
-                  <div className="row mb-3">
-                    <div className="col-md-4">
-                      <label className="font-weight-bold small">Modality</label>
-                      <select
-                        className="form-control"
-                        value={playgroundModality}
-                        onChange={(e) => setPlaygroundModality(e.target.value)}
-                      >
-                        {MODALITIES.map(m => (
-                          <option key={m.value} value={m.value}>{m.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="form-group mb-3">
-                    <textarea
-                      className="form-control font-family-monospace"
-                      rows={4}
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="Write your test prompt here... e.g. 'Solve 15 * 12 and explain the solution.'"
-                      disabled={testing}
-                    ></textarea>
-                  </div>
-
-                  <div className="text-right">
-                    <button
-                      type="submit"
-                      className="btn btn-success px-4"
-                      disabled={testing || !prompt.trim()}
+        <div className={styles.playgroundGrid}>
+          <div className={styles.card}>
+            <div className={`${styles.cardHeader} ${styles.cardHeaderSecondary}`}>Playground Modality Tester</div>
+            <div className={styles.cardBody}>
+              <form onSubmit={handleTestPrompt}>
+                <div style={{ display: "flex", gap: "16px", marginBottom: "1rem" }}>
+                  <div style={{ flex: "0 0 320px", maxWidth: "100%" }}>
+                    <label className={styles.formLabel}>Modality</label>
+                    <select
+                      className={styles.formControl}
+                      value={playgroundModality}
+                      onChange={(e) => setPlaygroundModality(e.target.value)}
                     >
-                      {testing ? "Generating..." : "Send Request"}
-                    </button>
+                      {MODALITIES.map(m => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
                   </div>
-                </form>
+                </div>
 
-                {(playgroundResponse || playgroundError || playgroundModelUsed) && (
-                  <div className="mt-4 border-top pt-3">
-                    <h6 className="font-weight-bold text-secondary mb-2">Result Console:</h6>
-                    {playgroundModelUsed && (
-                      <div className="small mb-2 text-muted">
-                        🤖 <strong>Model resolved:</strong> <code>{playgroundModelUsed}</code>
-                      </div>
-                    )}
-                    {playgroundError && (
-                      <div className="p-3 bg-danger-light text-danger rounded border border-danger small">
-                        <strong>Request failed:</strong> {playgroundError}
-                      </div>
-                    )}
-                    {playgroundResponse && (
-                      <div className="p-3 bg-light text-dark rounded border small whitespace-pre-wrap font-family-monospace shadow-sm">
-                        {playgroundResponse}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                <div className={styles.formGroup} style={{ marginBottom: "1rem" }}>
+                  <textarea
+                    className={`${styles.formControl} ${styles.formControlMonospace}`}
+                    rows={4}
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Write your test prompt here... e.g. 'Solve 15 * 12 and explain the solution.'"
+                    disabled={testing}
+                  ></textarea>
+                </div>
+
+                <div className={styles.textRight}>
+                  <button
+                    type="submit"
+                    className={`${styles.btn} ${styles.btnSuccess}`}
+                    style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem" }}
+                    disabled={testing || !prompt.trim()}
+                  >
+                    {testing ? "Generating..." : "Send Request"}
+                  </button>
+                </div>
+              </form>
+
+              {(playgroundResponse || playgroundError || playgroundModelUsed) && (
+                <div className={styles.resultConsole}>
+                  <h6 className={styles.bold} style={{ color: "#718096", margin: "0 0 8px 0" }}>Result Console:</h6>
+                  {playgroundModelUsed && (
+                    <div className={`${styles.small} ${styles.textMuted}`} style={{ marginBottom: "8px" }}>
+                      🤖 <strong>Model resolved:</strong> <code>{playgroundModelUsed}</code>
+                    </div>
+                  )}
+                  {playgroundError && (
+                    <div className={styles.resultError}>
+                      <strong>Request failed:</strong> {playgroundError}
+                    </div>
+                  )}
+                  {playgroundResponse && (
+                    <div className={styles.resultResponse}>
+                      {playgroundResponse}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
