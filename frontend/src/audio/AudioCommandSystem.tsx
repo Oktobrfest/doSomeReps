@@ -443,7 +443,6 @@ export const AudioCommandSystemComponent = forwardRef<
         const { frame: chunk, captureTs } = event.data;
         if (!chunk || chunk.length === 0) return;
 
-        // CHANGED THIS- temporary: prove whether frames arrive on the main thread and how stale they are
         (window as any).__kwsRecv = ((window as any).__kwsRecv || 0) + 1;
         if ((window as any).__kwsRecv % 200 === 0) {
           console.log(

@@ -1,0 +1,111 @@
+.loadingState {
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.spinner {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  color: #007bff;
+  vertical-align: -0.125em;
+  border: 0.25em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: sharedSpin 0.75s linear infinite;
+}
+
+@keyframes sharedSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+}
+
+.loadingText {
+  margin-top: 1rem;
+  color: #6c757d;
+}
+
+.iconSpacing {
+  margin-right: 0.5rem;
+}
+
+.alert {
+  position: relative;
+  padding: 0.75rem 2.75rem 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+}
+
+.alertSuccess {
+  color: #155724;
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+}
+
+.alertError {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+.alertCloseButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.6rem 0.9rem;
+  color: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.alertCloseButton:hover {
+  opacity: 0.8;
+}
+
+.tableResponsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tableCell {
+  vertical-align: middle;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.smallCell {
+  font-size: 0.875rem;
+}
+
+.centerCell {
+  text-align: center;
+}
+
+.mutedText {
+  color: #6c757d;
+}

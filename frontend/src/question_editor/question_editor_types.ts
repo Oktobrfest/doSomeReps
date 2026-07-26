@@ -9,6 +9,10 @@ export interface PicsByType {
   question: PicData[];
 }
 
+export type QuestionPart = keyof PicsByType;
+
+export type QuestionFilesByType = Record<QuestionPart, File[]>;
+
 export interface AudioData {
   audio_id: number;
   part: string;

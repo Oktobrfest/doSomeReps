@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styles from "./AiIntegration.module.css";
+import sharedStyles from "./styles/shared.module.css";
 
 interface SavedProvider {
   id: number;
@@ -372,7 +373,7 @@ export default function AiIntegration() {
                   </button>
                 </div>
               ) : (
-                <div className={styles.tableResponsive}>
+                <div className={sharedStyles.tableResponsive}>
                   <table className={`${styles.table} ${styles.tableBorderless}`}>
                     <thead>
                       <tr>
@@ -510,7 +511,7 @@ export default function AiIntegration() {
               {config.providers.length === 0 ? (
                 <p className={`${styles.textMuted} ${styles.textCenter}`} style={{ padding: "1.5rem 0" }}>No providers configured yet.</p>
               ) : (
-                <div className={styles.tableResponsive}>
+                <div className={sharedStyles.tableResponsive}>
                   <table className={`${styles.table} ${styles.tableStriped} ${styles.tableHover}`}>
                     <thead>
                       <tr>

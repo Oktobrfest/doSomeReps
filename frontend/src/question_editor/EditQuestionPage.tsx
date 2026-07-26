@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-
 import { QuestionEditor } from "./QuestionEditor";
 
-
-export function EditQuestionReact() {
+export function EditQuestionPage() {
   const [questionId, setQuestionId] = useState<number | null>(null);
 
   useEffect(() => {

@@ -1,21 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { toast, Toaster } from "sonner";
+import type { FormEvent } from "react";
+import { Toaster } from "sonner";
 import { CatPicker } from "../components/CatPicker";
-import { ExtendButton, type ExtendPayload } from "../components/ExtendButton";
-import {
-  deleteAudio,
-  deleteQuestion,
-  extendQuestion,
-  getQuestion,
-  saveQuestion,
-} from "./question_editor_api";
-import type {
-  AudioData,
-  PicsByType,
-  QuestionEditorProps,
-  QuestionUpdatePayload,
-} from "./question_editor_types";
+import { ExtendButton } from "../components/ExtendButton";
+import { QuestionEditorAlert } from "./QuestionEditorAlert";
+import { QuestionMediaSection } from "./QuestionMediaSection";
+import type { QuestionEditorProps } from "./question_editor_types";
+import { useQuestionEditor } from "./useQuestionEditor";
 import styles from "./QuestionEditor.module.css";
+import sharedStyles from "../styles/shared.module.css";
 
 export function QuestionEditor({
   questionId,
@@ -23,274 +15,29 @@ export function QuestionEditor({
   onSaved,
   onClose,
 }: QuestionEditorProps) {
-  const [loading, setLoading] = useState<boolean>(false);
-  const [saving, setSaving] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const editor = useQuestionEditor({ questionId, onDeleted, onSaved });
 
-  const [questionText, setQuestionText] = useState<string>("");
-  const [hintText, setHintText] = useState<string>("");
-  const [answerText, setAnswerText] = useState<string>("");
-  const [privacy, setPrivacy] = useState<boolean>(false);
-  const [pics, setPics] = useState<PicsByType>({ hint: [], answer: [], question: [] });
-  const [audioFiles, setAudioFiles] = useState<AudioData[]>([]);
-  const [selectedCats, setSelectedCats] = useState<string[]>([]);
-
-  // Selected new files for upload
-  const [questionFiles, setQuestionFiles] = useState<File[]>([]);
-  const [hintFiles, setHintFiles] = useState<File[]>([]);
-  const [answerFiles, setAnswerFiles] = useState<File[]>([]);
-  const [deleting, setDeleting] = useState(false);
-  const [extending, setExtending] = useState(false);
-
-  // Fetch question data when questionId changes
-  useEffect(() => {
-    if (!questionId) {
-      setQuestionText("");
-      setHintText("");
-      setAnswerText("");
-      setPrivacy(false);
-      setPics({ hint: [], answer: [], question: [] });
-      setAudioFiles([]);
-      setSelectedCats([]);
-      setQuestionFiles([]);
-      setHintFiles([]);
-      setAnswerFiles([]);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    getQuestion(questionId)
-      .then((qData) => {
-        setQuestionText(qData.question_text || "");
-        setHintText(qData.hint || "");
-        setAnswerText(qData.answer || "");
-        setPrivacy(!!qData.privacy);
-        setPics(qData.pics_by_type || { hint: [], answer: [], question: [] });
-        setAudioFiles(qData.audio_files || []);
-        setSelectedCats(qData.categories || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "An error occurred.");
-        setLoading(false);
-      });
-  }, [questionId]);
-
-  const validateFiles = (files: File[]): boolean => {
-    const invalidCharRegex = /[^a-zA-Z0-9_. !@#$%^&()\-]/;
-    const invalidFiles: string[] = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const filename = files[i].name;
-      const startsWithDot = filename.startsWith(".");
-      const hasExtension = filename.includes(".");
-
-      if (startsWithDot && !hasExtension) {
-        invalidFiles.push(filename);
-      } else if (invalidCharRegex.test(filename)) {
-        invalidFiles.push(filename);
-      }
-    }
-
-    if (invalidFiles.length > 0) {
-      toast.error("The following filenames are invalid: " + invalidFiles.join(", "));
-      return false;
-    }
-    return true;
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void editor.handleSave();
   };
 
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setFiles: React.Dispatch<React.SetStateAction<File[]>>
-  ) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      if (validateFiles(filesArray)) {
-        setFiles(filesArray);
-      } else {
-        e.target.value = "";
-        setFiles([]);
-      }
-    }
-  };
-
-  const removeExistingPic = (type: keyof PicsByType, id: number) => {
-    setPics((prev) => ({
-      ...prev,
-      [type]: prev[type].filter((pic) => pic.pic_id !== id),
-    }));
-  };
-
-  const handleAudioDelete = async (audioId: number) => {
-    try {
-      await deleteAudio(audioId);
-      setAudioFiles((prev) => prev.filter((aud) => aud.audio_id !== audioId));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete audio.");
-    }
-  };
-
-  const removeNewFile = (
-    index: number,
-    files: File[],
-    setFiles: React.Dispatch<React.SetStateAction<File[]>>
-  ) => {
-    setFiles(files.filter((_, i) => i !== index));
-  };
-
-  const handleDelete = async () => {
-    if (!questionId) return;
-
-    const confirmed = window.confirm("Are you sure you want to delete this question?");
-    if (!confirmed) return;
-
-    setDeleting(true);
-    try {
-      await deleteQuestion(questionId);
-
-      setSuccessMsg("Question deleted successfully!");
-      // Clear the form
-      setQuestionText("");
-      setHintText("");
-      setAnswerText("");
-      setPrivacy(false);
-      setPics({ hint: [], answer: [], question: [] });
-      setAudioFiles([]);
-
-      if (onDeleted) {
-        setTimeout(() => {
-          onDeleted();
-        }, 1000);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete question.");
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleExtend = async ({ customInstructions, selectedOptions }: ExtendPayload) => {
-    if (!questionId) return;
-
-    setExtending(true);
-    setError(null);
-
-    try {
-      const data = await extendQuestion({
-        questionId,
-        questionText,
-        hintText,
-        answerText,
-        categories: selectedCats,
-        customInstructions,
-        selectedOptions,
-      });
-
-      setAnswerText(data.question?.answer ?? answerText);
-      setHintText(data.question?.hint ?? hintText);
-      toast.success("Answer extended with AI.");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Extend failed";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setExtending(false);
-    }
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!questionId) return;
-
-    if (selectedCats.length === 0) {
-      toast.error("Please select at least one category before saving.");
-      return;
-    }
-
-    if (questionText.length > 1500) {
-      toast.error(`Question text cannot exceed 1500 characters (currently ${questionText.length} characters).`);
-      return;
-    }
-
-    if (hintText && hintText.length > 2000) {
-      toast.error(`Hint cannot exceed 2000 characters (currently ${hintText.length} characters).`);
-      return;
-    }
-
-    if (answerText.length > 4000) {
-      toast.error(`Answer cannot exceed 4000 characters (currently ${answerText.length} characters).`);
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-    setSuccessMsg(null);
-
-    const payload: QuestionUpdatePayload = {
-      id: questionId,
-      question_text: questionText,
-      hint: hintText,
-      answer: answerText,
-      privacy,
-      categories: selectedCats,
-      pics_by_type: {
-        hint: pics.hint.map((p) => p.pic_string),
-        answer: pics.answer.map((p) => p.pic_string),
-        question: pics.question.map((p) => p.pic_string),
-      },
-    };
-
-
-    try {
-      await saveQuestion({
-        payload,
-        questionFiles,
-        hintFiles,
-        answerFiles,
-      });
-
-      toast.success("Question saved successfully!");
-      // Clear newly uploaded files states after successful save
-      setQuestionFiles([]);
-      setHintFiles([]);
-      setAnswerFiles([]);
-
-      // Reload details from API to get the correct current state with new pictures S3 URLs
-      getQuestion(questionId)
-        .then((qData) => {
-          setPics(qData.pics_by_type || { hint: [], answer: [], question: [] });
-          setAudioFiles(qData.audio_files || []);
-        })
-        .catch(console.error);
-
-      if (onSaved) {
-        onSaved();
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
+  if (editor.loading) {
     return (
-      <div className={styles.loadingState}>
-        <div className={styles.spinner} role="status">
-          <span className={styles.srOnly}>Loading...</span>
+      <div className={sharedStyles.loadingState}>
+        <div className={sharedStyles.spinner} role="status">
+          <span className={sharedStyles.srOnly}>Loading...</span>
         </div>
-        <p className={styles.loadingText}>Loading question data...</p>
+        <p className={sharedStyles.loadingText}>Loading question data...</p>
       </div>
     );
   }
 
-  if (!questionId && !loading) {
+  if (!questionId && !editor.loading) {
     return (
-      <p className={styles.emptyState}>Select a question from the search results to edit it.</p>
+      <p className={styles.emptyState}>
+        Select a question from the search results to edit it.
+      </p>
     );
   }
 
@@ -299,272 +46,113 @@ export function QuestionEditor({
       <Toaster richColors position="top-right" />
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-            <h4>
-              <i className={`fa fa-edit ${styles.iconSpacing}`}></i>Edit Question
-            </h4>
-            {onClose && (
-              <button
-                type="button"
-                className={styles.closeBtn}
-                onClick={onClose}
-              >
-                Close
-              </button>
-            )}
-          </div>
+          <h4>
+            <i className={`fa fa-edit ${sharedStyles.iconSpacing}`}></i>Edit Question
+          </h4>
+          {onClose && (
+            <button
+              type="button"
+              className={styles.closeBtn}
+              onClick={onClose}
+            >
+              Close
+            </button>
+          )}
+        </div>
 
         <div className={styles.cardBody}>
-          {successMsg && (
-            <div className={`${styles.alert} ${styles.alertSuccess}`} role="alert">
-              <strong>Success!</strong> {successMsg}
-              <button
-                type="button"
-                className={styles.alertCloseButton}
-                onClick={() => setSuccessMsg(null)}
-              >
-                <span>&times;</span>
-              </button>
-            </div>
+          {editor.successMsg && (
+            <QuestionEditorAlert
+              type="success"
+              message={editor.successMsg}
+              onDismiss={editor.dismissSuccess}
+            />
           )}
 
-          {error && (
-            <div className={`${styles.alert} ${styles.alertError}`} role="alert">
-              <strong>Error!</strong> {error}
-              <button type="button" className={styles.alertCloseButton} onClick={() => setError(null)}>
-                <span>&times;</span>
-              </button>
-            </div>
+          {editor.error && (
+            <QuestionEditorAlert
+              type="error"
+              message={editor.error}
+              onDismiss={editor.dismissError}
+            />
           )}
 
-          <form onSubmit={handleSave}>
+          <form onSubmit={handleSubmit}>
             <div className={styles.formRow}>
-              {/* Form Input fields */}
               <div className={styles.formColumn}>
-                <div className={`${styles.formSection} ${styles.questionSection}`}>
-                  <label htmlFor="react-q-text" className={styles.label}>
-                    Question Text
-                  </label>
-                  <textarea
-                    id="react-q-text"
-                    className={`${styles.textarea} ${styles.questionTextarea}`}
-                    rows={6}
-                    value={questionText}
-                    onChange={(e) => setQuestionText(e.target.value)}
-                    maxLength={1500}
-                    required
-                  />
+                <QuestionMediaSection
+                  part="question"
+                  fieldLabel="Question Text"
+                  mediaLabel="Question"
+                  inputId="react-q-file"
+                  textareaId="react-q-text"
+                  value={editor.questionText}
+                  rows={6}
+                  maxLength={1500}
+                  required
+                  sectionClassName={styles.questionSection}
+                  textareaClassName={styles.questionTextarea}
+                  existingPics={editor.pics.question}
+                  files={editor.filesByType.question}
+                  onValueChange={editor.setQuestionText}
+                  onFileChange={editor.handleFileChange}
+                  onRemoveExisting={editor.removeExistingPic}
+                  onRemoveNew={editor.removeNewFile}
+                />
 
-                  {/* Question Images Section */}
-                  <div className={styles.mediaSection}>
-                    {pics.question.length > 0 && (
-                      <div className={styles.existingMediaSection}>
-                        <span className={styles.existingMediaLabel}>Existing Question Images:</span>
-                        <div className={styles.mediaGrid}>
-                          {pics.question.map((p) => (
-                            <div key={p.pic_id} className={styles.imageContainer}>
-                              <img src={p.pic_string} alt="question" className={styles.image} />
-                              <button
-                                type="button"
-                                className={styles.deleteImageBtn}
-                                onClick={() => removeExistingPic("question", p.pic_id)}
-                                title="Delete Image"
-                              >
-                                &times;
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                <QuestionMediaSection
+                  part="hint"
+                  fieldLabel="Hint"
+                  mediaLabel="Hint"
+                  inputId="react-hint-file"
+                  textareaId="react-hint-text"
+                  value={editor.hintText}
+                  rows={3}
+                  maxLength={2000}
+                  sectionClassName={styles.hintSection}
+                  textareaClassName={styles.hintTextarea}
+                  existingPics={editor.pics.hint}
+                  files={editor.filesByType.hint}
+                  onValueChange={editor.setHintText}
+                  onFileChange={editor.handleFileChange}
+                  onRemoveExisting={editor.removeExistingPic}
+                  onRemoveNew={editor.removeNewFile}
+                />
 
-                    <div className={styles.customFileWrapper}>
-                      <input
-                        type="file"
-                        className={styles.customFileInput}
-                        id="react-q-file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e, setQuestionFiles)}
-                      />
-                      <label className={styles.customFileLabel} htmlFor="react-q-file">
-                        {questionFiles.length > 0 ? `${questionFiles.length} file(s) selected` : "Add Question Images"}
-                      </label>
-                    </div>
+                <QuestionMediaSection
+                  part="answer"
+                  fieldLabel="The Answer"
+                  mediaLabel="Answer"
+                  inputId="react-answer-file"
+                  textareaId="react-answer-text"
+                  value={editor.answerText}
+                  rows={8}
+                  maxLength={4000}
+                  required
+                  sectionClassName={styles.answerSection}
+                  textareaClassName={styles.answerTextarea}
+                  existingPics={editor.pics.answer}
+                  files={editor.filesByType.answer}
+                  onValueChange={editor.setAnswerText}
+                  onFileChange={editor.handleFileChange}
+                  onRemoveExisting={editor.removeExistingPic}
+                  onRemoveNew={editor.removeNewFile}
+                />
 
-                    {/* New Question Files Previews */}
-                    {questionFiles.length > 0 && (
-                      <div className={styles.previewGrid}>
-                        {questionFiles.map((file, idx) => (
-                          <div key={idx} className={styles.previewContainer}>
-                            <img src={URL.createObjectURL(file)} className={styles.image} />
-                            <button
-                              type="button"
-                              className={styles.removeFileBtn}
-                              onClick={() => removeNewFile(idx, questionFiles, setQuestionFiles)}
-                              title="Remove selected file"
-                            >
-                              &times;
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className={`${styles.formSection} ${styles.hintSection}`}>
-                  <label htmlFor="react-hint-text" className={styles.label}>
-                    Hint
-                  </label>
-                  <textarea
-                    id="react-hint-text"
-                    className={`${styles.textarea} ${styles.hintTextarea}`}
-                    rows={3}
-                    value={hintText}
-                    onChange={(e) => setHintText(e.target.value)}
-                    maxLength={2000}
-                  />
-
-                  {/* Hint Images Section */}
-                  <div className={styles.mediaSection}>
-                    {pics.hint.length > 0 && (
-                      <div className={styles.existingMediaSection}>
-                        <span className={styles.existingMediaLabel}>Existing Hint Images:</span>
-                        <div className={styles.mediaGrid}>
-                          {pics.hint.map((p) => (
-                            <div key={p.pic_id} className={styles.imageContainer}>
-                              <img src={p.pic_string} alt="hint" className={styles.image} />
-                              <button
-                                type="button"
-                                className={styles.deleteImageBtn}
-                                onClick={() => removeExistingPic("hint", p.pic_id)}
-                                title="Delete Image"
-                              >
-                                &times;
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className={styles.customFileWrapper}>
-                      <input
-                        type="file"
-                        className={styles.customFileInput}
-                        id="react-hint-file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e, setHintFiles)}
-                      />
-                      <label className={styles.customFileLabel} htmlFor="react-hint-file">
-                        {hintFiles.length > 0 ? `${hintFiles.length} file(s) selected` : "Add Hint Images"}
-                      </label>
-                    </div>
-
-                    {/* New Hint Files Previews */}
-                    {hintFiles.length > 0 && (
-                      <div className={styles.previewGrid}>
-                        {hintFiles.map((file, idx) => (
-                          <div key={idx} className={styles.previewContainer}>
-                            <img src={URL.createObjectURL(file)} className={styles.image} />
-                            <button
-                              type="button"
-                              className={styles.removeFileBtn}
-                              onClick={() => removeNewFile(idx, hintFiles, setHintFiles)}
-                              title="Remove selected file"
-                            >
-                              &times;
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className={`${styles.formSection} ${styles.answerSection}`}>
-                  <label htmlFor="react-answer-text" className={styles.label}>
-                    The Answer
-                  </label>
-                  <textarea
-                    id="react-answer-text"
-                    className={`${styles.textarea} ${styles.answerTextarea}`}
-                    rows={8}
-                    value={answerText}
-                    onChange={(e) => setAnswerText(e.target.value)}
-                    maxLength={4000}
-                    required
-                  />
-
-                  {/* Answer Images Section */}
-                  <div className={styles.mediaSection}>
-                    {pics.answer.length > 0 && (
-                      <div className={styles.existingMediaSection}>
-                        <span className={styles.existingMediaLabel}>Existing Answer Images:</span>
-                        <div className={styles.mediaGrid}>
-                          {pics.answer.map((p) => (
-                            <div key={p.pic_id} className={styles.imageContainer}>
-                              <img src={p.pic_string} alt="answer" className={styles.image} />
-                              <button
-                                type="button"
-                                className={styles.deleteImageBtn}
-                                onClick={() => removeExistingPic("answer", p.pic_id)}
-                                title="Delete Image"
-                              >
-                                &times;
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className={styles.customFileWrapper}>
-                      <input
-                        type="file"
-                        className={styles.customFileInput}
-                        id="react-answer-file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e, setAnswerFiles)}
-                      />
-                      <label className={styles.customFileLabel} htmlFor="react-answer-file">
-                        {answerFiles.length > 0 ? `${answerFiles.length} file(s) selected` : "Add Answer Images"}
-                      </label>
-                    </div>
-
-                    {/* New Answer Files Previews */}
-                    {answerFiles.length > 0 && (
-                      <div className={styles.previewGrid}>
-                        {answerFiles.map((file, idx) => (
-                          <div key={idx} className={styles.previewContainer}>
-                            <img src={URL.createObjectURL(file)} className={styles.image} />
-                            <button
-                              type="button"
-                              className={styles.removeFileBtn}
-                              onClick={() => removeNewFile(idx, answerFiles, setAnswerFiles)}
-                              title="Remove selected file"
-                            >
-                              &times;
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Audio Assets Section */}
                 <div className={styles.audioCard}>
                   <div className={styles.audioHeader}>
-                    <i className={`fa fa-volume-up ${styles.iconSpacing}`}></i>Audio Assets
+                    <i
+                      className={`fa fa-volume-up ${sharedStyles.iconSpacing}`}
+                    ></i>
+                    Audio Assets
                   </div>
                   <div className={styles.audioBody}>
-                    {audioFiles.length === 0 ? (
-                      <p className={styles.emptyAudioText}>No audio assets generated for this question yet.</p>
+                    {editor.audioFiles.length === 0 ? (
+                      <p className={styles.emptyAudioText}>
+                        No audio assets generated for this question yet.
+                      </p>
                     ) : (
-                      <div className={styles.tableResponsive}>
+                      <div className={sharedStyles.tableResponsive}>
                         <table className={styles.audioTable}>
                           <thead>
                             <tr>
@@ -576,29 +164,49 @@ export function QuestionEditor({
                             </tr>
                           </thead>
                           <tbody>
-                            {audioFiles.map((aud) => (
-                              <tr key={aud.audio_id}>
-                                <td className={`${styles.tableCell} ${styles.capitalize}`}>
-                                  <span className={styles.badge}>{aud.part}</span>
+                            {editor.audioFiles.map((audio) => (
+                              <tr key={audio.audio_id}>
+                                <td
+                                  className={`${sharedStyles.tableCell} ${sharedStyles.capitalize}`}
+                                >
+                                  <span className={styles.badge}>
+                                    {audio.part}
+                                  </span>
                                 </td>
-                                <td className={`${styles.tableCell} ${styles.uppercase}`}>
-                                  <code>{aud.language}</code>
+                                <td
+                                  className={`${sharedStyles.tableCell} ${sharedStyles.uppercase}`}
+                                >
+                                  <code>{audio.language}</code>
                                 </td>
-                                <td className={`${styles.tableCell} ${styles.smallCell} ${styles.snippetCell}`}>
-                                  {aud.audio_text || "N/A"}
+                                <td
+                                  className={`${sharedStyles.tableCell} ${sharedStyles.smallCell} ${styles.snippetCell}`}
+                                >
+                                  {audio.audio_text || "N/A"}
                                 </td>
-                                <td className={`${styles.tableCell} ${styles.centerCell}`}>
-                                  {aud.public_url ? (
-                                    <audio src={aud.public_url} controls className={styles.audioPlayer} />
+                                <td
+                                  className={`${sharedStyles.tableCell} ${sharedStyles.centerCell}`}
+                                >
+                                  {audio.public_url ? (
+                                    <audio
+                                      src={audio.public_url}
+                                      controls
+                                      className={styles.audioPlayer}
+                                    />
                                   ) : (
-                                    <span className={styles.mutedText}>No URL</span>
+                                    <span className={sharedStyles.mutedText}>
+                                      No URL
+                                    </span>
                                   )}
                                 </td>
-                                <td className={`${styles.tableCell} ${styles.centerCell}`}>
+                                <td
+                                  className={`${sharedStyles.tableCell} ${sharedStyles.centerCell}`}
+                                >
                                   <button
                                     type="button"
                                     className={styles.audioDeleteBtn}
-                                    onClick={() => handleAudioDelete(aud.audio_id)}
+                                    onClick={() =>
+                                      editor.handleAudioDelete(audio.audio_id)
+                                    }
                                     title="Delete Audio"
                                   >
                                     <i className="fa fa-trash"></i> Delete
@@ -613,10 +221,9 @@ export function QuestionEditor({
                   </div>
                 </div>
 
-                {/* CatPicker Component */}
                 <CatPicker
-                  selectedCategories={selectedCats}
-                  onChange={setSelectedCats}
+                  selectedCategories={editor.selectedCats}
+                  onChange={editor.setSelectedCats}
                 />
 
                 <div className={styles.privacyGroup}>
@@ -624,10 +231,15 @@ export function QuestionEditor({
                     type="checkbox"
                     className={styles.privacyCheckbox}
                     id="react-privacy"
-                    checked={privacy}
-                    onChange={(e) => setPrivacy(e.target.checked)}
+                    checked={editor.privacy}
+                    onChange={(event) =>
+                      editor.setPrivacy(event.target.checked)
+                    }
                   />
-                  <label className={styles.privacyLabel} htmlFor="react-privacy">
+                  <label
+                    className={styles.privacyLabel}
+                    htmlFor="react-privacy"
+                  >
                     Make Question Private
                   </label>
                 </div>
@@ -638,22 +250,22 @@ export function QuestionEditor({
               <button
                 type="button"
                 className={`${styles.actionBtn} ${styles.redBtn}`}
-                onClick={handleDelete}
-                disabled={deleting || !questionId}
+                onClick={editor.handleDelete}
+                disabled={editor.deleting || !questionId}
               >
-                {deleting ? "Deleting..." : "Delete Question"}
+                {editor.deleting ? "Deleting..." : "Delete Question"}
               </button>
               <div className={styles.rightButtons}>
                 <ExtendButton
-                  onExtend={handleExtend}
-                  disabled={!questionId || extending}
+                  onExtend={editor.handleExtend}
+                  disabled={!questionId || editor.extending}
                 />
                 <button
                   type="submit"
                   className={`${styles.actionBtn} ${styles.blueBtn}`}
-                  disabled={saving}
+                  disabled={editor.saving}
                 >
-                  {saving ? "Saving..." : "Save Question"}
+                  {editor.saving ? "Saving..." : "Save Question"}
                 </button>
               </div>
             </div>
