@@ -12,5 +12,5 @@
       'selectedCategories': selected_categories if selected_categories != 'Not set' else []
     } | tojson | safe }}
   </script>
-  {{ vite_asset("src/audio/audio_quiz_entry.tsx") }}
+  {{ vite_asset("src/entrypoints/AudioQuiz.entry.tsx") }}
 {% endblock %}

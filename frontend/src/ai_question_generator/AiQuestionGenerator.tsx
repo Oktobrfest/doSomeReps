@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
-import { CatPicker } from "./CatPicker";
-import { ExtendButton, type ExtendPayload } from "./ExtendButton";
+
+import {
+  deleteAllQuestions,
+  deleteQuestion,
+  extendQuestion,
+  generateQuestions,
+  getGeneratorState,
+  saveAllQuestions,
+  saveQuestion,
+} from "./ai_question_generator_api";
+import type { GeneratedQuestion } from "./ai_question_generator_types";
 import styles from "./AiQuestionGenerator.module.css";
-
-interface GeneratedQuestion {
-  question: string;
-  hint: string | null;
-  answer: string;
-  categories: string[];
-  privacy?: boolean;
-  auto_que?: boolean;
-
-}
+import { ExtendButton, ExtendPayload } from "@/components/ExtendButton";
+import { CatPicker } from "@/components/CatPicker";
 
 export function AiQuestionGenerator() {
   const [loading, setLoading] = useState<boolean>(true);
@@ -30,14 +31,10 @@ export function AiQuestionGenerator() {
 
   // Load initial state (generated questions and categories)
   useEffect(() => {
-    fetch("/ai_question_generator/api/state")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load generator state");
-        return res.json();
-      })
+    getGeneratorState()
       .then((data) => {
         setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any) => ({
+          (data.generated_questions || []).map((q) => ({
             ...q,
             privacy: !!q.privacy,
             auto_que: !!q.auto_que,
@@ -69,42 +66,21 @@ export function AiQuestionGenerator() {
     setError(null);
     setSuccess(null);
 
-    let body: any;
-    let headers: Record<string, string> = {};
-
-    if (file) {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("categories", JSON.stringify(selectedCats));
-      formData.append("qty_from", qtyFrom.toString());
-      formData.append("qty_to", qtyTo.toString());
-      formData.append("try_provide_hints", tryProvideHints.toString());
-      formData.append("avoid_duplicates", avoidDuplicates.toString());
-      body = formData;
-    } else {
-      headers["Content-Type"] = "application/json";
-      body = JSON.stringify({
-        quiz_content: quizContent,
-        categories: selectedCats,
-        qty_from: qtyFrom,
-        qty_to: qtyTo,
-        try_provide_hints: tryProvideHints,
-        avoid_duplicates: avoidDuplicates,
-      });
-    }
-
-    fetch("/ai_question_generator/api/generate", {
-      method: "POST",
-      headers,
-      body,
+    generateQuestions({
+      quizContent,
+      file,
+      selectedCats,
+      qtyFrom,
+      qtyTo,
+      tryProvideHints,
+      avoidDuplicates,
     })
-      .then((res) => res.json())
       .then((data) => {
         if (!data.success) {
           throw new Error(data.error || "Generation failed");
         }
         setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any) => ({
+          (data.generated_questions || []).map((q) => ({
             ...q,
             privacy: !!q.privacy,
             auto_que: !!q.auto_que,
@@ -141,21 +117,13 @@ export function AiQuestionGenerator() {
     setSuccess(null);
     const item = generatedQuestions[index];
 
-    fetch("/ai_question_generator/api/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        index,
-        question: item,
-      }),
-    })
-      .then((res) => res.json())
+    saveQuestion(index, item)
       .then((data) => {
         if (!data.success) {
           throw new Error(data.error || "Save failed");
         }
         setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any, i: number) => {
+          (data.generated_questions || []).map((q, i) => {
             const oldIndex = i < index ? i : i + 1;
             const oldItem = generatedQuestions[oldIndex];
             return {
@@ -176,18 +144,13 @@ export function AiQuestionGenerator() {
     setError(null);
     setSuccess(null);
 
-    fetch("/ai_question_generator/api/delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ index }),
-    })
-      .then((res) => res.json())
+    deleteQuestion(index)
       .then((data) => {
         if (!data.success) {
           throw new Error(data.error || "Delete failed");
         }
         setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any, i: number) => {
+          (data.generated_questions || []).map((q, i) => {
             const oldIndex = i < index ? i : i + 1;
             const oldItem = generatedQuestions[oldIndex];
             return {
@@ -213,24 +176,19 @@ export function AiQuestionGenerator() {
     const item = generatedQuestions[index];
 
     try {
-      const res = await fetch("/ai_question_generator/api/extend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          index,
-          question: item,
-          custom_instructions: payload.customInstructions,
-          options: payload.selectedOptions,
-        }),
-      });
-      const data = await res.json();
+      const data = await extendQuestion(
+        index,
+        item,
+        payload.customInstructions,
+        payload.selectedOptions
+      );
 
       if (!data.success) {
         throw new Error(data.error || "Extend failed");
       }
 
       setGeneratedQuestions(
-        (data.generated_questions || []).map((q: any, i: number) => {
+        (data.generated_questions || []).map((q, i) => {
           const oldItem = generatedQuestions[i];
           return {
             ...q,
@@ -251,18 +209,13 @@ export function AiQuestionGenerator() {
     setError(null);
     setSuccess(null);
 
-    fetch("/ai_question_generator/api/save_all", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ questions: generatedQuestions }),
-    })
-      .then((res) => res.json())
+    saveAllQuestions(generatedQuestions)
       .then((data) => {
         if (!data.success) {
           throw new Error(data.error || "Save all failed");
         }
         setGeneratedQuestions(
-          (data.generated_questions || []).map((q: any) => {
+          (data.generated_questions || []).map((q) => {
             const oldItem = generatedQuestions.find((oldQ) => oldQ.question === q.question);
             return {
               ...q,
@@ -271,7 +224,7 @@ export function AiQuestionGenerator() {
             };
           })
         );
-        if (data.saved_count > 0) {
+        if (data.saved_count && data.saved_count > 0) {
           setSuccess(`Saved ${data.saved_count} question(s) to the database.`);
         } else {
           setError("Failed to save questions.");
@@ -289,11 +242,7 @@ export function AiQuestionGenerator() {
     setError(null);
     setSuccess(null);
 
-    fetch("/ai_question_generator/api/delete_all", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((res) => res.json())
+    deleteAllQuestions()
       .then((data) => {
         if (!data.success) {
           throw new Error(data.error || "Delete all failed");
@@ -321,17 +270,7 @@ export function AiQuestionGenerator() {
     for (let i = 0; i < updatedQuestions.length; i++) {
       const item = updatedQuestions[i];
       try {
-        const res = await fetch("/ai_question_generator/api/extend", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            index: i,
-            question: item,
-            custom_instructions: "",
-            options: [],
-          }),
-        });
-        const data = await res.json();
+        const data = await extendQuestion(i, item, "", []);
 
         if (!data.success) {
           throw new Error(data.error || "Extend failed");
@@ -375,7 +314,6 @@ export function AiQuestionGenerator() {
       }))
     );
   };
-
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -454,7 +392,13 @@ export function AiQuestionGenerator() {
                 min={0}
                 max={50}
                 value={qtyFrom}
-                onChange={(e) => setQtyFrom(parseInt(e.target.value, 10) || 0)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10) || 0;
+                  setQtyFrom(val);
+                  if (qtyTo < val + 1) {
+                    setQtyTo(val + 1);
+                  }
+                }}
               />
               <span className={styles.subLabel}>at least this many</span>
             </div>
@@ -465,10 +409,14 @@ export function AiQuestionGenerator() {
                 id="qty_to"
                 type="number"
                 className={styles.input}
-                min={0}
+                min={Math.max(1, qtyFrom + 1)}
                 max={50}
                 value={qtyTo}
-                onChange={(e) => setQtyTo(parseInt(e.target.value, 10) || 0)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10) || 0;
+                  const minTo = Math.max(1, qtyFrom + 1);
+                  setQtyTo(Math.max(val, minTo));
+                }}
               />
               <span className={styles.subLabel}>up to this many</span>
             </div>
@@ -511,6 +459,7 @@ export function AiQuestionGenerator() {
             className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`}
             disabled={submitting}
           >
+            {submitting && <span className={styles.btnSpinner} />}
             {submitting ? "Generating Questions..." : "Get AI Questions!"}
           </button>
         </div>

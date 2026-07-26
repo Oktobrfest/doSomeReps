@@ -12,7 +12,7 @@ Quiz
     {% include "categories.html" %}
     {% if q %}
     <script id="quiz-markdown-data" type="application/json">{{ {'questionText': q.question_text, 'hint': q.hint, 'answer': q.answer}|tojson }}</script>
-    {{ vite_asset("src/QuizMarkdown.tsx") }}
+    {{ vite_asset("src/entrypoints/QuizMarkdown.entry.tsx") }}
     <div class="q-question-title-container">
         <h1 class="hide-if-small" align="center">Quiz Question&nbsp;</h1>
         <h1 class="shrink-if-small" id="q-level-number"> Level Number: {{ q.level_no }}</h1>

@@ -1,14 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { AiQuestionGenerator } from "./components/AiQuestionGenerator";
-import "./index.css";
 
-const rootElement = document.getElementById("ai-question-generator-root");
+import { EditQuestionPage } from "../question_editor/EditQuestionPage";
+import "../index.css";
+
+const rootElement = document.getElementById("react-edit-question-root");
 if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <React.StrictMode>
-      <AiQuestionGenerator />
+      <EditQuestionPage />
     </React.StrictMode>
   );
 }

@@ -24,12 +24,12 @@ export default defineConfig({
     rollupOptions: {
       treeshake: false,
       input: {
-        ai_integration: "src/main.tsx",
-        react_edit_question: "src/edit_question.tsx",
-        react_edit_question_inline: "src/edit_question_inline.tsx",
-        audio_quiz_entry: "src/audio/audio_quiz_entry.tsx",
-        quiz_markdown: "src/QuizMarkdown.tsx",
-        ai_question_generator: "src/ai_question_generator.tsx",
+        ai_integration: "src/entrypoints/AiIntegration.entry.tsx",
+        react_edit_question: "src/entrypoints/EditQuestion.entry.tsx",
+        react_edit_question_inline: "src/entrypoints/InlineQuestionEditor.entry.tsx",
+        audio_quiz_entry: "src/entrypoints/AudioQuiz.entry.tsx",
+        quiz_markdown: "src/entrypoints/QuizMarkdown.entry.tsx",
+        ai_question_generator: "src/entrypoints/AiQuestionGenerator.entry.tsx",
       },
     },
   },

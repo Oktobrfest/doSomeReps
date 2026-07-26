@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
-import { AudioQuiz } from './AudioQuiz';
-import type { AudioQuizProps } from './types';
+import { AudioQuiz } from '../audio/AudioQuiz';
+import type { AudioQuizProps } from '../audio/types';
 
 // Jinja passes data via:
 //   <script id="audio-quiz-data" type="application/json">{{ data | tojson }}</script>

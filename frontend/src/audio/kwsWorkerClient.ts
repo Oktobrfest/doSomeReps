@@ -86,14 +86,12 @@ export class KwsWorkerClient {
           console.error("[KWS Worker Client] Worker error:", err);
 
           if (this._state === "ready" || this._state === "listening") {
-            // # CHANGED THIS- Preserve the existing error reporting behavior
-            // when the worker fails after initialization has already succeeded.
             this.setState("error");
             this.callbacks.onError(`Worker error: ${err.message}`);
             return;
           }
 
-          // # CHANGED THIS- During initialization, reject only the current
+          // During initialization, reject only the current
           // attempt so start() can perform its existing retry without the
           // component terminating the worker client.
           reject(new Error(`Worker error: ${err.message}`));
