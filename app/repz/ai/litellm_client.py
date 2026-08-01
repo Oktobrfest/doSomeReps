@@ -51,6 +51,7 @@ class DefaultingModelCost(dict):
 
 litellm.model_cost = DefaultingModelCost(litellm.model_cost or {})
 litellm.suppress_warnings = True
+litellm.drop_params = True
 
 CUSTOM_MODEL_PRICES = {
     # OpenAI

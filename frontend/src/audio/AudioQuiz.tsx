@@ -13,8 +13,9 @@ import { MarkdownContent } from '../components/MarkdownContent';
 import { FlagButton } from '../components/FlagButton';
 import { useAudioQuizController } from './useAudioQuizController';
 import { LargeActionButton, LargePlayableControl } from './AudioControls';
-import { useAskAi } from './useAskAi';
-import { AskAiPanel } from './AskAiPanel';
+import { useAskAi } from '../ask_ai/useAskAi';
+import { AskAiPanel } from '../ask_ai/AskAiPanel';
+import type { AskAiContext } from '../ask_ai/types';
 
 const answerPaddingBySnap: Record<'collapsed' | 'trio' | 'full', number> = {
   collapsed: 12,
@@ -78,8 +79,22 @@ export function AudioQuiz(props: AudioQuizProps) {
   const commandSystemRef = useRef<AudioCommandSystemHandle>(null);
   const slideOutRef = useRef<SlideOutButtonsHandle>(null);
 
+  const askAiContext = useMemo<AskAiContext | null>(() => {
+    const q = quiz.currentQuestion;
+    if (!q) return null;
+    return {
+      questionId: q.question_id,
+      questionText: q.question_text,
+      answerText: q.answer,
+      categories: q.categories ?? [],
+      questionImageUrls: validImages(q.pics?.question_image),
+      answerImageUrls: validImages(q.pics?.answer_pics),
+      csrfToken,
+    };
+  }, [quiz.currentQuestion, csrfToken]);
+
   const askAi = useAskAi({
-    question: quiz.currentQuestion,
+    context: askAiContext,
     answerRevealed: quiz.answerRevealed,
     onResumeListening: useCallback(() => {
       commandSystemRef.current?.resumeListening();

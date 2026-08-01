@@ -1,7 +1,8 @@
 import { createRoot } from "react-dom/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { FlagButton, type QuestionFlag } from "../components/FlagButton";
+import { AskAiLauncher } from "../ask_ai/AskAiLauncher";
 
 interface QuizMarkdownData {
   questionText?: string;
@@ -10,6 +11,12 @@ interface QuizMarkdownData {
   questionId?: string | number;
   initialFlag?: QuestionFlag | null;
   csrfToken?: string;
+  categories?: string[];
+  pics?: {
+    question_image?: (string | null)[];
+    answer_pics?: (string | null)[];
+    hint_image?: (string | null)[];
+  };
 }
 
 function getMarkdownData(): QuizMarkdownData {
@@ -69,4 +76,38 @@ if (flagEl && data.questionId != null) {
       csrfToken={data.csrfToken}
     />
   );
+}
+
+function nonEmpty(list?: (string | null)[]): string[] {
+  return (list ?? []).filter((s): s is string => !!s);
+}
+
+function QuizAskAiMount() {
+  const [answerRevealed, setAnswerRevealed] = useState(false);
+
+  useEffect(() => {
+    const btn = document.getElementById("answer-submit-btn");
+    if (!btn) return;
+    const onClick = () => setAnswerRevealed(true);
+    btn.addEventListener("click", onClick, { once: true });
+    return () => btn.removeEventListener("click", onClick);
+  }, []);
+
+  return (
+    <AskAiLauncher
+      questionId={data.questionId!}
+      questionText={data.questionText || ""}
+      answerText={data.answer}
+      answerRevealed={answerRevealed}
+      categories={data.categories}
+      questionImageUrls={nonEmpty(data.pics?.question_image)}
+      answerImageUrls={nonEmpty(data.pics?.answer_pics)}
+      csrfToken={data.csrfToken}
+    />
+  );
+}
+
+const askAiEl = document.getElementById("ask-ai-launcher-root");
+if (askAiEl && data.questionId != null) {
+  createRoot(askAiEl).render(<QuizAskAiMount />);
 }

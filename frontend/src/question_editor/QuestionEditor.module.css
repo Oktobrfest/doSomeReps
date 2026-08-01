@@ -12,8 +12,6 @@
   }
 }
 
-/* CHANGED THIS- remove the accidentally copied AiIntegration styles so this module contains only Question Editor styles. */
-
 /* Card Styling */
 .card {
   background-color: #fff;

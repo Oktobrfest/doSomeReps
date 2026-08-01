@@ -21,6 +21,28 @@ from .prompts import (
 
 TRANSCRIBE_MODEL = "gpt-4o-mini-transcribe"
 
+IMAGE_MODALITY = "image"
+
+
+# completion_for_user() silently falls back to the legacy text
+# columns when a modality has no integration, which would send images to a
+# text-only model. Check up front so we can fail loudly instead.
+def _modality_is_configured(user_obj, modality: str) -> bool:
+    integrations = getattr(user_obj, "ai_integrations", None) or []
+    integration = next((i for i in integrations if i.modality == modality), None)
+    if not integration or not integration.provider_relation:
+        return False
+    return bool(integration.provider_relation.api_key and integration.model)
+
+
+# Keep only absolute http(s) URLs before they reach a paid API.
+def _sanitize_image_urls(raw_urls) -> list:
+    if not isinstance(raw_urls, (list, tuple)):
+        return []
+    return [
+        u.strip() for u in raw_urls
+        if isinstance(u, str) and u.strip().lower().startswith(("http://", "https://"))
+    ]
 
 def _resolve_stt_config(user_obj):
     """Return (api_key, api_base, model) for STT transcription."""
@@ -189,52 +211,62 @@ def _ask_ai_default_language(user_obj) -> str:
             return lang_obj.language
     return "en_US"
 
+def _build_ask_ai_prompt(
+    transcript, question_text, answer_text, categories, language,
+    history=None, image_urls=None, 
+):
+    """Build the tutor-style LLM messages for an Ask AI request.
 
-def _build_ask_ai_prompt(transcript, question_text, answer_text, categories, language, history=None):
-    """Build the tutor-style LLM messages for an Ask AI request."""
+    Images are attached to the FIRST user message as OpenAI-style content blocks
+    (LiteLLM normalises this across providers), so a multi-turn conversation does
+    not re-upload them on every follow-up.
+    """
     if history is None:
         history = []
+    if image_urls is None:
+        image_urls = []
+
     categories_csv = ", ".join(categories) if categories else "(none provided)"
     if answer_text:
         answer_section = ANSWER_SECTION_REVEALED.format(answer=answer_text)
     else:
         answer_section = ANSWER_SECTION_NOT_REVEALED
 
-    system_prompt = SYSTEM_PROMPT
+    def _first_user_message(first_transcript):
+        text = USER_PROMPT.format(
+            question=question_text or "(no question text provided)",
+            categories=categories_csv,
+            answer_section=answer_section,
+            transcript=first_transcript,
+        )
+        if not image_urls:
+            return {"role": "user", "content": text}
+        content = [{"type": "text", "text": text}]
+        for url in image_urls:
+            content.append({"type": "image_url", "image_url": {"url": url}})
+        return {"role": "user", "content": content}
 
     if not history:
-        user_prompt = USER_PROMPT.format(
-            question=question_text or "(no question text provided)",
-            categories=categories_csv,
-            answer_section=answer_section,
-            transcript=transcript,
-        )
         return [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
+            {"role": "system", "content": SYSTEM_PROMPT},
+            _first_user_message(transcript),
         ]
-    else:
-        messages = [{"role": "system", "content": system_prompt}]
-        
-        # Format the first user interaction with the full template and context
-        first_item = history[0]
-        user_prompt = USER_PROMPT.format(
-            question=question_text or "(no question text provided)",
-            categories=categories_csv,
-            answer_section=answer_section,
-            transcript=first_item.get("transcript") or "",
-        )
-        messages.append({"role": "user", "content": user_prompt})
-        messages.append({"role": "assistant", "content": first_item.get("answer") or ""})
-        
-        # Append subsequent QA pairs in order
-        for item in history[1:]:
-            messages.append({"role": "user", "content": item.get("transcript") or ""})
-            messages.append({"role": "assistant", "content": item.get("answer") or ""})
-            
-        # Append current transcript as the new user message
-        messages.append({"role": "user", "content": transcript})
-        return messages
+
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    # Format the first user interaction with the full template and context
+    first_item = history[0]
+    messages.append(_first_user_message(first_item.get("transcript") or ""))
+    messages.append({"role": "assistant", "content": first_item.get("answer") or ""})
+
+    # Append subsequent QA pairs in order
+    for item in history[1:]:
+        messages.append({"role": "user", "content": item.get("transcript") or ""})
+        messages.append({"role": "assistant", "content": item.get("answer") or ""})
+
+    # Append current transcript as the new user message
+    messages.append({"role": "user", "content": transcript})
+    return messages
 
 
 @ai.route("/api/ask-ai", methods=["POST"])
@@ -274,13 +306,11 @@ def ask_ai():
     raw_question_id = data.get("question_id")
     answer_text = (data.get("answer_text") or "").strip() or None
     categories = data.get("categories") or []
-    image_urls = data.get("image_urls") or data.get("image_ids") or []
     history = data.get("history") or []
-
-    if image_urls:
-        logger.info("Ask AI received image context (stubbed in Phase 2): %d image(s)", len(image_urls))
+    image_urls = _sanitize_image_urls(data.get("image_urls") or [])
 
     if not transcript:
+   
         return jsonify({"ok": False, "error": "Missing 'transcript'."}), 400
     if not question_text:
         return jsonify({"ok": False, "error": "Missing 'question_text'."}), 400
@@ -300,10 +330,25 @@ def ask_ai():
         logger.error("Failed to load user for Ask AI: %s", e)
         return jsonify({"ok": False, "error": "Failed to load user."}), 500
 
+    # Route to the vision model ONLY when images are attached
+    modality = "text"
+    if image_urls:
+        if not _modality_is_configured(user_obj, IMAGE_MODALITY):
+            return jsonify({
+                "ok": False,
+                "error": (
+                    "Sending images requires a vision-capable model configured for "
+                    "the 'image' modality on your profile page. Set one up, or untick "
+                    "the image checkbox to ask without images."
+                ),
+            }), 400
+        modality = IMAGE_MODALITY
+
     t_lang = time.perf_counter()
     language = _ask_ai_default_language(user_obj)
     logger.debug("ask_ai _ask_ai_default_language=%.3fs -> %s", time.perf_counter() - t_lang, language)
-    logger.info("Ask AI user id=%d, question_id=%s, language=%s", user_obj.id, question_id, language)
+    logger.info("Ask AI user id=%d, question_id=%s, language=%s, modality=%s, images=%d",
+                user_obj.id, question_id, language, modality, len(image_urls))
 
     t_prompt = time.perf_counter()
     messages = _build_ask_ai_prompt(
@@ -313,13 +358,14 @@ def ask_ai():
         categories=categories,
         language=language,
         history=history,
+        image_urls=image_urls,  
     )
     logger.debug("ask_ai _build_ask_ai_prompt=%.3fs", time.perf_counter() - t_prompt)
 
     # Get the tutor-style text answer from the LLM.
     try:
         t_llm = time.perf_counter()
-        resp = completion_for_user(user_obj, messages=messages, modality="text", temperature=0.4)
+        resp = completion_for_user(user_obj, messages=messages, modality=modality, temperature=0.4)    
         logger.info("[BOTTLENECK CANDIDATE] ask_ai completion_for_user=%.3fs", time.perf_counter() - t_llm)
         choices = getattr(resp, "choices", None)
         if choices:

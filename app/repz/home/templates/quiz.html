@@ -17,7 +17,9 @@ Quiz
         'answer': q.answer,
         'questionId': q.question_id,
         'initialFlag': q.flag,
-        'csrfToken': csrf_token() if csrf_token is defined else ''
+        'csrfToken': csrf_token() if csrf_token is defined else '',
+        'categories': q.categories,
+        'pics': q.pics
     }|tojson }}</script>
     {{ vite_asset("src/entrypoints/QuizMarkdown.entry.tsx") }}
     <div class="q-question-title-container">
@@ -216,4 +218,7 @@ Quiz
     </center>
     {% endif %}
 </form>
+{% if q %}
+<div id="ask-ai-launcher-root"></div>
+{% endif %}
 {% endblock content %}

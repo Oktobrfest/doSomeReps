@@ -1353,8 +1353,10 @@ function submitAnswer() {
     provided_answer_text.classList.add("disabled");
     provided_answer_text.readOnly = true;
 
-    const submit_answer_button = document.getElementById('answer-submit-btn');
+const submit_answer_button = document.getElementById('answer-submit-btn');
     submit_answer_button.style.display = 'none';
+
+    document.dispatchEvent(new CustomEvent('askai:answer-revealed'));
 
     setTimeout(function () {
         scrollToBottom();
