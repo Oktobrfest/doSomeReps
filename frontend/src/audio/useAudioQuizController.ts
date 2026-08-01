@@ -603,6 +603,25 @@ export function useAudioQuizController({
     dispatch({ type: 'SET_PANEL_SNAP', snap });
   }, []);
 
+  const setFlag = useCallback((newFlag: any) => {
+    const latestItems = itemsRef.current;
+    if (latestItems.length > 0 && latestItems[0].question) {
+      const updated = latestItems.map((item, idx) => {
+        if (idx === 0 && item.question) {
+          return {
+            ...item,
+            question: {
+              ...item.question,
+              flag: newFlag,
+            },
+          };
+        }
+        return item;
+      });
+      commitItems(updated);
+    }
+  }, [commitItems]);
+
   useEffect(() => {
     dispatch({ type: 'QUESTION_CHANGED' });
   }, [currentQuestion?.quizq_id]);
@@ -666,6 +685,7 @@ export function useAudioQuizController({
       openModal,
       closeModal,
       setPanelSnap,
+      setFlag,
     }),
     [
       answerEnded,
@@ -680,6 +700,7 @@ export function useAudioQuizController({
       setPanelSnap,
       submitVerdict,
       toggleAnswerAudio,
+      setFlag,
     ],
   );
 

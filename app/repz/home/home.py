@@ -403,3 +403,74 @@ def topic_questions(selected_topic):
         topics=topics,
         questions=questions
     )
+
+
+@home.route("/api/flag", methods=["POST"], endpoint="flag_question")
+@login_required
+def flag_question():
+    from repz.database import session
+    from repz.models import flag, FlagCategory
+
+    data = request.get_json(silent=True) or {}
+    raw_question_id = data.get("questionId")
+    category_name = data.get("category")
+    note = data.get("note")
+
+    try:
+        question_id = int(raw_question_id)
+    except (TypeError, ValueError):
+        return jsonify({
+            "success": False,
+            "error": "questionId is required and must be an integer.",
+        }), 400
+
+    try:
+        existing_flag = session.query(flag).filter_by(user_id=current_user.id, question_id=question_id).first()
+
+        if not category_name:
+            if existing_flag:
+                session.delete(existing_flag)
+                session.commit()
+            return jsonify({
+                "success": True,
+                "action": "delete",
+            })
+
+        try:
+            flag_cat = FlagCategory(category_name)
+        except ValueError:
+            return jsonify({
+                "success": False,
+                "error": f"Invalid flag category: {category_name}",
+            }), 400
+
+        if existing_flag:
+            existing_flag.flag_category = flag_cat
+            existing_flag.note = note
+            action = "update"
+        else:
+            new_flag = flag(
+                user_id=current_user.id,
+                question_id=question_id,
+                flag_category=flag_cat,
+                note=note
+            )
+            session.add(new_flag)
+            action = "create"
+
+        session.commit()
+        return jsonify({
+            "success": True,
+            "action": action,
+            "flag": {
+                "category": flag_cat.value,
+                "note": note
+            }
+        })
+
+    except Exception as e:
+        session.rollback()
+        return jsonify({
+            "success": False,
+            "error": f"Failed to save flag: {str(e)}"
+        }), 500

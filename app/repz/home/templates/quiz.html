@@ -11,11 +11,19 @@ Quiz
 <form id="answer-result" class="answer-result-submission" method="post">
     {% include "categories.html" %}
     {% if q %}
-    <script id="quiz-markdown-data" type="application/json">{{ {'questionText': q.question_text, 'hint': q.hint, 'answer': q.answer}|tojson }}</script>
+    <script id="quiz-markdown-data" type="application/json">{{ {
+        'questionText': q.question_text,
+        'hint': q.hint,
+        'answer': q.answer,
+        'questionId': q.question_id,
+        'initialFlag': q.flag,
+        'csrfToken': csrf_token() if csrf_token is defined else ''
+    }|tojson }}</script>
     {{ vite_asset("src/entrypoints/QuizMarkdown.entry.tsx") }}
     <div class="q-question-title-container">
         <h1 class="hide-if-small" align="center">Quiz Question&nbsp;</h1>
         <h1 class="shrink-if-small" id="q-level-number"> Level Number: {{ q.level_no }}</h1>
+        <div id="q-flag-button-container" style="display: inline-block; vertical-align: middle; margin-left: 10px;"></div>
         <h3 class="shrink-if-small" id="current-rating">&nbsp; - Question {% if q.rating == 0 %}
             Unrated </h3>
         {% else %}

@@ -1,3 +1,5 @@
+import { FlagCategory } from '../components/FlagConstants';
+
 export interface AudioAsset {
   url: string;
   lang: string;
@@ -13,6 +15,11 @@ export interface QuestionPics {
   answer_pics?: (string | null)[];
 }
 
+export interface QuestionFlag {
+  category: FlagCategory;
+  note: string | null;
+}
+
 export interface Question {
   quizq_id: string | number;
   question_id: string | number;
@@ -22,6 +29,7 @@ export interface Question {
   categories: string[];
   pics: QuestionPics;
   created_by_username: string;
+  flag?: QuestionFlag | null;
 }
 
 export interface QuizItem {
