@@ -29,6 +29,7 @@ export default defineConfig({
         react_edit_question_inline: "src/entrypoints/InlineQuestionEditor.entry.tsx",
         audio_quiz_entry: "src/entrypoints/AudioQuiz.entry.tsx",
         quiz_markdown: "src/entrypoints/QuizMarkdown.entry.tsx",
+        add_content: "src/entrypoints/AddContent.entry.tsx",
         ai_question_generator: "src/entrypoints/AiQuestionGenerator.entry.tsx",
       },
     },

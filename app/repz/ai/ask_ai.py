@@ -39,9 +39,12 @@ def _modality_is_configured(user_obj, modality: str) -> bool:
 def _sanitize_image_urls(raw_urls) -> list:
     if not isinstance(raw_urls, (list, tuple)):
         return []
+    # Also accept data: URLs so unsaved questions (/addcontent) can
+    # send images that are not on S3 yet.
     return [
         u.strip() for u in raw_urls
-        if isinstance(u, str) and u.strip().lower().startswith(("http://", "https://"))
+        if isinstance(u, str)
+        and u.strip().lower().startswith(("http://", "https://", "data:image/"))
     ]
 
 def _resolve_stt_config(user_obj):
@@ -142,9 +145,9 @@ def ask_ai_transcribe():
             client_kwargs["base_url"] = api_base.rstrip("/") + "/"
 
         logger.info("OpenAI client base_url argument=%s", client_kwargs.get("base_url"))
-        
+
         client = OpenAI(**client_kwargs)
-        
+
         logger.info(
             "Resolved STT configuration: model=%r db_api_base=%r "
             "env_OPENAI_BASE_URL=%r final_client_base_url=%s",
@@ -153,12 +156,12 @@ def ask_ai_transcribe():
             os.getenv("OPENAI_BASE_URL"),
             client.base_url,
         )
-        
+
         logger.debug(
             "transcribe openai client ctor=%.3fs",
             time.perf_counter() - t_client,
         )
-        
+
         logger.info("Calling client.audio.transcriptions.create with model=%r", model)
         client = OpenAI(**client_kwargs)
         logger.debug("transcribe openai client ctor=%.3fs", time.perf_counter() - t_client)
@@ -213,7 +216,7 @@ def _ask_ai_default_language(user_obj) -> str:
 
 def _build_ask_ai_prompt(
     transcript, question_text, answer_text, categories, language,
-    history=None, image_urls=None, 
+    history=None, image_urls=None,
 ):
     """Build the tutor-style LLM messages for an Ask AI request.
 
@@ -310,15 +313,17 @@ def ask_ai():
     image_urls = _sanitize_image_urls(data.get("image_urls") or [])
 
     if not transcript:
-   
+
         return jsonify({"ok": False, "error": "Missing 'transcript'."}), 400
     if not question_text:
         return jsonify({"ok": False, "error": "Missing 'question_text'."}), 400
 
+    # A question being created on /addcontent has no id yet. The id is
+    # only used for logging, so treat it as optional rather than rejecting.
     try:
         question_id = int(raw_question_id)
     except (TypeError, ValueError):
-        return jsonify({"ok": False, "error": "Missing or invalid 'question_id'."}), 400
+        question_id = None
 
     try:
         t_user = time.perf_counter()
@@ -358,14 +363,14 @@ def ask_ai():
         categories=categories,
         language=language,
         history=history,
-        image_urls=image_urls,  
+        image_urls=image_urls,
     )
     logger.debug("ask_ai _build_ask_ai_prompt=%.3fs", time.perf_counter() - t_prompt)
 
     # Get the tutor-style text answer from the LLM.
     try:
         t_llm = time.perf_counter()
-        resp = completion_for_user(user_obj, messages=messages, modality=modality, temperature=0.4)    
+        resp = completion_for_user(user_obj, messages=messages, modality=modality, temperature=0.4)
         logger.info("[BOTTLENECK CANDIDATE] ask_ai completion_for_user=%.3fs", time.perf_counter() - t_llm)
         choices = getattr(resp, "choices", None)
         if choices:
