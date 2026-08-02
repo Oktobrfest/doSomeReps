@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { useEffect, useState } from "react";
 import { AskAiLauncher } from "../ask_ai/AskAiLauncher";
+import "../styles/global.css";
 
 function useFieldValue(selector: string): string {
   const [value, setValue] = useState("");

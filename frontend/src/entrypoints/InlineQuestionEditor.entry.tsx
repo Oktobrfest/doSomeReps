@@ -3,6 +3,7 @@ import React from "react";
 
 import { InlineQuestionEditor } from "../question_editor/InlineQuestionEditor";
 import "../index.css";
+import "../styles/global.css";
 
 // Create and mount the React app
 const rootElement = document.getElementById("react-edit-question-root");

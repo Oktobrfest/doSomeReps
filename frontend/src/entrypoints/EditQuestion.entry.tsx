@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 
 import { EditQuestionPage } from "../question_editor/EditQuestionPage";
 import "../index.css";
+import "../styles/global.css";
 
 const rootElement = document.getElementById("react-edit-question-root");
 if (rootElement) {

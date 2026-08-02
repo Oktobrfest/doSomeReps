@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+// doSomeReps/frontend/src/components/ExtendButton.tsx
+import { useEffect, useId, useRef, useState } from "react";
 import { Settings } from "lucide-react";
+import sharedStyles from "../styles/shared.module.css";
 import styles from "./ExtendButton.module.css";
+
+const OPTIONS_TIMEOUT_MS = 20_000;
 
 export interface ExtendOption {
   key: string;
@@ -26,13 +30,14 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
   const [isExtending, setIsExtending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const instructionsId = useId();
 
   // Load available options when the settings modal is first opened.
   useEffect(() => {
     if (!isOpen || options.length > 0) return;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20_000);
+    const timeoutId = setTimeout(() => controller.abort(), OPTIONS_TIMEOUT_MS);
 
     setLoadingOptions(true);
     fetch("/ai_question_generator/api/extend-options", {
@@ -120,6 +125,7 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
       <dialog
         ref={dialogRef}
         className={styles.dialog}
+        onClose={() => setIsOpen(false)}
         onClick={(e) => {
           if (e.target === dialogRef.current) {
             setIsOpen(false);
@@ -144,11 +150,11 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
             {error && <div className={styles.error}>{error}</div>}
 
             <div className={styles.field}>
-              <label htmlFor="extend-instructions" className={styles.fieldLabel}>
+              <label htmlFor={instructionsId} className={styles.fieldLabel}>
                 Extra instructions (optional)
               </label>
               <textarea
-                id="extend-instructions"
+                id={instructionsId}
                 className={styles.textarea}
                 rows={5}
                 value={customInstructions}
@@ -162,7 +168,7 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
                 What should the AI focus on?
               </span>
               {loadingOptions ? (
-                <div className={styles.loadingOptions}>Loading options... (timeout in 10s)</div>
+                <div className={styles.loadingOptions}>Loading options... (timeout in {OPTIONS_TIMEOUT_MS / 1000}s)</div>
               ) : (
                 <ul className={styles.optionList}>
                   {options.length === 0 && (
@@ -189,7 +195,7 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
           <div className={styles.modalFooter}>
             <button
               type="button"
-              className={`${styles.btn} ${styles.btnSecondary}`}
+              className={`${sharedStyles.button} ${sharedStyles.buttonSecondary}`}
               onClick={() => setIsOpen(false)}
               disabled={isExtending}
             >
@@ -197,7 +203,7 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
             </button>
             <button
               type="button"
-              className={`${styles.btn} ${styles.btnPrimary}`}
+              className={`${sharedStyles.button} ${sharedStyles.buttonPrimary}`}
               onClick={handleExtend}
               disabled={isExtending}
             >

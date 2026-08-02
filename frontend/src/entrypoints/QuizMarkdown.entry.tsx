@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { FlagButton, type QuestionFlag } from "../components/FlagButton";
 import { AskAiLauncher } from "../ask_ai/AskAiLauncher";
+import "../styles/global.css";
 
 interface QuizMarkdownData {
   questionText?: string;
