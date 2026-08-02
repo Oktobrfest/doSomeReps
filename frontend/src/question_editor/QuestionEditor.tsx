@@ -6,6 +6,7 @@ import { QuestionEditorAlert } from "./QuestionEditorAlert";
 import { QuestionMediaSection } from "./QuestionMediaSection";
 import type { QuestionEditorProps } from "./question_editor_types";
 import { useQuestionEditor } from "./useQuestionEditor";
+import { AskAiLauncher } from "../ask_ai/AskAiLauncher";
 import styles from "./QuestionEditor.module.css";
 import sharedStyles from "../styles/shared.module.css";
 
@@ -270,6 +271,17 @@ export function QuestionEditor({
               </div>
             </div>
           </form>
+          {questionId && (
+            <AskAiLauncher
+              questionId={questionId}
+              questionText={editor.questionText}
+              answerText={editor.answerText}
+              answerRevealed={true}
+              categories={editor.selectedCats}
+              questionImageUrls={editor.pics.question.map((p) => p.pic_string)}
+              answerImageUrls={editor.pics.answer.map((p) => p.pic_string)}
+            />
+          )}
         </div>
       </div>
     </div>
