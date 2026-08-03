@@ -161,3 +161,76 @@
 .buttonSecondary:hover:not(:disabled) {
   background-color: var(--dsr-color-surface-secondary-hover);
 }
+
+/* Generic Regular-sized Form/Action Button styles */
+.actionButton {
+  border: none;
+  border-radius: 12px;
+  height: 46px;
+  padding: 0 24px;
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.actionButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.actionButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.actionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.btnRed {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.btnRed:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.btnBlue {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.btnBlue:hover:not(:disabled) {
+  background-color: #0069d9;
+}
+
+.btnCyan {
+  background-color: #06b6d4;
+  color: #fff;
+}
+
+.btnCyan:hover:not(:disabled) {
+  background-color: #0891b2;
+}
+
+.btnAmber {
+  background-color: #f59e0b;
+  color: #fff;
+}
+
+.btnAmber:hover:not(:disabled) {
+  background-color: #d97706;
+}

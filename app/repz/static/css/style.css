@@ -1,5 +1,5 @@
 label > input { width: 3em; }
-form > * { padding-right: 1em; }
+form > * { padding-right: 0.1em; }
 #result { font-weight: bold; }
 
 .start-quiz-button {

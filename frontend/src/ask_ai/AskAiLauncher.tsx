@@ -3,6 +3,7 @@ import { Sparkles } from 'lucide-react';
 import { useAskAi } from './useAskAi';
 import { AskAiPanel } from './AskAiPanel';
 import type { AskAiContext } from './types';
+import sharedStyles from '../styles/shared.module.css';
 
 export interface AskAiLauncherProps {
   questionId: string | number;
@@ -13,6 +14,7 @@ export interface AskAiLauncherProps {
   questionImageUrls?: string[];
   answerImageUrls?: string[];
   csrfToken?: string;
+  inline?: boolean;
 }
 
 export function AskAiLauncher({
@@ -24,6 +26,7 @@ export function AskAiLauncher({
   questionImageUrls,
   answerImageUrls,
   csrfToken,
+  inline = false,
 }: AskAiLauncherProps) {
   const context = useMemo<AskAiContext>(
     () => ({
@@ -41,17 +44,37 @@ export function AskAiLauncher({
   const askAi = useAskAi({ context, answerRevealed });
 
   if (askAi.isActive) {
+    if (inline) {
+      return (
+        <div style={{ flexBasis: '100%', width: '100%' }}>
+          <AskAiPanel state={askAi} />
+        </div>
+      );
+    }
     return <AskAiPanel state={askAi} />;
+  }
+
+  if (inline) {
+    return (
+      <button
+        type="button"
+        className={`${sharedStyles.actionButton} ${sharedStyles.btnCyan}`}
+        onClick={() => askAi.actions.start()}
+      >
+        <Sparkles size={18} />
+        Ask AI Tutor
+      </button>
+    );
   }
 
   return (
     <div className="text-center my-4">
       <button
         type="button"
-        className="btn btn-info btn-lg font-weight-bold"
+        className={`${sharedStyles.actionButton} ${sharedStyles.btnCyan}`}
         onClick={() => askAi.actions.start()}
       >
-        <Sparkles size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+        <Sparkles size={18} />
         Ask AI Tutor
       </button>
     </div>

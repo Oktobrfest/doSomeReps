@@ -26,7 +26,7 @@ export function EditQuestionPage() {
   };
 
   const handleSaved = () => {
-    window.location.reload();
+    handleBack();
   };
 
   return (

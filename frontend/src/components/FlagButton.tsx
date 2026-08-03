@@ -165,7 +165,7 @@ export function FlagButton({
     >
       <button
         type="button"
-        className={`${styles.flagBtn} ${isFlagged ? styles.flaggedBtn : ""}`}
+        className={styles.flagBtn}
         onClick={handleMainButtonClick}
         disabled={disabled || isSaving}
         aria-label={isSaving ? "Flagging" : "Flag question"}
@@ -177,7 +177,7 @@ export function FlagButton({
       </button>
       <button
         type="button"
-        className={`${styles.settingsBtn} ${isFlagged ? styles.flaggedSettingsBtn : ""}`}
+        className={styles.settingsBtn}
         onClick={() => setIsOpen(true)}
         disabled={disabled || isSaving}
         aria-label="Flag settings"

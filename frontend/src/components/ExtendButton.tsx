@@ -100,7 +100,7 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
 
   return (
     <>
-      <div className={styles.widget} role="group" aria-label="AI extend">
+      <div className={`${styles.widget} ${disabled || isExtending ? styles.disabled : ''}`} role="group" aria-label="AI extend">
         <button
           type="button"
           className={styles.extendBtn}

@@ -6,7 +6,7 @@ import { ImageModal } from './ImageModal';
 import { Volume2, BookOpen, Ban, Edit } from 'lucide-react';
 import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
-import actionStyles from './ActionButton.module.css';
+import actionStyles from '../styles/ActionButton.module.css';
 import { SlideOutButtons, type ExtraAction } from './SlideOutButtons';
 import type { SlideOutButtonsHandle } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';

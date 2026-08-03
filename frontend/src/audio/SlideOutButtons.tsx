@@ -12,7 +12,7 @@ import {
 import { Check, X, Minus } from 'lucide-react';
 import { CatPicker } from '../components/CatPicker';
 import { FlagButton, type QuestionFlag } from '../components/FlagButton';
-import actionStyles from './ActionButton.module.css';
+import actionStyles from '../styles/ActionButton.module.css';
 import styles from './SlideOutButtons.module.css';
 
 interface SlideOutActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

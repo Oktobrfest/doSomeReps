@@ -87,7 +87,7 @@
 
 @media (min-width: 576px) {
   .cardBody {
-    padding: 24px;
+    padding: 8x;
   }
 }
 
@@ -103,7 +103,7 @@
 @media (min-width: 576px) {
   .formSection {
     border-radius: 18px;
-    padding: 20px;
+    padding: 5px;
     margin-bottom: 20px;
   }
 }
@@ -140,7 +140,7 @@
   width: 100%;
   border: 2px solid rgba(0, 0, 0, 0.15);
   border-radius: 10px;
-  padding: 12px;
+  padding: 2px;
   font-size: 1rem;
   font-family: inherit;
   line-height: 1.5;
@@ -366,65 +366,17 @@
   }
 }
 
-/* Action Buttons */
-.actionBtn {
-  border: none;
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-weight: 700;
-  font-size: 1rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    transform 120ms ease,
-    opacity 120ms ease,
-    box-shadow 120ms ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.actionBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-}
-
-.actionBtn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.actionBtn:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.redBtn {
-  background-color: #ef4444;
-  color: #fff;
-}
-
-.redBtn:hover:not(:disabled) {
-  background-color: #dc2626;
-}
-
-.blueBtn {
-  background-color: #007bff;
-  color: #fff;
-}
-
-.blueBtn:hover:not(:disabled) {
-  background-color: #0069d9;
-}
-
+/* Mobile parent-container overrides */
 @media (max-width: 575px) {
-  .actionBtn {
-    width: 100%;
+  .rightButtons > button,
+  .rightButtons > div {
+    width: 100% !important;
+  }
+  .buttonFooter > button {
+    width: 100% !important;
   }
 }
 
-/* Mobile parent-container overrides */
 @media (max-width: 575px) {
   :global(.container),
   :global(.row),
@@ -470,7 +422,7 @@
 }
 
 .mediaSection {
-  margin-top: 1rem;
+  margin-top: 0.2rem;
 }
 
 .existingMediaSection {
@@ -557,4 +509,187 @@
 .audioDeleteBtn:hover {
   background-color: #c82333;
   border-color: #bd2130;
+}
+
+/* Split Pane Layout for Live Preview */
+.splitLayout {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  align-items: stretch;
+  height: calc(100vh - 160px);
+  min-height: 500px;
+  overflow: hidden;
+}
+
+.formPane {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 8px;
+  transition: all 0.3s ease;
+}
+
+.previewPane {
+  width: 400px;
+  min-width: 320px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 991px) {
+  .splitLayout {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .formPane {
+    height: auto;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+  .previewPane {
+    width: 100%;
+    height: auto;
+    overflow-y: visible;
+  }
+}
+
+.previewPaneHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #cbd5e1;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.previewPaneTitle {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.previewCloseBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.previewCloseBtn:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.togglePreviewBtn {
+  background-color: #475569;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 150ms ease;
+}
+
+.togglePreviewBtn:hover {
+  background-color: #334155;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Styled Live Preview Box mimicking AudioQuiz view */
+.previewMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+}
+
+.previewTextBlock {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.previewAnswerCard {
+  background: #ffffff;
+  border: 1px solid #fbcfe8;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.previewAnswerHeader {
+  background-color: #fdf2f8;
+  border-bottom: 1px solid #fbcfe8;
+  color: #be185d;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.previewAnswerContent {
+  padding: 16px;
+}
+
+.previewHintCard {
+  background: #ffffff;
+  border: 1px solid #cffafe;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.previewHintHeader {
+  background-color: #ecfeff;
+  border-bottom: 1px solid #cffafe;
+  color: #0e7490;
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.previewHintContent {
+  padding: 12px;
 }
