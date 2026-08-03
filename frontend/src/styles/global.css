@@ -40,7 +40,8 @@
 
   /* CHANGED THIS - added the shared muted text color already used by shared.module.css. */
   --dsr-color-text-muted: #6c757d;
-
+  --dsr-color-text-subtle: #718096;
+  
   /* CHANGED THIS - added the existing light border color. */
   --dsr-color-border: #e2e8f0;
 

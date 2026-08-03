@@ -3,90 +3,15 @@
 Edit Questions
 {% endblock title %}
 {% block content %}
-<script type="text/javascript" src="{{ url_for('static', filename='js/index.js') }}"></script>
 
-<div id="edit-question-page-wrapper" class="container-fluid">
+<script id="edit-questions-bootstrap" type="application/json">
+{{ {
+  "searchUrl": url_for('quest_ajx.searchq'),
+  "unexcludeUrl": url_for('que_ajx.unexclude_q')
+} | tojson }}
+</script>
 
-  <div id="search-filters" class="search-filters">
+<div id="edit-questions-root"></div>
 
-    <div id="title-filter-button-section">
-      <span>
-        <h2 class="search-filters-title">Search Filters</h2>
-      </span>
-      <span> <button id="collapse-search-filters-container-button" class="btn btn-secondary" data-toggle="collapse"
-          data-target="#search-filters-category-section">Hide
-								Filters</button></span>
-    </div>
-
-    <div id="search-filters-container" class="collapse show">
-
-      <div class="form-group">
-        <form id="search-filters-form">
-          <input type="hidden" id="question-id" name="question-id" value="">
-
-          <ul class="form-group inline border">
-            <label for="search-terms">Search Terms:</label><br>
-            <input type="text" id="search-terms" name="search-terms"><br>
-            Search Within:
-            <ul class="list-group list-group-flush form-group search-within-categories" id="search-within-categories">
-
-              <li class="list-group-item filter-item border">
-                <label for="question-filter-checkbox" class="checkbox-inline"></label>
-                <input type="checkbox" value="question_text" id="question-filter-checkbox"
-                  name="question-filter-checkbox" class="custom-checkbox" />
-                &nbsp Question
-              </li>
-
-              <li class="list-group-item filter-item border">
-                <label for="hint-filter-checkbox" class="checkbox-inline"></label>
-                <input type="checkbox" value="hint" id="hint-filter-checkbox" name="hint-filter-checkbox"
-                  class="custom-checkbox" />
-                &nbsp Hint
-              </li>
-
-              <li class="list-group-item filter-item border">
-                <label for="answer-filter-checkbox" class="checkbox-inline"></label>
-                <input type="checkbox" value="answer" id="answer-filter-checkbox" name="answer-filter-checkbox"
-                  class="custom-checkbox" />
-                &nbsp Answer
-              </li>
-            
-            </ul>
-              <li class="list-group-item filter-item border">
-              <label for="excluded-filter-checkbox" class="checkbox-inline"></label>
-              <input type="checkbox" value="excluded" id="excluded-filter-checkbox" name="excluded-filter-checkbox"
-                class="custom-checkbox" />
-              &nbsp Excluded Questions
-            </li>
-          </ul>
-            <div id="search-filters-category-section" class="collapse show">
-              {% with selected_categories=filter_categories %}
-                {% include '_categories_core.html' %}
-              {% endwith %}
-            </div>
-        </form>
-      </div>
-    </div>
-
-    <button id="search-button" class="btn btn-primary">Search</button>
-
-  </div>
-
-  <!-- Sidebar  -->
-  <div class="col-md-3 col-sm-12" id="sidebar">
-    <div class="sidebar-header">
-      <h3>Select a Question</h3>
-    </div>
-    <p>Search Results</p>
-    <div class="search-results-list-unstyled" id="search-results-list-unstyled">
-    </div>
-  </div>
-
-  <!-- Page Content - React edit question component -->
-  <div id="edit-question-content" class="col-md-8 col-sm-12 container">
-    <div id="react-edit-question-root"></div>
-  </div>
-</div>
-
-{{ vite_asset("src/entrypoints/InlineQuestionEditor.entry.tsx") }}
+{{ vite_asset("src/entrypoints/EditQuestions.entry.tsx") }}
 {% endblock content %}

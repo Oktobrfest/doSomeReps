@@ -10,20 +10,24 @@ export enum FlagCategory {
 export interface FlagMetadata {
   label: string;
   icon: React.ReactNode;
+  colorClass: string;
 }
 
 export const FLAG_METADATA: Record<FlagCategory, FlagMetadata> = {
   [FlagCategory.NEEDS_CHANGES]: {
     label: "Needs Changes",
     icon: <Wrench />,
+    colorClass: "flag-color-other",
   },
   [FlagCategory.INAPPROPRIATE]: {
     label: "Inappropriate",
     icon: <ShieldAlert />,
+    colorClass: "flag-color-other",
   },
   [FlagCategory.STUDY_ME]: {
     label: "Study Me",
     icon: <BookOpen />,
+    colorClass: "flag-color-study-me",
   },
 };
 

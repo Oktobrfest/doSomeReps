@@ -1,8 +1,8 @@
 /* Main Container: Minimize padding on mobile, standard on desktop */
 .editorContainer {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 0;
 }
 
@@ -429,8 +429,7 @@
   :global(.container),
   :global(.row),
   :global(.col-md-12),
-  :global(#react-edit-question-root),
-  :global(#edit-question-page-wrapper) {
+  :global(#edit-question-root) {
     padding-left: 2px !important;
     padding-right: 2px !important;
     margin-left: 0 !important;
@@ -451,24 +450,6 @@
     padding: 0 !important;
     margin: 0 !important;
   }
-
-  :global(#sidebar) {
-    margin: 0 !important;
-    width: 100% !important;
-  }
-
-  :global(#edit-question-content) {
-    border: none !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-}
-
-:global(#edit-question-content) {
-  border: 1.5px solid #ff99ff !important;
-  border-radius: 16px !important;
-  overflow: hidden;
 }
 
 .emptyState {

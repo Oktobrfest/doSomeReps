@@ -1,19 +1,20 @@
+import json
+
+import copy
+
 from flask import flash, request, jsonify, current_app
 from flask_login import login_required
 from flask import g, make_response
-from repz.s3_ext import get_s3
-from ...models import q_pic, users, question, quizq, category, rating, audio
-import json
-
-
-import copy
-from repz.extensions import cache
 from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload, Query
 
+from repz.s3_ext import get_s3
+from ...models import q_pic, users, question, quizq, category, rating, audio, flag, FlagCategory
+from repz.extensions import cache
 from ...database import session
 from repz.routes import quest_ajx
-from ...bluehelpers import clean_for_html, get_all_db_categories, get_user, remove_underscore, set_session, delete_pic
+from ...bluehelpers import clean_for_html, get_all_db_categories, get_user, remove_underscore, delete_pic
+
 from ...home.form_helpers import save_pictures
 
 
@@ -139,7 +140,6 @@ def saveq():
     flash(msg, category="success")
     return msg
 
-
 # not quemore search button
 @quest_ajx.route("/searchq", methods=["POST"], endpoint="searchq")
 @login_required
@@ -150,9 +150,6 @@ def searchq():
 
     underscored_cats = filters["search-categories"]
 
-    set_session("filter_categories", underscored_cats)
-
-
     filter_cats = list(map(lambda x: remove_underscore(x), underscored_cats))
 
     excluded_chkbox = filters['excluded-filter-checkbox']
@@ -160,7 +157,6 @@ def searchq():
     # query db
     # list of column names to search
     column_names = filters["search-within"]
-    # equest.json['search-within'] #['column1', 'column2', 'column3']
 
     # the value to search for
     search_value = filters["search-terms"]
@@ -186,8 +182,43 @@ def searchq():
     for column_name in column_names:
         query = query.filter(or_(getattr(question, column_name).contains(search_value)))
 
+    selected_flags = filters.get("flag-categories") or []
+    if selected_flags:
+        try:
+            flag_values = [FlagCategory(v) for v in selected_flags if v != "UNFLAGGED"]
+        except ValueError:
+            return jsonify({"error": "Invalid flag category."}), 400
+
+        user_flags = session.query(flag).filter(
+            flag.user_id == UID,
+            flag.question_id == question.question_id,
+        )
+
+        flag_clauses = []
+        if flag_values:
+            flag_clauses.append(
+                user_flags.filter(flag.flag_category.in_(flag_values)).exists()
+            )
+        if "UNFLAGGED" in selected_flags:
+            flag_clauses.append(~user_flags.exists())
+
+        query = query.filter(or_(*flag_clauses))
+
     # execute the query
     results = query.all()
+
+    result_ids = [r.question_id for r in results]
+    flags_by_qid = {}
+    if result_ids:
+        flag_rows = session.query(flag).filter(
+            flag.user_id == UID,
+            flag.question_id.in_(result_ids),
+        ).all()
+        for f in flag_rows:
+            flags_by_qid[f.question_id] = {
+                "category": f.flag_category.value,
+                "note": f.note,
+            }
 
     search_results = []
     for r in results:
@@ -199,12 +230,13 @@ def searchq():
             "question_text": r.question_text,
             "question_id": r.question_id,
             "categories": catz,
+            # CHANGED THIS - expose the current user's flag for this question (null when unflagged).
+            "flag": flags_by_qid.get(r.question_id),
         }
         search_results.append(q)
 
     search_response = jsonify(search_results)
     return search_response
-
 
 @quest_ajx.route("/getq", methods=["POST"], endpoint="getq")
 @login_required

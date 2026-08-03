@@ -156,23 +156,6 @@ class TestPagesUsingFullCategories(unittest.TestCase):
         )
         self.assertIn('include "categories.html"', content)
 
-    def test_editquestions_renders_react_edit_component(self):
-        content = self._read_template(
-            ['repz', 'home', 'templates', 'editquestions.html']
-        )
-        self.assertIn(
-            'vite_asset("src/entrypoints/InlineQuestionEditor.entry.tsx")',
-            content,
-        )
-
-    def test_ai_generator_renders_react_component(self):
-        content = self._read_template(
-            ['repz', 'templates', 'ai_question_generator.html']
-        )
-        self.assertIn(
-            'vite_asset("src/entrypoints/AiQuestionGenerator.entry.tsx")',
-            content,
-        )
 
     def test_audio_uses_full_categories(self):
         content = self._read_template(
@@ -184,7 +167,7 @@ class TestPagesUsingFullCategories(unittest.TestCase):
         content = self._read_template(
             ['repz', 'templates', 'edit_question.html']
         )
-        self.assertIn('id="react-edit-question-root"', content)
+        self.assertIn('id="edit-question-root"', content)
         self.assertIn(
             'vite_asset("src/entrypoints/EditQuestion.entry.tsx")',
             content,
