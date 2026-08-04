@@ -8,7 +8,7 @@
   --cp-item-border-active: #e08a00;
   --cp-item-text: #4a2c00;
 
-  height: calc(100dvh - var(--eq-page-offset, 140px));
+  height: calc(100dvh - var(--eq-page-offset, 60px));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -201,7 +201,7 @@
   /* CHANGED THIS - flexes to fill whatever the filter panel leaves, so collapsing filters
      immediately gives the height back to the question. */
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 350px;
   display: grid;
   /* CHANGED THIS - narrower results column; the old 400px cap ate width the editor needed. */
   grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
