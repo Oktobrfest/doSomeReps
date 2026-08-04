@@ -28,7 +28,7 @@ const MODALITIES = [
   { value: "text", label: "Text Generation (LLM)", desc: "Used for question formulation, chat, and explanation features." },
   { value: "tts", label: "Text to Speech (TTS)", desc: "Used for reading out questions, answers, and hints." },
   { value: "stt", label: "Speech to Text / Transcribe", desc: "Used for transcribing voice responses." },
-  { value: "image", label: "Image Generation", desc: "Used for creating illustrative visual aids." }
+  { value: "image", label: "Image / Vision", desc: "Vision-capable model that can look at pictures. NOT output them though." }
 ];
 
 export default function AiIntegration() {

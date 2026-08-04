@@ -188,3 +188,26 @@
   font-weight: 700;
   white-space: pre-wrap;
 }
+
+.askAiImageToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+
+.askAiImageToggle input {
+  width: 1.05rem;
+  height: 1.05rem;
+  cursor: pointer;
+  margin: 0;
+}

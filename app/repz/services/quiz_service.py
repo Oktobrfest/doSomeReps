@@ -755,6 +755,22 @@ def build_audio_quiz_items(
     items: list[dict[str, Any]] = []
 
     for q in questions:
+        # Fetch flag if present for the current user and question
+        from repz.models import flag
+        from repz.database import session
+        try:
+            f = session.query(flag).filter_by(user_id=user.id, question_id=q["question_id"]).first()
+            if f:
+                q["flag"] = {
+                    "category": f.flag_category.value if hasattr(f.flag_category, "value") else str(f.flag_category),
+                    "note": f.note
+                }
+            else:
+                q["flag"] = None
+        except Exception as e:
+            logging.error(f"❌ Failed to fetch flag for question {q.get('question_id')}: {e}")
+            q["flag"] = None
+
         try:
             raw_assets = audio_service.ensure_audio_for_quiz_question(
                 q=q,

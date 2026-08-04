@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { AudioAsset } from './types';
 import styles from './AudioPlayer.module.css';
+import {
+  acquireMediaSessionKeepAlive,
+  releaseMediaSessionKeepAlive,
+} from './mediaSessionKeepAlive';
 
 interface AudioPlayerProps {
   assets: AudioAsset[];
@@ -27,6 +31,22 @@ export function AudioPlayer({
   // Create an array of refs for audio elements
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
 
+  // Track whether THIS player instance currently holds a
+  // keep-alive reference, so acquire/release stay balanced.
+  const keepAliveHeldRef = useRef(false);
+
+  // Single release path used by sequence end, asset swap and unmount.
+  const releaseKeepAlive = useCallback(() => {
+    if (keepAliveHeldRef.current) {
+      keepAliveHeldRef.current = false;
+      releaseMediaSessionKeepAlive();
+    }
+  }, []);
+
+  // Release on unmount. LargePlayableControl unmounts this player
+  // whenever the active audio source flips, so this must never leak a hold.
+  useEffect(() => releaseKeepAlive, [releaseKeepAlive]);
+
   // 1. Reset all audio elements and state when the asset list changes (moving to a new question/answer)
   useEffect(() => {
     audioRefs.current.forEach((audio) => {
@@ -35,10 +55,11 @@ export function AudioPlayer({
         try { audio.currentTime = 0; } catch { /* ignore */ }
       }
     });
+    releaseKeepAlive();
     setTrackIndex(0);
     setCurrentTime(0);
     setDuration(0);
-  }, [assets]);
+  }, [assets, releaseKeepAlive]);
 
   // 2. Play or Pause the active audio element based on `isPlaying` and `trackIndex`
   useEffect(() => {
@@ -53,6 +74,11 @@ export function AudioPlayer({
     }
 
     if (isPlaying) {
+      if (!keepAliveHeldRef.current) {
+        keepAliveHeldRef.current = true;
+        acquireMediaSessionKeepAlive();
+      }
+
       const playPromise = activeAudio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
@@ -83,12 +109,13 @@ export function AudioPlayer({
           try { audio.currentTime = 0; } catch { /* ignore */ }
         }
       });
+      releaseKeepAlive();
       setTrackIndex(0);
       setCurrentTime(0);
       setDuration(0);
       onSequenceEnd();
     }
-  }, [trackIndex, assets.length, onSequenceEnd]);
+  }, [trackIndex, assets.length, onSequenceEnd, releaseKeepAlive]);
 
   // 4. Handle time and metadata updates
   const handleTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLAudioElement>) => {
@@ -147,12 +174,13 @@ export function AudioPlayer({
           try { audio.currentTime = 0; } catch { /* ignore */ }
         }
       });
+      releaseKeepAlive();
       setTrackIndex(0);
       setCurrentTime(0);
       setDuration(0);
       onSequenceEnd();
     }
-  }, [trackIndex, assets.length, onSequenceEnd]);
+  }, [trackIndex, assets.length, onSequenceEnd, releaseKeepAlive]);
 
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
   const pct = duration > 0 ? (currentTime / duration) * 100 : 0;

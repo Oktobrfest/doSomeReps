@@ -27,24 +27,24 @@ to go to panel need to do above port forwards!
 
 ## Checking Status
 Check current DB version:
-  docker-compose run --rm reps_dev alembic current
+  docker compose run --rm reps_dev alembic current
 
 Show migration history:
-  docker-compose run --rm reps_dev alembic history --verbose
+  docker compose run --rm reps_dev alembic history --verbose
 
 ## Running Migrations
 Upgrade to latest (head):
-  docker-compose run --rm reps_dev alembic upgrade head
+  docker compose run --rm reps_dev alembic upgrade head
 
 Upgrade by 1 step:
-  docker-compose run --rm reps_dev alembic upgrade +1
+  docker compose run --rm reps_dev alembic upgrade +1
 
 Downgrade by 1 step:
-  docker-compose run --rm reps_dev alembic downgrade -1
+  docker compose run --rm reps_dev alembic downgrade -1
 
 ## Creating Migrations
 Generate a new auto-detected migration:
-  docker-compose run --rm reps_dev alembic revision --autogenerate -m "description"
+  docker compose run --rm reps_dev alembic revision --autogenerate -m "description"
 
 # For prod alternatively use the migration job:
   kubectl delete job reps-prod-migration -n reps-prod

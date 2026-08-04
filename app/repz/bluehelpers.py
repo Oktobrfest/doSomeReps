@@ -178,6 +178,15 @@ def get_quizes(selected_cats, UID):
 
             rating_score = score(r.question.question_id)
 
+            from .models import flag
+            q_flag_obj = session.execute(
+                select(flag).where(flag.question_id == r.question.question_id, flag.user_id == UID)
+            ).scalars().first()
+            flag_data = {
+                "category": q_flag_obj.flag_category.value,
+                "note": q_flag_obj.note
+            } if q_flag_obj else None
+
             q = {
                 "quizq_id": r.quizq.quizq_id,
                 "question_id": r.question.question_id,
@@ -191,7 +200,8 @@ def get_quizes(selected_cats, UID):
                 "categories": question_cats,
                 "pics": pics,
                 "last_ansered": last_ansered,
-                "user_rated": user_rated
+                "user_rated": user_rated,
+                "flag": flag_data
             }
             que_list.append(q)
 

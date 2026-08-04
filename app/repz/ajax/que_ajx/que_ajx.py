@@ -205,14 +205,9 @@ def unexclude_q():
 
     question_id = request.get_json()
 
-    enexclude_result = unexclude(question_id, UID)
+    unexclude_result = unexclude(question_id, UID)
 
-    if 'success' in enexclude_result:
-        flash(enexclude_result['success'], category="success")
-    else:
-        flash(enexclude_result['failure'], category="error")
-        # impliment logging in future #todo
+    if 'success' in unexclude_result:
+        return jsonify({"status": "ok", "msg": unexclude_result['success']})
 
-    response_msg = jsonify('ok')
-
-    return response_msg
+    return jsonify({"status": "error", "msg": unexclude_result['failure']}), 400

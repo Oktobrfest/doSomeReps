@@ -1,38 +1,42 @@
 # All AI prompts go here:
 from typing import List, Optional
 ##### ASK AI PROMPTS: ######
-SYSTEM_PROMPT = (
-    "You are a tutor teaching a student.\n"
-    "Guidelines:\n"
-    "1. Answer the question clearly and concisely.\n"
-    "2. If the transcript is unclear or too ambiguous to answer, ask one short "
-    "clarifying question and stop.\n"
-    "3. Keep explanations focused and digestible for spoken audio: short sentences, "
-    "plain language, no Markdown, no tables, no code blocks or formulas.\n"
-    "4. Note that the audio transcription may have garbled the words the student"
-    " is saying. So if the question doesn't fit the overall question content, in that case try your best"
-    " to interpert it based on question content"
-)
+SYSTEM_PROMPT = """\
+You are a tutor teaching a student.
+Guidelines:
+Answer the question clearly and concisely.
+Keep explanations focused and digestible for spoken audio: short sentences, plain language, no Markdown, no tables, no code blocks or formulas.
+Note that the audio transcription may have garbled the words the student spoke. So if the question doesn't fit the overall question content, in that case try your best to interpert it based on question content.
+"""
 
-ANSWER_SECTION_REVEALED = (
-    "The user has already revealed the answer to this question, which is shown below. "
-    "You may reference it to help explain, but keep coaching them to understand it.\n"
-    "Answer:\n{answer}\n\n"
-)
+#     "2. If the transcript is unclear or too ambiguous to answer, ask one short     "clarifying question and stop.\n"
+#  ---> possibly leads to stupid engagement questions at end of every reply!
 
-ANSWER_SECTION_NOT_REVEALED = (
-    "The user has not revealed the answer yet. Do NOT state or reveal the answer "
-    "unless they directly ask for it. Help them to think.\n\n"
-)
+ANSWER_SECTION_REVEALED = """\
+The user has already revealed the answer to this question, which is shown below. You may reference it to help explain, but keep coaching them to understand it.
+Answer:
+{answer}
 
-USER_PROMPT = (
-    "The student is currently studying this quiz question.\n\n"
-    "Question:\n{question}\n\n"
-    "Categories: {categories}\n\n"
-    "{answer_section}"
-    "The student's spoken question (transcribed) to you is:\n{transcript}\n\n"
-    "Provide a short, spoken-friendly tutor response."
-)
+"""
+
+ANSWER_SECTION_NOT_REVEALED = """\
+The user has not revealed the answer yet. Do NOT state or reveal the answer unless they directly ask for it. Help them to think.
+
+"""
+
+USER_PROMPT = """\
+The student is currently studying this quiz question.
+
+Question:
+{question}
+
+Categories: {categories}
+
+{answer_section}The student's spoken question (transcribed) to you is:
+{transcript}
+
+Provide a short, spoken-friendly tutor response.
+"""
 ##### END ASK AI PROMPTS ######
 
 
@@ -288,7 +292,8 @@ EXTEND_OPTIONS: List[dict] = [
     {
         "key": "redo_markup",
         "label": "Redo the markup and formatting.",
-        "prompt": """The markup for this answer has serious shortcomings.
+        "prompt": """\
+The markup for this answer has serious shortcomings.
         Re-do the formatting so it is clean,
         well-organized, and Make the answer look polished and professional.
         Supported formatting:
@@ -312,7 +317,8 @@ def build_extend_instructions(
     custom_instructions: str = "",
     selected_options: Optional[List[str]] = None,
 ) -> str:
-    """Build the user-instructions block for the extend prompt.
+    """\
+    Build the user-instructions block for the extend prompt.
 
     Uses the selected option prompts and any free-text instructions
     supplied by the user. When no options are selected, the "default"
@@ -352,7 +358,7 @@ def build_extend_instructions(
 
 
 ###### END GENERATE TEXT FOR AUDIO ###########
-GENERATE_TTS_AUDIO_TEXT = """
+GENERATE_TTS_AUDIO_TEXT = """\
 You are preparing text for a Text-to-Speech system.
 
 Task:
@@ -381,12 +387,12 @@ Rules:
 11. If formulas are present then omit them unless you find it impossible to convey
 the meaning of the overall concept without a very short formula, in that case
 then explain it in plain words instead of reading symbols.
-"11. If formulas are present then omit them unless you find it impossible to convey "
-"the meaning of the overall concept without a very short formula, in that case "
-"then explain it in plain words instead of reading symbols. "
-"Ultimately, Avoid formulas whenever possible because they are hard to understand in spoken audio. "
-"When you asbolutely must include a formula make sure you write them out so it can be comprehended when spoken. "
-"So E=Mc2 would be energy is equal to the mass times the speed of light squared; x_i or x_..i.._ would become x sub i"
+11. If formulas are present then omit them unless you find it impossible to convey
+the meaning of the overall concept without a very short formula, in that case
+then explain it in plain words instead of reading symbols.
+Ultimately, Avoid formulas whenever possible because they are hard to understand in spoken audio.
+When you asbolutely must include a formula make sure you write them out so it can be comprehended when spoken.
+So E=Mc2 would be energy is equal to the mass times the speed of light squared; x_i or x_..i.._ would become x sub i
 """
 
 ###### END GENERATE TEXT FOR AUDIO ###########

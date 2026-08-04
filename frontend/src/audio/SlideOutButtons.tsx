@@ -11,7 +11,8 @@ import {
 } from 'react';
 import { Check, X, Minus } from 'lucide-react';
 import { CatPicker } from '../components/CatPicker';
-import actionStyles from './ActionButton.module.css';
+import { FlagButton, type QuestionFlag } from '../components/FlagButton';
+import actionStyles from '../styles/ActionButton.module.css';
 import styles from './SlideOutButtons.module.css';
 
 interface SlideOutActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -69,6 +70,10 @@ export interface SlideOutButtonsProps {
   showCategories?: boolean;
   categoryList?: string[];
   initialSelectedCategories?: string[];
+  questionId?: string | number;
+  initialFlag?: QuestionFlag | null;
+  csrfToken?: string;
+  onFlagChange?: (newFlag: QuestionFlag | null) => void;
 }
 
 export interface SlideOutButtonsHandle {
@@ -145,10 +150,14 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
     showCategories = false,
     categoryList,
     initialSelectedCategories,
+    questionId,
+    initialFlag,
+    csrfToken,
+    onFlagChange,
   }: SlideOutButtonsProps,
   ref,
 ) {
-  const hasExtra = Boolean(extraActions?.length);
+  const hasExtra = Boolean(extraActions?.length) || Boolean(questionId);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gripRef = useRef<HTMLDivElement | null>(null);
@@ -452,6 +461,15 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
               </button>
             );
           })}
+          {questionId && (
+            <FlagButton
+              questionId={questionId}
+              initialFlag={initialFlag}
+              csrfToken={csrfToken}
+              onFlagChange={onFlagChange}
+              disabled={disabled}
+            />
+          )}
         </div>
       )}
 

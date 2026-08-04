@@ -136,34 +136,41 @@
             onClick: () => setIsOpen(!isOpen),
             style: {
               display: 'none',
-              background: 'none',
+              backgroundColor: '#ff8c00',
               border: 'none',
               cursor: 'pointer',
-              padding: '8px',
+              padding: '10px 12px',
               outline: 'none',
               borderRadius: '6px',
               transition: 'background-color 0.2s',
+              boxShadow: '0 2px 8px rgba(255, 140, 0, 0.4)'
+            },
+            onMouseEnter: (e) => {
+              e.currentTarget.style.backgroundColor = '#ffa500';
+            },
+            onMouseLeave: (e) => {
+              e.currentTarget.style.backgroundColor = '#ff8c00';
             },
             className: 'navbar-toggler-btn', // Added class for CSS targeting
           },
             e('span', {
               style: {
                 display: 'block',
-                width: '24px',
+                width: '20px',
                 height: '2px',
-                backgroundColor: '#f8fafc',
-                margin: '5px 0',
+                backgroundColor: '#0f172a',
+                margin: '4px 0',
                 transition: 'all 0.3s',
-                transform: isOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none'
+                transform: isOpen ? 'rotate(45deg) translate(4px, 4px)' : 'none'
               }
             }),
             e('span', {
               style: {
                 display: 'block',
-                width: '24px',
+                width: '20px',
                 height: '2px',
-                backgroundColor: '#f8fafc',
-                margin: '5px 0',
+                backgroundColor: '#0f172a',
+                margin: '4px 0',
                 transition: 'all 0.3s',
                 opacity: isOpen ? 0 : 1
               }
@@ -171,12 +178,12 @@
             e('span', {
               style: {
                 display: 'block',
-                width: '24px',
+                width: '20px',
                 height: '2px',
-                backgroundColor: '#f8fafc',
-                margin: '5px 0',
+                backgroundColor: '#0f172a',
+                margin: '4px 0',
                 transition: 'all 0.3s',
-                transform: isOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none'
+                transform: isOpen ? 'rotate(-45deg) translate(4px, -4px)' : 'none'
               }
             })
           ),

@@ -1,5 +1,5 @@
 label > input { width: 3em; }
-form > * { padding-right: 1em; }
+form > * { padding-right: 0.1em; }
 #result { font-weight: bold; }
 
 .start-quiz-button {
@@ -39,7 +39,6 @@ label[for=hint] {
 }
 
 #categories,
-#search-within-categories,
 #quizfilters {
   display: flex;
   flex-wrap: wrap;
@@ -112,93 +111,14 @@ label[for=hint] {
   padding-right: 55px;
 }
 
-#sidebar {
-  width: 450px;
-  overflow: auto;
-  margin: 10px;
-  margin-top: 0 !important;
-  background: #ccffcc;
-  color: black;
-  transition: all 0.3s;
-  float: left;
-  word-break: break-word;
-}
-
-#edit-question-content {
-  float: right;
-  border: solid;
-}
-
-#delete-question-button {
-  margin-left: 2em;
-}
-
-@media (max-width: 800px) {
-  #sidebar {
-    position: relative;
-    width: 100%;
-  }
-
-  #edit-question-content {
-    margin-left: 0;
-  }
-}
-
-.search-filters {
-  background-color: #00ccff;
-}
-
 @media (min-width: 992px) {
   .navbar-nav {
     margin-left: 100px;
   }
 }
 
-#search-filters {
-  margin: 10px;
-}
-
-#edit-question-header {
-  background-color: #ff99ff;
-  padding: 5px;
-  /* border-radius: 25px; */
-  border-top-left-radius: 1px;
-  border-top-right-radius: 1px;
-  border-bottom-right-radius: 25px;
-  border-bottom-left-radius: 25px;
-
-}
-
-.edit-question-title {
-  padding-left: 20px;
-}
-
-#search-filters {
-  padding: 10px;
-  margin: 10px;
-}
-
-#title-filter-button-section {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-}
-
 span {
   display: inline-block;
-}
-
-.search-result-category-item {
-  padding: 3px;
-  margin: 3px;
-  background-color: #ff9933;
-  border-radius: 15px;
-  padding-right: 9px;
-  padding-left: 9px;
-}
-
-#editquestionform-area {
-  display: none;
 }
 
 .image-container>img {
@@ -585,9 +505,9 @@ footer {
   /* A dark grey color */
   color: #ffffff;
   /* Text color is white for contrast */
-  padding: 20px 0;
+  padding: 5px 0;
   /* Padding at the top and bottom of the footer */
-  margin-top: 20px;
+  margin-top: 5px;
   /* Margin at the top of the footer to separate from the content above */
   /* float: left; */
   display: flex;
@@ -607,7 +527,7 @@ footer {
 }
 
 .footer-content h4 {
-  margin-bottom: 15px;
+  margin-bottom: 4px;
   /* Space below the headings */
 }
 
@@ -619,7 +539,7 @@ footer {
 .footer-bottom {
   border-top: 1px solid #ffffff;
   /* A border at the top of the bottom section for separation */
-  padding-top: 20px;
+  padding-top: 5px;
   /* Padding at the top of the bottom section */
 }
 
@@ -640,6 +560,23 @@ footer {
   justify-content: space-evenly;
 }
 
+footer .bigbtn {
+  min-height: 25px;
+  margin: 0.125em;
+  padding: 0.25em 0.5em;
+}
+
+footer h3, footer h4, footer h5 {
+  font-size: 0.9rem;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+footer p {
+  font-size: 0.8rem;
+  margin-bottom: 2px;
+}
+
 .form-control.answer {
   max-height: 600px;
 }
@@ -653,10 +590,18 @@ footer {
   display: None;
 }
 
-
-
-
-
 .error {
   color: red
+}
+
+@media (min-width: 1200px) {
+  .container {
+    max-width: 1400px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1600px;
+  }
 }

@@ -25,10 +25,11 @@ export default defineConfig({
       treeshake: false,
       input: {
         ai_integration: "src/entrypoints/AiIntegration.entry.tsx",
-        react_edit_question: "src/entrypoints/EditQuestion.entry.tsx",
-        react_edit_question_inline: "src/entrypoints/InlineQuestionEditor.entry.tsx",
+        edit_question: "src/entrypoints/EditQuestion.entry.tsx",
+        edit_questions_page: "src/entrypoints/EditQuestions.entry.tsx",
         audio_quiz_entry: "src/entrypoints/AudioQuiz.entry.tsx",
         quiz_markdown: "src/entrypoints/QuizMarkdown.entry.tsx",
+        add_content: "src/entrypoints/AddContent.entry.tsx",
         ai_question_generator: "src/entrypoints/AiQuestionGenerator.entry.tsx",
       },
     },

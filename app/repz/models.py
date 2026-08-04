@@ -1,3 +1,4 @@
+import enum 
 from xmlrpc.client import Boolean
 from sqlalchemy.types import Date, Integer, String, Boolean as Bool
 from sqlalchemy.orm import relationship, Mapped, declarative_base
@@ -80,6 +81,13 @@ class question(Base):
 
     audio_files = relationship(
         "audio",
+        back_populates="question",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    flags = relationship(
+        "flag",
         back_populates="question",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -174,6 +182,13 @@ class users(UserMixin, Base):
         "UserAIIntegration",
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+
+    flags = relationship(
+        "flag",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
 class UserAIProvider(Base):
@@ -279,6 +294,47 @@ class rating(Base):
 
     __table_args__ = (
         PrimaryKeyConstraint('user_id', 'question_id'),
+        {},
+    )
+
+class FlagCategory(enum.Enum):
+    NEEDS_CHANGES = "NEEDS_CHANGES"
+    INAPPROPRIATE = "INAPPROPRIATE"
+    STUDY_ME = "STUDY_ME"
+
+
+class flag(Base):
+    __tablename__ = "flag"
+
+    user_id = sa.Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    question_id = sa.Column(
+        Integer,
+        ForeignKey("question.question_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    flag_category = sa.Column(
+        sa.Enum(
+            FlagCategory,
+            name="flag_category",
+            native_enum=False,
+            create_constraint=True,
+            length=30,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
+    note = sa.Column(sa.String(2000), nullable=True)
+
+    user = relationship("users", back_populates="flags")
+    question = relationship("question", back_populates="flags")
+
+    __table_args__ = (
+        PrimaryKeyConstraint("user_id", "question_id"),
+        sa.Index("ix_flag_user_category", "user_id", "flag_category"),
         {},
     )
 

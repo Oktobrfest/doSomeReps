@@ -1,0 +1,480 @@
+.page {
+  --eq-cat-bg: #ffe6bf;
+  --eq-cat-text: #7a4a00;
+
+  --cp-item-bg: #fff6e8;
+  --cp-item-bg-active: #ffd79a;
+  --cp-item-border: #f2d7ae;
+  --cp-item-border-active: #e08a00;
+  --cp-item-text: #4a2c00;
+
+  height: calc(100dvh - var(--eq-page-offset, 60px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  padding: 8px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* ---------- Filter panel ---------- */
+
+.filterPanel {
+  flex: 0 0 auto;
+  background-color: var(--dsr-color-surface);
+  border: 1px solid var(--dsr-color-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+}
+
+.searchIcon {
+  width: 18px;
+  height: 18px;
+  color: var(--dsr-color-text-muted);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--dsr-color-text-primary);
+  background-color: var(--dsr-color-surface);
+  border: 1px solid var(--dsr-color-border-strong);
+  border-radius: var(--dsr-radius-control);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--dsr-color-focus);
+  box-shadow: 0 0 0 3px var(--dsr-color-focus-ring);
+}
+
+.primaryBtn {
+  padding: 8px 20px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--dsr-color-on-action);
+  background-color: var(--dsr-color-action-primary);
+  border: none;
+  border-radius: var(--dsr-radius-control);
+  cursor: pointer;
+  transition: background-color var(--dsr-transition-fast);
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background-color: var(--dsr-color-action-primary-hover);
+}
+
+.primaryBtn:disabled {
+  opacity: var(--dsr-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.ghostBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--dsr-color-text-secondary);
+  background-color: var(--dsr-color-surface-secondary);
+  border: none;
+  border-radius: var(--dsr-radius-control);
+  cursor: pointer;
+  transition: background-color var(--dsr-transition-fast);
+}
+
+.ghostBtn:hover {
+  background-color: var(--dsr-color-surface-secondary-hover);
+}
+
+/* CHANGED THIS - badge showing active filter count while the panel is collapsed. */
+.filterCount {
+  min-width: 18px;
+  padding: 0 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  color: var(--dsr-color-on-action);
+  background-color: var(--dsr-color-action-primary);
+  border-radius: 999px;
+}
+
+.filterBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border-top: 1px solid var(--dsr-color-border);
+  max-height: 52vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.filterLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dsr-color-text-muted);
+}
+
+.filterActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ---------- Chips ---------- */
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dsr-color-text-secondary);
+  background-color: var(--dsr-color-surface-subtle);
+  border: 1px solid var(--dsr-color-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color var(--dsr-transition-fast),
+    border-color var(--dsr-transition-fast), color var(--dsr-transition-fast);
+}
+
+.chip:hover {
+  border-color: var(--dsr-color-border-strong);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--dsr-color-focus);
+  outline-offset: 2px;
+}
+
+.chipActive {
+  color: var(--dsr-color-on-action);
+  background-color: var(--dsr-color-action-primary);
+  border-color: var(--dsr-color-action-primary);
+}
+
+.chipIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ---------- Two-column shell ---------- */
+
+.shell {
+  /* CHANGED THIS - flexes to fill whatever the filter panel leaves, so collapsing filters
+     immediately gives the height back to the question. */
+  flex: 1 1 auto;
+  min-height: 350px;
+  display: grid;
+  /* CHANGED THIS - narrower results column; the old 400px cap ate width the editor needed. */
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.shellResultsCollapsed {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.collapsedResultsBar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--dsr-color-surface);
+  border: 1px solid var(--dsr-color-border);
+  border-radius: 12px;
+  width: 40px;
+  padding: 8px 0;
+  height: 100%;
+}
+
+.expandResultsBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--dsr-color-surface-secondary);
+  color: var(--dsr-color-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--dsr-transition-fast), color var(--dsr-transition-fast);
+}
+
+.expandResultsBtn:hover {
+  background-color: var(--dsr-color-surface-secondary-hover);
+  color: var(--dsr-color-text-primary);
+}
+
+.resultsColumn,
+.editorColumn {
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.editorColumn {
+  background-color: var(--dsr-color-surface);
+  border: 1px solid var(--dsr-color-border);
+  border-radius: 12px;
+}
+
+.backToResultsBtn {
+  display: none;
+}
+
+/* ---------- Results pane ---------- */
+
+.resultsPane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--dsr-color-surface);
+  border: 1px solid var(--dsr-color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.resultsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dsr-color-border);
+  background-color: var(--dsr-color-surface-subtle);
+}
+
+.collapseResultsBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--dsr-color-text-muted);
+  cursor: pointer;
+  transition: background-color var(--dsr-transition-fast), color var(--dsr-transition-fast);
+}
+
+.collapseResultsBtn:hover {
+  background-color: var(--dsr-color-surface-secondary-hover);
+  color: var(--dsr-color-text-primary);
+}
+
+.resultsTitle {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--dsr-color-text-primary);
+}
+
+.resultsCount {
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--dsr-color-on-action);
+  background-color: var(--dsr-color-action-primary);
+  border-radius: 999px;
+}
+
+.resultsScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.resultsEmpty {
+  margin: 0;
+  padding: 28px 18px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--dsr-color-text-muted);
+}
+
+.resultsList {
+  list-style: none;
+  margin: 0;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.resultRow {
+  border: 1px solid var(--dsr-color-border);
+  border-radius: 10px;
+  background-color: var(--dsr-color-surface);
+  transition: border-color var(--dsr-transition-fast),
+    box-shadow var(--dsr-transition-fast);
+}
+
+.resultRow:hover {
+  border-color: var(--dsr-color-border-strong);
+}
+
+.resultRowSelected {
+  border-color: var(--dsr-color-action-primary);
+  box-shadow: 0 0 0 2px var(--dsr-color-focus-ring);
+}
+
+.resultButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  font-family: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.resultText {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--dsr-color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.resultTextFull {
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--dsr-color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.catChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.catChip {
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--eq-cat-text);
+  background-color: var(--eq-cat-bg);
+  border-radius: 999px;
+}
+
+.flagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+.flagChipIcon {
+  width: 12px;
+  height: 12px;
+}
+
+.unexcludeBtn {
+  margin: 0 10px 8px;
+  padding: 5px 12px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--dsr-color-text-secondary);
+  background-color: var(--dsr-color-surface-secondary);
+  border: none;
+  border-radius: var(--dsr-radius-control);
+  cursor: pointer;
+}
+
+.unexcludeBtn:hover {
+  background-color: var(--dsr-color-surface-secondary-hover);
+}
+
+/* ---------- Mobile: drill-down between list and editor ---------- */
+
+@media (max-width: 900px) {
+  .page {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .editorColumn {
+    display: none;
+  }
+
+  .shellDetail .resultsColumn {
+    display: none;
+  }
+
+  .shellDetail .editorColumn {
+    display: block;
+  }
+
+  .shellDetail .backToResultsBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px;
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dsr-color-text-secondary);
+    background-color: var(--dsr-color-surface-secondary);
+    border: none;
+    border-radius: var(--dsr-radius-control);
+    cursor: pointer;
+  }
+}

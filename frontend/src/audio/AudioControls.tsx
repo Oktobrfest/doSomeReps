@@ -8,7 +8,7 @@ import { Pause, Play } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import type { AudioAsset } from './types';
 import styles from './AudioQuiz.module.css';
-import actionStyles from './ActionButton.module.css';
+import actionStyles from '../styles/ActionButton.module.css';
 
 export function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');

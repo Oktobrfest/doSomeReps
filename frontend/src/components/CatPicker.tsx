@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useCategories } from "../hooks/useCategories";
 
 interface CatPickerProps {
   selectedCategories: string[];
@@ -7,28 +8,13 @@ interface CatPickerProps {
 }
 
 export function CatPicker({ selectedCategories, onChange }: CatPickerProps) {
-  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const allCategories = useCategories();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalSearch, setModalSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Fetch all categories from API
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch categories");
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setAllCategories(data);
-        }
-      })
-      .catch((err) => console.error("Error fetching categories:", err));
-  }, []);
-
+  
   // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

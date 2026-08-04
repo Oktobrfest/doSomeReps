@@ -1,3 +1,5 @@
+/* doSomeReps/frontend/src/styles/shared.module.css */
+
 .loadingState {
   padding: 3rem 0;
   text-align: center;
@@ -7,7 +9,9 @@
   display: inline-block;
   width: 2rem;
   height: 2rem;
-  color: #007bff;
+
+  color: var(--dsr-color-loading-indicator);
+
   vertical-align: -0.125em;
   border: 0.25em solid currentColor;
   border-right-color: transparent;
@@ -35,7 +39,8 @@
 
 .loadingText {
   margin-top: 1rem;
-  color: #6c757d;
+
+  color: var(--dsr-color-text-muted);
 }
 
 .iconSpacing {
@@ -47,19 +52,24 @@
   padding: 0.75rem 2.75rem 0.75rem 1rem;
   margin-bottom: 1rem;
   border: 1px solid transparent;
-  border-radius: 0.25rem;
+
+  border-radius: var(--dsr-radius-small);
 }
 
 .alertSuccess {
-  color: #155724;
-  background-color: #d4edda;
-  border-color: #c3e6cb;
+  color: var(--dsr-color-success-text);
+
+  background-color: var(--dsr-color-success-surface);
+
+  border-color: var(--dsr-color-success-border);
 }
 
 .alertError {
-  color: #721c24;
-  background-color: #f8d7da;
-  border-color: #f5c6cb;
+  color: var(--dsr-color-error-text);
+
+  background-color: var(--dsr-color-error-surface);
+
+  border-color: var(--dsr-color-error-border);
 }
 
 .alertCloseButton {
@@ -107,5 +117,120 @@
 }
 
 .mutedText {
-  color: #6c757d;
+  color: var(--dsr-color-text-muted);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--dsr-radius-control);
+  cursor: pointer;
+  transition: background-color var(--dsr-transition-fast);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--dsr-color-focus);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: var(--dsr-opacity-disabled);
+  cursor: not-allowed;
+}
+
+.buttonPrimary {
+  background-color: var(--dsr-color-action-primary);
+  color: var(--dsr-color-on-action);
+}
+
+.buttonPrimary:hover:not(:disabled) {
+  background-color: var(--dsr-color-action-primary-hover);
+}
+
+.buttonSecondary {
+  background-color: var(--dsr-color-surface-secondary);
+  color: var(--dsr-color-text-secondary);
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  background-color: var(--dsr-color-surface-secondary-hover);
+}
+
+/* Generic Regular-sized Form/Action Button styles */
+.actionButton {
+  border: none;
+  border-radius: 12px;
+  height: 46px;
+  padding: 0 24px;
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.actionButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.actionButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.actionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.btnRed {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.btnRed:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.btnBlue {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.btnBlue:hover:not(:disabled) {
+  background-color: #0069d9;
+}
+
+.btnCyan {
+  background-color: #06b6d4;
+  color: #fff;
+}
+
+.btnCyan:hover:not(:disabled) {
+  background-color: #0891b2;
+}
+
+.btnAmber {
+  background-color: #f59e0b;
+  color: #fff;
+}
+
+.btnAmber:hover:not(:disabled) {
+  background-color: #d97706;
 }

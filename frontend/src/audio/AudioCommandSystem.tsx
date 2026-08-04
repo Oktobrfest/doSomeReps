@@ -16,7 +16,7 @@ import { registerReload } from './commands/reload';
 import { registerStopListening } from './commands/stopListening';
 import { resolveQuizCommandHandler } from './commands/resolveQuizCommand';
 import styles from './AudioCommandSystem.module.css';
-import actionStyles from './ActionButton.module.css';
+import actionStyles from '../styles/ActionButton.module.css';
 import type { AudioCommandHandlers } from './types';
 import {
   logMediaStreamDiagnostics,

@@ -6,14 +6,16 @@ import { ImageModal } from './ImageModal';
 import { Volume2, BookOpen, Ban, Edit } from 'lucide-react';
 import type { AudioQuizProps } from './types';
 import styles from './AudioQuiz.module.css';
-import actionStyles from './ActionButton.module.css';
+import actionStyles from '../styles/ActionButton.module.css';
 import { SlideOutButtons, type ExtraAction } from './SlideOutButtons';
 import type { SlideOutButtonsHandle } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
+import { FlagButton } from '../components/FlagButton';
 import { useAudioQuizController } from './useAudioQuizController';
 import { LargeActionButton, LargePlayableControl } from './AudioControls';
-import { useAskAi } from './useAskAi';
-import { AskAiPanel } from './AskAiPanel';
+import { useAskAi } from '../ask_ai/useAskAi';
+import { AskAiPanel } from '../ask_ai/AskAiPanel';
+import type { AskAiContext } from '../ask_ai/types';
 
 const answerPaddingBySnap: Record<'collapsed' | 'trio' | 'full', number> = {
   collapsed: 12,
@@ -77,8 +79,22 @@ export function AudioQuiz(props: AudioQuizProps) {
   const commandSystemRef = useRef<AudioCommandSystemHandle>(null);
   const slideOutRef = useRef<SlideOutButtonsHandle>(null);
 
+  const askAiContext = useMemo<AskAiContext | null>(() => {
+    const q = quiz.currentQuestion;
+    if (!q) return null;
+    return {
+      questionId: q.question_id,
+      questionText: q.question_text,
+      answerText: q.answer,
+      categories: q.categories ?? [],
+      questionImageUrls: validImages(q.pics?.question_image),
+      answerImageUrls: validImages(q.pics?.answer_pics),
+      csrfToken,
+    };
+  }, [quiz.currentQuestion, csrfToken]);
+
   const askAi = useAskAi({
-    question: quiz.currentQuestion,
+    context: askAiContext,
     answerRevealed: quiz.answerRevealed,
     onResumeListening: useCallback(() => {
       commandSystemRef.current?.resumeListening();
@@ -106,6 +122,56 @@ export function AudioQuiz(props: AudioQuizProps) {
     }
     prevAskAiActiveRef.current = askAi.isActive;
   }, [askAi.isActive]);
+
+  // Sync playback state and register Bluetooth play/pause media handlers
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+
+    const isPlaying = quiz.questionPlaying || quiz.answerPlaying;
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+
+    try {
+      navigator.mediaSession.setActionHandler('pause', () => {
+        quiz.actions.pause();
+      });
+    } catch (e) {
+      console.warn(e);
+    }
+
+    try {
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (quiz.questionActive || quiz.answerActive) {
+          quiz.actions.resume();
+        } else {
+          quiz.actions.readQuestion();
+        }
+      });
+    } catch (e) {
+      console.warn(e);
+    }
+
+    if (quiz.currentQuestion) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: `Question Level ${quiz.currentQuestion.level_no}`,
+        artist: quiz.currentQuestion.categories.join(', ') || 'Audio Quiz',
+        album: 'doSomeReps',
+      });
+    }
+
+    return () => {
+      if ('mediaSession' in navigator) {
+        try { navigator.mediaSession.setActionHandler('play', null); } catch {}
+        try { navigator.mediaSession.setActionHandler('pause', null); } catch {}
+      }
+    };
+  }, [
+    quiz.questionPlaying,
+    quiz.answerPlaying,
+    quiz.questionActive,
+    quiz.answerActive,
+    quiz.actions,
+    quiz.currentQuestion,
+  ]);
 
   return (
     <div className={styles.quizContainer}>
@@ -137,6 +203,7 @@ export function AudioQuiz(props: AudioQuizProps) {
           categoryList={categoryList}
           selectedCategories={selectedCategories}
           slideOutRef={slideOutRef}
+          csrfToken={csrfToken}
         />
       ) : quiz.queueExhausted ? (
         <AudioQuizEmpty
@@ -171,6 +238,7 @@ interface AudioQuizBodyProps {
   categoryList?: string[];
   selectedCategories?: string[];
   slideOutRef: RefObject<SlideOutButtonsHandle>;
+  csrfToken?: string;
 }
 
 function AudioQuizBody({
@@ -180,6 +248,7 @@ function AudioQuizBody({
   categoryList,
   selectedCategories,
   slideOutRef,
+  csrfToken,
 }: AudioQuizBodyProps) {
   const currentQuestion = quiz.currentQuestion!; // guarded by the shell
   const answerRef = useRef<HTMLDivElement>(null);
@@ -310,6 +379,15 @@ function AudioQuizBody({
             {currentQuestion.categories.map((cat) => (
               <span key={cat} className={styles.badge}>{cat}</span>
             ))}
+            {currentQuestion.flag && (
+              <FlagButton
+                questionId={currentQuestion.question_id}
+                initialFlag={currentQuestion.flag}
+                csrfToken={csrfToken}
+                onFlagChange={quiz.actions.setFlag}
+                compact={true}
+              />
+            )}
           </div>
 
           <div className={styles.textBlock}>
@@ -347,6 +425,10 @@ function AudioQuizBody({
             showCategories
             categoryList={categoryList}
             initialSelectedCategories={selectedCategories}
+            questionId={currentQuestion.question_id}
+            initialFlag={currentQuestion.flag}
+            csrfToken={csrfToken}
+            onFlagChange={quiz.actions.setFlag}
           />
         )}
       </form>
