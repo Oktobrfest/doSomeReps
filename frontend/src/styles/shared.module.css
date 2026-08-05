@@ -164,30 +164,29 @@
 
 /* Generic Regular-sized Form/Action Button styles */
 .actionButton {
-  border: none;
-  border-radius: 12px;
-  height: 46px;
-  padding: 0 24px;
-  font-weight: 700;
-  font-size: 1rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    transform 120ms ease,
-    opacity 120ms ease,
-    box-shadow 120ms ease,
-    background-color 120ms ease;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  box-sizing: border-box;
+  gap: var(--dsr-btn-gap);
+  height: var(--dsr-btn-height);
+  min-width: var(--dsr-btn-min-width);
+  padding: 0 var(--dsr-btn-padding-x);
+  border: none;
+  border-radius: var(--dsr-btn-radius);
+  font-family: inherit;
+  font-size: var(--dsr-btn-font-size);
+  font-weight: var(--dsr-btn-font-weight);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: var(--dsr-btn-shadow);
+  transition: var(--dsr-btn-transition);
 }
 
 .actionButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--dsr-btn-shadow-hover);
 }
 
 .actionButton:active:not(:disabled) {
@@ -233,4 +232,24 @@
 
 .btnAmber:hover:not(:disabled) {
   background-color: #d97706;
+}
+
+.btnSlate {
+  background-color: #475569;
+  color: #fff;
+}
+
+.btnSlate:hover:not(:disabled) {
+  background-color: #334155;
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dsr-btn-row-gap);
+  width: 100%;
+}
+
+.actionRow > * {
+  flex: 1 1 0;
 }

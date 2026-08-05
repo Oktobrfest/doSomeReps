@@ -1,23 +1,21 @@
 /* doSomeReps/frontend/src/components/ExtendButton.module.css */
 .widget {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: stretch;
-  min-width: 140px;
-  height: 46px;
-  border-radius: 12px;
+  gap: 0;
+  height: var(--dsr-btn-height);
+  min-width: var(--dsr-btn-min-width);
+  border-radius: var(--dsr-btn-radius);
   overflow: hidden;
   border: 1px solid var(--dsr-color-action-accent-hover);
-  box-sizing: border-box;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  transition:
-    transform 120ms ease,
-    opacity 120ms ease,
-    box-shadow 120ms ease;
+  box-shadow: var(--dsr-btn-shadow);
+  transition: var(--dsr-btn-transition);
 }
 
 .widget:hover:not(.disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--dsr-btn-shadow-hover);
 }
 
 .widget:active:not(.disabled) {
@@ -36,18 +34,20 @@
   justify-content: center;
   padding: 0;
   font-family: inherit;
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: var(--dsr-btn-font-weight);
+  font-size: var(--dsr-btn-font-size);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .extendBtn {
   flex: 1;
-  padding: 0 20px;
+  padding: 0 var(--dsr-btn-padding-x);
   border-right: 1px solid var(--dsr-color-divider-on-action);
 }
 
 .settingsBtn {
-  width: 46px;
+  width: var(--dsr-btn-height);
   flex-shrink: 0;
 }
 
