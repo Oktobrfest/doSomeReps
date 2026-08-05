@@ -1,109 +1,102 @@
 /* doSomeReps/frontend/src/styles/global.css */
 
-/* CHANGED THIS - created the global token layer; this file intentionally contains global design values rather than reusable CSS classes. */
 :root {
-  /* CHANGED THIS - added the existing shared spinner color as a semantic token without changing its rendered color. */
   --dsr-color-loading-indicator: #007bff;
 
-  /* CHANGED THIS - added the Extend split-button accent color as a semantic token without changing its rendered color. */
   --dsr-color-action-accent: #319795;
 
-  /* CHANGED THIS - added the Extend split-button hover and border color as a semantic token without changing its rendered color. */
   --dsr-color-action-accent-hover: #2c7a7b;
 
-  /* CHANGED THIS - added the existing primary action color as a semantic token without changing its rendered color. */
   --dsr-color-action-primary: #3182ce;
 
-  /* CHANGED THIS - added the existing primary action hover color as a semantic token without changing its rendered color. */
   --dsr-color-action-primary-hover: #2b6cb0;
 
-  /* CHANGED THIS - added the shared foreground color used on filled actions. */
   --dsr-color-on-action: #ffffff;
 
-  /* CHANGED THIS - added the primary application surface color. */
   --dsr-color-surface: #ffffff;
 
-  /* CHANGED THIS - added the existing subtle surface color used by option rows. */
   --dsr-color-surface-subtle: #f8fafc;
 
-  /* CHANGED THIS - added the existing secondary action surface color. */
   --dsr-color-surface-secondary: #edf2f7;
 
-  /* CHANGED THIS - added the existing secondary action hover surface color. */
   --dsr-color-surface-secondary-hover: #e2e8f0;
 
-  /* CHANGED THIS - added the existing primary text color. */
   --dsr-color-text-primary: #2d3748;
 
-  /* CHANGED THIS - added the existing secondary text color. */
   --dsr-color-text-secondary: #4a5568;
 
-  /* CHANGED THIS - added the shared muted text color already used by shared.module.css. */
   --dsr-color-text-muted: #6c757d;
   --dsr-color-text-subtle: #718096;
   
-  /* CHANGED THIS - added the existing light border color. */
   --dsr-color-border: #e2e8f0;
 
-  /* CHANGED THIS - added the existing stronger control border color. */
   --dsr-color-border-strong: #cbd5e0;
 
-  /* CHANGED THIS - added the existing divider color used inside the filled split button. */
   --dsr-color-divider-on-action: rgba(255, 255, 255, 0.25);
 
-  /* CHANGED THIS - added the existing focus color. */
   --dsr-color-focus: #4299e1;
 
-  /* CHANGED THIS - added the existing focus-ring color. */
   --dsr-color-focus-ring: rgba(66, 153, 225, 0.15);
 
-  /* CHANGED THIS - added the existing success alert text color used by shared.module.css. */
   --dsr-color-success-text: #155724;
 
-  /* CHANGED THIS - added the existing success alert surface color used by shared.module.css. */
   --dsr-color-success-surface: #d4edda;
 
-  /* CHANGED THIS - added the existing success alert border color used by shared.module.css. */
   --dsr-color-success-border: #c3e6cb;
 
-  /* CHANGED THIS - added the existing shared error alert text color. */
   --dsr-color-error-text: #721c24;
 
-  /* CHANGED THIS - added the existing shared error alert surface color. */
   --dsr-color-error-surface: #f8d7da;
 
-  /* CHANGED THIS - added the existing shared error alert border color. */
   --dsr-color-error-border: #f5c6cb;
 
-  /* CHANGED THIS - added the existing stronger component-level error text color used by ExtendButton. */
   --dsr-color-error-text-strong: #c53030;
 
-  /* CHANGED THIS - added the existing component-level error surface color used by ExtendButton. */
   --dsr-color-error-surface-subtle: #fff5f5;
 
-  /* CHANGED THIS - added the existing component-level error border color used by ExtendButton. */
   --dsr-color-error-border-subtle: #feb2b2;
 
-  /* CHANGED THIS - added the existing modal backdrop color. */
   --dsr-color-overlay: rgba(0, 0, 0, 0.45);
 
-  /* CHANGED THIS - added the existing small shared radius used by alerts. */
   --dsr-radius-small: 0.25rem;
 
-  /* CHANGED THIS - added the existing control radius used by inputs and buttons. */
   --dsr-radius-control: 6px;
 
-  /* CHANGED THIS - added the existing dialog radius. */
   --dsr-radius-dialog: 8px;
 
-  /* CHANGED THIS - added the existing disabled-state opacity. */
   --dsr-opacity-disabled: 0.65;
 
-  /* CHANGED THIS - added the existing fast interaction transition. */
   --dsr-transition-fast: 0.15s ease;
 
-  /* CHANGED THIS - added the existing dialog elevation as a reusable token. */
   --dsr-shadow-dialog:
     0 20px 25px -5px rgba(0, 0, 0, 0.15),
     0 10px 10px -5px rgba(0, 0, 0, 0.08);
+
+--dsr-btn-height-md: 46px;
+  --dsr-btn-padding-x-md: 24px;
+  --dsr-btn-font-size-md: 1rem;
+  --dsr-btn-min-width-md: 180px;
+
+  --dsr-btn-height-sm: 34px;
+  --dsr-btn-padding-x-sm: 14px;
+  --dsr-btn-font-size-sm: 0.875rem;
+  --dsr-btn-min-width-sm: 0;
+
+  --dsr-btn-height: var(--dsr-btn-height-md);
+  --dsr-btn-padding-x: var(--dsr-btn-padding-x-md);
+  --dsr-btn-font-size: var(--dsr-btn-font-size-md);
+  --dsr-btn-min-width: var(--dsr-btn-min-width-md);
+
+  --dsr-btn-radius: 12px;
+  --dsr-btn-gap: 8px;
+  --dsr-btn-row-gap: 12px;
+  
+  --dsr-btn-font-weight: 700;
+  --dsr-btn-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --dsr-btn-shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.1);
+  --dsr-btn-transition:
+    transform 120ms ease,
+    opacity 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
 }

@@ -1,5 +1,3 @@
-// CHANGED THIS - new hook keeping filters and the selected question in the URL so refresh, back
-// and link-sharing all restore the same view (Fork I2).
 import { useCallback } from "react";
 import {
   EMPTY_FILTERS,

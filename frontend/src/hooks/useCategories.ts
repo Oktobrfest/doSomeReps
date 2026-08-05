@@ -1,4 +1,3 @@
-// CHANGED THIS - new shared hook so CatPicker and the new filter panel share one category fetch (Fork H2, DRY).
 import { useEffect, useState } from "react";
 
 let cachedCategories: string[] | null = null;

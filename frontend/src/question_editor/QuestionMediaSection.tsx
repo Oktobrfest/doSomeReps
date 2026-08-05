@@ -1,4 +1,4 @@
-import type { ChangeEvent } from "react";
+import { useCallback, useRef, useEffect, type ChangeEvent } from "react";
 import type { PicData, QuestionPart } from "./question_editor_types";
 import styles from "./QuestionEditor.module.css";
 
@@ -44,17 +44,37 @@ export function QuestionMediaSection({
   onRemoveExisting,
   onRemoveNew,
 }: QuestionMediaSectionProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    // Set height to scrollHeight to fit all content, then add some spacing (e.g. 24px for ~1-2 extra lines of space beneath)
+    const extraSpacing = 24;
+    el.style.height = (el.scrollHeight + extraSpacing) + "px";
+  }, []);
+
+  useEffect(() => {
+    autoResize();
+  }, [value, autoResize]);
+
+  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    onValueChange(event.target.value);
+  };
+
   return (
     <div className={`${styles.formSection} ${sectionClassName}`}>
       <label htmlFor={textareaId} className={styles.label}>
         {fieldLabel}
       </label>
       <textarea
+        ref={textareaRef}
         id={textareaId}
         className={`${styles.textarea} ${textareaClassName}`}
         rows={rows}
         value={value}
-        onChange={(event) => onValueChange(event.target.value)}
+        onChange={handleChange}
         maxLength={maxLength}
         required={required}
       />

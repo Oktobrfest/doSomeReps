@@ -1,15 +1,20 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Toaster } from "sonner";
+import { Sparkles } from "lucide-react";
 import { CatPicker } from "../components/CatPicker";
 import { ExtendButton } from "../components/ExtendButton";
 import { QuestionEditorAlert } from "./QuestionEditorAlert";
 import { QuestionMediaSection } from "./QuestionMediaSection";
 import type { QuestionEditorProps } from "./question_editor_types";
 import { useQuestionEditor } from "./useQuestionEditor";
-import { AskAiLauncher } from "../ask_ai/AskAiLauncher";
+import { useAskAi } from "../ask_ai/useAskAi";
+import { AskAiPanel } from "../ask_ai/AskAiPanel";
+import type { AskAiContext } from "../ask_ai/types";
 import { MarkdownContent } from "../components/MarkdownContent";
 import styles from "./QuestionEditor.module.css";
 import sharedStyles from "../styles/shared.module.css";
+
+const FORM_ID = "question-editor-form";
 
 export function QuestionEditor({
   questionId,
@@ -19,6 +24,27 @@ export function QuestionEditor({
 }: QuestionEditorProps) {
   const editor = useQuestionEditor({ questionId, onDeleted, onSaved });
   const [previewOpen, setPreviewOpen] = useState(true);
+
+  const askAiContext = useMemo<AskAiContext | null>(() => {
+    if (!questionId) return null;
+    return {
+      questionId,
+      questionText: editor.questionText,
+      answerText: editor.answerText,
+      categories: editor.selectedCats,
+      questionImageUrls: editor.pics.question.map((p) => p.pic_string),
+      answerImageUrls: editor.pics.answer.map((p) => p.pic_string),
+    };
+  }, [
+    questionId,
+    editor.questionText,
+    editor.answerText,
+    editor.selectedCats,
+    editor.pics.question,
+    editor.pics.answer,
+  ]);
+
+  const askAi = useAskAi({ context: askAiContext, answerRevealed: true });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,30 +74,70 @@ export function QuestionEditor({
     <div className={styles.editorContainer}>
       <Toaster richColors position="top-right" />
       <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <h4>
-            <i className={`fa fa-edit ${sharedStyles.iconSpacing}`}></i>Edit Question
-          </h4>
-          <div className={styles.headerActions}>
-            <button
-              type="button"
-              className={styles.togglePreviewBtn}
-              onClick={() => setPreviewOpen(!previewOpen)}
-              title={previewOpen ? "Hide Preview" : "Show Preview"}
-            >
-              <i className={`fa ${previewOpen ? "fa-eye-slash" : "fa-eye"} ${sharedStyles.iconSpacing}`}></i>
-              {previewOpen ? "Hide Preview" : "Show Preview"}
-            </button>
+      <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTop}>
+            <h4>
+              <i className={`fa fa-edit ${sharedStyles.iconSpacing}`}></i>Edit Question
+            </h4>
+
             {onClose && (
               <button
                 type="button"
-                className={styles.closeBtn}
+                className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
                 onClick={onClose}
               >
                 Close
               </button>
             )}
           </div>
+
+<div className={sharedStyles.actionRow}>
+            <button
+              type="button"
+              className={`${sharedStyles.actionButton} ${sharedStyles.btnCyan}`}
+              onClick={() => askAi.actions.start()}
+              disabled={!questionId || askAi.isActive}
+            >
+              <Sparkles size={18} />
+              Ask AI Tutor
+            </button>
+
+            <ExtendButton
+              onExtend={editor.handleExtend}
+              disabled={!questionId || editor.extending}
+            />
+
+            {!previewOpen && (
+              <button
+                type="button"
+                className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
+                onClick={() => setPreviewOpen(true)}
+                title="Show Preview"
+              >
+                <i className="fa fa-eye"></i>
+                Show Preview
+              </button>
+            )}
+
+            <button
+              type="button"
+              className={`${sharedStyles.actionButton} ${sharedStyles.btnRed}`}
+              onClick={editor.handleDelete}
+              disabled={editor.deleting || !questionId}
+            >
+              {editor.deleting ? "Deleting..." : "Delete Question"}
+            </button>
+
+            <button
+              type="submit"
+              form={FORM_ID}
+              className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
+              disabled={editor.saving}
+            >
+              {editor.saving ? "Saving..." : "Save Question"}
+            </button>
+          </div>
+
         </div>
 
         <div className={styles.cardBody}>
@@ -93,7 +159,7 @@ export function QuestionEditor({
 
           <div className={styles.splitLayout}>
             <div className={styles.formPane}>
-              <form onSubmit={handleSubmit}>
+              <form id={FORM_ID} onSubmit={handleSubmit}>
                 <div className={styles.formRow}>
                   <div className={styles.formColumn}>
                     <QuestionMediaSection
@@ -103,7 +169,7 @@ export function QuestionEditor({
                       inputId="react-q-file"
                       textareaId="react-q-text"
                       value={editor.questionText}
-                      rows={6}
+                      rows={2}
                       maxLength={1500}
                       required
                       sectionClassName={styles.questionSection}
@@ -123,7 +189,7 @@ export function QuestionEditor({
                       inputId="react-hint-file"
                       textareaId="react-hint-text"
                       value={editor.hintText}
-                      rows={3}
+                      rows={1}
                       maxLength={2000}
                       sectionClassName={styles.hintSection}
                       textareaClassName={styles.hintTextarea}
@@ -142,7 +208,7 @@ export function QuestionEditor({
                       inputId="react-answer-file"
                       textareaId="react-answer-text"
                       value={editor.answerText}
-                      rows={8}
+                      rows={2}
                       maxLength={4000}
                       required
                       sectionClassName={styles.answerSection}
@@ -261,42 +327,6 @@ export function QuestionEditor({
                     </div>
                   </div>
                 </div>
-
-                <div className={styles.buttonFooter}>
-                  <button
-                    type="button"
-                    className={`${sharedStyles.actionButton} ${sharedStyles.btnRed}`}
-                    onClick={editor.handleDelete}
-                    disabled={editor.deleting || !questionId}
-                  >
-                    {editor.deleting ? "Deleting..." : "Delete Question"}
-                  </button>
-                  <div className={styles.rightButtons}>
-                    {questionId && (
-                      <AskAiLauncher
-                        questionId={questionId}
-                        questionText={editor.questionText}
-                        answerText={editor.answerText}
-                        answerRevealed={true}
-                        categories={editor.selectedCats}
-                        questionImageUrls={editor.pics.question.map((p) => p.pic_string)}
-                        answerImageUrls={editor.pics.answer.map((p) => p.pic_string)}
-                        inline={true}
-                      />
-                    )}
-                    <ExtendButton
-                      onExtend={editor.handleExtend}
-                      disabled={!questionId || editor.extending}
-                    />
-                    <button
-                      type="submit"
-                      className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
-                      disabled={editor.saving}
-                    >
-                      {editor.saving ? "Saving..." : "Save Question"}
-                    </button>
-                  </div>
-                </div>
               </form>
             </div>
 
@@ -349,7 +379,10 @@ export function QuestionEditor({
               </div>
             )}
           </div>
-          {/* Ask AI active panel or triggers are handled inline in the footer */}
+
+          <div id="ask-ai-conversation-root" className={styles.askAiRoot}>
+            <AskAiPanel state={askAi} />
+          </div>
         </div>
       </div>
     </div>

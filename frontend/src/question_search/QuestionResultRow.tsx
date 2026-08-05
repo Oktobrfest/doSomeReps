@@ -1,5 +1,6 @@
 import React from "react";
 import { FLAG_METADATA } from "../components/FlagConstants";
+import { MarkdownContent } from "../components/MarkdownContent";
 import type { SearchResultItem } from "./question_search_types";
 import styles from "./QuestionSearch.module.css";
 
@@ -44,9 +45,8 @@ export function QuestionResultRow({
 
         <span
           className={selected ? styles.resultTextFull : styles.resultText}
-          title={item.question_text}
         >
-          {item.question_text}
+          <MarkdownContent content={item.question_text} />
         </span>
 
         {item.categories.length > 0 && (

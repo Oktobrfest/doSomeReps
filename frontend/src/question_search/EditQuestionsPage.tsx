@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { QuestionEditor } from "../question_editor/QuestionEditor";
@@ -16,31 +16,11 @@ const initial = readUrlState();
 export function EditQuestionsPage() {
   const [filters, setFilters] = useState<SearchFilters>(initial.filters);
   const [selectedId, setSelectedId] = useState<number | null>(initial.questionId);
-  const [resultsCollapsed, setResultsCollapsed] = useState(false);
-  const pageRef = useRef<HTMLDivElement>(null);
+  
+   const [resultsCollapsed, setResultsCollapsed] = useState(false);
 
   const search = useQuestionSearch(bootstrap.searchUrl);
-  const writeUrl = useWriteUrlState();
-
-  useLayoutEffect(() => {
-    const page = pageRef.current;
-    if (!page) return;
-
-    const measure = () => {
-      const top = page.getBoundingClientRect().top + window.scrollY;
-      page.style.setProperty("--eq-page-offset", `${Math.round(top) + 8}px`);
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(document.documentElement);
-    window.addEventListener("resize", measure);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
+  const writeUrl = useWriteUrlState();  
 
   useEffect(() => {
     writeUrl(filters, selectedId);
@@ -70,7 +50,7 @@ export function EditQuestionsPage() {
   );
 
   return (
-    <div className={styles.page} ref={pageRef}>
+    <div className={styles.page}>
       <Toaster richColors position="top-right" />
 
       <QuestionSearchPanel

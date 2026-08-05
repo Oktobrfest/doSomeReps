@@ -8,7 +8,6 @@
   --cp-item-border-active: #e08a00;
   --cp-item-text: #4a2c00;
 
-  height: calc(100dvh - var(--eq-page-offset, 140px));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -56,7 +55,6 @@
 .searchInput {
   flex: 1 1 240px;
   min-width: 0;
-  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below. */
   padding: 8px 12px;
   font-size: 0.88rem;
   font-family: inherit;
@@ -74,7 +72,6 @@
 
 .primaryBtn {
   composes: button buttonPrimary from '../styles/shared.module.css';
-  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below. */
   font-size: 0.85rem;
   padding: 8px 14px;
 }
@@ -82,13 +79,10 @@
 .ghostBtn {
   composes: button buttonSecondary from '../styles/shared.module.css';
   gap: 6px;
-  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below. */
   font-size: 0.85rem;
   padding: 8px 12px;
 }
 
-/* CHANGED THIS - badge showing active filter count while the panel is collapsed.
-   Reverted to fixed sizing; the vw clamps added churn with no visible benefit. */
 .filterCount {
   min-width: 18px;
   padding: 0 5px;
@@ -130,8 +124,6 @@
   gap: 8px;
 }
 
-/* CHANGED THIS - action buttons now grow/shrink to share the row (capped so they don't
-   become absurd on a wide monitor) instead of sitting at fixed text width. */
 .filterActions > * {
   flex: 1 1 auto;
   max-width: 200px;
@@ -152,8 +144,6 @@
 /* ---------- Chips ---------- */
 
 .chipRow {
-  /* CHANGED THIS - auto-fit grid so chips are equal width, always fill the row edge-to-edge,
-     and reflow their column count as the panel widens/narrows. */
   --chip-col: 140px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--chip-col), 1fr));
@@ -167,8 +157,6 @@
   border: 1px solid var(--dsr-color-border);
   color: var(--dsr-color-text-secondary);
   background-color: var(--dsr-color-surface-subtle);
-  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below.
-     min-width/nowrap keep the pill from breaking its label inside a narrow grid column. */
   font-size: 0.78rem;
   padding: 6px 12px;
   min-width: 0;
@@ -198,7 +186,6 @@
   flex-shrink: 0;
 }
 
-/* CHANGED THIS - mid tier: real, visible step-up in control size once the panel has room. */
 @container (min-width: 560px) {
   .searchInput {
     font-size: 0.95rem;
@@ -225,7 +212,6 @@
   }
 }
 
-/* CHANGED THIS - wide tier: full-monitor sizing so the panel stops looking undersized. */
 @container (min-width: 1000px) {
   .searchInput {
     font-size: 1.02rem;
@@ -260,14 +246,10 @@
 /* ---------- Two-column shell ---------- */
 
 .shell {
-  /* CHANGED THIS - flexes to fill whatever the filter panel leaves, so collapsing filters
-     immediately gives the height back to the question. */
-  flex: 1 1 auto;
-  min-height: 0;
   display: grid;
-  /* CHANGED THIS - narrower results column; the old 400px cap ate width the editor needed. */
   grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
   gap: 8px;
+  align-items: start;
 }
 
 .shellResultsCollapsed {
@@ -283,7 +265,8 @@
   border-radius: 12px;
   width: 40px;
   padding: 8px 0;
-  height: 100%;
+  position: sticky;
+  top: 8px;
 }
 
 .expandResultsBtn {
@@ -309,8 +292,11 @@
 .editorColumn {
   min-height: 0;
   min-width: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+}
+
+.resultsColumn {
+  position: sticky;
+  top: 8px;
 }
 
 .editorColumn {
@@ -328,7 +314,7 @@
 .resultsPane {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  max-height: calc(100dvh - 16px);
   background-color: var(--dsr-color-surface);
   border: 1px solid var(--dsr-color-border);
   border-radius: 12px;
@@ -380,8 +366,10 @@
 }
 
 .resultsScroll {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .resultsEmpty {
@@ -444,10 +432,24 @@
   overflow-wrap: anywhere;
 }
 
+.resultText pre,
+.resultText code {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
 .resultTextFull {
   font-size: 0.88rem;
   line-height: 1.4;
   color: var(--dsr-color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.resultTextFull pre,
+.resultTextFull code {
+  white-space: pre-wrap;
+  word-break: break-all;
   overflow-wrap: anywhere;
 }
 
@@ -506,8 +508,21 @@
     gap: 6px;
   }
 
-  .shell {
+.shell {
     grid-template-columns: 1fr;
+  }
+
+  .resultsColumn,
+  .collapsedResultsBar {
+    position: static;
+  }
+
+  .resultsPane {
+    max-height: none;
+  }
+
+  .resultsScroll {
+    overflow-y: visible;
   }
 
   .editorColumn {
