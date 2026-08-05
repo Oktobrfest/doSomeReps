@@ -1,5 +1,3 @@
-// CHANGED THIS - new API module for the question search feature. Endpoint URLs are injected from
-// Jinja so no Flask blueprint prefix is ever hardcoded or guessed.
 import type {
   EditQuestionsBootstrap,
   SearchFilters,

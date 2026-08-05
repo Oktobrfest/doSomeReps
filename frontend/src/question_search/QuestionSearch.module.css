@@ -55,7 +55,6 @@
 .searchInput {
   flex: 1 1 240px;
   min-width: 0;
-  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below. */
   padding: 8px 12px;
   font-size: 0.88rem;
   font-family: inherit;
@@ -73,7 +72,6 @@
 
 .primaryBtn {
   composes: button buttonPrimary from '../styles/shared.module.css';
-  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below. */
   font-size: 0.85rem;
   padding: 8px 14px;
 }
@@ -81,13 +79,10 @@
 .ghostBtn {
   composes: button buttonSecondary from '../styles/shared.module.css';
   gap: 6px;
-  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below. */
   font-size: 0.85rem;
   padding: 8px 12px;
 }
 
-/* CHANGED THIS - badge showing active filter count while the panel is collapsed.
-   Reverted to fixed sizing; the vw clamps added churn with no visible benefit. */
 .filterCount {
   min-width: 18px;
   padding: 0 5px;
@@ -129,8 +124,6 @@
   gap: 8px;
 }
 
-/* CHANGED THIS - action buttons now grow/shrink to share the row (capped so they don't
-   become absurd on a wide monitor) instead of sitting at fixed text width. */
 .filterActions > * {
   flex: 1 1 auto;
   max-width: 200px;
@@ -151,8 +144,6 @@
 /* ---------- Chips ---------- */
 
 .chipRow {
-  /* CHANGED THIS - auto-fit grid so chips are equal width, always fill the row edge-to-edge,
-     and reflow their column count as the panel widens/narrows. */
   --chip-col: 140px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--chip-col), 1fr));
@@ -166,8 +157,6 @@
   border: 1px solid var(--dsr-color-border);
   color: var(--dsr-color-text-secondary);
   background-color: var(--dsr-color-surface-subtle);
-  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below.
-     min-width/nowrap keep the pill from breaking its label inside a narrow grid column. */
   font-size: 0.78rem;
   padding: 6px 12px;
   min-width: 0;
@@ -197,7 +186,6 @@
   flex-shrink: 0;
 }
 
-/* CHANGED THIS - mid tier: real, visible step-up in control size once the panel has room. */
 @container (min-width: 560px) {
   .searchInput {
     font-size: 0.95rem;
@@ -224,7 +212,6 @@
   }
 }
 
-/* CHANGED THIS - wide tier: full-monitor sizing so the panel stops looking undersized. */
 @container (min-width: 1000px) {
   .searchInput {
     font-size: 1.02rem;

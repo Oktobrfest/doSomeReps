@@ -230,7 +230,6 @@ def searchq():
             "question_text": r.question_text,
             "question_id": r.question_id,
             "categories": catz,
-            # CHANGED THIS - expose the current user's flag for this question (null when unflagged).
             "flag": flags_by_qid.get(r.question_id),
         }
         search_results.append(q)
