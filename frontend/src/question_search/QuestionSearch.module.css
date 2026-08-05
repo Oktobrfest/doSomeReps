@@ -432,10 +432,24 @@
   overflow-wrap: anywhere;
 }
 
+.resultText pre,
+.resultText code {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
 .resultTextFull {
   font-size: 0.88rem;
   line-height: 1.4;
   color: var(--dsr-color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.resultTextFull pre,
+.resultTextFull code {
+  white-space: pre-wrap;
+  word-break: break-all;
   overflow-wrap: anywhere;
 }
 

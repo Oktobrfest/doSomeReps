@@ -50,7 +50,9 @@ export function QuestionMediaSection({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = el.scrollHeight + "px";
+    // Set height to scrollHeight to fit all content, then add some spacing (e.g. 24px for ~1-2 extra lines of space beneath)
+    const extraSpacing = 24;
+    el.style.height = (el.scrollHeight + extraSpacing) + "px";
   }, []);
 
   useEffect(() => {

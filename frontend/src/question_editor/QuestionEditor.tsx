@@ -170,7 +170,7 @@ export function QuestionEditor({
                       inputId="react-q-file"
                       textareaId="react-q-text"
                       value={editor.questionText}
-                      rows={6}
+                      rows={2}
                       maxLength={1500}
                       required
                       sectionClassName={styles.questionSection}
@@ -190,7 +190,7 @@ export function QuestionEditor({
                       inputId="react-hint-file"
                       textareaId="react-hint-text"
                       value={editor.hintText}
-                      rows={3}
+                      rows={1}
                       maxLength={2000}
                       sectionClassName={styles.hintSection}
                       textareaClassName={styles.hintTextarea}
@@ -209,7 +209,7 @@ export function QuestionEditor({
                       inputId="react-answer-file"
                       textareaId="react-answer-text"
                       value={editor.answerText}
-                      rows={8}
+                      rows={2}
                       maxLength={4000}
                       required
                       sectionClassName={styles.answerSection}
