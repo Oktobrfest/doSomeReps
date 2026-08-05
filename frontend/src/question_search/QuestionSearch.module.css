@@ -8,7 +8,7 @@
   --cp-item-border-active: #e08a00;
   --cp-item-text: #4a2c00;
 
-  height: calc(100dvh - var(--eq-page-offset, 60px));
+  height: calc(100dvh - var(--eq-page-offset, 140px));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -24,6 +24,7 @@
 
 .filterPanel {
   flex: 0 0 auto;
+  container-type: inline-size;
   background-color: var(--dsr-color-surface);
   border: 1px solid var(--dsr-color-border);
   border-radius: 12px;
@@ -39,6 +40,12 @@
   padding: 8px 12px;
 }
 
+.searchRow > .primaryBtn,
+.searchRow > .ghostBtn {
+  flex: 1 1 auto;
+  max-width: 220px;
+}
+
 .searchIcon {
   width: 18px;
   height: 18px;
@@ -49,8 +56,9 @@
 .searchInput {
   flex: 1 1 240px;
   min-width: 0;
+  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below. */
   padding: 8px 12px;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-family: inherit;
   color: var(--dsr-color-text-primary);
   background-color: var(--dsr-color-surface);
@@ -65,48 +73,22 @@
 }
 
 .primaryBtn {
-  padding: 8px 20px;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--dsr-color-on-action);
-  background-color: var(--dsr-color-action-primary);
-  border: none;
-  border-radius: var(--dsr-radius-control);
-  cursor: pointer;
-  transition: background-color var(--dsr-transition-fast);
-}
-
-.primaryBtn:hover:not(:disabled) {
-  background-color: var(--dsr-color-action-primary-hover);
-}
-
-.primaryBtn:disabled {
-  opacity: var(--dsr-opacity-disabled);
-  cursor: not-allowed;
+  composes: button buttonPrimary from '../styles/shared.module.css';
+  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below. */
+  font-size: 0.85rem;
+  padding: 8px 14px;
 }
 
 .ghostBtn {
-  display: inline-flex;
-  align-items: center;
+  composes: button buttonSecondary from '../styles/shared.module.css';
   gap: 6px;
-  padding: 8px 14px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--dsr-color-text-secondary);
-  background-color: var(--dsr-color-surface-secondary);
-  border: none;
-  border-radius: var(--dsr-radius-control);
-  cursor: pointer;
-  transition: background-color var(--dsr-transition-fast);
+  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below. */
+  font-size: 0.85rem;
+  padding: 8px 12px;
 }
 
-.ghostBtn:hover {
-  background-color: var(--dsr-color-surface-secondary-hover);
-}
-
-/* CHANGED THIS - badge showing active filter count while the panel is collapsed. */
+/* CHANGED THIS - badge showing active filter count while the panel is collapsed.
+   Reverted to fixed sizing; the vw clamps added churn with no visible benefit. */
 .filterCount {
   min-width: 18px;
   padding: 0 5px;
@@ -125,9 +107,6 @@
   gap: 12px;
   padding: 12px;
   border-top: 1px solid var(--dsr-color-border);
-  max-height: 52vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .filterGroup {
@@ -146,30 +125,54 @@
 
 .filterActions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 8px;
+}
+
+/* CHANGED THIS - action buttons now grow/shrink to share the row (capped so they don't
+   become absurd on a wide monitor) instead of sitting at fixed text width. */
+.filterActions > * {
+  flex: 1 1 auto;
+  max-width: 200px;
+}
+
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.filterRow > .filterGroup {
+  flex: 1 1 260px;
+  min-width: 0;
 }
 
 /* ---------- Chips ---------- */
 
 .chipRow {
-  display: flex;
-  flex-wrap: wrap;
+  /* CHANGED THIS - auto-fit grid so chips are equal width, always fill the row edge-to-edge,
+     and reflow their column count as the panel widens/narrows. */
+  --chip-col: 140px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--chip-col), 1fr));
   gap: 7px;
 }
 
 .chip {
-  display: inline-flex;
-  align-items: center;
+  composes: button from '../styles/shared.module.css';
   gap: 6px;
-  padding: 6px 12px;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--dsr-color-border);
   color: var(--dsr-color-text-secondary);
   background-color: var(--dsr-color-surface-subtle);
-  border: 1px solid var(--dsr-color-border);
-  border-radius: 999px;
-  cursor: pointer;
+  /* CHANGED THIS - dropped the vw clamps; size now steps via container queries below.
+     min-width/nowrap keep the pill from breaking its label inside a narrow grid column. */
+  font-size: 0.78rem;
+  padding: 6px 12px;
+  min-width: 0;
+  white-space: nowrap;
   transition: background-color var(--dsr-transition-fast),
     border-color var(--dsr-transition-fast), color var(--dsr-transition-fast);
 }
@@ -195,13 +198,72 @@
   flex-shrink: 0;
 }
 
+/* CHANGED THIS - mid tier: real, visible step-up in control size once the panel has room. */
+@container (min-width: 560px) {
+  .searchInput {
+    font-size: 0.95rem;
+    padding: 9px 14px;
+  }
+
+  .primaryBtn {
+    font-size: 0.9rem;
+    padding: 9px 18px;
+  }
+
+  .ghostBtn {
+    font-size: 0.9rem;
+    padding: 9px 16px;
+  }
+
+  .chipRow {
+    --chip-col: 150px;
+  }
+
+  .chip {
+    font-size: 0.82rem;
+    padding: 7px 14px;
+  }
+}
+
+/* CHANGED THIS - wide tier: full-monitor sizing so the panel stops looking undersized. */
+@container (min-width: 1000px) {
+  .searchInput {
+    font-size: 1.02rem;
+    padding: 10px 16px;
+  }
+
+  .primaryBtn {
+    font-size: 1rem;
+    padding: 11px 24px;
+  }
+
+  .ghostBtn {
+    font-size: 1rem;
+    padding: 11px 20px;
+  }
+
+  .chipRow {
+    --chip-col: 170px;
+  }
+
+  .chip {
+    font-size: 0.88rem;
+    padding: 9px 18px;
+  }
+
+  .chipIcon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
 /* ---------- Two-column shell ---------- */
 
 .shell {
   /* CHANGED THIS - flexes to fill whatever the filter panel leaves, so collapsing filters
      immediately gives the height back to the question. */
   flex: 1 1 auto;
-  min-height: 350px;
+  min-height: 0;
   display: grid;
   /* CHANGED THIS - narrower results column; the old 400px cap ate width the editor needed. */
   grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
@@ -320,8 +382,6 @@
 .resultsScroll {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .resultsEmpty {
