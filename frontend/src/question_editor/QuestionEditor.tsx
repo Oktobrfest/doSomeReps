@@ -74,14 +74,24 @@ export function QuestionEditor({
     <div className={styles.editorContainer}>
       <Toaster richColors position="top-right" />
       <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <h4>
-            <i className={`fa fa-edit ${sharedStyles.iconSpacing}`}></i>Edit Question
-          </h4>
+      <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTop}>
+            <h4>
+              <i className={`fa fa-edit ${sharedStyles.iconSpacing}`}></i>Edit Question
+            </h4>
 
-          <div className={sharedStyles.actionRow}>
+            {onClose && (
+              <button
+                type="button"
+                className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
+                onClick={onClose}
+              >
+                Close
+              </button>
+            )}
+          </div>
 
-
+<div className={sharedStyles.actionRow}>
             <button
               type="button"
               className={`${sharedStyles.actionButton} ${sharedStyles.btnCyan}`}
@@ -97,7 +107,17 @@ export function QuestionEditor({
               disabled={!questionId || editor.extending}
             />
 
-
+            {!previewOpen && (
+              <button
+                type="button"
+                className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
+                onClick={() => setPreviewOpen(true)}
+                title="Show Preview"
+              >
+                <i className="fa fa-eye"></i>
+                Show Preview
+              </button>
+            )}
 
             <button
               type="button"
@@ -108,16 +128,6 @@ export function QuestionEditor({
               {editor.deleting ? "Deleting..." : "Delete Question"}
             </button>
 
-            {onClose && (
-              <button
-                type="button"
-                className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
-                onClick={onClose}
-              >
-                Close
-              </button>
-            )}
-
             <button
               type="submit"
               form={FORM_ID}
@@ -126,19 +136,8 @@ export function QuestionEditor({
             >
               {editor.saving ? "Saving..." : "Save Question"}
             </button>
-
-            {!previewOpen && (
-              <button
-                type="button"
-                className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
-                onClick={() => setPreviewOpen(!previewOpen)}
-                title={previewOpen ? "Hide Preview" : "Show Preview"}
-              >
-                <i className={`fa ${previewOpen ? "fa-eye-slash" : "fa-eye"}`}></i>
-                {previewOpen ? "Hide Preview" : "Show Preview"}
-              </button>
-            )}
           </div>
+
         </div>
 
         <div className={styles.cardBody}>

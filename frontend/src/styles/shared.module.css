@@ -243,6 +243,13 @@
   background-color: #334155;
 }
 
+.buttonSm {
+  --dsr-btn-height: var(--dsr-btn-height-sm);
+  --dsr-btn-padding-x: var(--dsr-btn-padding-x-sm);
+  --dsr-btn-font-size: var(--dsr-btn-font-size-sm);
+  --dsr-btn-min-width: var(--dsr-btn-min-width-sm);
+}
+
 .actionRow {
   display: flex;
   flex-wrap: wrap;
