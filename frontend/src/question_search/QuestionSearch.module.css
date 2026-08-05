@@ -8,7 +8,6 @@
   --cp-item-border-active: #e08a00;
   --cp-item-text: #4a2c00;
 
-  height: calc(100dvh - var(--eq-page-offset, 140px));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -260,14 +259,10 @@
 /* ---------- Two-column shell ---------- */
 
 .shell {
-  /* CHANGED THIS - flexes to fill whatever the filter panel leaves, so collapsing filters
-     immediately gives the height back to the question. */
-  flex: 1 1 auto;
-  min-height: 0;
   display: grid;
-  /* CHANGED THIS - narrower results column; the old 400px cap ate width the editor needed. */
   grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
   gap: 8px;
+  align-items: start;
 }
 
 .shellResultsCollapsed {
@@ -283,7 +278,8 @@
   border-radius: 12px;
   width: 40px;
   padding: 8px 0;
-  height: 100%;
+  position: sticky;
+  top: 8px;
 }
 
 .expandResultsBtn {
@@ -309,8 +305,11 @@
 .editorColumn {
   min-height: 0;
   min-width: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+}
+
+.resultsColumn {
+  position: sticky;
+  top: 8px;
 }
 
 .editorColumn {
@@ -328,7 +327,7 @@
 .resultsPane {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  max-height: calc(100dvh - 16px);
   background-color: var(--dsr-color-surface);
   border: 1px solid var(--dsr-color-border);
   border-radius: 12px;
@@ -380,8 +379,10 @@
 }
 
 .resultsScroll {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .resultsEmpty {
@@ -506,8 +507,21 @@
     gap: 6px;
   }
 
-  .shell {
+.shell {
     grid-template-columns: 1fr;
+  }
+
+  .resultsColumn,
+  .collapsedResultsBar {
+    position: static;
+  }
+
+  .resultsPane {
+    max-height: none;
+  }
+
+  .resultsScroll {
+    overflow-y: visible;
   }
 
   .editorColumn {
