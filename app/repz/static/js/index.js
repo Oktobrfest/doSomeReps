@@ -1,15 +1,6 @@
 var RATEQ = flask_util.url_for('quest_ajx.rateq');
-//  ACTUALLY RUNS JUST ONCE!!! 
+//  ACTUALLY RUNS JUST ONCE!!!
 window.onload = (event) => {
-    // grab ALL the collapse buttons
-    const collapseButtons = document.querySelectorAll('#collapse-button');
-    // loop through them and add the event listener
-    collapseButtons.forEach(function (button) {
-        button.addEventListener('click', function (event) {
-            event.preventDefault();
-            hideShowChange(button);
-        });
-    });
 
     // Clear Flash messages
     function dismissAlert(alert) {
@@ -49,13 +40,6 @@ window.onload = (event) => {
 
         postReloadMsg();
     }
-    //   ADD FEATURE EVENTUALLY.
-    // if (window.location.pathname.startsWith('/topic/')) {
-    //     const save_to_que_button = document.querySelector("#save-to-que");
-    //     save_to_que_button.addEventListener('click', saveToQue);
-    //
-    //     postReloadMsg();
-    // }
 
     // Check for post-reload messages
     function postReloadMsg() {
@@ -78,15 +62,11 @@ window.onload = (event) => {
         if (window.location.pathname === '/addcontent') {
             // make sure checkboxes are selected before submitting
             let form = document.getElementById('add_question');
-            var selectAllBtn = document.getElementById("select-all-btn");
-            if (selectAllBtn) {
-                selectAllBtn.classList.add("hidden");
-            }
 
             // Add a 'submit' event listener to the form
             form.addEventListener('submit', function (event) {
-                // Select all checkboxes
-                let checkboxes = document.getElementsByClassName('custom-checkbox');
+                // Select all category checkboxes
+                let checkboxes = document.querySelectorAll('input[name="category_name"]');
 
                 // Check if at least one checkbox is checked
                 let atLeastOneChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
@@ -143,8 +123,6 @@ window.onload = (event) => {
             }
             );
         };
-        // const exclude_q_btn = document.getElementById('exclude-question-button');
-        // exclude_q_btn.addEventListener('click', exclude_q);
 
         const blk_button = document.getElementById('block-user-button');
         if (blk_button) {
@@ -212,7 +190,7 @@ window.onload = (event) => {
         for (let i = 0; i < timesCollection.length; i++) {
             let days = originalValues[i];
             let formattedCurrent = formatDuration(days);
-            
+
             if (i > 0) {
                 let diff = days - originalValues[i - 1];
                 let formattedDiff = formatDuration(diff);
@@ -220,22 +198,6 @@ window.onload = (event) => {
             } else {
                 timesCollection[i].textContent = formattedCurrent;
             }
-        }
-    }
-
-    if ((window.location.pathname === '/quiz') || (window.location.pathname === '/quemore')) {
-        const select_all_btn = document.getElementById("select-all-btn");
-        if (select_all_btn) {
-            select_all_btn.addEventListener("click", function () {
-                event.preventDefault();
-                let checkboxes = document.querySelectorAll('input[type="checkbox"].category_name');
-                let allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-
-                for (let checkbox of checkboxes) {
-                    checkbox.checked = !allChecked;
-                }
-                this.textContent = allChecked ? 'Select All' : 'Uncheck All';
-            });
         }
     }
 
@@ -300,14 +262,6 @@ function submit_rating(rating) {
     })
 }
 
-function highlight(x) {
-    x.style.borderStyle = "dotted solid double dashed";
-    // new window.FlashMessage('This is a successs flash message !', 'success');
-}
-
-function unhighlight(x) {
-    x.style.borderStyle;
-}
 // add a new category
 var ADD_CAT = flask_util.url_for('quest_ajx.addcat');
 
@@ -334,11 +288,12 @@ function addNewCategory(ev) {
         .then(response => response.json())
         .then(res => {
             if (res.data !== 'error') {
-                addCatHtml(res.data, res.htl)
+                // The category grid is React-owned; notify it to refetch.
+                document.dispatchEvent(new CustomEvent('repz:categories-changed'));
             } else {
-            console.error('Server error:', res.htl);
-            alert('fail, try again.');
-        }
+                console.error('Server error:', res.htl);
+                alert('fail, try again.');
+            }
         })
         .catch(error => console.error('Error:', error))
         .finally(() => {
@@ -348,36 +303,10 @@ function addNewCategory(ev) {
                 submitButton.disabled = false;
                 this.elements["0"].value = ""
             }
-            // this.querySelector('#add_category_field').value = "";
         });
 }
 
-function addCatHtml(data, htl) {
-    // var span = document.getElementById('resTextlt');
-    let node = document.createElement("li");
-    node.className = 'list-group-item category-item border';
-    let checkbox = document.createElement('input');
-    checkbox.type = "checkbox";
-    checkbox.name = 'category_name';
-    checkbox.checked = true;
-    checkbox.value = htl;
-    checkbox.id = 'category_name'
-    checkbox.setAttribute('class', 'custom-checkbox');
-
-    const label = document.createElement('label');
-    label.htmlFor = 'category_name';
-    label.setAttribute('class', 'checkbox-inline');
-    // didnt work label_txt = '  ' + data
-    const str1 = '.  ';
-    const label_txt = str1.concat('    ', data);
-    label.appendChild(document.createTextNode(label_txt));
-    n = document.getElementById("categories").appendChild(node);
-    n.appendChild(checkbox);
-    n.appendChild(label);
-}
-
 // bind only once attempt#1
-//  didnt work : document.onload = runOnce(document);
 document.addEventListener('readystatechange', event => {
     // When window loaded ( external resources are loaded too- `css`,`src`, etc...)
     if (event.target.readyState === "complete") {
@@ -393,44 +322,6 @@ function runOnce(document) {
         form.addEventListener('submit', addNewCategory);
     }
 };
-
-// get quiz page url VIA url_for
-var quiz_page = flask_util.url_for('home.quiz');
-
-// make the submission
-function start_qz(ev) {
-    ev.preventDefault();
-    // Get the checkbox elements
-    const checkboxes = document.querySelectorAll('input[type=checkbox]');
-    const selected_boxes = [];
-    // Iterate over the checkboxes and add the checked ones to the object
-    checkboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            selected_boxes.push(checkbox.value);
-        }
-    });
-    // Convert the JavaScript object to a JSON string
-    const selected_catz = JSON.stringify(selected_boxes);
-
-    fetch(quiz_page, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: selected_catz
-    })
-    .catch(error => {
-        console.log(error);
-    });
-}
-
-function hideShowChange(button) {
-    if (button.textContent === 'Show Filters') {
-        button.textContent = 'Hide Filters';
-    } else {
-        button.textContent = 'Show Filters';
-    }
-}
 
 function clearMsgArea() {
     // Clear old messages out
@@ -541,7 +432,6 @@ function queMoreSearch(ev) {
                     // select box counter
                     if (q.excluded == false & que_count > 0) {
                         que_cell.childNodes[0].checked = true;
-                        //console.log("que_count: " + que_count);
                         que_count -= 1;
                     }
 
@@ -623,8 +513,9 @@ function queMoreSearch(ev) {
 }
 
 function getSelectedCategories() {
-    // get categories
-    const selected_categories = document.querySelectorAll('#categories input[type=checkbox]');
+    // React renders the grid with a hashed class; the name attribute is the
+    // stable contract the backend already relies on.
+    const selected_categories = document.querySelectorAll('input[name="category_name"]');
 
     const selected_search_categories = [];
     selected_categories.forEach(checkbox => {
@@ -739,7 +630,6 @@ var unblock_user = flask_util.url_for('user_ajx.unblock_user');
 function unBlockUser(ev) {
     ev.preventDefault();
     const blk_user_id = ev.target.getAttribute('data-unblk-usr');
-    // const block_usr_id = JSON.stringify(blk_user_id);
 
     const formData = new FormData();
     formData.append('blk_user_id', blk_user_id);
@@ -772,7 +662,6 @@ var SAVE_2_QUE = flask_util.url_for('que_ajx.save_to_que');
 
 function saveToQue(ev) {
     ev.preventDefault();
-    // FIRST DO VALIDATION TO SEE THAT THERE ARE CHECKBOXES SELECTED/QUESTIONS QUED!!!
 
     const que_table_body = document.getElementById("que-more-search-results-body");
     const rows = [...que_table_body.children];
@@ -883,7 +772,6 @@ const submit_answer_button = document.getElementById('answer-submit-btn');
 function scrollToBottom() {
     document.documentElement.scrollTop = document.documentElement.scrollHeight;
     document.body.scrollTop = document.body.scrollHeight;
-    // window.scrollTo( 0, document.body.scrollHeight);
 }
 
 function autoResize(textarea) {

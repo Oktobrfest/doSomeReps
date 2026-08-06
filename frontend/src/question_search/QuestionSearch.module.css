@@ -24,8 +24,8 @@
 .filterPanel {
   flex: 0 0 auto;
   container-type: inline-size;
-  background-color: var(--dsr-color-surface);
-  border: 1px solid var(--dsr-color-border);
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   overflow: hidden;
@@ -48,7 +48,7 @@
 .searchIcon {
   width: 18px;
   height: 18px;
-  color: var(--dsr-color-text-muted);
+  color: var(--rep-color-text-muted);
   flex-shrink: 0;
 }
 
@@ -58,16 +58,16 @@
   padding: 8px 12px;
   font-size: 0.88rem;
   font-family: inherit;
-  color: var(--dsr-color-text-primary);
-  background-color: var(--dsr-color-surface);
-  border: 1px solid var(--dsr-color-border-strong);
-  border-radius: var(--dsr-radius-control);
+  color: var(--rep-color-text-primary);
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-control);
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: var(--dsr-color-focus);
-  box-shadow: 0 0 0 3px var(--dsr-color-focus-ring);
+  border-color: var(--rep-color-focus);
+  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
 }
 
 .primaryBtn {
@@ -90,8 +90,8 @@
   font-weight: 700;
   line-height: 18px;
   text-align: center;
-  color: var(--dsr-color-on-action);
-  background-color: var(--dsr-color-action-primary);
+  color: var(--rep-color-on-action);
+  background-color: var(--rep-color-action-primary);
   border-radius: 999px;
 }
 
@@ -100,7 +100,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 12px;
-  border-top: 1px solid var(--dsr-color-border);
+  border-top: 1px solid var(--rep-color-border);
 }
 
 .filterGroup {
@@ -114,7 +114,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--dsr-color-text-muted);
+  color: var(--rep-color-text-muted);
 }
 
 .filterActions {
@@ -154,30 +154,30 @@
   composes: button from '../styles/shared.module.css';
   gap: 6px;
   border-radius: 999px;
-  border: 1px solid var(--dsr-color-border);
-  color: var(--dsr-color-text-secondary);
-  background-color: var(--dsr-color-surface-subtle);
+  border: 1px solid var(--rep-color-border);
+  color: var(--rep-color-text-secondary);
+  background-color: var(--rep-color-surface-subtle);
   font-size: 0.78rem;
   padding: 6px 12px;
   min-width: 0;
   white-space: nowrap;
-  transition: background-color var(--dsr-transition-fast),
-    border-color var(--dsr-transition-fast), color var(--dsr-transition-fast);
+  transition: background-color var(--rep-transition-fast),
+    border-color var(--rep-transition-fast), color var(--rep-transition-fast);
 }
 
 .chip:hover {
-  border-color: var(--dsr-color-border-strong);
+  border-color: var(--rep-color-border-strong);
 }
 
 .chip:focus-visible {
-  outline: 2px solid var(--dsr-color-focus);
+  outline: 2px solid var(--rep-color-focus);
   outline-offset: 2px;
 }
 
 .chipActive {
-  color: var(--dsr-color-on-action);
-  background-color: var(--dsr-color-action-primary);
-  border-color: var(--dsr-color-action-primary);
+  color: var(--rep-color-on-action);
+  background-color: var(--rep-color-action-primary);
+  border-color: var(--rep-color-action-primary);
 }
 
 .chipIcon {
@@ -260,8 +260,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: var(--dsr-color-surface);
-  border: 1px solid var(--dsr-color-border);
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
   border-radius: 12px;
   width: 40px;
   padding: 8px 0;
@@ -277,15 +277,15 @@
   height: 32px;
   border: none;
   border-radius: 50%;
-  background-color: var(--dsr-color-surface-secondary);
-  color: var(--dsr-color-text-secondary);
+  background-color: var(--rep-color-surface-secondary);
+  color: var(--rep-color-text-secondary);
   cursor: pointer;
-  transition: background-color var(--dsr-transition-fast), color var(--dsr-transition-fast);
+  transition: background-color var(--rep-transition-fast), color var(--rep-transition-fast);
 }
 
 .expandResultsBtn:hover {
-  background-color: var(--dsr-color-surface-secondary-hover);
-  color: var(--dsr-color-text-primary);
+  background-color: var(--rep-color-surface-secondary-hover);
+  color: var(--rep-color-text-primary);
 }
 
 .resultsColumn,
@@ -300,8 +300,8 @@
 }
 
 .editorColumn {
-  background-color: var(--dsr-color-surface);
-  border: 1px solid var(--dsr-color-border);
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
   border-radius: 12px;
 }
 
@@ -315,8 +315,8 @@
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - 16px);
-  background-color: var(--dsr-color-surface);
-  border: 1px solid var(--dsr-color-border);
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -326,8 +326,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--dsr-color-border);
-  background-color: var(--dsr-color-surface-subtle);
+  border-bottom: 1px solid var(--rep-color-border);
+  background-color: var(--rep-color-surface-subtle);
 }
 
 .collapseResultsBtn {
@@ -339,29 +339,29 @@
   border: none;
   border-radius: 6px;
   background: none;
-  color: var(--dsr-color-text-muted);
+  color: var(--rep-color-text-muted);
   cursor: pointer;
-  transition: background-color var(--dsr-transition-fast), color var(--dsr-transition-fast);
+  transition: background-color var(--rep-transition-fast), color var(--rep-transition-fast);
 }
 
 .collapseResultsBtn:hover {
-  background-color: var(--dsr-color-surface-secondary-hover);
-  color: var(--dsr-color-text-primary);
+  background-color: var(--rep-color-surface-secondary-hover);
+  color: var(--rep-color-text-primary);
 }
 
 .resultsTitle {
   margin: 0;
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--dsr-color-text-primary);
+  color: var(--rep-color-text-primary);
 }
 
 .resultsCount {
   padding: 2px 10px;
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--dsr-color-on-action);
-  background-color: var(--dsr-color-action-primary);
+  color: var(--rep-color-on-action);
+  background-color: var(--rep-color-action-primary);
   border-radius: 999px;
 }
 
@@ -377,7 +377,7 @@
   padding: 28px 18px;
   text-align: center;
   font-size: 0.9rem;
-  color: var(--dsr-color-text-muted);
+  color: var(--rep-color-text-muted);
 }
 
 .resultsList {
@@ -390,20 +390,20 @@
 }
 
 .resultRow {
-  border: 1px solid var(--dsr-color-border);
+  border: 1px solid var(--rep-color-border);
   border-radius: 10px;
-  background-color: var(--dsr-color-surface);
-  transition: border-color var(--dsr-transition-fast),
-    box-shadow var(--dsr-transition-fast);
+  background-color: var(--rep-color-surface);
+  transition: border-color var(--rep-transition-fast),
+    box-shadow var(--rep-transition-fast);
 }
 
 .resultRow:hover {
-  border-color: var(--dsr-color-border-strong);
+  border-color: var(--rep-color-border-strong);
 }
 
 .resultRowSelected {
-  border-color: var(--dsr-color-action-primary);
-  box-shadow: 0 0 0 2px var(--dsr-color-focus-ring);
+  border-color: var(--rep-color-action-primary);
+  box-shadow: 0 0 0 2px var(--rep-color-focus-ring);
 }
 
 .resultButton {
@@ -428,7 +428,7 @@
   overflow: hidden;
   font-size: 0.88rem;
   line-height: 1.4;
-  color: var(--dsr-color-text-primary);
+  color: var(--rep-color-text-primary);
   overflow-wrap: anywhere;
 }
 
@@ -442,7 +442,7 @@
 .resultTextFull {
   font-size: 0.88rem;
   line-height: 1.4;
-  color: var(--dsr-color-text-primary);
+  color: var(--rep-color-text-primary);
   overflow-wrap: anywhere;
 }
 
@@ -489,15 +489,15 @@
   font-family: inherit;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--dsr-color-text-secondary);
-  background-color: var(--dsr-color-surface-secondary);
+  color: var(--rep-color-text-secondary);
+  background-color: var(--rep-color-surface-secondary);
   border: none;
-  border-radius: var(--dsr-radius-control);
+  border-radius: var(--rep-radius-control);
   cursor: pointer;
 }
 
 .unexcludeBtn:hover {
-  background-color: var(--dsr-color-surface-secondary-hover);
+  background-color: var(--rep-color-surface-secondary-hover);
 }
 
 /* ---------- Mobile: drill-down between list and editor ---------- */
@@ -546,10 +546,10 @@
     font-family: inherit;
     font-size: 0.9rem;
     font-weight: 600;
-    color: var(--dsr-color-text-secondary);
-    background-color: var(--dsr-color-surface-secondary);
+    color: var(--rep-color-text-secondary);
+    background-color: var(--rep-color-surface-secondary);
     border: none;
-    border-radius: var(--dsr-radius-control);
+    border-radius: var(--rep-radius-control);
     cursor: pointer;
   }
 }

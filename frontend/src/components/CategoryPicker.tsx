@@ -19,6 +19,14 @@ interface CategoryPickerProps {
   showSelectAll?: boolean;
   /** Optional heading. Omit when the parent already labels the section. */
   title?: string;
+  /** Input name attribute. Required for server-rendered form submission. */
+  checkboxName?: string;
+  /** Maps a category name onto the value the server expects. */
+  checkboxValueFn?: (category: string) => string;
+  /** Submit button that posts apply-categories=Apply with the surrounding form. */
+  showApplyButton?: boolean;
+  /** Hides the picker without unmounting, so checked inputs still submit. */
+  collapsed?: boolean;
 }
 
 const toSlug = (value: string) => value.replace(/ /g, "_");
@@ -35,6 +43,10 @@ export function CategoryPicker({
   showSavedLists = true,
   showSelectAll = true,
   title,
+  checkboxName,
+  checkboxValueFn,
+  showApplyButton = false,
+  collapsed,
 }: CategoryPickerProps) {
   const allCategories = useCategories();
 
@@ -229,7 +241,7 @@ export function CategoryPicker({
   const allSelected = sorted.length > 0 && selectedCategories.length === sorted.length;
 
   return (
-    <div className={styles.picker}>
+    <div hidden={collapsed} className={styles.picker}>
       {title && (
         <header className={styles.header}>
           <h3 className={styles.title}>{title}</h3>
@@ -360,6 +372,8 @@ export function CategoryPicker({
                 onChange={() => toggle(category)}
                 onClick={(event) => event.stopPropagation()}
                 aria-label={category}
+                name={checkboxName}
+                value={checkboxValueFn ? checkboxValueFn(category) : category}
               />
               <span
                 className={`${styles.itemLabel} ${checked ? styles.itemLabelChecked : ""}`}
@@ -372,11 +386,27 @@ export function CategoryPicker({
         })}
       </ul>
 
-      {showSelectAll && (
+      {(showSelectAll || showApplyButton) && (
         <div className={styles.footer}>
-          <button type="button" className={styles.btn} onClick={toggleAll}>
-            {allSelected ? "Deselect all" : "Select all"}
-          </button>
+          {showSelectAll ? (
+            <button type="button" className={styles.btn} onClick={toggleAll}>
+              {allSelected ? "Deselect all" : "Select all"}
+            </button>
+          ) : (
+            <span className={styles.spacer} />
+          )}
+
+          {showApplyButton && (
+            <button
+              type="submit"
+              name="apply-categories"
+              value="Apply"
+              className={`${styles.btn} ${styles.btnPrimary}`}
+            >
+              Apply
+            </button>
+          )}
+
           <span className={styles.count}>
             {selectedCategories.length} of {sorted.length} selected
           </span>

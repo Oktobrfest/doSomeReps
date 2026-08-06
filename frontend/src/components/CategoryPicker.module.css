@@ -17,7 +17,7 @@
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--dsr-color-text-primary);
+  color: var(--rep-color-text-primary);
 }
 
 /* ---------- Saved-list toolbar ---------- */
@@ -28,9 +28,9 @@
   flex-wrap: wrap;
   gap: 6px;
   padding: 8px;
-  background-color: var(--dsr-color-surface-subtle);
-  border: 1px solid var(--dsr-color-border);
-  border-radius: var(--dsr-radius-control);
+  background-color: var(--rep-color-surface-subtle);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-control);
 }
 
 .select,
@@ -42,24 +42,24 @@
   padding: 0 8px;
   font-family: inherit;
   font-size: 0.82rem;
-  color: var(--dsr-color-text-primary);
-  background-color: var(--dsr-color-surface);
-  border: 1px solid var(--dsr-color-border-strong);
-  border-radius: var(--dsr-radius-control);
+  color: var(--rep-color-text-primary);
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-control);
 }
 
 .select:focus,
 .input:focus {
   outline: none;
-  border-color: var(--dsr-color-focus);
-  box-shadow: 0 0 0 3px var(--dsr-color-focus-ring);
+  border-color: var(--rep-color-focus);
+  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
 }
 
 .divider {
   width: 1px;
   height: 20px;
   margin: 0 2px;
-  background-color: var(--dsr-color-border);
+  background-color: var(--rep-color-border);
 }
 
 .spacer {
@@ -123,9 +123,9 @@
   max-height: 232px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background-color: var(--dsr-color-surface-subtle);
-  border: 1px solid var(--dsr-color-border);
-  border-radius: var(--dsr-radius-control);
+  background-color: var(--rep-color-surface-subtle);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-control);
 }
 
 .item {
@@ -134,21 +134,21 @@
   gap: 7px;
   min-width: 0;
   padding: 5px 8px;
-  background-color: var(--cp-item-bg);
-  border: 1px solid var(--cp-item-border);
-  border-radius: var(--dsr-radius-control);
+  background-color: var(--cp-item-bg, var(--rep-cp-item-bg));
+  border: 1px solid var(--cp-item-border, var(--rep-cp-item-border));
+  border-radius: var(--rep-radius-control);
   cursor: pointer;
-  transition: background-color var(--dsr-transition-fast),
-    border-color var(--dsr-transition-fast);
+  transition: background-color var(--rep-transition-fast),
+    border-color var(--rep-transition-fast);
 }
 
 .item:hover {
-  border-color: var(--cp-item-border-active);
+  border-color: var(--cp-item-border-active, var(--rep-cp-item-border-active));
 }
 
 .itemChecked {
-  background-color: var(--cp-item-bg-active);
-  border-color: var(--cp-item-border-active);
+  background-color: var(--cp-item-bg-active, var(--rep-cp-item-bg-active));
+  border-color: var(--cp-item-border-active, var(--rep-cp-item-border-active));
 }
 
 .checkbox {
@@ -156,7 +156,7 @@
   height: 15px;
   flex-shrink: 0;
   cursor: pointer;
-  accent-color: var(--cp-item-border-active);
+  accent-color: var(--cp-item-border-active, var(--rep-cp-item-border-active));
 }
 
 .itemLabel {
@@ -165,16 +165,18 @@
   margin: 0;
   font-size: 0.82rem;
   font-weight: 500;
-  color: var(--cp-item-text);
+  color: var(--cp-item-text, var(--rep-cp-item-text));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
   user-select: none;
+  transition: color var(--rep-transition-fast);
 }
 
 .itemLabelChecked {
   font-weight: 700;
+  color: var(--cp-item-text-active, var(--rep-cp-item-text-active));
 }
 
 /* ---------- Footer ---------- */
@@ -187,7 +189,7 @@
 
 .count {
   font-size: 0.8rem;
-  color: var(--dsr-color-text-muted);
+  color: var(--rep-color-text-muted);
 }
 
 .empty {
@@ -196,15 +198,15 @@
   grid-column: 1 / -1;
   text-align: center;
   font-size: 0.85rem;
-  color: var(--dsr-color-text-muted);
+  color: var(--rep-color-text-muted);
 }
 
 .error {
   margin: 0;
   padding: 8px 10px;
   font-size: 0.82rem;
-  color: var(--dsr-color-error-text-strong);
-  background-color: var(--dsr-color-error-surface-subtle);
-  border: 1px solid var(--dsr-color-error-border-subtle);
-  border-radius: var(--dsr-radius-control);
+  color: var(--rep-color-error-text-strong);
+  background-color: var(--rep-color-error-surface-subtle);
+  border: 1px solid var(--rep-color-error-border-subtle);
+  border-radius: var(--rep-radius-control);
 }

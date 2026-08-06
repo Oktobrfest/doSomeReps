@@ -4,18 +4,18 @@
   display: inline-flex;
   align-items: stretch;
   gap: 0;
-  height: var(--dsr-btn-height);
-  min-width: var(--dsr-btn-min-width);
-  border-radius: var(--dsr-btn-radius);
+  height: var(--rep-btn-height);
+  min-width: var(--rep-btn-min-width);
+  border-radius: var(--rep-btn-radius);
   overflow: hidden;
-  border: 1px solid var(--dsr-color-action-accent-hover);
-  box-shadow: var(--dsr-btn-shadow);
-  transition: var(--dsr-btn-transition);
+  border: 1px solid var(--rep-color-action-accent-hover);
+  box-shadow: var(--rep-btn-shadow);
+  transition: var(--rep-btn-transition);
 }
 
 .widget:hover:not(.disabled) {
   transform: translateY(-1px);
-  box-shadow: var(--dsr-btn-shadow-hover);
+  box-shadow: var(--rep-btn-shadow-hover);
 }
 
 .widget:active:not(.disabled) {
@@ -25,57 +25,57 @@
 .extendBtn,
 .settingsBtn {
   border: none;
-  background-color: var(--dsr-color-action-accent);
-  color: var(--dsr-color-on-action);
+  background-color: var(--rep-color-action-accent);
+  color: var(--rep-color-on-action);
   cursor: pointer;
-  transition: background-color var(--dsr-transition-fast);
+  transition: background-color var(--rep-transition-fast);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   font-family: inherit;
-  font-weight: var(--dsr-btn-font-weight);
-  font-size: var(--dsr-btn-font-size);
+  font-weight: var(--rep-btn-font-weight);
+  font-size: var(--rep-btn-font-size);
   line-height: 1;
   white-space: nowrap;
 }
 
 .extendBtn {
   flex: 1;
-  padding: 0 var(--dsr-btn-padding-x);
-  border-right: 1px solid var(--dsr-color-divider-on-action);
+  padding: 0 var(--rep-btn-padding-x);
+  border-right: 1px solid var(--rep-color-divider-on-action);
 }
 
 .settingsBtn {
-  width: var(--dsr-btn-height);
+  width: var(--rep-btn-height);
   flex-shrink: 0;
 }
 
 .extendBtn:disabled,
 .settingsBtn:disabled {
-  opacity: var(--dsr-opacity-disabled);
+  opacity: var(--rep-opacity-disabled);
   cursor: not-allowed;
 }
 
 .widget.disabled {
-  opacity: var(--dsr-opacity-disabled);
+  opacity: var(--rep-opacity-disabled);
   cursor: not-allowed;
   pointer-events: none;
 }
 
 .dialog {
   border: none;
-  border-radius: var(--dsr-radius-dialog);
+  border-radius: var(--rep-radius-dialog);
   padding: 0;
   margin: auto;
   max-width: 560px;
   width: min(560px, 92vw);
-  background-color: var(--dsr-color-surface);
-  box-shadow: var(--dsr-shadow-dialog);
+  background-color: var(--rep-color-surface);
+  box-shadow: var(--rep-shadow-dialog);
 }
 
 .dialog::backdrop {
-  background-color: var(--dsr-color-overlay);
+  background-color: var(--rep-color-overlay);
 }
 
 .modalContent {
@@ -89,14 +89,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 14px 18px;
-  border-bottom: 1px solid var(--dsr-color-border);
+  border-bottom: 1px solid var(--rep-color-border);
 }
 
 .modalTitle {
   margin: 0;
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--dsr-color-text-primary);
+  color: var(--rep-color-text-primary);
 }
 
 .closeBtn {
@@ -104,13 +104,13 @@
   border: none;
   font-size: 1.75rem;
   line-height: 1;
-  color: var(--dsr-color-text-subtle);
+  color: var(--rep-color-text-subtle);
   cursor: pointer;
   padding: 0 4px;
 }
 
 .closeBtn:hover:not(:disabled) {
-  color: var(--dsr-color-text-primary);
+  color: var(--rep-color-text-primary);
 }
 
 .closeBtn:disabled {
@@ -132,14 +132,14 @@
   font-weight: 600;
   font-size: 0.95rem;
   margin-bottom: 8px;
-  color: var(--dsr-color-text-secondary);
+  color: var(--rep-color-text-secondary);
 }
 
 .textarea {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--dsr-color-border-strong);
-  border-radius: var(--dsr-radius-control);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-control);
   font-size: 1rem;
   font-family: inherit;
   resize: vertical;
@@ -148,8 +148,8 @@
 
 .textarea:focus {
   outline: none;
-  border-color: var(--dsr-color-focus);
-  box-shadow: 0 0 0 3px var(--dsr-color-focus-ring);
+  border-color: var(--rep-color-focus);
+  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
 }
 
 .optionList {
@@ -165,9 +165,9 @@
 
 .optionItem {
   padding: 8px 10px;
-  border: 1px solid var(--dsr-color-border);
-  border-radius: var(--dsr-radius-control);
-  background-color: var(--dsr-color-surface-subtle);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-control);
+  background-color: var(--rep-color-surface-subtle);
 }
 
 .optionLabel {
@@ -190,21 +190,21 @@
   flex: 1;
   line-height: 1.45;
   font-size: 0.95rem;
-  color: var(--dsr-color-text-primary);
+  color: var(--rep-color-text-primary);
   word-break: break-word;
 }
 
 .loadingOptions {
-  color: var(--dsr-color-text-subtle);
+  color: var(--rep-color-text-subtle);
   font-size: 0.9rem;
   padding: 8px 0;
 }
 
 .error {
-  background-color: var(--dsr-color-error-surface-subtle);
-  border: 1px solid var(--dsr-color-error-border-subtle);
-  color: var(--dsr-color-error-text-strong);
-  border-radius: var(--dsr-radius-control);
+  background-color: var(--rep-color-error-surface-subtle);
+  border: 1px solid var(--rep-color-error-border-subtle);
+  color: var(--rep-color-error-text-strong);
+  border-radius: var(--rep-radius-control);
   padding: 10px 12px;
   font-size: 0.9rem;
   margin-bottom: 16px;
@@ -215,6 +215,6 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 18px;
-  border-top: 1px solid var(--dsr-color-border);
+  border-top: 1px solid var(--rep-color-border);
 }
 

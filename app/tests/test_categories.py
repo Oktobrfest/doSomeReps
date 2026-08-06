@@ -5,115 +5,56 @@ import os
 # Add the parent directory of 'repz' to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-
 class TestCategoriesCoreTemplate(unittest.TestCase):
-    """Tests for the _categories_core.html template (bare checkbox grid)."""
+    """_categories_core.html mounts the bare picker via Vite."""
 
     def _read_template(self, name):
         path = os.path.join(
-            os.path.dirname(__file__),
-            '..', 'repz', 'templates', name
+            os.path.dirname(__file__), '..', 'repz', 'templates', name
         )
         with open(path, 'r') as f:
             return f.read()
 
-    def test_core_template_renders_checkbox_grid(self):
-        """Core template should render the category checkbox grid."""
+    def test_core_mounts_vite_entrypoint(self):
         content = self._read_template('_categories_core.html')
-        self.assertIn('category_name', content)
-        self.assertIn("id: 'categories'", content)
-        self.assertIn('checkedCats', content)
+        self.assertIn('react-categories-core-root', content)
+        self.assertIn('categories-core-data', content)
+        self.assertIn(
+            'vite_asset("src/entrypoints/CategoriesCore.entry.tsx")', content
+        )
 
-    def test_core_template_has_no_saved_lists(self):
-        """Core template should NOT contain saved lists UI."""
+    def test_core_has_no_cdn_react(self):
         content = self._read_template('_categories_core.html')
-        self.assertNotIn('Save selection as', content)
-        self.assertNotIn('-- Select Saved List --', content)
-        self.assertNotIn('Set Default', content)
-        self.assertNotIn('Delete', content)
-
-    def test_core_template_has_no_select_all_button(self):
-        """Core template should NOT contain select-all/deselect-all button."""
-        content = self._read_template('_categories_core.html')
-        self.assertNotIn('select-all-btn', content)
-        self.assertNotIn('Deselect All', content)
-        self.assertNotIn('Select All', content)
-
-    def test_core_template_has_no_apply_button(self):
-        """Core template should NOT contain apply button."""
-        content = self._read_template('_categories_core.html')
-        self.assertNotIn('apply-categories-btn', content)
-
-    def test_core_template_has_no_header_toggle(self):
-        """Core template should NOT contain collapse/header toggle."""
-        content = self._read_template('_categories_core.html')
-        self.assertNotIn('collapse-button', content)
-        self.assertNotIn('Show Filters', content)
-        self.assertNotIn('Hide Filters', content)
-
+        self.assertNotIn('unpkg.com', content)
+        self.assertNotIn('document.write', content)
+        self.assertNotIn('React.createElement', content)
 
 class TestCategoriesFullTemplate(unittest.TestCase):
-    """Tests for categories.html (full-featured component)."""
+    """categories.html mounts the full picker via the same Vite entrypoint."""
 
     def _read_template(self, name):
         path = os.path.join(
-            os.path.dirname(__file__),
-            '..', 'repz', 'templates', name
+            os.path.dirname(__file__), '..', 'repz', 'templates', name
         )
         with open(path, 'r') as f:
             return f.read()
 
-    def test_full_template_has_checkbox_grid(self):
-        """Full template should contain the checkbox grid."""
+    def test_full_mounts_vite_entrypoint(self):
         content = self._read_template('categories.html')
-        self.assertIn('category_name', content)
-        self.assertIn("id: 'categories'", content)
+        self.assertIn('react-categories-root', content)
+        self.assertIn(
+            'vite_asset("src/entrypoints/CategoriesCore.entry.tsx")', content
+        )
 
-    def test_full_template_has_saved_lists(self):
-        """Full template should contain saved lists UI."""
+    def test_full_passes_mode_flags(self):
         content = self._read_template('categories.html')
-        self.assertIn('Save selection as', content)
-        self.assertIn('-- Select Saved List --', content)
+        self.assertIn('hideSavedLists', content)
+        self.assertIn('hideHeader', content)
 
-    def test_full_template_has_select_all_button(self):
-        """Full template should contain select-all/deselect-all button."""
+    def test_full_has_no_cdn_react(self):
         content = self._read_template('categories.html')
-        self.assertIn('select-all-btn', content)
-        self.assertIn('Deselect All', content)
-        self.assertIn('Select All', content)
-
-    def test_full_template_has_apply_button(self):
-        """Full template should contain apply button."""
-        content = self._read_template('categories.html')
-        self.assertIn('apply-categories-btn', content)
-
-    def test_full_template_has_header_toggle(self):
-        """Full template should contain collapse/header toggle."""
-        content = self._read_template('categories.html')
-        self.assertIn('collapse-button', content)
-
-    def test_full_template_supports_hide_saved_lists_flag(self):
-        """Full template should respect hide_saved_lists flag."""
-        content = self._read_template('categories.html')
-        self.assertIn('hide_saved_lists', content)
-
-    def test_full_template_supports_hide_header_flag(self):
-        """Full template should respect hide_header flag."""
-        content = self._read_template('categories.html')
-        self.assertIn('hide_header', content)
-
-    def test_full_template_has_no_extra_flags(self):
-        """Full template should not accumulate new mode flags."""
-        content = self._read_template('categories.html')
-        # Only hide_saved_lists and hide_header should exist as flags
-        count = content.count('{% if ')
-        # We expect exactly hide_saved_lists and hide_header for the flag checks
-        # plus selected_categories and cats_due checks (which are data, not flags)
-        self.assertIn('hide_saved_lists', content)
-        self.assertIn('hide_header', content)
-        # Verify no show_apply_btn or other mode flags leaked in
-        self.assertNotIn('show_apply_btn', content)
-
+        self.assertNotIn('unpkg.com', content)
+        self.assertNotIn('document.write', content)
 
 class TestAddcontentUsesCoreOnly(unittest.TestCase):
     """Tests that addcontent page uses only the core categories component."""

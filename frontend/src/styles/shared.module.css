@@ -8,7 +8,7 @@
   width: 2rem;
   height: 2rem;
 
-  color: var(--dsr-color-loading-indicator);
+  color: var(--rep-color-loading-indicator);
 
   vertical-align: -0.125em;
   border: 0.25em solid currentColor;
@@ -38,7 +38,7 @@
 .loadingText {
   margin-top: 1rem;
 
-  color: var(--dsr-color-text-muted);
+  color: var(--rep-color-text-muted);
 }
 
 .iconSpacing {
@@ -51,23 +51,23 @@
   margin-bottom: 1rem;
   border: 1px solid transparent;
 
-  border-radius: var(--dsr-radius-small);
+  border-radius: var(--rep-radius-small);
 }
 
 .alertSuccess {
-  color: var(--dsr-color-success-text);
+  color: var(--rep-color-success-text);
 
-  background-color: var(--dsr-color-success-surface);
+  background-color: var(--rep-color-success-surface);
 
-  border-color: var(--dsr-color-success-border);
+  border-color: var(--rep-color-success-border);
 }
 
 .alertError {
-  color: var(--dsr-color-error-text);
+  color: var(--rep-color-error-text);
 
-  background-color: var(--dsr-color-error-surface);
+  background-color: var(--rep-color-error-surface);
 
-  border-color: var(--dsr-color-error-border);
+  border-color: var(--rep-color-error-border);
 }
 
 .alertCloseButton {
@@ -115,7 +115,7 @@
 }
 
 .mutedText {
-  color: var(--dsr-color-text-muted);
+  color: var(--rep-color-text-muted);
 }
 
 .button {
@@ -127,37 +127,37 @@
   font-size: 0.95rem;
   font-weight: 600;
   border: none;
-  border-radius: var(--dsr-radius-control);
+  border-radius: var(--rep-radius-control);
   cursor: pointer;
-  transition: background-color var(--dsr-transition-fast);
+  transition: background-color var(--rep-transition-fast);
 }
 
 .button:focus-visible {
-  outline: 2px solid var(--dsr-color-focus);
+  outline: 2px solid var(--rep-color-focus);
   outline-offset: 2px;
 }
 
 .button:disabled {
-  opacity: var(--dsr-opacity-disabled);
+  opacity: var(--rep-opacity-disabled);
   cursor: not-allowed;
 }
 
 .buttonPrimary {
-  background-color: var(--dsr-color-action-primary);
-  color: var(--dsr-color-on-action);
+  background-color: var(--rep-color-action-primary);
+  color: var(--rep-color-on-action);
 }
 
 .buttonPrimary:hover:not(:disabled) {
-  background-color: var(--dsr-color-action-primary-hover);
+  background-color: var(--rep-color-action-primary-hover);
 }
 
 .buttonSecondary {
-  background-color: var(--dsr-color-surface-secondary);
-  color: var(--dsr-color-text-secondary);
+  background-color: var(--rep-color-surface-secondary);
+  color: var(--rep-color-text-secondary);
 }
 
 .buttonSecondary:hover:not(:disabled) {
-  background-color: var(--dsr-color-surface-secondary-hover);
+  background-color: var(--rep-color-surface-secondary-hover);
 }
 
 /* Generic Regular-sized Form/Action Button styles */
@@ -166,25 +166,25 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--dsr-btn-gap);
-  height: var(--dsr-btn-height);
-  min-width: var(--dsr-btn-min-width);
-  padding: 0 var(--dsr-btn-padding-x);
+  gap: var(--rep-btn-gap);
+  height: var(--rep-btn-height);
+  min-width: var(--rep-btn-min-width);
+  padding: 0 var(--rep-btn-padding-x);
   border: none;
-  border-radius: var(--dsr-btn-radius);
+  border-radius: var(--rep-btn-radius);
   font-family: inherit;
-  font-size: var(--dsr-btn-font-size);
-  font-weight: var(--dsr-btn-font-weight);
+  font-size: var(--rep-btn-font-size);
+  font-weight: var(--rep-btn-font-weight);
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: var(--dsr-btn-shadow);
-  transition: var(--dsr-btn-transition);
+  box-shadow: var(--rep-btn-shadow);
+  transition: var(--rep-btn-transition);
 }
 
 .actionButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: var(--dsr-btn-shadow-hover);
+  box-shadow: var(--rep-btn-shadow-hover);
 }
 
 .actionButton:active:not(:disabled) {
@@ -242,16 +242,16 @@
 }
 
 .buttonSm {
-  --dsr-btn-height: var(--dsr-btn-height-sm);
-  --dsr-btn-padding-x: var(--dsr-btn-padding-x-sm);
-  --dsr-btn-font-size: var(--dsr-btn-font-size-sm);
-  --dsr-btn-min-width: var(--dsr-btn-min-width-sm);
+  --rep-btn-height: var(--rep-btn-height-sm);
+  --rep-btn-padding-x: var(--rep-btn-padding-x-sm);
+  --rep-btn-font-size: var(--rep-btn-font-size-sm);
+  --rep-btn-min-width: var(--rep-btn-min-width-sm);
 }
 
 .actionRow {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--dsr-btn-row-gap);
+  gap: var(--rep-btn-row-gap);
   width: 100%;
 }
 

@@ -24,6 +24,7 @@ export default defineConfig({
     rollupOptions: {
       treeshake: false,
       input: {
+        navbar: "src/entrypoints/Navbar.entry.tsx",
         ai_integration: "src/entrypoints/AiIntegration.entry.tsx",
         edit_question: "src/entrypoints/EditQuestion.entry.tsx",
         edit_questions_page: "src/entrypoints/EditQuestions.entry.tsx",
@@ -31,6 +32,7 @@ export default defineConfig({
         quiz_markdown: "src/entrypoints/QuizMarkdown.entry.tsx",
         add_content: "src/entrypoints/AddContent.entry.tsx",
         ai_question_generator: "src/entrypoints/AiQuestionGenerator.entry.tsx",
+        categories_core: "src/entrypoints/CategoriesCore.entry.tsx",
       },
     },
   },

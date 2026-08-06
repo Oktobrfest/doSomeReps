@@ -1,148 +1,15 @@
-<!DOCTYPE html>
 {% block categories_core %}
 <div class="container p-3 my-3 border rounded-8 categories-group" id="react-categories-core-root"></div>
 <hr>
 
-<!-- Load React, ReactDOM, and Framer Motion -->
-<script type="text/javascript">
-  if (!window.React) {
-    document.write('<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin><\/script>');
-  }
-  if (!window.ReactDOM) {
-    document.write('<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin><\/script>');
-  }
-</script>
-<script src="https://unpkg.com/framer-motion@11/dist/framer-motion.js" crossorigin></script>
-
-<script type="text/javascript">
-  (function() {
-    const e = React.createElement;
-    const motion = window.Motion.motion;
-
-    const categoryList = [
-      {% for category in category_list %}
-        {
-          original: {{ category|tojson }},
-          slug: {{ (category|replace(" ", "_"))|trim|tojson }}
-        },
-      {% endfor %}
-    ];
-    categoryList.sort((a, b) => a.original.localeCompare(b.original, undefined, { sensitivity: 'base', numeric: true }));
-
-    const initialSelected = [
-      {% if selected_categories is defined and selected_categories != 'Not set' %}
-        {% if selected_categories is string %}
-          {{ selected_categories|tojson }}
-        {% else %}
-          {% for cat in selected_categories %}
-            {{ cat|tojson }},
-          {% endfor %}
-        {% endif %}
-      {% endif %}
-    ];
-
-    const initialCatsDue = [
-      {% if cats_due is defined %}
-        {% for cat in cats_due %}
-          {{ cat|tojson }},
-        {% endfor %}
-      {% endif %}
-    ];
-
-    function CategoryCoreApp() {
-      const [checkedCats, setCheckedCats] = React.useState(() => {
-        const initial = new Set();
-        categoryList.forEach(item => {
-          if (initialSelected.includes(item.slug) || initialCatsDue.includes(item.slug)) {
-            initial.add(item.slug);
-          }
-        });
-        return initial;
-      });
-
-      const handleToggle = (slug) => {
-        const next = new Set(checkedCats);
-        if (next.has(slug)) {
-          next.delete(slug);
-        } else {
-          next.add(slug);
-        }
-        setCheckedCats(next);
-      };
-
-      return e('div', null,
-        e(motion.ul, {
-          layout: true,
-          className: 'list-group form-group search-filter-categories',
-          id: 'categories',
-          style: {
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-            gap: '8px',
-            padding: '0',
-            listStyleType: 'none',
-            marginBottom: '1rem'
-          }
-        },
-          categoryList.map(item =>
-            e(motion.li, {
-              layout: true,
-              initial: { opacity: 0, scale: 0.9 },
-              animate: { opacity: 1, scale: 1 },
-              transition: { type: "spring", stiffness: 300, damping: 25 },
-              key: item.slug,
-              className: 'list-group-item category-item border rounded shadow-sm',
-              style: {
-                margin: '0',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '6px 8px',
-                backgroundColor: checkedCats.has(item.slug) ? '#ff8c00' : '#ffa500',
-                color: '#000000',
-                transition: 'background-color 0.2s ease'
-              }
-            },
-              e('input', {
-                type: 'checkbox',
-                value: item.slug,
-                name: 'category_name',
-                className: 'category_name custom-checkbox',
-                'data-original': item.original,
-                checked: checkedCats.has(item.slug),
-                onChange: () => handleToggle(item.slug),
-                style: { marginRight: '6px', cursor: 'pointer' }
-              }),
-              e('label', {
-                  className: 'checkbox-inline mb-0',
-                  style: {
-                    cursor: 'pointer',
-                    flexGrow: '1',
-                    fontWeight: checkedCats.has(item.slug) ? '700' : '500',
-                    fontSize: '0.8rem',
-                    color: '#000000',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  },
-                  onClick: () => handleToggle(item.slug),
-                  title: item.original
-              }, item.original)
-            )
-          )
-        )
-      );
-    }
-
-    const coreContainer = document.getElementById('react-categories-core-root');
-    if (coreContainer) {
-      const root = ReactDOM.createRoot(coreContainer);
-      root.render(e(CategoryCoreApp));
-    }
-  })();
+<script id="categories-core-data" type="application/json">
+{{ {
+  'categoryList': category_list,
+  'selectedCategories': selected_categories if (selected_categories is defined and selected_categories != 'Not set') else [],
+  'catsDue': cats_due if cats_due is defined else []
+} | tojson }}
 </script>
 
-<script src="https://unpkg.com/promise-polyfill@7.1.2/dist/polyfill.min.js"></script>
-<script src="https://unpkg.com/whatwg-fetch@2.0.4/fetch.js"></script>
-{{ flask_util_js.js }}
-<script type="text/javascript" src="{{ url_for('static', filename='js/index.js') }}"></script>
+{{ vite_asset("src/entrypoints/CategoriesCore.entry.tsx") }}
+
 {% endblock categories_core %}
