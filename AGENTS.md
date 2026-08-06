@@ -29,3 +29,21 @@ Audio tiles are a separate scale (`--rep-tile-*`), intentionally not `--rep-btn-
 5. Components compose base + modifiers and add zero geometry.
 6. Component CSS sets flow only (display/gap/flex), never control size.
 7. No @media or @container rules that change button size.
+
+### Never
+- Never introduce a hex, rgb, or rgba literal in any file outside `global.css` `:root`.
+  If the colour you need has no token, add one. That is a one-line change.
+- Never add `border`, `padding`, `font-size`, `font-weight`, `border-radius`,
+  `box-shadow`, `width`, `height`, or `white-space` to a class that composes
+  `.actionButton` or `.button`. Flow only: `margin*`, `order`, `flex*`, `gap`,
+  `display`, `align-*`, `justify-*`.
+- UNLESS TOTALLY UNAVOIDABLE- dont use `!important` in a CSS Module. If a rule seems to need it, the cascade
+  is wrong; fix the cascade.
+- Never implement hover with `onMouseEnter`/`onMouseLeave`. Use `:hover` in CSS.
+- Never put `backgroundColor`, `borderRadius`, `boxShadow`, `padding`, `fontSize`,
+  or `transition` in a React inline `style={{}}` on any control.
+
+### Missing variant
+If the size, intent, or colour you need does not exist, DO NOT approximate it
+inline. Add it: token(s) to `global.css` `:root`, one modifier rule in
+`shared.module.css`, then use it.

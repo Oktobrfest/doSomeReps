@@ -40,6 +40,18 @@
 
   --rep-color-overlay: rgba(0, 0, 0, 0.45);
 
+  /* Navbar Design Tokens */
+  --rep-color-navbar-bg-start: #1e293b;
+  --rep-color-navbar-bg-end: #0f172a;
+  --rep-color-navbar-accent: #ff8c00;
+  --rep-color-navbar-accent-hover: #ffa500;
+  --rep-color-navbar-text-muted: #cbd5e1;
+  --rep-color-navbar-accent-glow: rgba(255, 140, 0, 0.4);
+  --rep-color-navbar-accent-glow-subtle: rgba(255, 140, 0, 0.2);
+  --rep-color-navbar-accent-bg-highlight: rgba(255, 140, 0, 0.1);
+  --rep-color-navbar-accent-bg-hover: rgba(255, 140, 0, 0.05);
+  --rep-shadow-navbar: 0 4px 20px rgba(0, 0, 0, 0.25);
+
   --rep-radius-small: 0.25rem;
   --rep-radius-control: 6px;
   --rep-radius-dialog: 8px;

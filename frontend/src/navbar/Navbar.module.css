@@ -1,0 +1,175 @@
+/* frontend/src/navbar/Navbar.module.css */
+
+.nav {
+  background: linear-gradient(135deg, var(--rep-color-navbar-bg-start) 0%, var(--rep-color-navbar-bg-end) 100%);
+  box-shadow: var(--rep-shadow-navbar);
+  padding: 0.75rem 1.5rem;
+  position: relative;
+  z-index: 1050;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.brandContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+.brandLink {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--rep-color-surface-subtle);
+  text-decoration: none;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: linear-gradient(to right, var(--rep-color-navbar-accent), var(--rep-color-navbar-accent-hover));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.star {
+  color: var(--rep-color-navbar-accent);
+}
+
+/* CHANGED THIS - 6px duplicated --rep-radius-control; toggler is navigation
+   chrome, deliberately outside the button scale (see AGENTS.md) */
+.togglerBtn {
+  display: none;
+  background-color: var(--rep-color-navbar-accent);
+  border: none;
+  cursor: pointer;
+  padding: 10px 12px;
+  outline: none;
+  border-radius: var(--rep-radius-control);
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 8px var(--rep-color-navbar-accent-glow);
+}
+
+.togglerBtn:hover {
+  background-color: var(--rep-color-navbar-accent-hover);
+}
+
+.togglerBar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background-color: var(--rep-color-navbar-bg-end);
+  margin: 4px 0;
+  transition: all 0.3s;
+}
+
+.togglerBarOpen1 {
+  transform: rotate(45deg) translate(4px, 4px);
+}
+
+.togglerBarOpen2 {
+  opacity: 0;
+}
+
+.togglerBarOpen3 {
+  transform: rotate(-45deg) translate(4px, -4px);
+}
+
+.linksContainer {
+  transition: all 0.3s ease-in-out;
+}
+
+.linksInner {
+  display: flex;
+  align-items: center;
+}
+
+.link {
+  color: var(--rep-color-navbar-text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--rep-radius-control);
+  transition: all 0.2s ease;
+  margin: 0 4px;
+  background: transparent;
+  border: none;
+}
+
+.link:hover {
+  color: var(--rep-color-navbar-accent);
+  background-color: var(--rep-color-navbar-accent-bg-hover);
+}
+
+.linkActive,
+.linkActive:hover {
+  color: var(--rep-color-navbar-accent);
+  font-weight: 700;
+  box-shadow: 0 2px 8px var(--rep-color-navbar-accent-glow-subtle);
+}
+
+.linkHighlight {
+  font-weight: 700;
+  border: 1px solid var(--rep-color-navbar-accent-glow);
+  background: var(--rep-color-navbar-accent-bg-highlight);
+}
+
+/* CHANGED THIS - border and white-space are geometry/decoration owned by
+   .actionButton; a composing component must add flow properties only (rule 5/6) */
+.audioModeButton {
+  text-decoration: none;
+  margin-left: auto;
+  order: 2;
+}
+
+@media (max-width: 991px) {
+  .togglerBtn {
+    display: block;
+  }
+  .linksContainer {
+    width: 100%;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+  }
+  .linksContainerShow {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: 10px;
+  }
+  .linksInner {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    padding-top: 8px;
+  }
+  .link {
+    margin: 4px 0;
+    padding: 10px 12px;
+    display: block;
+    text-align: left;
+  }
+}
+
+/* CHANGED THIS - !important was cargo from the old global stylesheet fighting
+   inline styles; the two media queries are mutually exclusive so source order
+   already resolves these */
+@media (min-width: 992px) {
+  .togglerBtn {
+    display: none;
+  }
+  .linksContainer {
+    display: block;
+    max-height: none;
+    opacity: 1;
+  }
+}

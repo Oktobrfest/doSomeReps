@@ -24,6 +24,7 @@ export default defineConfig({
     rollupOptions: {
       treeshake: false,
       input: {
+        navbar: "src/entrypoints/Navbar.entry.tsx",
         ai_integration: "src/entrypoints/AiIntegration.entry.tsx",
         edit_question: "src/entrypoints/EditQuestion.entry.tsx",
         edit_questions_page: "src/entrypoints/EditQuestions.entry.tsx",
