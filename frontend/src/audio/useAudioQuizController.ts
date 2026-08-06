@@ -5,6 +5,7 @@ import {
   useMemo,
   useReducer,
   useRef,
+  useState,
 } from 'react';
 import { flushSync } from 'react-dom';
 import type {
@@ -656,18 +657,27 @@ export function useAudioQuizController({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const [autoPlay, setAutoPlay] = useState(() => sessionStorage.getItem('audio_auto_play_active') !== 'false');
+
+  const toggleAutoPlay = useCallback(() => {
+    setAutoPlay((prev) => {
+      const next = !prev;
+      sessionStorage.setItem('audio_auto_play_active', String(next));
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     if (!currentQuestion || questionAssets.length === 0 || ui.isSubmitting) return;
 
-    const wasListening = sessionStorage.getItem('audio_listening_active') === 'true';
-    if (!wasListening) return;
+    if (!autoPlay) return;
 
     const timer = window.setTimeout(() => {
       readQuestion();
     }, 100);
 
     return () => window.clearTimeout(timer);
-  }, [currentQuestion?.quizq_id, questionAssets.length, readQuestion, ui.isSubmitting]);
+  }, [currentQuestion?.quizq_id, questionAssets.length, readQuestion, ui.isSubmitting, autoPlay]);
 
   const actions = useMemo(
     () => ({
@@ -686,6 +696,7 @@ export function useAudioQuizController({
       closeModal,
       setPanelSnap,
       setFlag,
+      toggleAutoPlay,
     }),
     [
       answerEnded,
@@ -701,6 +712,7 @@ export function useAudioQuizController({
       submitVerdict,
       toggleAnswerAudio,
       setFlag,
+      toggleAutoPlay,
     ],
   );
 
@@ -750,6 +762,8 @@ export function useAudioQuizController({
     panelSnap: ui.panelSnap,
     queueExhausted: ui.queueExhausted,
     queueExhaustedMessage: ui.queueExhaustedMessage,
+
+    autoPlay,
 
     actions,
     commandHandlers,

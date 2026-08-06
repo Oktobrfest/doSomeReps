@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type PointerEvent,
 } from 'react';
-import { Check, X, Minus } from 'lucide-react';
+import { Check, X, Minus, Volume2, VolumeX } from 'lucide-react';
 import { CatPicker } from '../components/CatPicker';
 import { FlagButton, type QuestionFlag } from '../components/FlagButton';
 import actionStyles from '../styles/ActionButton.module.css';
@@ -74,6 +74,8 @@ export interface SlideOutButtonsProps {
   initialFlag?: QuestionFlag | null;
   csrfToken?: string;
   onFlagChange?: (newFlag: QuestionFlag | null) => void;
+  autoPlay?: boolean;
+  onToggleAutoPlay?: () => void;
 }
 
 export interface SlideOutButtonsHandle {
@@ -154,10 +156,12 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
     initialFlag,
     csrfToken,
     onFlagChange,
+    autoPlay,
+    onToggleAutoPlay,
   }: SlideOutButtonsProps,
   ref,
 ) {
-  const hasExtra = Boolean(extraActions?.length) || Boolean(questionId);
+  const hasExtra = Boolean(extraActions?.length) || Boolean(questionId) || Boolean(onToggleAutoPlay);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gripRef = useRef<HTMLDivElement | null>(null);
@@ -461,6 +465,25 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
               </button>
             );
           })}
+          {onToggleAutoPlay && (
+            <button
+              type="button"
+              onClick={onToggleAutoPlay}
+              disabled={disabled}
+              className={`${styles.drawerBtn} ${
+                autoPlay ? actionStyles.greenBtn : actionStyles.orangeBtn
+              }`}
+            >
+              <div className={actionStyles.btnContent}>
+                {autoPlay ? (
+                  <Volume2 className={actionStyles.iconLarge} />
+                ) : (
+                  <VolumeX className={actionStyles.iconLarge} />
+                )}
+                <span>{autoPlay ? 'Auto-Play: ON' : 'Auto-Play: OFF'}</span>
+              </div>
+            </button>
+          )}
           {questionId && (
             <FlagButton
               questionId={questionId}
