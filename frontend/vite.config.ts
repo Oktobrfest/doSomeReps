@@ -32,6 +32,7 @@ export default defineConfig({
         quiz_markdown: "src/entrypoints/QuizMarkdown.entry.tsx",
         add_content: "src/entrypoints/AddContent.entry.tsx",
         ai_question_generator: "src/entrypoints/AiQuestionGenerator.entry.tsx",
+        categories_core: "src/entrypoints/CategoriesCore.entry.tsx",
       },
     },
   },

@@ -52,6 +52,14 @@
   --rep-color-navbar-accent-bg-hover: rgba(255, 140, 0, 0.05);
   --rep-shadow-navbar: 0 4px 20px rgba(0, 0, 0, 0.25);
 
+  /* Category Picker Design Tokens */
+  --rep-cp-item-bg: #ffa500;
+  --rep-cp-item-bg-active: #ff8c00;
+  --rep-cp-item-border: #ffa500;
+  --rep-cp-item-border-active: #ff8c00;
+  --rep-cp-item-text: #000000;
+  --rep-cp-item-text-active: #000000;
+
   --rep-radius-small: 0.25rem;
   --rep-radius-control: 6px;
   --rep-radius-dialog: 8px;
