@@ -1,79 +1,79 @@
 /* doSomeReps/frontend/src/styles/global.css */
 
 :root {
-  --dsr-color-loading-indicator: #007bff;
+  --rep-color-loading-indicator: #007bff;
 
-  --dsr-color-action-accent: #319795;
-  --dsr-color-action-accent-hover: #2c7a7b;
-  --dsr-color-action-primary: #3182ce;
-  --dsr-color-action-primary-hover: #2b6cb0;
-  --dsr-color-on-action: #ffffff;
-  --dsr-color-divider-on-action: rgba(255, 255, 255, 0.25);
+  --rep-color-action-accent: #319795;
+  --rep-color-action-accent-hover: #2c7a7b;
+  --rep-color-action-primary: #3182ce;
+  --rep-color-action-primary-hover: #2b6cb0;
+  --rep-color-on-action: #ffffff;
+  --rep-color-divider-on-action: rgba(255, 255, 255, 0.25);
 
-  --dsr-color-surface: #ffffff;
-  --dsr-color-surface-subtle: #f8fafc;
-  --dsr-color-surface-secondary: #edf2f7;
-  --dsr-color-surface-secondary-hover: #e2e8f0;
+  --rep-color-surface: #ffffff;
+  --rep-color-surface-subtle: #f8fafc;
+  --rep-color-surface-secondary: #edf2f7;
+  --rep-color-surface-secondary-hover: #e2e8f0;
 
-  --dsr-color-text-primary: #2d3748;
-  --dsr-color-text-secondary: #4a5568;
+  --rep-color-text-primary: #2d3748;
+  --rep-color-text-secondary: #4a5568;
 
-  --dsr-color-text-muted: #6c757d;
-  --dsr-color-text-subtle: #718096;
+  --rep-color-text-muted: #6c757d;
+  --rep-color-text-subtle: #718096;
 
-  --dsr-color-border: #e2e8f0;
-  --dsr-color-border-strong: #cbd5e0;
+  --rep-color-border: #e2e8f0;
+  --rep-color-border-strong: #cbd5e0;
 
-  --dsr-color-focus: #4299e1;
-  --dsr-color-focus-ring: rgba(66, 153, 225, 0.15);
+  --rep-color-focus: #4299e1;
+  --rep-color-focus-ring: rgba(66, 153, 225, 0.15);
 
-  --dsr-color-success-text: #155724;
-  --dsr-color-success-surface: #d4edda;
-  --dsr-color-success-border: #c3e6cb;
+  --rep-color-success-text: #155724;
+  --rep-color-success-surface: #d4edda;
+  --rep-color-success-border: #c3e6cb;
 
-  --dsr-color-error-text: #721c24;
-  --dsr-color-error-surface: #f8d7da;
-  --dsr-color-error-border: #f5c6cb;
-  --dsr-color-error-text-strong: #c53030;
-  --dsr-color-error-surface-subtle: #fff5f5;
-  --dsr-color-error-border-subtle: #feb2b2;
+  --rep-color-error-text: #721c24;
+  --rep-color-error-surface: #f8d7da;
+  --rep-color-error-border: #f5c6cb;
+  --rep-color-error-text-strong: #c53030;
+  --rep-color-error-surface-subtle: #fff5f5;
+  --rep-color-error-border-subtle: #feb2b2;
 
-  --dsr-color-overlay: rgba(0, 0, 0, 0.45);
+  --rep-color-overlay: rgba(0, 0, 0, 0.45);
 
-  --dsr-radius-small: 0.25rem;
-  --dsr-radius-control: 6px;
-  --dsr-radius-dialog: 8px;
+  --rep-radius-small: 0.25rem;
+  --rep-radius-control: 6px;
+  --rep-radius-dialog: 8px;
 
-  --dsr-opacity-disabled: 0.65;
-  --dsr-transition-fast: 0.15s ease;
+  --rep-opacity-disabled: 0.65;
+  --rep-transition-fast: 0.15s ease;
 
-  --dsr-shadow-dialog:
+  --rep-shadow-dialog:
     0 20px 25px -5px rgba(0, 0, 0, 0.15),
     0 10px 10px -5px rgba(0, 0, 0, 0.08);
 
---dsr-btn-height-md: 46px;
-  --dsr-btn-padding-x-md: 24px;
-  --dsr-btn-font-size-md: 1rem;
-  --dsr-btn-min-width-md: 180px;
+--rep-btn-height-md: 46px;
+  --rep-btn-padding-x-md: 24px;
+  --rep-btn-font-size-md: 1rem;
+  --rep-btn-min-width-md: 180px;
 
-  --dsr-btn-height-sm: 34px;
-  --dsr-btn-padding-x-sm: 14px;
-  --dsr-btn-font-size-sm: 0.875rem;
-  --dsr-btn-min-width-sm: 0;
+  --rep-btn-height-sm: 34px;
+  --rep-btn-padding-x-sm: 14px;
+  --rep-btn-font-size-sm: 0.875rem;
+  --rep-btn-min-width-sm: 0;
 
-  --dsr-btn-height: var(--dsr-btn-height-md);
-  --dsr-btn-padding-x: var(--dsr-btn-padding-x-md);
-  --dsr-btn-font-size: var(--dsr-btn-font-size-md);
-  --dsr-btn-min-width: var(--dsr-btn-min-width-md);
+  --rep-btn-height: var(--rep-btn-height-md);
+  --rep-btn-padding-x: var(--rep-btn-padding-x-md);
+  --rep-btn-font-size: var(--rep-btn-font-size-md);
+  --rep-btn-min-width: var(--rep-btn-min-width-md);
 
-  --dsr-btn-radius: 12px;
-  --dsr-btn-gap: 8px;
-  --dsr-btn-row-gap: 12px;
+  --rep-btn-radius: 12px;
+  --rep-btn-gap: 8px;
+  --rep-btn-row-gap: 12px;
 
-  --dsr-btn-font-weight: 700;
-  --dsr-btn-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  --dsr-btn-shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.1);
-  --dsr-btn-transition:
+  --rep-btn-font-weight: 700;
+  --rep-btn-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --rep-btn-shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.1);
+  --rep-btn-transition:
     transform 120ms ease,
     opacity 120ms ease,
     box-shadow 120ms ease,
