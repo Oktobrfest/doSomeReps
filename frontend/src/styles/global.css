@@ -4,68 +4,47 @@
   --dsr-color-loading-indicator: #007bff;
 
   --dsr-color-action-accent: #319795;
-
   --dsr-color-action-accent-hover: #2c7a7b;
-
   --dsr-color-action-primary: #3182ce;
-
   --dsr-color-action-primary-hover: #2b6cb0;
-
   --dsr-color-on-action: #ffffff;
+  --dsr-color-divider-on-action: rgba(255, 255, 255, 0.25);
 
   --dsr-color-surface: #ffffff;
-
   --dsr-color-surface-subtle: #f8fafc;
-
   --dsr-color-surface-secondary: #edf2f7;
-
   --dsr-color-surface-secondary-hover: #e2e8f0;
 
   --dsr-color-text-primary: #2d3748;
-
   --dsr-color-text-secondary: #4a5568;
 
   --dsr-color-text-muted: #6c757d;
   --dsr-color-text-subtle: #718096;
-  
-  --dsr-color-border: #e2e8f0;
 
+  --dsr-color-border: #e2e8f0;
   --dsr-color-border-strong: #cbd5e0;
 
-  --dsr-color-divider-on-action: rgba(255, 255, 255, 0.25);
-
   --dsr-color-focus: #4299e1;
-
   --dsr-color-focus-ring: rgba(66, 153, 225, 0.15);
 
   --dsr-color-success-text: #155724;
-
   --dsr-color-success-surface: #d4edda;
-
   --dsr-color-success-border: #c3e6cb;
 
   --dsr-color-error-text: #721c24;
-
   --dsr-color-error-surface: #f8d7da;
-
   --dsr-color-error-border: #f5c6cb;
-
   --dsr-color-error-text-strong: #c53030;
-
   --dsr-color-error-surface-subtle: #fff5f5;
-
   --dsr-color-error-border-subtle: #feb2b2;
 
   --dsr-color-overlay: rgba(0, 0, 0, 0.45);
 
   --dsr-radius-small: 0.25rem;
-
   --dsr-radius-control: 6px;
-
   --dsr-radius-dialog: 8px;
 
   --dsr-opacity-disabled: 0.65;
-
   --dsr-transition-fast: 0.15s ease;
 
   --dsr-shadow-dialog:
@@ -90,7 +69,7 @@
   --dsr-btn-radius: 12px;
   --dsr-btn-gap: 8px;
   --dsr-btn-row-gap: 12px;
-  
+
   --dsr-btn-font-weight: 700;
   --dsr-btn-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   --dsr-btn-shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.1);

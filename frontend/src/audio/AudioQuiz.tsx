@@ -429,6 +429,8 @@ function AudioQuizBody({
             initialFlag={currentQuestion.flag}
             csrfToken={csrfToken}
             onFlagChange={quiz.actions.setFlag}
+            autoPlay={quiz.autoPlay}
+            onToggleAutoPlay={quiz.actions.toggleAutoPlay}
           />
         )}
       </form>
