@@ -42,15 +42,6 @@ Provide a short, spoken-friendly tutor response.
 
 
 # --- Hint generation prompt template --------------------------------
-#
-# Used ONLY when the user ticks the "Try to provide hints" checkbox.
-# This is sent as a SEPARATE AI call after the question-generation
-# call: it takes the previously-generated questions as input and asks
-# the model to write hints for the ones that are difficult enough to
-# warrant a hint. Easy/obvious questions should be returned with no
-# hint (null), so we don't clutter trivial questions with redundant
-# nudges.
-#
 # The list of questions (a JSON dump of the first call's output) is
 # appended to the END of this template before sending.
 HINT_GENERATION_PROMPT_TEMPLATE = """\
@@ -86,54 +77,6 @@ Questions to consider follow below (JSON):
 ---
 """
 
-
-# --- Extend (per-question deeper-answer) prompt template ------------
-#
-# Used by the "Extend" / "Extend All" buttons on the Generated
-# Questions section. Each call expands one question's answer into a
-# more thorough, explanatory version while staying inside the
-# question's existing topic/category. The user may optionally add
-# free-text instructions in the "extend instructions" field next to
-# the Extend button; those are interpolated into
-# `{user_instructions_block}` (or it stays empty when none were
-# supplied).
-#
-# The model is asked to return its result in a strict two-section
-# layout (SHORT ANSWER / LONG ANSWER) so we can drop it back into the
-# editable answer textarea unchanged. A hint may also be returned if
-# the model thinks one would help.
-EXTEND_PROMPT_TEMPLATE = """\
-You are extending an existing study question's answer into a more
-detailed, explanatory version, for use in a spaced-repetition quiz
-app. Stay focused on the question and the topic / category it sits
-in - do NOT deviate into unrelated material.
-
-The topic is {categories}.
-
-Question:
-{question}
-
-Current answer:
-{current_answer}
-{user_instructions_block}
-Write a more detailed, explanatory answer for the question above.
-Stick to the question and the topic; do not wander outside that
-category.
-
-Format your output EXACTLY in the following layout. Keep spacing
-TIGHT between paragraphs within a section. Put a single blank line
-between distinct sub-sections where applicable. Use the literal
-labels shown below:
-
-SHORT ANSWER:
-[A concise summary answer. One to two sentences.]
-
-LONG ANSWER:
-[A more detailed, explanatory answer. Multiple paragraphs are fine;
-keep paragraph spacing tight. Use a blank line only between distinct
-sub-sections within the long answer.]
-"""
-
 ############# END QUESTION GENERATOR PROMPTS ############
 
 
@@ -143,7 +86,7 @@ sub-sections within the long answer.]
 # template before being sent to the AI. The selected categories are
 # also injected so the AI can tag generated questions appropriately.
 QUESTION_GENERATION_PROMPT_TEMPLATE = """\
-You are an assistant that creates short, basic study questions and
+You are an assistant that creates short, basic self-contained study questions and
 answers from supplied source material, for use in a spaced-repetition
 quiz app.
 
@@ -191,25 +134,24 @@ or reference the source material itself):
 # when the option is selected.
 
 BASE_EXTEND_PROMPT = """\
-You are extending an existing study question's answer into a more
-detailed, explanatory version, for use in a spaced-repetition quiz
-app. Stay focused on the question and the topic / category it sits
+You are altering an existing study question for use in a spaced-repetition quiz
+app. Stay focused on the question and the topic category it sits
 in - do NOT deviate into unrelated material.
 
-The topic is {categories}.
+The topic categories are {categories}.
 
-Keep spacing TIGHT between paragraphs. Put a single blank line
-between distinct sub-sections where applicable.
+Keep spacing TIGHT between paragraphs. 
 The user has requested an AI-assisted change to this study question.
-Incorporate the selected options below while staying focused on the question and its topic.
+Ensure to stay focused on the question and within its topic categories!
 
-Use the appropriate Markdown for each kind of content that make the answer more readable and
+Use the appropriate Markdown for each kind of content to make the answer more readable and
 professional, but don't force it if it's not needed:
     LaTeX math (`$...$` / `$$...$$`) for formulas,
     fenced code blocks with language tags for code,
     `mermaid` fenced blocks for diagrams,
     Use _..._ for subscript and ^...^ for superscript when needed.
     Standard Markdown supported.
+    Make sure to also increase the size AND to bold any forumulas or symbols used.
 
 Question:
 {question}
@@ -229,10 +171,10 @@ Format your output EXACTLY in the following layout. Keep spacing
 TIGHT between paragraphs within a section. Use the literal
 labels shown below:
 
-SHORT ANSWER:
+# SHORT ANSWER:
 [A concise summary answer. One to two sentences.]
 
-LONG ANSWER:
+# LONG ANSWER:
 [A more detailed, explanatory answer. Multiple paragraphs are fine;
 keep paragraph spacing tight. Use a blank line only between distinct
 sub-sections within the long answer.]
@@ -277,23 +219,23 @@ EXTEND_OPTIONS: List[dict] = [
     {
         "key": "fact_check",
         "label": "Fact-check this question.",
-        "prompt": "Carefully fact-check the question and answer. Correct any inaccuracies and note what changed if anything was wrong.",
+        "prompt": "Carefully fact-check the answer (or question if innacurate) and correct any and all inaccuracies. If extranious non-answer related content is wrong then you can simply remove that content, so long as it doesn't leave the question without a complete answer to the direct question",
     },
     {
         "key": "shorten",
         "label": "Shorten this up.",
-        "prompt": "Shorten the answer to just the essential answer to the question!",
+        "prompt": "Shorten the answer to just the essential answer to the question! If you the question is too broad, then address that as well by reducing it to a more direct question. If the answer text is very long and especially if there's deviation from what the question asks, then remove that unnecessary information. You can completely re-write any and all of the content to consolidate and focus it.",
     },
     {
         "key": "improve",
         "label": "Improve this answer.",
-        "prompt": "Improve the wording, phrasing, and overall clarity of the answer. Use active, concise language suitable for studying. Make sure it's informative, take liberty to re-word the answer, explain better, and/or give a more in depth and accurate answer.",
+        "prompt": "Improve the wording, phrasing, and overall clarity of the answer. Use active, concise language suitable for studying. Make sure it's informative, take liberty to re-word the answer, explain better, and/or give a more in depth or accurate answer.",
     },
     {
         "key": "redo_markup",
         "label": "Redo the markup and formatting.",
         "prompt": """\
-The markup for this answer has serious shortcomings.
+        The markup for this answer has serious shortcomings.
         Re-do the formatting so it is clean,
         well-organized, and Make the answer look polished and professional.
         Supported formatting:
@@ -303,6 +245,7 @@ The markup for this answer has serious shortcomings.
         - GFM pipe tables for tabular data
         - Use _..._ for subscript and ^...^ for superscript.
         - basic Markdown lists, bold, and italics
+        - Increase the size of any formulas or symbols and make them bold.
         But do not force advanced formatting. Keep the answer clean, readable, and appropriate for the content."""
     },
     {
@@ -345,7 +288,7 @@ def build_extend_instructions(
 
     custom = (custom_instructions or "").strip()
     if custom:
-        parts.append(f"Additional user instructions for this extension:\n{custom}")
+        parts.append(f"Additional very important user instructions for this extension:\n{custom}")
 
     if not parts:
         return ""

@@ -40,8 +40,8 @@
 
 /* Nav buttons for track changing */
 .navButton {
-  background: rgba(0, 0, 0, 0.3) !important;
-  color: #ffffff !important;
+  background: rgba(0, 0, 0, 0.12);
+  color: inherit;
   border: none;
   padding:
       clamp(0.35rem, 0.3rem + 0.5vw, 11.5rem)
@@ -52,7 +52,7 @@
   font-size: clamp(0.7rem, 1rem + 1.4vw, 2rem);
   transition: opacity 0.2s, background-color 0.2s;
   white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -60,7 +60,7 @@
 }
 
 .navButton:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.45) !important;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .navButton:disabled {
@@ -71,9 +71,9 @@
 /* Track information badge */
 .trackBadge {
   font-weight: 600;
-  color: #ffffff !important;
+  color: inherit;
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.08);
   padding: 6px 12px;
   margin: 1px;
   border-radius: 20px;
@@ -82,7 +82,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.1rem;
-  box-shadow: inset 0 2px 2px rgba(0,0,0,0.2);
+  box-shadow: inset 0 2px 2px rgba(0,0,0,0.1);
   height: 38px;
   box-sizing: border-box;
   max-width: 100%;
@@ -94,7 +94,7 @@
 }
 
 .trackCurrent {
-  color: #00ffd2 !important;
+  color: inherit;
   font-weight: 800;
 }
 
