@@ -78,8 +78,8 @@
 }
 
 .textBlock {
-  font-size: 1.2rem;
-  line-height: 1.6;
+  font-size: 1.4rem;
+  line-height: 1.2;
   white-space: pre-wrap;
 }
 
@@ -107,11 +107,11 @@
   margin: 0;
   padding-top: 10px;
   padding-bottom: 2px;
-  padding-inline: 20px;
+  padding-inline: 10px;
   white-space: pre-wrap;
   font-family: inherit;
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 1.4rem;
+  line-height: 1.2;
 }
 
 .askAiConversationRoot {
