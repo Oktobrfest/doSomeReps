@@ -68,12 +68,14 @@ def block_user():
 
     if blocked_user in usr.favorates:
         usr.favorates.remove(blocked_user)
-    
-    session.commit() 
-           
-    msg = "Blocked User"
-    flash(msg, category="success")
-    return msg      
+
+    session.commit()
+
+    flash("Blocked User", category="success")
+
+    # Why jsonify: callers parse this with response.json(). Returning the bare
+    # string made every successful block look like a client-side failure.
+    return jsonify('ok')
 
 
 @user_ajx.route("/unblock_user", methods=["POST"], endpoint="unblock_user")

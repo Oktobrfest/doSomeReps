@@ -1,15 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import { AddContentPage } from "../add_content/AddContentPage";
+import { HomePage } from "../home/HomePage";
 import "../index.css";
 import "../styles/global.css";
 
-const rootElement = document.getElementById("add-content-root");
+const rootElement = document.getElementById("home-root");
 if (rootElement) {
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      <AddContentPage />
+      <HomePage />
     </React.StrictMode>
   );
 }

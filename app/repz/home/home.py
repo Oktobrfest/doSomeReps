@@ -87,7 +87,7 @@ from ..models import (
     users
 )
 from .form_helpers import save_pictures
-from .homeforms import QueAdditionForm, QuestionForm
+from .homeforms import QuestionForm
 
 
 @home.route("/favicon.ico")
@@ -129,13 +129,10 @@ def homepage():
 
         user = session.execute(user_qry).scalars().first()
 
-        favorites = {}
-        blocked = {}
-        for u in user.favorates:
-            favorites[u.id] = u.username
-
-        for b in user.blocked_users:
-            blocked[b.id] = b.username
+        # Lists of objects, not id->name maps: the React home page needs a
+        # stable key and a display name per row.
+        favorites = [{"id": u.id, "username": u.username} for u in user.favorates]
+        blocked = [{"id": b.id, "username": b.username} for b in user.blocked_users]
 
 
         selected_cats = get_all_categories()
@@ -311,10 +308,7 @@ def quiz():
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
 @login_required
 def quemore():
-    form = QueAdditionForm()
-    UID = g._login_user.id
     category_list = get_all_categories()
-    description = "Que More Questions"
     search_que_filters = get_session("search_que_filters")
     if search_que_filters == 'Not set':
         selected_categories = []
@@ -324,9 +318,8 @@ def quemore():
     return render_template(
         "quemore.html",
         title="Que More Questions",
-        description=description,
+        description="Que More Questions",
         user=current_user,
-        form=form,
         category_list=category_list,
         selected_categories=selected_categories,
     )

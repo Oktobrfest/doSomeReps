@@ -61,11 +61,10 @@ function CategoriesWrapper({
 }
 
 function mount() {
-  const coreRoot = document.getElementById("react-categories-core-root");
   const fullRoot = document.getElementById("react-categories-root");
   const dataEl = document.getElementById("categories-core-data");
 
-  if (!dataEl) return;
+  if (!dataEl || !fullRoot) return;
 
   try {
     const data: CategoriesCoreData = JSON.parse(dataEl.textContent || "{}");
@@ -85,33 +84,18 @@ function mount() {
         slug.replace(/_/g, " ")
     );
 
-    if (coreRoot) {
-      createRoot(coreRoot).render(
-        <CategoriesWrapper
-          initialSelected={normalizedSelected}
-          showSavedLists={false}
-          showSelectAll={false}
-          showApplyButton={false}
-          collapsible={false}
-          defaultCollapsed={false}
-        />
-      );
-    }
+    const collapsible = !(data.hideHeader ?? false);
 
-    if (fullRoot) {
-      const collapsible = !(data.hideHeader ?? false);
-
-      createRoot(fullRoot).render(
-        <CategoriesWrapper
-          initialSelected={normalizedSelected}
-          showSavedLists={!(data.hideSavedLists ?? false)}
-          showSelectAll={true}
-          showApplyButton={true}
-          collapsible={collapsible}
-          defaultCollapsed={collapsible && normalizedSelected.length > 0}
-        />
-      );
-    }
+    createRoot(fullRoot).render(
+      <CategoriesWrapper
+        initialSelected={normalizedSelected}
+        showSavedLists={!(data.hideSavedLists ?? false)}
+        showSelectAll={true}
+        showApplyButton={true}
+        collapsible={collapsible}
+        defaultCollapsed={collapsible && normalizedSelected.length > 0}
+      />
+    );
   } catch (err) {
     console.error("Error mounting CategoryPicker:", err);
   }
