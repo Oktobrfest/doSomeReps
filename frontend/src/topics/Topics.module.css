@@ -1,0 +1,151 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pageTitle {
+  margin: 0;
+  text-align: center;
+  color: var(--rep-color-text-primary);
+}
+
+.empty {
+  margin: 0;
+  padding: 1rem;
+  text-align: center;
+  font-style: italic;
+  color: var(--rep-color-text-muted);
+}
+
+/* ---------- Topic list ---------- */
+
+.topicColumns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.topicColumn {
+  flex: 1 1 320px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.topicTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.topicTable th,
+.topicTable td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--rep-color-border);
+}
+
+.topicTable th {
+  background-color: var(--rep-color-surface-secondary);
+}
+
+.topicTable tbody tr:hover {
+  background-color: var(--rep-color-surface-subtle);
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  padding: 0;
+
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--rep-color-text-primary);
+  text-decoration: underline;
+
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.sortButton:focus-visible {
+  outline: 2px solid var(--rep-color-focus);
+  outline-offset: 2px;
+}
+
+.sortIndicator {
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.sortIndicator.asc {
+  border-width: 0 0.35rem 0.35rem 0.35rem;
+  border-color: transparent transparent currentColor transparent;
+}
+
+.sortIndicator.desc {
+  border-width: 0.35rem 0.35rem 0 0.35rem;
+  border-color: currentColor transparent transparent transparent;
+}
+
+.topicLink {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+
+  font-size: 1rem;
+  color: var(--rep-cp-item-text);
+
+  background-color: var(--rep-cp-item-bg);
+  border-radius: 999px;
+}
+
+.topicLink:hover {
+  background-color: var(--rep-cp-item-bg-active);
+  color: var(--rep-cp-item-text-active);
+  text-decoration: none;
+}
+
+.countCell {
+  width: 6rem;
+  text-align: center;
+}
+
+/* ---------- Topic questions ---------- */
+
+.questionsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.questionsTable th,
+.questionsTable td {
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rep-color-border);
+}
+
+.questionsTable th {
+  font-weight: 700;
+  color: var(--rep-color-text-primary);
+  background-color: var(--rep-color-surface-secondary);
+}
+
+.questionsTable tbody tr:hover {
+  background-color: var(--rep-color-surface-subtle);
+}
+
+.ratingCell {
+  width: 6rem;
+  text-align: center;
+  font-weight: 700;
+}

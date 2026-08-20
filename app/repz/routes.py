@@ -17,11 +17,6 @@ catz = Blueprint(
     template_folder='catz/templates',
 )
 
-catz_static = Blueprint(
-    'catz_static', __name__,
-    static_folder='catz/static'
-)
-
 user_ajx = Blueprint("user_ajx", __name__)
 
 

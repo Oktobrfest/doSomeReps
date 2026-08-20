@@ -1,0 +1,46 @@
+.section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+
+  padding: 0.5rem;
+}
+
+.imageFrame {
+  display: flex;
+  justify-content: center;
+
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+/* Flow only: pushes the image past the copy without reordering the markup,
+   so a wrapped section still stacks image-under-text. */
+.imageRight .imageFrame {
+  order: 1;
+}
+
+.image {
+  max-width: 100%;
+  height: auto;
+
+  object-fit: cover;
+  border-radius: var(--rep-radius-dialog);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  flex: 2 1 320px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--rep-color-text-primary);
+}

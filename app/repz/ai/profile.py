@@ -9,7 +9,7 @@ from repz.routes import ai
 
 from ..database import session
 from ..models import users, languages
-from .profile_forms import AIProfileForm
+from .profile_forms import AIProfileForm, MAX_LANGUAGES
 
 
 def _resolve_provider(form: AIProfileForm) -> str:
@@ -58,5 +58,12 @@ def profile():
         title="Profile",
         description="Configure your AI provider integration.",
         user=current_user,
-        form=form,
+        languages=[value for value, _label in form.languages.choices],
+        selected_languages=form.languages.data or [],
+        max_languages=MAX_LANGUAGES,
+        errors=[
+            f"{field}: {message}"
+            for field, messages in form.errors.items()
+            for message in messages
+        ],
     )

@@ -2,55 +2,17 @@
 {% block title %}Profile{% endblock title %}
 {% block content %}
 
-<div class="centering-container">
-  <div class="text-container" style="max-width: 720px; margin: 0 auto;">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h1 class="m-0">User Profile</h1>
-    </div>
-    <p>Configure your preferred languages and AI integration.
-    </p>
+<div id="profile-root"></div>
 
-    <form method="post" autocomplete="off">
-      {{ form.hidden_tag() }}
+<script id="profile-data" type="application/json">
+{{ {
+  'csrfToken': csrf_token(),
+  'languages': languages,
+  'selectedLanguages': selected_languages,
+  'maxLanguages': max_languages,
+  'errors': errors
+} | tojson }}
+</script>
 
-      <div class="form-group">
-        {{ form.languages.label }}
-        {{ form.languages(
-        class_="form-control",
-        size="6"
-        ) }}
-        <small class="form-text text-muted">
-          Select up to 3 preferred languages. Hold Ctrl (or Cmd on macOS) to select or deselect multiple.
-        </small>
-      </div>
-
-      <div class="form-group">
-        {{ form.submit(class_="btn btn-primary") }}
-      </div>
-
-      {% if form.errors %}
-      <div class="alert alert-danger">
-        <ul>
-          {% for field, errs in form.errors.items() %}
-          {% for e in errs %}
-          <li>{{ field }}: {{ e }}</li>
-          {% endfor %}
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
-    </form>
-
-    <hr class="my-5">
-
-    <!-- React root element -->
-    <div id="ai-integration-root">
-    </div>
-
-  </div>
-</div>
-
-<!-- Render React & Vite asset -->
-{{ vite_asset("src/entrypoints/AiIntegration.entry.tsx") }}
-
+{{ vite_asset("src/entrypoints/Profile.entry.tsx") }}
 {% endblock content %}

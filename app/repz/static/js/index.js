@@ -1,8 +1,9 @@
-// Legacy page scripts. Everything left here belongs to a page that has not been
-// converted to React yet: /quiz, /about and /topiclist.
+// Legacy page scripts. Everything left here belongs to /quiz, the last page
+// that has not been converted to React yet.
 //
-// Already migrated (do not re-add): /, /quemore and /addcontent, plus the
-// new-category form and the ad-hoc flash-message helpers those pages used.
+// Already migrated (do not re-add): /, /quemore, /addcontent, /about,
+// /topiclist, /topic/<topic> and /ai/profile, plus the new-category form and
+// the ad-hoc flash-message helpers those pages used.
 var RATEQ = flask_util.url_for('quest_ajx.rateq');
 
 window.onload = (event) => {
@@ -47,97 +48,6 @@ window.onload = (event) => {
         };
     }
 
-    if (window.location.pathname === '/about') {
-        let timesCollection = document.getElementsByClassName('rep-duration');
-        let originalValues = [];
-        for (let i = 0; i < timesCollection.length; i++) {
-            originalValues.push(parseFloat(timesCollection[i].outerText));
-        }
-
-        function formatDuration(days) {
-            if (days < .04) {
-                let mins = (days * 24.0 * 60).toFixed();
-                return mins + ' Mins';
-            } else if (days >= .04 && days < 2) {
-                let hours = (days * 24.0).toFixed();
-                return hours + ' Hours';
-            } else if (days >= 365) {
-                let years = (days / 365).toFixed(1);
-                if (years.endsWith('.0')) {
-                    years = parseFloat(years).toFixed();
-                }
-                return years + (years === '1' ? ' year' : ' years');
-            } else if (days >= 30) {
-                let months = (days / 30.4).toFixed(1);
-                if (months.endsWith('.0')) {
-                    months = parseFloat(months).toFixed();
-                }
-                return months + ' months';
-            } else if (days >= 7) {
-                let weeks = (days / 7).toFixed(1);
-                if (weeks.endsWith('.0')) {
-                    weeks = parseFloat(weeks).toFixed();
-                }
-                return weeks + ' weeks';
-            } else {
-                return days.toFixed() + ' days';
-            }
-        }
-
-        for (let i = 0; i < timesCollection.length; i++) {
-            let days = originalValues[i];
-            let formattedCurrent = formatDuration(days);
-
-            if (i > 0) {
-                let diff = days - originalValues[i - 1];
-                let formattedDiff = formatDuration(diff);
-                timesCollection[i].textContent = formattedCurrent + ' (' + formattedDiff + ')';
-            } else {
-                timesCollection[i].textContent = formattedCurrent;
-            }
-        }
-    }
-
-    if (window.location.pathname === '/topiclist') {
-        const table = document.getElementById('topic-table');
-
-        // Get the table headers
-        const topicHeader = document.getElementById('sort-by-topic');
-        const countHeader = document.getElementById('sort-by-count');
-
-        // Convert table rows to an array
-        const rows = Array.from(table.rows).slice(1); // Exclude the header row
-
-        // Event listener for the 'Topic List' header
-        topicHeader.addEventListener('click', () => {
-            toggleSortIndicator(topicHeader);
-            // Sort the rows alphabetically by topic
-            rows.sort((a, b) => a.cells[0].innerText.localeCompare(b.cells[0].innerText));
-            // Clear the table and add the sorted rows
-            while (table.rows.length > 1) table.deleteRow(1);
-            rows.forEach(row => table.appendChild(row));
-        });
-
-        // Event listener for the 'Question Count' header
-        countHeader.addEventListener('click', () => {
-            toggleSortIndicator(countHeader);
-            // Sort the rows numerically by count
-            rows.sort((a, b) => a.cells[1].innerText - b.cells[1].innerText);
-            // Clear the table and add the sorted rows
-            while (table.rows.length > 1) table.deleteRow(1);
-            rows.forEach(row => table.appendChild(row));
-        });
-
-          // Function to toggle the sort indicator class on the header
-const toggleSortIndicator = (header) => {
-    const isSorted = header.classList.contains('sorted');
-    topicHeader.classList.remove('sorted');
-    countHeader.classList.remove('sorted');
-    if (!isSorted) {
-      header.classList.add('sorted');
-    }
-  };
-  }
 }
 
 function submit_rating(rating) {

@@ -135,6 +135,11 @@ PREDEFINED_OPTIONS = {
 }
 
 
+# Ceiling on `AIProfileForm.languages`. The profile page mirrors this so the
+# picker stops the user before the round-trip; keep the two in step.
+MAX_LANGUAGES = 3
+
+
 LANGUAGE_CODES = [
     "en_US",
     "en_GB",
@@ -218,8 +223,10 @@ class AIProfileForm(FlaskForm):
 
     def validate_languages(self, field):
         if field.data:
-            if len(field.data) > 3:
-                raise ValidationError("You can select up to 3 languages only.")
+            if len(field.data) > MAX_LANGUAGES:
+                raise ValidationError(
+                    f"You can select up to {MAX_LANGUAGES} languages only."
+                )
             valid_choices = {choice[0] for choice in (self.languages.choices or [])}
             for lang in field.data:
                 if lang not in valid_choices:

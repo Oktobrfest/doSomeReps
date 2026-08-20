@@ -71,8 +71,7 @@ from ..bluehelpers import (
     remove_underscore,
     set_session,
     split_dict,
-    tally_que_catz,
-    get_categories_questions
+    tally_que_catz
 )
 from ..charts import rep_vs_forget, render_chart
 from ..database import session
@@ -106,15 +105,16 @@ def about():
     day_qry = select(level.level_no,level.days_hence)
     days_obj_all = session.execute(day_qry).all()
 
-    days = [ (d.level_no, d.days_hence) for d in days_obj_all ]
+    intervals = [
+        {"levelNo": d.level_no, "daysHence": d.days_hence} for d in days_obj_all
+    ]
 
     return render_template(
         "about.html",
         user=current_user,
-        days=days,
+        intervals=intervals,
         title="About",
         description="About us page.",
-        #catz_chart=catz_chart,
     )
 
 
@@ -369,24 +369,6 @@ def studymaterials():
 #     response_msg = jsonify('ok')
 
 #     return response_msg
-
-
-@home.route("/topics/<selected_topic>", methods=["GET"], endpoint="topic_questions")
-@login_required
-def topic_questions(selected_topic):
-    # Fetch the list of all topics with their question counts
-    category_list = get_all_categories()
-
-    # Fetch the questions for the selected topic
-    questions = get_categories_questions(selected_topic)
-
-    return render_template(
-        "topic_questions.html",
-        title=f"Questions for {selected_topic}",
-        selected_topic=selected_topic,
-        topics=topics,
-        questions=questions
-    )
 
 
 @home.route("/api/flag", methods=["POST"], endpoint="flag_question")
