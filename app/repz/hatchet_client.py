@@ -102,7 +102,7 @@ def _get_generate_questions_from_doc_task():
     @h.task(
         name="generate_questions_from_doc_workflow",
         execution_timeout="10m",
-        retries=1,
+        retries=0,
         input_validator=DocumentGenInput,
     )
     def generate_questions_from_doc_workflow(input: DocumentGenInput, ctx) -> dict:

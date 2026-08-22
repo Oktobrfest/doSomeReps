@@ -1,14 +1,4 @@
-import copy
-import hashlib
-import json
-import logging
-import math
 import os
-import random
-import re
-
-from re import A
-from typing import final
 
 from flask import (
     Blueprint,
@@ -343,32 +333,6 @@ def edit_question():
         "edit_question.html",
         user=current_user,
     )
-
-
-@home.route("/studymaterials", methods=["GET", "POST"], endpoint="studymaterials")
-@login_required
-def studymaterials():
-    logging.debug('Rendering studymaterials.html')
-
-    return render_template(
-        "studymaterials.html",
-        title="Study Materials",
-        user=current_user,
-       )
-
-
-# @home.route("/exclude_q", methods=["POST"], endpoint="exclude_q")
-# @login_required
-# def exclude_q():
-#     UID = g._login_user.id
-
-
-#     msg = "Excluded Question"
-#     flash(msg, category="success")
-
-#     response_msg = jsonify('ok')
-
-#     return response_msg
 
 
 @home.route("/api/flag", methods=["POST"], endpoint="flag_question")

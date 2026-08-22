@@ -9,16 +9,7 @@ from repz.routes import ai
 
 from ..database import session
 from ..models import users, languages
-from .profile_forms import AIProfileForm, MAX_LANGUAGES
-
-
-def _resolve_provider(form: AIProfileForm) -> str:
-    """If the user picked 'custom' in the dropdown, use the free-text
-    field; otherwise use the dropdown value. Empty string means 'unset'."""
-    provider = (form.ai_provider.data or "").strip()
-    if provider == "custom":
-        provider = (form.ai_provider_custom.data or "").strip()
-    return provider
+from .profile_forms import ProfileLanguagesForm, MAX_LANGUAGES
 
 
 @ai.route("/profile", methods=["GET", "POST"], endpoint="profile")
@@ -29,7 +20,7 @@ def profile():
         select(users).where(users.id == current_user.id)
     ).scalar_one()
 
-    form = AIProfileForm(provider=user_obj.ai_provider, current_model=user_obj.ai_model)
+    form = ProfileLanguagesForm()
 
     # Populate choices dynamically from the DB
     db_languages = session.execute(

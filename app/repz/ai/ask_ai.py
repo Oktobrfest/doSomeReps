@@ -11,7 +11,7 @@ from sqlalchemy import select
 from repz.routes import ai
 from ..database import session
 from ..models import users
-from .litellm_client import completion_for_user, AIConfigError
+from .litellm_client import completion_for_user, resolve_user_ai_config, AIConfigError
 from .prompts import (
     SYSTEM_PROMPT,
     ANSWER_SECTION_REVEALED,
@@ -24,15 +24,10 @@ TRANSCRIBE_MODEL = "gpt-4o-mini-transcribe"
 IMAGE_MODALITY = "image"
 
 
-# completion_for_user() silently falls back to the legacy text
-# columns when a modality has no integration, which would send images to a
-# text-only model. Check up front so we can fail loudly instead.
+# Checked up front so an unconfigured modality fails with a clear message
+# rather than partway through building the request.
 def _modality_is_configured(user_obj, modality: str) -> bool:
-    integrations = getattr(user_obj, "ai_integrations", None) or []
-    integration = next((i for i in integrations if i.modality == modality), None)
-    if not integration or not integration.provider_relation:
-        return False
-    return bool(integration.provider_relation.api_key and integration.model)
+    return resolve_user_ai_config(user_obj, modality).is_usable
 
 
 # Keep only absolute http(s) URLs before they reach a paid API.
@@ -49,21 +44,8 @@ def _sanitize_image_urls(raw_urls) -> list:
 
 def _resolve_stt_config(user_obj):
     """Return (api_key, api_base, model) for STT transcription."""
-    integration = next((i for i in user_obj.ai_integrations if i.modality == "stt"), None)
-    if integration and integration.provider_relation:
-        return (
-            integration.provider_relation.api_key,
-            integration.provider_relation.api_base or None,
-            integration.model or TRANSCRIBE_MODEL,
-        )
-    # Default STT uses the user's OpenAI API key directly.  Don't reuse the
-    # legacy text/chat ai_api_base here: it often points to OpenRouter,
-    # DeepSeek, proxies, etc. that do not implement /v1/audio/transcriptions.
-    return (
-        getattr(user_obj, "ai_api_key", None),
-        None,
-        TRANSCRIBE_MODEL,
-    )
+    config = resolve_user_ai_config(user_obj, "stt")
+    return (config.api_key, config.api_base or None, config.model or TRANSCRIBE_MODEL)
 
 
 @ai.route("/api/ask-ai/transcribe", methods=["POST"])

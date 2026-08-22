@@ -9,7 +9,11 @@ from repz.ai.prompts import GENERATE_TTS_AUDIO_TEXT
 from repz.database import session
 from repz.models import audio
 from repz.aws_s3 import S3
-from repz.ai.litellm_client import completion_for_user
+from repz.ai.litellm_client import completion_for_user, resolve_user_ai_config
+
+# Rewriting a question into TTS-friendly prose is an LLM call, so it runs on
+# the "text" modality - not "tts", which is the voice synthesis step.
+TTS_TEXT_MODALITY = "text"
 
 
 class S3StorageClient:
@@ -87,16 +91,15 @@ class AudioAssetService:
 
     def _can_generate_ai_tts_text(self, user) -> bool:
         """Return whether this user has enough AI config to generate TTS-friendly text."""
-        has_provider = bool(getattr(user, "ai_provider", None))
-        has_model = bool(getattr(user, "ai_model", None))
-        has_key = bool(getattr(user, "ai_api_key", None))
+        config = resolve_user_ai_config(user, TTS_TEXT_MODALITY)
 
         logging.info(
             "🤖 AI TTS config check: "
-            f"provider={has_provider}, model={has_model}, api_key={has_key}"
+            f"provider={bool(config.provider)}, model={bool(config.model)}, "
+            f"api_key={bool(config.api_key)}"
         )
 
-        return has_provider and has_model and has_key
+        return config.is_usable
 
     def _audio_object_key(
         self,
@@ -217,6 +220,7 @@ Avoid difficult rarely used words and jargon.
         response: Any = completion_for_user(
             user,
             [{"role": "user", "content": prompt}],
+            modality=TTS_TEXT_MODALITY,
             temperature=0.1,
         )
 

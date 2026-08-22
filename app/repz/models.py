@@ -128,13 +128,6 @@ class users(UserMixin, Base):
     role = sa.Column(sa.Integer, index=False, nullable=False, default=1)
     email_verified = sa.Column(sa.Boolean, index=False, nullable=False, default=False)
     token = sa.Column(sa.String(60), nullable=True)
-    ai_provider = sa.Column(sa.String(60), nullable=True)
-    ai_model = sa.Column(sa.String(120), nullable=True)
-    ai_api_key = sa.Column(EncryptedString(500), nullable=True)
-    # Optional - some providers (Azure/OpenAI-compatible/Ollama/etc.)
-    # need a custom endpoint base URL.
-    ai_api_base = sa.Column(sa.String(400), nullable=True)
-
     favorates = relationship(
         'users',
         secondary=favorate_links,

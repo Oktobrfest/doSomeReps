@@ -1,33 +1,9 @@
-"""Forms for the user profile / AI integration page."""
+"""Profile page form, plus the provider/model catalogue the AI integration
+endpoints serve to the client."""
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, SelectField, StringField, SubmitField, SelectMultipleField, ValidationError
-from wtforms.validators import Length, Optional
-
-
-# A short, curated list of the most common LiteLLM provider ids so the
-# user gets a helpful dropdown out of the box. The form also accepts a
-# free-form "custom" provider id, so any of LiteLLM's 100+ supported
-# providers can still be used.
-#
-# Provider id format follows the LiteLLM "<provider>/<model>" routing
-# convention - see https://docs.litellm.ai/docs/providers
-COMMON_PROVIDERS = [
-    ("", "-- Select a provider --"),
-    ("openai", "OpenAI"),
-    ("anthropic", "Anthropic (Claude)"),
-    ("gemini", "Google Gemini (AI Studio)"),
-    ("vertex_ai", "Google Vertex AI"),
-    ("azure", "Azure OpenAI"),
-    ("bedrock", "AWS Bedrock"),
-    ("cohere", "Cohere"),
-    ("mistral", "Mistral"),
-    ("groq", "Groq"),
-    ("openrouter", "OpenRouter"),
-    ("deepinfra", "DeepInfra"),
-    ("ollama", "Ollama (self-hosted)"),
-    ("custom", "Other / custom (enter provider id manually)"),
-]
+from wtforms import SubmitField, SelectMultipleField, ValidationError
+from wtforms.validators import Optional
 
 
 # Common providers and default models to make configuration easier in the UI/Form.
@@ -135,7 +111,7 @@ PREDEFINED_OPTIONS = {
 }
 
 
-# Ceiling on `AIProfileForm.languages`. The profile page mirrors this so the
+# Ceiling on `ProfileLanguagesForm.languages`. The profile page mirrors this so the
 # picker stops the user before the round-trip; keep the two in step.
 MAX_LANGUAGES = 3
 
@@ -164,62 +140,16 @@ LANGUAGE_CODES = [
 ]
 
 
-class AIProfileForm(FlaskForm):
-    """Per-user AI provider configuration, stored on the users row."""
+class ProfileLanguagesForm(FlaskForm):
+    """The profile page's language preferences. Provider credentials and model
+    choices are owned by the AI integration endpoints, not by this form."""
 
-    ai_provider = SelectField(
-        "AI Provider",
-        choices=COMMON_PROVIDERS,
-        validators=[Optional()],
-    )
-    # Used only when ai_provider == "custom" - lets the user type any
-    # LiteLLM-supported provider id (e.g. "deepseek", "together_ai").
-    ai_provider_custom = StringField(
-        "Custom provider id",
-        validators=[Optional(), Length(max=60)],
-    )
-    ai_model = SelectField(
-        "Model name",
-        choices=[],
-        validators=[Optional()],
-    )
-    ai_api_key = PasswordField(
-        "API Key",
-        validators=[Optional(), Length(max=500)],
-    )
-    ai_api_base = StringField(
-        "API Base URL (optional)",
-        validators=[Optional(), Length(max=400)],
-    )
     languages = SelectMultipleField(
         "Preferred Languages",
         choices=[(code, code) for code in LANGUAGE_CODES],
         validators=[Optional()],
     )
     submit = SubmitField("Save")
-
-    def __init__(self, *args, **kwargs):
-        provider = kwargs.pop("provider", None)
-        current_model = kwargs.pop("current_model", None)
-        super().__init__(*args, **kwargs)
-        self.populate_model_choices(provider, current_model)
-
-    def populate_model_choices(self, provider, current_model=None):
-        """Dynamically populate self.ai_model choices based on provider and current_model."""
-        provider = (provider or "").lower().strip()
-        if provider in PREDEFINED_OPTIONS:
-            models = list(PREDEFINED_OPTIONS[provider])
-        else:
-            # Fallback: combine popular ones from openai, anthropic, gemini
-            models = []
-            for p in ["openai", "anthropic", "gemini"]:
-                models.extend(PREDEFINED_OPTIONS[p])
-
-        # Always ensure current user's model is in choices so selection is preserved
-        if current_model and current_model not in models:
-            models.insert(0, current_model)
-
-        self.ai_model.choices = [("", "-- Select a model --")] + [(m, m) for m in models]
 
     def validate_languages(self, field):
         if field.data:

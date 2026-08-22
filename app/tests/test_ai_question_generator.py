@@ -13,7 +13,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 app = Flask(__name__)
 app.config['TESTING'] = True
 app.config['SECRET_KEY'] = 'test-secret'
-app.config['HOME_STATIC_FOLDER'] = 'static'
 # Disable login protection during testing - flask-login automatically bypasses @login_required
 app.config['LOGIN_DISABLED'] = True
 

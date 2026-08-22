@@ -11,7 +11,12 @@ from sqlalchemy import select, delete
 from repz.routes import ai
 from ..database import session
 from ..models import users, UserAIProvider, UserAIIntegration
-from .litellm_client import completion_for_user, AIConfigError, price_label
+from .litellm_client import (
+    completion_for_user,
+    resolve_user_ai_config,
+    AIConfigError,
+    price_label,
+)
 from .profile_forms import PREDEFINED_OPTIONS
 
 
@@ -55,10 +60,6 @@ def get_ai_config():
                 "model": integ.model or "",
             })
 
-        # Fallback for legacy single-config representation
-        has_key_legacy = bool(user_obj.ai_api_key)
-        masked_key_legacy = "••••••••••••••••" if has_key_legacy else ""
-
         prices = {}
         for prov, models in PREDEFINED_OPTIONS.items():
             for m in models:
@@ -68,32 +69,22 @@ def get_ai_config():
                     prices[m.lower()] = price
 
         # Ensure any custom configured models also have price entries
-        all_models = [user_obj.ai_model] if user_obj.ai_model else []
         for integ in user_obj.ai_integrations:
-            if integ.model:
-                all_models.append(integ.model)
+            m = integ.model
+            if not m or m in prices or m.lower() in prices:
+                continue
 
-        for m in all_models:
-            if m and m not in prices and m.lower() not in prices:
-                # Find associated provider
-                prov = user_obj.ai_provider
-                if "/" in m:
-                    parts = m.split("/", 1)
-                    price = price_label(parts[1], parts[0])
-                else:
-                    price = price_label(m, prov)
-                prices[m] = price
-                prices[m.lower()] = price
+            if "/" in m:
+                vendor, model_name = m.split("/", 1)
+                price = price_label(model_name, vendor)
+            else:
+                prov = integ.provider_relation.provider if integ.provider_relation else None
+                price = price_label(m, prov)
+
+            prices[m] = price
+            prices[m.lower()] = price
 
         result_data = {
-            # Legacy fields for backward compatibility
-            "provider": user_obj.ai_provider or "",
-            "model": user_obj.ai_model or "",
-            "apiBase": user_obj.ai_api_base or "",
-            "hasKey": has_key_legacy,
-            "maskedKey": masked_key_legacy,
-
-            # New multi-modality lists
             "providers": providers_list,
             "integrations": integrations_list,
 
@@ -240,67 +231,6 @@ def delete_ai_integration(integration_id):
         }), 500
 
 
-@ai.route("/integration/api/config", methods=["POST"])
-@login_required
-def save_ai_config():
-    """Legacy API endpoint to save the user's primary AI configuration (for compatibility)."""
-    data = request.get_json() or {}
-
-    try:
-        user_obj = session.execute(
-            select(users).where(users.id == current_user.id)
-        ).scalar_one()
-
-        provider = (data.get("provider") or "").strip()
-        model = (data.get("model") or "").strip()
-        api_base = (data.get("apiBase") or "").strip()
-        api_key = (data.get("apiKey") or "").strip()
-
-        user_obj.ai_provider = provider or None
-        user_obj.ai_model = model or None
-        user_obj.ai_api_base = api_base or None
-
-        if api_key:
-            user_obj.ai_api_key = api_key
-
-        session.commit()
-
-        return jsonify({
-            "success": True,
-            "message": "AI settings successfully updated!"
-        })
-    except Exception as e:
-        session.rollback()
-        return jsonify({
-            "success": False,
-            "error": f"Failed to save configuration: {str(e)}"
-        }), 500
-
-
-@ai.route("/integration/api/config/key", methods=["DELETE"])
-@login_required
-def delete_ai_api_key():
-    """Legacy API endpoint to delete the user's saved API key (for compatibility)."""
-    try:
-        user_obj = session.execute(
-            select(users).where(users.id == current_user.id)
-        ).scalar_one()
-
-        user_obj.ai_api_key = None
-        session.commit()
-
-        return jsonify({
-            "success": True,
-            "message": "AI API Key successfully deleted!"
-        })
-    except Exception as e:
-        session.rollback()
-        return jsonify({
-            "success": False,
-            "error": f"Failed to delete API key: {str(e)}"
-        }), 500
-
-
 @ai.route("/integration/api/test", methods=["POST"])
 @login_required
 def test_ai_completion():
@@ -326,15 +256,11 @@ def test_ai_completion():
         choices = getattr(resp, "choices", [])
         content = choices[0]["message"]["content"] if choices else ""
 
-        # Find model used based on integration/modality or fallback to legacy
-        model_used = None
-        integration = next((i for i in user_obj.ai_integrations if i.modality == modality), None)
-        if integration:
-            model_used = integration.model
-        if not model_used:
-            model_used = user_obj.ai_model
-
-        model_used = getattr(resp, "model", model_used)
+        # Report the model the provider echoed back, falling back to the one
+        # this modality is configured with.
+        model_used = getattr(
+            resp, "model", resolve_user_ai_config(user_obj, modality).model
+        )
 
         return jsonify({
             "success": True,

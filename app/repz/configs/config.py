@@ -25,7 +25,6 @@ class Config:
     APP_DIR = environ.get('APP_DIR', 'repz')
     # Static Assets
     STATIC_FOLDER = environ.get("STATIC_FOLDER", "static")
-    HOME_STATIC_FOLDER = environ.get("HOME_STATIC_FOLDER", "static")
     TEMPLATES_FOLDER = environ.get('TEMPLATES_FOLDER', 'templates')
    
     # file uploads

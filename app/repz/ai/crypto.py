@@ -1,6 +1,6 @@
 """Application-layer encryption for sensitive AI provider credentials.
 
-Secrets (currently only the per-user ``ai_api_key``) are encrypted with
+Secrets (currently only ``user_ai_providers.api_key``) are encrypted with
 Fernet (AES-128-CBC + HMAC-SHA256) before being written to the
 database, and decrypted transparently on read via the
 ``EncryptedString`` SQLAlchemy ``TypeDecorator``.

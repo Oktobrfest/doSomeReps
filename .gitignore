@@ -81,7 +81,6 @@ backup/
 *.tar.gz
 .dump
 
-pdfjs-dist/
 locale/
 LICENSE.txt
 **/screenshots/
@@ -89,12 +88,6 @@ samples/
 
 static/css/images/
 **/*.map
-
-# NEED TO FIGURE OUT HOW TO HANDLE THESE LONG TERM. Perhaps postpone til you finish with the pdfviewer feature.
-prism.js
-Flash.js
-viewer.mjs
-debugger.mjs
 
 dev.env
 prod.env
