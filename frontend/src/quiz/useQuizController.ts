@@ -10,8 +10,8 @@ import {
 import { flushSync } from 'react-dom';
 import type {
   AudioAssets,
-  AudioCommandHandlers,
-  AudioQuizBatchResponse,
+  QuizCommandHandlers,
+  QuizBatchResponse,
   QuizItem,
 } from './types';
 
@@ -25,7 +25,7 @@ interface ModalState {
   startIndex: number;
 }
 
-interface AudioQuizUiState {
+interface QuizUiState {
   isSubmitting: boolean;
   error: string | null;
   answerRevealed: boolean;
@@ -37,7 +37,7 @@ interface AudioQuizUiState {
   queueExhaustedMessage: string;
 }
 
-type AudioQuizUiAction =
+type QuizUiAction =
   | { type: 'SUBMIT_STARTED' }
   | { type: 'SUBMIT_FINISHED' }
   | { type: 'SUBMIT_FAILED'; message: string }
@@ -56,7 +56,7 @@ type AudioQuizUiAction =
   | { type: 'CLOSE_MODAL' }
   | { type: 'SET_PANEL_SNAP'; snap: PanelSnap };
 
-type AudioQuizActionRequest =
+type QuizActionRequest =
   | {
       action: 'submit';
       quizqId: string | number;
@@ -70,7 +70,10 @@ type AudioQuizActionRequest =
 
 const QUEUE_TARGET_SIZE = 2;
 
-const initialUiState: AudioQuizUiState = {
+/** The queue always starts empty: the page fetches it once it knows the mode. */
+const NO_ITEMS: QuizItem[] = [];
+
+const initialUiState: QuizUiState = {
   isSubmitting: false,
   error: null,
   answerRevealed: false,
@@ -86,7 +89,7 @@ const initialUiState: AudioQuizUiState = {
   queueExhaustedMessage: '',
 };
 
-function reducer(state: AudioQuizUiState, action: AudioQuizUiAction): AudioQuizUiState {
+function reducer(state: QuizUiState, action: QuizUiAction): QuizUiState {
   switch (action.type) {
     case 'SUBMIT_STARTED':
       return {
@@ -287,25 +290,29 @@ function verdictToServerValue(verdict: VerdictKind): string {
   }
 }
 
-interface UseAudioQuizControllerOptions {
-  initialItems: QuizItem[];
+interface UseQuizControllerOptions {
   csrfToken?: string;
+  /** When false the queue is fetched without audio and nothing ever plays. */
+  audioEnabled: boolean;
+  /** Start reading each new question aloud. Only consulted while audio is on. */
+  autoPlay: boolean;
 }
 
-export function useAudioQuizController({
-  initialItems,
+export function useQuizController({
   csrfToken,
-}: UseAudioQuizControllerOptions) {
+  audioEnabled,
+  autoPlay,
+}: UseQuizControllerOptions) {
   const [items, setItems] = useReducer(
     (_previous: QuizItem[], next: QuizItem[]) => next,
-    initialItems,
+    NO_ITEMS,
   );
 
   const [ui, dispatch] = useReducer(reducer, initialUiState);
 
-  const itemsRef = useRef<QuizItem[]>(initialItems);
-  const currentItemRef = useRef<QuizItem | null>(initialItems[0] ?? null);
-  const uiRef = useRef<AudioQuizUiState>(initialUiState);
+  const itemsRef = useRef<QuizItem[]>(NO_ITEMS);
+  const currentItemRef = useRef<QuizItem | null>(null);
+  const uiRef = useRef<QuizUiState>(initialUiState);
   const submitInFlightRef = useRef(false);
 
   const currentItem = items[0] ?? null;
@@ -318,6 +325,11 @@ export function useAudioQuizController({
 
   const answerAssets = useMemo(
     () => getAudioAssets(currentItem).answer ?? [],
+    [currentItem],
+  );
+
+  const hintAssets = useMemo(
+    () => getAudioAssets(currentItem).hint ?? [],
     [currentItem],
   );
 
@@ -369,31 +381,37 @@ export function useAudioQuizController({
     };
   }, []);
 
+  const audioEnabledRef = useRef(audioEnabled);
+  useLayoutEffect(() => {
+    audioEnabledRef.current = audioEnabled;
+  }, [audioEnabled]);
+
   const fetchBatch = useCallback(
     async (count: number, excludeQuizqIds: Array<string | number> = []) => {
       const params = new URLSearchParams();
       params.set('count', String(count));
+      params.set('audio', audioEnabledRef.current ? '1' : '0');
 
       if (excludeQuizqIds.length > 0) {
         params.set('exclude_quizq_ids', excludeQuizqIds.map(String).join(','));
       }
 
-      const response = await fetch(`/audio/quiz-data?${params.toString()}`, {
+      const response = await fetch(`/quiz/queue?${params.toString()}`, {
         credentials: 'same-origin',
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to load audio quiz data (${response.status})`);
+        throw new Error(`Failed to load quiz questions (${response.status})`);
       }
 
-      const data = (await response.json()) as AudioQuizBatchResponse;
+      const data = (await response.json()) as QuizBatchResponse;
       return data;
     },
     [],
   );
 
-  const postAudioAction = useCallback(
-    async (body: AudioQuizActionRequest) => {
+  const postQuizAction = useCallback(
+    async (body: QuizActionRequest) => {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -402,7 +420,7 @@ export function useAudioQuizController({
         headers['X-CSRFToken'] = csrfToken;
       }
 
-      const response = await fetch('/audio/api/action', {
+      const response = await fetch('/quiz/api/action', {
         method: 'POST',
         headers,
         credentials: 'same-origin',
@@ -415,7 +433,7 @@ export function useAudioQuizController({
       };
 
       if (!response.ok || !result.ok) {
-        throw new Error(result.error || `Audio quiz action failed (${response.status})`);
+        throw new Error(result.error || `Quiz action failed (${response.status})`);
       }
 
       return result;
@@ -477,7 +495,7 @@ export function useAudioQuizController({
        * Critical SPA behavior:
        * show the already-queued next question immediately.
        * Do not wait for POST.
-       * Do not wait for /audio/quiz-data.
+       * Do not wait for /quiz/queue.
        * Do not wait for audio prep.
        */
       flushSync(() => {
@@ -487,15 +505,16 @@ export function useAudioQuizController({
 
       try {
         if (action.type === 'exclude') {
-          await postAudioAction({
+          await postQuizAction({
             action: 'exclude',
             quizqId: submittedQuizqId,
           });
         } else {
-          await postAudioAction({
+          await postQuizAction({
             action: 'submit',
             quizqId: submittedQuizqId,
             verdict: verdictToServerValue(action.verdict),
+            providedAnswer: providedAnswerRef.current || null,
           });
         }
 
@@ -524,7 +543,7 @@ export function useAudioQuizController({
         dispatch({ type: 'SUBMIT_FINISHED' });
       }
     },
-    [commitItems, postAudioAction, stopAllAudio, topUpQueue],
+    [commitItems, postQuizAction, stopAllAudio, topUpQueue],
   );
 
   const submitVerdict = useCallback(
@@ -623,15 +642,26 @@ export function useAudioQuizController({
     }
   }, [commitItems]);
 
+  /*
+   * The answer the reader typed before revealing the real one. Kept in a ref as
+   * well so a verdict submitted from a voice command still carries it.
+   */
+  const [providedAnswer, setProvidedAnswerState] = useState('');
+  const providedAnswerRef = useRef('');
+
+  const setProvidedAnswer = useCallback((text: string) => {
+    providedAnswerRef.current = text;
+    setProvidedAnswerState(text);
+  }, []);
+
   useEffect(() => {
     dispatch({ type: 'QUESTION_CHANGED' });
-  }, [currentQuestion?.quizq_id]);
+    setProvidedAnswer('');
+  }, [currentQuestion?.quizq_id, setProvidedAnswer]);
 
-  // On mount, if no items were passed from the server, fetch the initial batch.
-  useEffect(() => {
-    if (initialItems.length > 0) return;
-
+  const loadQueue = useCallback(() => {
     let cancelled = false;
+
     fetchBatch(QUEUE_TARGET_SIZE, []).then((data) => {
       if (cancelled) return;
       const fetched = data.items ?? [];
@@ -653,24 +683,86 @@ export function useAudioQuizController({
     });
 
     return () => { cancelled = true; };
-  // Only run on mount.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [commitItems, fetchBatch]);
 
-  const [autoPlay, setAutoPlay] = useState(() => sessionStorage.getItem('audio_auto_play_active') !== 'false');
+  // The server renders an empty shell, so the first queue always comes from here.
+  useEffect(loadQueue, [loadQueue]);
 
-  const toggleAutoPlay = useCallback(() => {
-    setAutoPlay((prev) => {
-      const next = !prev;
-      sessionStorage.setItem('audio_auto_play_active', String(next));
-      return next;
-    });
-  }, []);
+  const applyCategories = useCallback(
+    async (categories: string[]) => {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+      }
+
+      try {
+        const response = await fetch('/quiz/api/categories', {
+          method: 'POST',
+          headers,
+          credentials: 'same-origin',
+          body: JSON.stringify({ categories }),
+        });
+
+        if (!response.ok) throw new Error(String(response.status));
+      } catch {
+        dispatch({
+          type: 'QUEUE_FETCH_FAILED',
+          message: 'Could not save your categories. Please try again.',
+        });
+        return;
+      }
+
+      // The queue is per-category-selection, so it has to be rebuilt wholesale.
+      stopAllAudio();
+      commitItems(NO_ITEMS);
+      loadQueue();
+    },
+    [commitItems, csrfToken, loadQueue, stopAllAudio],
+  );
+
+  /*
+   * Switching audio on mid-question would otherwise leave the reader with a
+   * question that has no soundtrack, because it was queued without one. Fetch
+   * the missing assets for what is already on screen instead of discarding it.
+   */
+  useEffect(() => {
+    if (!audioEnabled) return;
+
+    const item = currentItemRef.current;
+    const quizqId = item?.question?.quizq_id;
+    if (!quizqId || (item?.audioAssets?.question?.length ?? 0) > 0) return;
+
+    let cancelled = false;
+
+    fetch(`/quiz/audio-assets?quizq_id=${encodeURIComponent(String(quizqId))}`, {
+      credentials: 'same-origin',
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.ok) return;
+
+        const latestItems = itemsRef.current;
+        if (String(latestItems[0]?.question?.quizq_id) !== String(quizqId)) return;
+
+        commitItems(
+          latestItems.map((entry, index) =>
+            index === 0 ? { ...entry, audioAssets: data.audioAssets } : entry,
+          ),
+        );
+      })
+      .catch(() => {
+        // Audio is an enhancement: a failure here leaves the quiz readable.
+      });
+
+    return () => { cancelled = true; };
+  }, [audioEnabled, commitItems, currentQuestion?.quizq_id]);
 
   useEffect(() => {
-    if (!currentQuestion || questionAssets.length === 0 || ui.isSubmitting) return;
-
     if (!autoPlay) return;
+    if (!currentQuestion || questionAssets.length === 0 || ui.isSubmitting) return;
 
     const timer = window.setTimeout(() => {
       readQuestion();
@@ -696,7 +788,8 @@ export function useAudioQuizController({
       closeModal,
       setPanelSnap,
       setFlag,
-      toggleAutoPlay,
+      setProvidedAnswer,
+      applyCategories,
     }),
     [
       answerEnded,
@@ -712,11 +805,12 @@ export function useAudioQuizController({
       submitVerdict,
       toggleAnswerAudio,
       setFlag,
-      toggleAutoPlay,
+      setProvidedAnswer,
+      applyCategories,
     ],
   );
 
-  const commandHandlers = useMemo<AudioCommandHandlers>(
+  const commandHandlers = useMemo<QuizCommandHandlers>(
     () => ({
       correct: actions.correct,
       wrong: actions.wrong,
@@ -743,6 +837,7 @@ export function useAudioQuizController({
     currentQuestion,
     questionAssets,
     answerAssets,
+    hintAssets,
 
     isSubmitting: ui.isSubmitting,
     error: ui.error,
@@ -763,7 +858,7 @@ export function useAudioQuizController({
     queueExhausted: ui.queueExhausted,
     queueExhaustedMessage: ui.queueExhaustedMessage,
 
-    autoPlay,
+    providedAnswer,
 
     actions,
     commandHandlers,

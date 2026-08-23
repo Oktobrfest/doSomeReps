@@ -57,6 +57,19 @@ export interface ExtraAction {
   onClick?: () => void;
 }
 
+/**
+ * A secondary action that opens a dialog rather than changing the quiz.
+ *
+ * These share a row instead of taking a full-width button each, so the panel
+ * can carry more of them without pushing the verdict buttons off screen.
+ */
+export interface CompactAction {
+  key: string;
+  label: string;
+  icon: ReactNode;
+  onClick: () => void;
+}
+
 export interface SlideOutButtonsProps {
   className?: string;
   size?: 'default' | 'compact';
@@ -65,15 +78,21 @@ export interface SlideOutButtonsProps {
   onWrong?: () => void;
   onSlightlyWrong?: () => void;
   extraActions?: ExtraAction[];
+  compactActions?: CompactAction[];
   onSnapChange?: (snap: 'collapsed' | 'trio' | 'full') => void;
+  /** Reports the measured panel heights so content can clear the docked panel. */
+  onMetricsChange?: (metrics: Metrics) => void;
   expandToTrio?: boolean;
   showCategories?: boolean;
   categoryList?: string[];
   initialSelectedCategories?: string[];
+  onApplyCategories?: (categories: string[]) => void;
   questionId?: string | number;
   initialFlag?: QuestionFlag | null;
   csrfToken?: string;
   onFlagChange?: (newFlag: QuestionFlag | null) => void;
+  audioEnabled?: boolean;
+  onToggleAudioEnabled?: () => void;
   autoPlay?: boolean;
   onToggleAutoPlay?: () => void;
 }
@@ -83,7 +102,7 @@ export interface SlideOutButtonsHandle {
   collapse: () => void;
 }
 
-interface Metrics {
+export interface Metrics {
   collapsed: number;
   trio: number;
   full: number;
@@ -107,10 +126,12 @@ function normaliseCategories(initial?: string[], all?: string[]) {
 function CategoriesSection({
   categoryList,
   initialSelectedCategories,
+  onApply,
   disabled = false,
 }: {
   categoryList?: string[];
   initialSelectedCategories?: string[];
+  onApply?: (categories: string[]) => void;
   disabled?: boolean;
 }) {
   const [selected, setSelected] = useState<string[]>(() =>
@@ -122,18 +143,13 @@ function CategoriesSection({
       <CatPicker selectedCategories={selected} onChange={setSelected} />
 
       <button
-        type="submit"
-        name="apply-categories"
-        value="Apply"
+        type="button"
         className={styles.applyBtn}
         disabled={disabled}
+        onClick={() => onApply?.(selected)}
       >
         Apply Categories
       </button>
-
-      {selected.map((cat) => (
-        <input key={cat} type="hidden" name="category_name" value={cat} />
-      ))}
     </div>
   );
 }
@@ -147,21 +163,30 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
     onWrong,
     onSlightlyWrong,
     extraActions,
+    compactActions,
     onSnapChange,
+    onMetricsChange,
     expandToTrio = false,
     showCategories = false,
     categoryList,
     initialSelectedCategories,
+    onApplyCategories,
     questionId,
     initialFlag,
     csrfToken,
     onFlagChange,
+    audioEnabled,
+    onToggleAudioEnabled,
     autoPlay,
     onToggleAutoPlay,
   }: SlideOutButtonsProps,
   ref,
 ) {
-  const hasExtra = Boolean(extraActions?.length) || Boolean(questionId) || Boolean(onToggleAutoPlay);
+  const hasExtra =
+    Boolean(extraActions?.length) ||
+    Boolean(compactActions?.length) ||
+    Boolean(questionId) ||
+    Boolean(onToggleAudioEnabled);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gripRef = useRef<HTMLDivElement | null>(null);
@@ -239,6 +264,11 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
       window.removeEventListener('resize', handleResize);
     };
   }, [measure, showCategories, hasExtra]);
+
+  useEffect(() => {
+    if (!metrics) return;
+    onMetricsChange?.(metrics);
+  }, [metrics, onMetricsChange]);
 
   useEffect(() => {
     if (!metrics) return;
@@ -409,7 +439,24 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
 
       {hasExtra && (
         <div ref={drawerRef} className={styles.drawer}>
-          {extraActions!.map((action) => {
+          {compactActions && compactActions.length > 0 && (
+            <div className={styles.compactRow}>
+              {compactActions.map((action) => (
+                <button
+                  key={action.key}
+                  type="button"
+                  onClick={action.onClick}
+                  disabled={disabled}
+                  className={`${styles.compactBtn} ${actionStyles.cyanBtn}`}
+                >
+                  {action.icon}
+                  <span>{action.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(extraActions ?? []).map((action) => {
             const drawerClassName = `${styles.drawerBtn} ${
               action.variant === 'exclude' ? actionStyles.redBtn : actionStyles.cyanBtn
             }`;
@@ -465,7 +512,28 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
               </button>
             );
           })}
-          {onToggleAutoPlay && (
+          {onToggleAudioEnabled && (
+            <button
+              type="button"
+              onClick={onToggleAudioEnabled}
+              disabled={disabled}
+              className={`${styles.drawerBtn} ${
+                audioEnabled ? actionStyles.greenBtn : actionStyles.orangeBtn
+              }`}
+            >
+              <div className={actionStyles.btnContent}>
+                {audioEnabled ? (
+                  <Volume2 className={actionStyles.iconLarge} />
+                ) : (
+                  <VolumeX className={actionStyles.iconLarge} />
+                )}
+                <span>{audioEnabled ? 'Audio: ON' : 'Audio: OFF'}</span>
+              </div>
+            </button>
+          )}
+
+          {/* Auto-play only means anything while audio is on, so it nests under it. */}
+          {audioEnabled && onToggleAutoPlay && (
             <button
               type="button"
               onClick={onToggleAutoPlay}
@@ -501,6 +569,7 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
           <CategoriesSection
             categoryList={categoryList}
             initialSelectedCategories={initialSelectedCategories}
+            onApply={onApplyCategories}
             disabled={disabled}
           />
         </div>

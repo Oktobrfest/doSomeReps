@@ -17,7 +17,7 @@ import { registerStopListening } from './commands/stopListening';
 import { resolveQuizCommandHandler } from './commands/resolveQuizCommand';
 import styles from './AudioCommandSystem.module.css';
 import actionStyles from '../styles/ActionButton.module.css';
-import type { AudioCommandHandlers } from './types';
+import type { QuizCommandHandlers } from './types';
 import {
   logMediaStreamDiagnostics,
   logAudioContextDiagnostics,
@@ -39,7 +39,7 @@ const AVAILABLE_COMMANDS = [
 ];
 
 interface AudioCommandSystemComponentProps {
-  commands?: AudioCommandHandlers;
+  commands?: QuizCommandHandlers;
   commandsDisabled?: boolean;
 }
 
@@ -131,7 +131,7 @@ export const AudioCommandSystemComponent = forwardRef<
   // Register/unregister this component's stop callback for global audio coordination.
   useEffect(() => {
     const stopMe = () => {
-      // Intentionally no-op here; Ask AI lives in AudioQuiz and owns its own
+      // Intentionally no-op here; Ask AI lives in QuizPage and owns its own
       // playback state. This callback slot remains so that other consumers can
       // stop everything without knowing component boundaries.
     };
@@ -202,7 +202,7 @@ export const AudioCommandSystemComponent = forwardRef<
     const manager = commandManagerRef.current;
     registerReload(manager);
     registerStopListening(manager);
-    // ASK AI is handled directly by the parent (AudioQuiz), so register a
+    // ASK AI is handled directly by the parent (QuizPage), so register a
     // guard that warns if no handler is wired.
     manager.registerCommand('ASK AI', () => {
       if (!commandsRef.current?.askAi) {

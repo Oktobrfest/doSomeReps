@@ -143,6 +143,53 @@
   transform: translateY(0);
 }
 
+/* ---- drawer: dialog-opening actions, two to a row ---- */
+
+.compactRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.compactBtn {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 0;
+  min-height: 50px;
+  border: none;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: clamp(0.8rem, 0.8rem + 0.7vw, 1rem);
+  font-weight: 700;
+  cursor: pointer;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  line-height: 1.1;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.compactBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.12);
+}
+
+.compactBtn:active {
+  transform: translateY(0);
+}
+
+.compactIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex-shrink: 0;
+}
+
 /* ---- categories ---- */
 
 .categoriesSection {
@@ -259,5 +306,29 @@
   .drawerBtn {
     min-height: 64px;
     font-size: clamp(1rem, 1rem + 1.4vw, 1.5rem);
+  }
+
+  .compactBtn {
+    /* Three to a row once there is width for it. */
+    flex: 1 1 calc(33.333% - 6px);
+    min-height: 60px;
+    font-size: 1.05rem;
+  }
+
+  .compactIcon {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+}
+
+/* The docked panel stops spanning the whole width once the page is centred. */
+@media (min-width: 900px) {
+  .container {
+    left: 50%;
+    right: auto;
+    width: min(1100px, 100%);
+    transform: translateX(-50%);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
   }
 }

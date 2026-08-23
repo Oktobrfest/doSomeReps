@@ -1,22 +1,36 @@
-import { useMemo, useRef, useEffect, useCallback, RefObject } from 'react';
+import { useMemo, useRef, useState, useEffect, useCallback, RefObject } from 'react';
 import { AudioCommandSystemComponent } from './AudioCommandSystem';
 import type { AudioCommandSystemHandle } from './AudioCommandSystem';
 import { ImageCarousel } from './ImageCarousel';
 import { ImageModal } from './ImageModal';
-import { Volume2, BookOpen, Ban, Edit } from 'lucide-react';
-import type { AudioQuizProps } from './types';
-import styles from './AudioQuiz.module.css';
+import { Volume2, BookOpen, Ban, Edit, Lightbulb, PenLine, Star, User } from 'lucide-react';
+import type { QuizPageProps } from './types';
+import styles from './QuizPage.module.css';
 import actionStyles from '../styles/ActionButton.module.css';
-import { SlideOutButtons, type ExtraAction } from './SlideOutButtons';
+import slideOutStyles from './SlideOutButtons.module.css';
+import { SlideOutButtons, type CompactAction, type ExtraAction, type Metrics } from './SlideOutButtons';
 import type { SlideOutButtonsHandle } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { FlagButton } from '../components/FlagButton';
-import { useAudioQuizController } from './useAudioQuizController';
+import { useQuizController } from './useQuizController';
+import { useQuizMode } from './useQuizMode';
 import { LargeActionButton, LargePlayableControl } from './AudioControls';
+import { AnswerDraftModal } from './modals/AnswerDraftModal';
+import { AuthorModal } from './modals/AuthorModal';
+import { CategoriesModal } from './modals/CategoriesModal';
+import { HintModal } from './modals/HintModal';
+import { RateModal } from './modals/RateModal';
 import { useAskAi } from '../ask_ai/useAskAi';
 import { AskAiPanel } from '../ask_ai/AskAiPanel';
 import type { AskAiContext } from '../ask_ai/types';
 
+/*
+ * How much room the content leaves for the docked panel at each snap point.
+ *
+ * The collapsed and trio values are tuned by hand and must not drift. Only the
+ * fully-open panel is measured, because its height depends on how many
+ * secondary actions the current question offers.
+ */
 const answerPaddingBySnap: Record<'collapsed' | 'trio' | 'full', number> = {
   collapsed: 12,
   trio: 188,
@@ -27,54 +41,72 @@ function validImages(images?: Array<string | null>): string[] {
   return images?.filter((image): image is string => Boolean(image)) ?? [];
 }
 
-interface AudioQuizEmptyProps {
+interface QuizEmptyProps {
   message: string;
   categoryList?: string[];
   selectedCategories?: string[];
+  onApplyCategories: (categories: string[]) => void;
 }
 
-function AudioQuizEmpty({ message, categoryList, selectedCategories }: AudioQuizEmptyProps) {
+function QuizEmpty({
+  message,
+  categoryList,
+  selectedCategories,
+  onApplyCategories,
+}: QuizEmptyProps) {
+  const [picking, setPicking] = useState(false);
+
   const selectedNormalized = (selectedCategories ?? []).map((c) => c.replace(/_/g, ' '));
   const unselected = (categoryList ?? []).filter(
     (cat) => !selectedNormalized.includes(cat),
   );
 
   return (
-    <div className={styles.centerContainer} style={{ flexDirection: 'column', gap: '24px', textAlign: 'center', padding: '24px' }}>
-      <div style={{ maxWidth: '560px' }}>
-        <p style={{ fontSize: '1.1rem', lineHeight: '1.7', margin: 0 }}>{message}</p>
-      </div>
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <a
-          href="/quemore"
-          className={styles.secondaryBtn}
-        >
+    <div className={styles.emptyContainer}>
+      <p className={styles.emptyMessage}>{message}</p>
+
+      <div className={styles.emptyActions}>
+        <a href="/quemore" className={styles.secondaryBtn}>
           Que More Questions
         </a>
         {unselected.length > 0 && (
-          <a
-            href="/select_categories"
+          <button
+            type="button"
             className={styles.secondaryBtn}
+            onClick={() => setPicking(true)}
           >
             Select More Categories
-          </a>
+          </button>
         )}
       </div>
+
+      {picking && (
+        <CategoriesModal
+          categoryList={categoryList}
+          selectedCategories={selectedCategories}
+          onApply={onApplyCategories}
+          onClose={() => setPicking(false)}
+        />
+      )}
     </div>
   );
 }
 
-export function AudioQuiz(props: AudioQuizProps) {
+export function QuizPage(props: QuizPageProps) {
   const {
     currentUsername,
     editQuestionUrl,
     csrfToken,
     categoryList,
     selectedCategories,
-    initialItems = [],
   } = props;
 
-  const quiz = useAudioQuizController({ initialItems, csrfToken });
+  const mode = useQuizMode();
+  const quiz = useQuizController({
+    csrfToken,
+    audioEnabled: mode.audioEnabled,
+    autoPlay: mode.autoPlay,
+  });
 
   const commandSystemRef = useRef<AudioCommandSystemHandle>(null);
   const slideOutRef = useRef<SlideOutButtonsHandle>(null);
@@ -125,6 +157,7 @@ export function AudioQuiz(props: AudioQuizProps) {
 
   // Sync playback state and register Bluetooth play/pause media handlers
   useEffect(() => {
+    if (!mode.audioEnabled) return;
     if (!('mediaSession' in navigator)) return;
 
     const isPlaying = quiz.questionPlaying || quiz.answerPlaying;
@@ -165,6 +198,7 @@ export function AudioQuiz(props: AudioQuizProps) {
       }
     };
   }, [
+    mode.audioEnabled,
     quiz.questionPlaying,
     quiz.answerPlaying,
     quiz.questionActive,
@@ -176,18 +210,23 @@ export function AudioQuiz(props: AudioQuizProps) {
   return (
     <div className={styles.quizContainer}>
       {/*
-        Mounted ONCE for the session. The mic + KWS worker live here and must
+        Mounted ONCE per audio session. The mic + KWS worker live here and must
         never be torn down by a question change, an empty queue, or a submit.
         Quiz commands are delivered via props (commandsRef), so this component
         always sees the latest handlers without re-subscribing.
+
+        With audio off it is not mounted at all, so the reader is never asked
+        for the microphone.
       */}
-      <div className={styles.audioCommandRoot}>
-        <AudioCommandSystemComponent
-          commands={commandHandlers}
-          commandsDisabled={quiz.isSubmitting}
-          ref={commandSystemRef}
-        />
-      </div>
+      {mode.audioEnabled && (
+        <div className={styles.audioCommandRoot}>
+          <AudioCommandSystemComponent
+            commands={commandHandlers}
+            commandsDisabled={quiz.isSubmitting}
+            ref={commandSystemRef}
+          />
+        </div>
+      )}
 
       {/*
         CSRF lives in the shell so getCsrfToken() in the command system still
@@ -196,8 +235,9 @@ export function AudioQuiz(props: AudioQuizProps) {
       {csrfToken && <input type="hidden" name="csrf_token" value={csrfToken} />}
 
       {quiz.currentQuestion ? (
-        <AudioQuizBody
+        <QuizBody
           quiz={quiz}
+          mode={mode}
           currentUsername={currentUsername}
           editQuestionUrl={editQuestionUrl}
           categoryList={categoryList}
@@ -206,10 +246,11 @@ export function AudioQuiz(props: AudioQuizProps) {
           csrfToken={csrfToken}
         />
       ) : quiz.queueExhausted ? (
-        <AudioQuizEmpty
+        <QuizEmpty
           message={quiz.queueExhaustedMessage}
           categoryList={categoryList}
           selectedCategories={selectedCategories}
+          onApplyCategories={quiz.actions.applyCategories}
         />
       ) : (
         <div className={styles.centerContainer}>
@@ -231,8 +272,9 @@ export function AudioQuiz(props: AudioQuizProps) {
   );
 }
 
-interface AudioQuizBodyProps {
-  quiz: ReturnType<typeof useAudioQuizController>;
+interface QuizBodyProps {
+  quiz: ReturnType<typeof useQuizController>;
+  mode: ReturnType<typeof useQuizMode>;
   currentUsername: string;
   editQuestionUrl: string;
   categoryList?: string[];
@@ -241,17 +283,28 @@ interface AudioQuizBodyProps {
   csrfToken?: string;
 }
 
-function AudioQuizBody({
+/** The secondary panels a question can open, one at a time. */
+type OpenDialog = 'hint' | 'answerDraft' | 'rate' | 'author' | null;
+
+function QuizBody({
   quiz,
+  mode,
   currentUsername,
   editQuestionUrl,
   categoryList,
   selectedCategories,
   slideOutRef,
   csrfToken,
-}: AudioQuizBodyProps) {
+}: QuizBodyProps) {
   const currentQuestion = quiz.currentQuestion!; // guarded by the shell
   const answerRef = useRef<HTMLDivElement>(null);
+  const [dialog, setDialog] = useState<OpenDialog>(null);
+  const [userRating, setUserRating] = useState(currentQuestion.user_rated);
+
+  useEffect(() => {
+    setDialog(null);
+    setUserRating(currentQuestion.user_rated);
+  }, [currentQuestion.quizq_id, currentQuestion.user_rated]);
 
   useEffect(() => {
     if (quiz.answerRevealed && answerRef.current) {
@@ -259,6 +312,59 @@ function AudioQuizBody({
       answerRef.current.focus({ preventScroll: true });
     }
   }, [quiz.answerRevealed]);
+
+  const closeDialog = useCallback(() => setDialog(null), []);
+
+  const [panelFullHeight, setPanelFullHeight] = useState(0);
+  const onMetricsChange = useCallback(
+    (metrics: Metrics) => setPanelFullHeight(metrics.full),
+    [],
+  );
+
+  const answerPadding =
+    quiz.panelSnap === 'full'
+      ? Math.max(answerPaddingBySnap.full, panelFullHeight)
+      : answerPaddingBySnap[quiz.panelSnap];
+
+  const hintImages = validImages(currentQuestion.pics.hint_image);
+  const isOwnQuestion = currentQuestion.created_by_username === currentUsername;
+
+  const compactActions = useMemo((): CompactAction[] => {
+    const actions: CompactAction[] = [
+      {
+        key: 'answerDraft',
+        label: 'Your Answer',
+        icon: <PenLine className={slideOutStyles.compactIcon} />,
+        onClick: () => setDialog('answerDraft'),
+      },
+      {
+        key: 'rate',
+        label: 'Rate',
+        icon: <Star className={slideOutStyles.compactIcon} />,
+        onClick: () => setDialog('rate'),
+      },
+    ];
+
+    if (currentQuestion.hint || hintImages.length > 0) {
+      actions.unshift({
+        key: 'hint',
+        label: 'Hint',
+        icon: <Lightbulb className={slideOutStyles.compactIcon} />,
+        onClick: () => setDialog('hint'),
+      });
+    }
+
+    if (!isOwnQuestion) {
+      actions.push({
+        key: 'author',
+        label: 'Author',
+        icon: <User className={slideOutStyles.compactIcon} />,
+        onClick: () => setDialog('author'),
+      });
+    }
+
+    return actions;
+  }, [currentQuestion.hint, hintImages.length, isOwnQuestion]);
 
   const extraActions = useMemo((): ExtraAction[] => {
     const actions: ExtraAction[] = [
@@ -271,7 +377,7 @@ function AudioQuizBody({
       },
     ];
 
-    if (currentQuestion.created_by_username === currentUsername) {
+    if (isOwnQuestion) {
       actions.push({
         key: 'edit',
         label: 'Edit Question',
@@ -282,7 +388,7 @@ function AudioQuizBody({
     }
 
     return actions;
-  }, [currentQuestion, currentUsername, editQuestionUrl, quiz.actions.exclude]);
+  }, [currentQuestion, isOwnQuestion, editQuestionUrl, quiz.actions.exclude]);
 
   const questionImages = validImages(currentQuestion.pics.question_image);
   const answerImages = validImages(currentQuestion.pics.answer_pics);
@@ -300,9 +406,43 @@ function AudioQuizBody({
         />
       )}
 
-      <form method="post">
-        <input type="hidden" name="quizq-id" value={currentQuestion.quizq_id} />
+      {dialog === 'hint' && (
+        <HintModal
+          hint={currentQuestion.hint}
+          images={hintImages}
+          assets={mode.audioEnabled ? quiz.hintAssets : []}
+          onClose={closeDialog}
+        />
+      )}
 
+      {dialog === 'answerDraft' && (
+        <AnswerDraftModal
+          value={quiz.providedAnswer}
+          onSave={quiz.actions.setProvidedAnswer}
+          onClose={closeDialog}
+        />
+      )}
+
+      {dialog === 'rate' && (
+        <RateModal
+          quizqId={currentQuestion.quizq_id}
+          averageRating={currentQuestion.rating}
+          userRating={userRating}
+          csrfToken={csrfToken}
+          onRated={setUserRating}
+          onClose={closeDialog}
+        />
+      )}
+
+      {dialog === 'author' && (
+        <AuthorModal
+          authorId={currentQuestion.created_by_id}
+          authorUsername={currentQuestion.created_by_username}
+          onClose={closeDialog}
+        />
+      )}
+
+      <div>
         {quiz.error && (
           <p className={styles.errorText} role="alert">{quiz.error}</p>
         )}
@@ -315,25 +455,27 @@ function AudioQuizBody({
             />
           )}
 
-          {quiz.questionActive ? (
-            <LargePlayableControl
-              onClick={quiz.actions.readQuestion}
-              isPlaying={quiz.questionPlaying}
-              className={actionStyles.orangeBtn}
-              assets={quiz.questionAssets}
-              onSequenceEnd={quiz.actions.questionEnded}
-            />
-          ) : (
-            <LargeActionButton
-              onClick={quiz.actions.readQuestion}
-              disabled={quiz.questionAssets.length === 0 || quiz.isSubmitting}
-              className={actionStyles.orangeBtn}
-            >
-              <div className={actionStyles.btnContent}>
-                <Volume2 className={actionStyles.iconLarge} />
-                <span>Read Question</span>
-              </div>
-            </LargeActionButton>
+          {mode.audioEnabled && (
+            quiz.questionActive ? (
+              <LargePlayableControl
+                onClick={quiz.actions.readQuestion}
+                isPlaying={quiz.questionPlaying}
+                className={actionStyles.orangeBtn}
+                assets={quiz.questionAssets}
+                onSequenceEnd={quiz.actions.questionEnded}
+              />
+            ) : (
+              <LargeActionButton
+                onClick={quiz.actions.readQuestion}
+                disabled={quiz.questionAssets.length === 0 || quiz.isSubmitting}
+                className={actionStyles.orangeBtn}
+              >
+                <div className={actionStyles.btnContent}>
+                  <Volume2 className={actionStyles.iconLarge} />
+                  <span>Read Question</span>
+                </div>
+              </LargeActionButton>
+            )
           )}
 
           <div className={styles.middleSection}>
@@ -358,7 +500,7 @@ function AudioQuizBody({
               </LargeActionButton>
             )}
 
-            {quiz.answerActive && (
+            {mode.audioEnabled && quiz.answerActive && (
               <LargePlayableControl
                 onClick={quiz.actions.toggleAnswerAudio}
                 isPlaying={quiz.answerPlaying}
@@ -372,7 +514,7 @@ function AudioQuizBody({
 
         <div
           className={styles.contentDivider}
-          style={{ paddingBottom: `${answerPaddingBySnap[quiz.panelSnap]}px` }}
+          style={{ paddingBottom: `${answerPadding}px` }}
         >
           <div className={styles.metaRow}>
             <strong>Level {currentQuestion.level_no}</strong>
@@ -420,20 +562,25 @@ function AudioQuizBody({
             onWrong={quiz.actions.wrong}
             onSlightlyWrong={quiz.actions.slightlyWrong}
             extraActions={extraActions}
+            compactActions={compactActions}
             onSnapChange={quiz.actions.setPanelSnap}
+            onMetricsChange={onMetricsChange}
             expandToTrio
             showCategories
             categoryList={categoryList}
             initialSelectedCategories={selectedCategories}
+            onApplyCategories={quiz.actions.applyCategories}
             questionId={currentQuestion.question_id}
             initialFlag={currentQuestion.flag}
             csrfToken={csrfToken}
             onFlagChange={quiz.actions.setFlag}
-            autoPlay={quiz.autoPlay}
-            onToggleAutoPlay={quiz.actions.toggleAutoPlay}
+            audioEnabled={mode.audioEnabled}
+            onToggleAudioEnabled={mode.toggleAudioEnabled}
+            autoPlay={mode.autoPlay}
+            onToggleAutoPlay={mode.toggleAutoPlay}
           />
         )}
-      </form>
+      </div>
     </>
   );
 }

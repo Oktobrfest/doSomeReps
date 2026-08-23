@@ -135,3 +135,15 @@
     height: 2.5rem;
   }
 }
+
+/* On a large screen a thumb-sized target is wasted height, so the primary
+   quiz buttons shrink towards a normal control. */
+@media (min-width: 900px) {
+  .largeBtn {
+    min-height: 96px;
+  }
+
+  .hasSlider {
+    min-height: 170px;
+  }
+}

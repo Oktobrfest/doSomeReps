@@ -1,5 +1,5 @@
 import { MarkdownContent } from '../components/MarkdownContent';
-import { cx, LargePlayableControl } from '../audio/AudioControls';
+import { cx, LargePlayableControl } from '../quiz/AudioControls';
 import { X, Mic } from 'lucide-react';
 import actionStyles from '../styles/ActionButton.module.css';
 import styles from './AskAiPanel.module.css';

@@ -8,11 +8,13 @@ export interface AudioAsset {
 export interface AudioAssets {
   question?: AudioAsset[];
   answer?: AudioAsset[];
+  hint?: AudioAsset[];
 }
 
 export interface QuestionPics {
   question_image?: (string | null)[];
   answer_pics?: (string | null)[];
+  hint_image?: (string | null)[];
 }
 
 export interface QuestionFlag {
@@ -24,11 +26,17 @@ export interface Question {
   quizq_id: string | number;
   question_id: string | number;
   question_text: string;
+  hint: string | null;
   answer: string;
   level_no: number;
   categories: string[];
   pics: QuestionPics;
+  created_by_id: number;
   created_by_username: string;
+  /** Average rating across all users, 0 when nobody has rated it. */
+  rating: number;
+  /** What the current user rated this question, if anything. */
+  user_rated: number | null;
   flag?: QuestionFlag | null;
 }
 
@@ -37,14 +45,13 @@ export interface QuizItem {
   audioAssets: AudioAssets | null;
 }
 
-export interface AudioQuizBatchResponse {
+export interface QuizBatchResponse {
   items: QuizItem[];
   queueExhausted?: boolean;
   message?: string;
 }
 
-export interface AudioQuizProps {
-  initialItems?: QuizItem[];
+export interface QuizPageProps {
   currentUsername: string;
   editQuestionUrl: string;
   csrfToken?: string;
@@ -56,7 +63,7 @@ export interface AudioQuizProps {
 
 export type CommandCallback = () => void;
 
-export interface AudioCommandHandlers {
+export interface QuizCommandHandlers {
   correct: CommandCallback;
   wrong: CommandCallback;
   slightlyWrong: CommandCallback;

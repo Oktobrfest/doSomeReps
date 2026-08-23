@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getCsrfToken } from '../audio/csrf';
-import { base64ToBlob } from '../audio/audioUtils';
+import { getCsrfToken } from '../quiz/csrf';
+import { base64ToBlob } from '../quiz/audioUtils';
 import type { AskAiContext, AskAiState, AskAiTurn } from './types';
 
 const logDebug = (message: string, ...args: any[]) => {

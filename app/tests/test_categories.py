@@ -75,11 +75,15 @@ class TestPagesUsingFullCategories(unittest.TestCase):
         with open(path, 'r') as f:
             return f.read()
 
-    def test_quiz_uses_full_categories(self):
+    def test_quiz_passes_categories_to_react(self):
+        """quiz.html hands the picker its data via bootstrap JSON, not an include."""
         content = self._read_template(
             ['repz', 'home', 'templates', 'quiz.html']
         )
-        self.assertIn('include "categories.html"', content)
+        self.assertIn('id="quiz-root"', content)
+        self.assertIn('categoryList', content)
+        self.assertIn('selectedCategories', content)
+        self.assertIn('vite_asset("src/entrypoints/Quiz.entry.tsx")', content)
 
     def test_quemore_passes_categories_to_react(self):
         """quemore.html mounts the picker inside QueMorePage, not via an include."""
@@ -93,14 +97,6 @@ class TestPagesUsingFullCategories(unittest.TestCase):
             'vite_asset("src/entrypoints/QueMore.entry.tsx")', content
         )
 
-
-    def test_audio_passes_categories_to_react(self):
-        """audio.html hands the picker its data via bootstrap JSON, not an include."""
-        content = self._read_template(
-            ['repz', 'audio', 'templates', 'audio.html']
-        )
-        self.assertIn('categoryList', content)
-        self.assertIn('selectedCategories', content)
 
     def test_edit_question_renders_react_edit_component(self):
         content = self._read_template(

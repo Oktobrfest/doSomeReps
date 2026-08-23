@@ -48,7 +48,7 @@ from wtforms.validators import DataRequired, NumberRange
 from repz.extensions import cache
 from repz.cache_helper import CacheHelper
 from repz.routes import home
-from repz.services.quiz_service import QuizPageConfig, render_quiz_page
+from repz.services.quiz_service import get_selected_categories
 
 from ..bluehelpers import (
     cat_questions_count,
@@ -281,17 +281,22 @@ def addcontent():
     )
 
 
-@home.route("/quiz", methods=["GET", "POST"], endpoint="quiz")
+@home.route("/quiz", methods=["GET"], endpoint="quiz")
 @login_required
 def quiz():
-    return render_quiz_page(
-        QuizPageConfig(
-            mode="standard",
-            template_name="quiz.html",
-            endpoint_name="home.quiz",
-            title="Quiz",
-            description=".",
-        )
+    """
+    Shell for the quiz SPA.
+
+    The page fetches its own question queue from /quiz/queue, so nothing here
+    depends on whether the reader has audio switched on.
+    """
+    return render_template(
+        "quiz.html",
+        title="Quiz",
+        description=".",
+        user=current_user,
+        category_list=get_all_categories(),
+        selected_categories=get_selected_categories(),
     )
 
 

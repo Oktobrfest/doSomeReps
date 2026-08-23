@@ -1,4 +1,4 @@
-import type { AudioCommandHandlers, CommandCallback } from '../types';
+import type { QuizCommandHandlers, CommandCallback } from '../types';
 
 function normalizeCommand(command: string) {
   return command.toUpperCase().trim().replace(/\s+/g, ' ');
@@ -6,7 +6,7 @@ function normalizeCommand(command: string) {
 
 export function resolveQuizCommandHandler(
   rawCommand: string,
-  handlers: AudioCommandHandlers | undefined,
+  handlers: QuizCommandHandlers | undefined,
 ): CommandCallback | null {
   if (!handlers) return null;
 

@@ -75,6 +75,8 @@ def init_app():
         # Blueprints
         # Import parts of our application
         from repz.home.home import home
+        # Importing the quiz API attaches its routes to the `home` blueprint.
+        from repz.home import quiz_api as _quiz_api  # noqa: F401
         from repz.auth.auth import auth
         from repz.catz.catz import catz
         from repz.ajax.quest_ajx.quest_ajx import quest_ajx

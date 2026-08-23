@@ -1,0 +1,136 @@
+.prose {
+  font-size: 1.1rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.meta {
+  margin: 0 0 12px;
+  color: var(--rep-color-text-secondary);
+}
+
+.image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 12px;
+  border-radius: var(--rep-radius-control);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 8rem;
+  padding: 10px;
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-control);
+  background: var(--rep-color-surface);
+  color: var(--rep-color-text-primary);
+  font: inherit;
+  resize: vertical;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--rep-color-focus);
+  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
+}
+
+.playerRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.primaryBtn,
+.dangerBtn,
+.playBtn {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--rep-btn-height);
+  padding: 0 var(--rep-btn-padding-x);
+  border: none;
+  border-radius: var(--rep-btn-radius);
+  font: inherit;
+  font-size: var(--rep-btn-font-size);
+  font-weight: var(--rep-btn-font-weight);
+  cursor: pointer;
+  transition: var(--rep-btn-transition);
+}
+
+.primaryBtn {
+  margin-top: 16px;
+  background: var(--rep-color-action-primary);
+  color: var(--rep-color-on-action);
+}
+
+.primaryBtn:hover {
+  background: var(--rep-color-action-primary-hover);
+}
+
+.dangerBtn {
+  margin-top: 16px;
+  background: var(--rep-color-danger);
+  color: var(--rep-color-on-danger);
+}
+
+.playBtn {
+  margin-top: 0;
+  background: var(--rep-color-action-accent);
+  color: var(--rep-color-on-action);
+}
+
+.playBtn:hover {
+  background: var(--rep-color-action-accent-hover);
+}
+
+.playIcon,
+.actionIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
+.stars {
+  display: flex;
+  gap: 8px;
+}
+
+.starBtn {
+  padding: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.starOn,
+.starOff {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.starOn {
+  fill: var(--rep-color-rating-star);
+  stroke: var(--rep-color-rating-star);
+}
+
+.starOff {
+  fill: none;
+  stroke: var(--rep-color-rating-star-empty);
+}
+
+.error {
+  margin: 12px 0 0;
+  color: var(--rep-color-error-text-strong);
+  font-weight: 600;
+}

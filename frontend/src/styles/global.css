@@ -40,6 +40,11 @@
 
   --rep-color-overlay: rgba(0, 0, 0, 0.45);
 
+  --rep-color-rating-star: #f59e0b;
+  --rep-color-rating-star-empty: #cbd5e0;
+  --rep-color-danger: #ef4444;
+  --rep-color-on-danger: #ffffff;
+
   /* Navbar Design Tokens */
   --rep-color-navbar-bg-start: #1e293b;
   --rep-color-navbar-bg-end: #0f172a;

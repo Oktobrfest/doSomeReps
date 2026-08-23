@@ -1,4 +1,4 @@
-import type { AudioAsset } from '../audio/types';
+import type { AudioAsset } from '../quiz/types';
 
 export type { AudioAsset };
 
