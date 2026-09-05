@@ -10,6 +10,7 @@ import {
   type PointerEvent,
 } from 'react';
 import { Check, X, Minus, Volume2, VolumeX } from 'lucide-react';
+import { AuthorButton, type QuestionAuthor } from './AuthorButton';
 import { CatPicker } from '../components/CatPicker';
 import { FlagButton, type QuestionFlag } from '../components/FlagButton';
 import sharedStyles from '../styles/shared.module.css';
@@ -128,6 +129,7 @@ export interface SlideOutButtonsProps {
   initialSelectedCategories?: string[];
   onApplyCategories?: (categories: string[]) => void;
   questionId?: string | number;
+  author?: QuestionAuthor;
   initialFlag?: QuestionFlag | null;
   csrfToken?: string;
   onFlagChange?: (newFlag: QuestionFlag | null) => void;
@@ -214,6 +216,7 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
     initialSelectedCategories,
     onApplyCategories,
     questionId,
+    author,
     initialFlag,
     csrfToken,
     onFlagChange,
@@ -228,6 +231,7 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
     Boolean(extraActions?.length) ||
     Boolean(compactActions?.length) ||
     Boolean(questionId) ||
+    Boolean(author) ||
     Boolean(onToggleAudioEnabled);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -459,7 +463,10 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
         ref={bodyRef}
         className={`${styles.body} ${atFull ? styles.scrollable : ''}`}
       >
-        <div ref={buttonsRowRef} className={sharedStyles.actionCluster}>
+        <div
+          ref={buttonsRowRef}
+          className={`${sharedStyles.actionCluster} ${styles.verdictRow}`}
+        >
           {onCorrect && (
             <SlideOutActionButton
               variant="correct"
@@ -515,6 +522,14 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
                 <span>{action.label}</span>
               </button>
             ))}
+
+            {author && (
+              <AuthorButton
+                author={author}
+                disabled={disabled}
+                className={panelBtn(sharedStyles.btnCyan)}
+              />
+            )}
 
             {(extraActions ?? []).map((action) => {
               const buttonClass = panelBtn(

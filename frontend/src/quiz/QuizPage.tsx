@@ -3,7 +3,7 @@ import { AudioCommandSystemComponent } from './AudioCommandSystem';
 import type { AudioCommandSystemHandle } from './AudioCommandSystem';
 import { ImageCarousel } from './ImageCarousel';
 import { ImageModal } from './ImageModal';
-import { Volume2, BookOpen, Ban, Edit, Lightbulb, PenLine, Star, User } from 'lucide-react';
+import { Volume2, BookOpen, Ban, Edit, Lightbulb, PenLine, Star } from 'lucide-react';
 import type { QuizPageProps } from './types';
 import styles from './QuizPage.module.css';
 import sharedStyles from '../styles/shared.module.css';
@@ -15,7 +15,6 @@ import { useQuizController } from './useQuizController';
 import { useQuizMode } from './useQuizMode';
 import { LargeActionButton, LargePlayableControl } from './AudioControls';
 import { AnswerDraftModal } from './modals/AnswerDraftModal';
-import { AuthorModal } from './modals/AuthorModal';
 import { CategoriesModal } from './modals/CategoriesModal';
 import { HintModal } from './modals/HintModal';
 import { RateModal } from './modals/RateModal';
@@ -276,7 +275,7 @@ interface QuizBodyProps {
 }
 
 /** The secondary panels a question can open, one at a time. */
-type OpenDialog = 'hint' | 'answerDraft' | 'rate' | 'author' | null;
+type OpenDialog = 'hint' | 'answerDraft' | 'rate' | null;
 
 function QuizBody({
   quiz,
@@ -346,17 +345,8 @@ function QuizBody({
       });
     }
 
-    if (!isOwnQuestion) {
-      actions.push({
-        key: 'author',
-        label: 'Author',
-        icon: <User className={sharedStyles.buttonIcon} />,
-        onClick: () => setDialog('author'),
-      });
-    }
-
     return actions;
-  }, [currentQuestion.hint, hintImages.length, isOwnQuestion]);
+  }, [currentQuestion.hint, hintImages.length]);
 
   const extraActions = useMemo((): ExtraAction[] => {
     const actions: ExtraAction[] = [
@@ -422,14 +412,6 @@ function QuizBody({
           userRating={userRating}
           csrfToken={csrfToken}
           onRated={setUserRating}
-          onClose={closeDialog}
-        />
-      )}
-
-      {dialog === 'author' && (
-        <AuthorModal
-          authorId={currentQuestion.created_by_id}
-          authorUsername={currentQuestion.created_by_username}
           onClose={closeDialog}
         />
       )}
@@ -554,6 +536,11 @@ function QuizBody({
             initialSelectedCategories={selectedCategories}
             onApplyCategories={quiz.actions.applyCategories}
             questionId={currentQuestion.question_id}
+            author={{
+              id: currentQuestion.created_by_id,
+              username: currentQuestion.created_by_username,
+              isSelf: isOwnQuestion,
+            }}
             initialFlag={currentQuestion.flag}
             csrfToken={csrfToken}
             onFlagChange={quiz.actions.setFlag}

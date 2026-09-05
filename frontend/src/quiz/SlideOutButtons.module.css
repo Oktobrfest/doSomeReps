@@ -153,8 +153,11 @@
 }
 
 /* The verdict a reader reaches for most takes the whole first row while the
-   panel is a phone-width strip; once the page is centred all three fit one. */
+   panel is a phone-width strip; once the page is centred all three fit one, and
+   share it evenly. The row rebinds the basis for every verdict at once; the
+   primary drops its own so it inherits the row's. */
 @media (min-width: 900px) {
+  .verdictRow,
   .correct {
     --rep-btn-cluster-basis: 0;
   }
