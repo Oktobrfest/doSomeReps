@@ -1,10 +1,19 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { AudioAsset } from './types';
 import styles from './AudioPlayer.module.css';
+import sharedStyles from '../styles/shared.module.css';
 import {
   acquireMediaSessionKeepAlive,
   releaseMediaSessionKeepAlive,
 } from './mediaSessionKeepAlive';
+
+/* Track navigation: the shared button base, dense, darkening whatever surface
+   the player has been dropped onto. */
+const navButtonClass = [
+  sharedStyles.actionButton,
+  sharedStyles.buttonSm,
+  sharedStyles.btnOverlay,
+].join(' ');
 
 interface AudioPlayerProps {
   assets: AudioAsset[];
@@ -215,7 +224,7 @@ export function AudioPlayer({
               type="button"
               onClick={(e) => { e.stopPropagation(); prevTrack(); }}
               disabled={trackIndex === 0}
-              className={styles.navButton}
+              className={navButtonClass}
             >
               ◀ Prev
             </button>
@@ -229,7 +238,7 @@ export function AudioPlayer({
               type="button"
               onClick={(e) => { e.stopPropagation(); nextTrack(); }}
               disabled={trackIndex + 1 === assets.length}
-              className={styles.navButton}
+              className={navButtonClass}
             >
               Next ▶
             </button>

@@ -3,7 +3,7 @@
 }
 
 .sliderContainer {
-  width: 90%;
+  width: 100%;
   max-width: 320px;
   display: flex;
   flex-direction: column;
@@ -30,42 +30,13 @@
 /* Track navigation and info container */
 .trackControls {
   display: flex;
-  gap: 0.8rem;
+  flex-wrap: wrap;
+  gap: var(--rep-btn-row-gap);
   margin-bottom: 4px;
   align-items: center;
   justify-content: center;
   width: 100%;
   box-sizing: border-box;
-}
-
-/* Nav buttons for track changing */
-.navButton {
-  background: rgba(0, 0, 0, 0.12);
-  color: inherit;
-  border: none;
-  padding:
-      clamp(0.35rem, 0.3rem + 0.5vw, 11.5rem)
-      clamp(0.7rem, 0.55rem + 1.6vw, 11.2rem);
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: clamp(0.7rem, 1rem + 1.4vw, 2rem);
-  transition: opacity 0.2s, background-color 0.2s;
-  white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  max-width: 100%;
-}
-
-.navButton:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.navButton:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
 }
 
 /* Track information badge */

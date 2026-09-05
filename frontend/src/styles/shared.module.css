@@ -253,6 +253,15 @@
   background-color: var(--rep-intent-slate-bg-hover);
 }
 
+.btnOverlay {
+  background-color: var(--rep-intent-overlay-bg);
+  color: var(--rep-intent-overlay-fg);
+}
+
+.btnOverlay:hover:not(:disabled) {
+  background-color: var(--rep-intent-overlay-bg-hover);
+}
+
 /* Size modifiers rebind the semantic aliases and nothing else. */
 
 .buttonSm {

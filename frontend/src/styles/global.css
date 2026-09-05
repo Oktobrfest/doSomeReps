@@ -107,6 +107,12 @@
   --rep-intent-slate-bg-hover: #334155;
   --rep-intent-slate-fg: #ffffff;
 
+  /* For a control that sits on top of an intent-coloured surface: it darkens
+     whatever it is on and keeps that surface's foreground. */
+  --rep-intent-overlay-bg: rgba(0, 0, 0, 0.12);
+  --rep-intent-overlay-bg-hover: rgba(0, 0, 0, 0.2);
+  --rep-intent-overlay-fg: inherit;
+
   /* ---- Quiz page ----
      The reading column and the panel docked beneath it share one width so the
      two edges line up once the page stops being full-bleed. */
@@ -114,9 +120,9 @@
   --rep-quiz-gap: 16px;
   /* Controls stop stretching the full reading column once there is room. */
   --rep-quiz-control-width: 560px;
-  /* The audio plane beside the question: about a fifth of a wide page, never
+  /* The audio plane beside the question: about a quarter of a wide page, never
      wider than this, and never so narrow its controls stop being readable. */
-  --rep-quiz-aside-width: clamp(220px, 20%, 400px);
+  --rep-quiz-aside-width: clamp(280px, 24%, 400px);
 
   --rep-color-panel-surface: rgba(255, 255, 255, 0.98);
   --rep-color-panel-grip: #9ca3af;
