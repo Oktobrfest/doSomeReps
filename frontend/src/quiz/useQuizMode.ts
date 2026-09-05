@@ -21,7 +21,28 @@ const AUTO_PLAY_KEY = 'quiz_auto_play';
 
 /** Audio is on out of the box, so an untouched install behaves like audio mode. */
 const DEFAULT_AUDIO_ENABLED = true;
-const DEFAULT_AUTO_PLAY = true;
+
+/**
+ * Mirrors the width at which the quiz stops laying itself out for a thumb
+ * (see the touch-tier collapse in `styles/global.css`). A media query cannot
+ * read a custom property, so the number is stated in both places.
+ */
+const FULL_SIZED_PAGE = '(min-width: 900px)';
+
+/**
+ * A phone quiz is usually taken hands-free, so it reads the question by itself.
+ * A full-sized page is not: audio starting unbidden on a desktop is a surprise,
+ * so auto-play stays off there until it is asked for. Either way an explicit
+ * choice, once made, is what counts — this is only the untouched default.
+ */
+function defaultAutoPlay(): boolean {
+  try {
+    return !window.matchMedia(FULL_SIZED_PAGE).matches;
+  } catch {
+    // No matchMedia is a very old or very small browser; assume a phone.
+    return true;
+  }
+}
 
 function readFlag(key: string, fallback: boolean): boolean {
   try {
@@ -46,7 +67,7 @@ export function useQuizMode() {
     readFlag(AUDIO_ENABLED_KEY, DEFAULT_AUDIO_ENABLED),
   );
   const [autoPlay, setAutoPlay] = useState(() =>
-    readFlag(AUTO_PLAY_KEY, DEFAULT_AUTO_PLAY),
+    readFlag(AUTO_PLAY_KEY, defaultAutoPlay()),
   );
 
   const toggleAudioEnabled = useCallback(() => {

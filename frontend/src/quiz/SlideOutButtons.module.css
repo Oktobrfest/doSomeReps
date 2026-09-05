@@ -1,19 +1,29 @@
+/*
+ * The panel docked to the bottom of the quiz.
+ *
+ * Every control in here composes the shared button base plus a size and an
+ * intent modifier, so this file owns flow and panel chrome only: no button
+ * geometry, no button colour, no breakpoint. The touch tiers collapse onto the
+ * app-wide control at desktop width in the token layer, which is the whole of
+ * the difference between the phone panel and the desktop one.
+ */
+
 .container {
   position: fixed;
+  right: 0;
   bottom: 0;
   left: 0;
-  right: 0;
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  padding-bottom: max(6px, env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.98);
-  border-top: 1px solid #e5e7eb;
-  box-shadow: 0 -4px 24px rgb(0 0 0 / 0.12);
+  gap: var(--rep-panel-gap);
   box-sizing: border-box;
+  padding: var(--rep-panel-padding);
+  padding-bottom: max(var(--rep-panel-gap), env(safe-area-inset-bottom));
   overflow: hidden;
+  background: var(--rep-color-panel-surface);
+  border-top: 1px solid var(--rep-color-border);
+  box-shadow: var(--rep-shadow-panel);
   transition: height 300ms cubic-bezier(0.16, 1, 0.3, 1);
   will-change: height;
 }
@@ -22,18 +32,20 @@
   transition: none;
 }
 
+/* ---- grip ---- */
+
 .grip {
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   align-items: center;
   gap: 3px;
   padding: 6px 24px;
   cursor: grab;
   touch-action: none;
-  -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .grip:active {
@@ -44,149 +56,30 @@
   display: block;
   width: 24px;
   height: 3px;
+  background: var(--rep-color-panel-grip);
   border-radius: 2px;
-  background: #9ca3af;
   transition: background 150ms ease;
 }
 
 .grip:hover .gripBar,
 .grip:active .gripBar {
-  background: #6b7280;
+  background: var(--rep-color-panel-grip-hover);
 }
+
+/* ---- rows ----
+   Flow only. The buttons themselves carry their own size and colour. */
 
 .buttonsRow {
   flex-shrink: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  width: 100%;
 }
 
-/* ---- buttons ---- */
-
-.btn {
-  flex: 1 1 auto;
-  min-height: 74px;
-  border: none;
-  border-radius: 14px;
-  padding: 12px 16px;
-  font: inherit;
-  font-size: clamp(1rem, 1rem + 1.2vw, 1.45rem);
-  font-weight: 700;
-  cursor: pointer;
-  color: inherit;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-width: 0;
-  text-align: center;
-  line-height: 1.1;
-}
-
-.btn span {
-  display: inline-block;
-}
-
+/* Cluster children set their width by rebinding the basis token, so an
+   override never has to out-specify `.actionCluster > *`. */
 .correct {
-  flex: 0 0 100%;
+  --rep-btn-cluster-basis: 100%;
 }
-
-.secondary {
-  flex: 1 1 calc(50% - 6px);
-  min-width: 0;
-}
-
-.icon {
-  width: 1.95rem;
-  height: 1.95rem;
-  flex-shrink: 0;
-}
-
-/* ---- drawer: extra-action buttons ---- */
 
 .drawer {
-  flex-shrink: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.drawerBtn {
-  width: 100%;
-  min-height: 50px;
-  border: none;
-  border-radius: 12px;
-  padding: 11px 15px;
-  font: inherit;
-  font-size: clamp(0.875rem, 0.875rem + 0.9vw, 1.15rem);
-  font-weight: 700;
-  cursor: pointer;
-  color: inherit;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  line-height: 1.1;
-  transition:
-    transform 120ms ease,
-    box-shadow 120ms ease;
-}
-
-.drawerBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgb(0 0 0 / 0.12);
-}
-
-.drawerBtn:active {
-  transform: translateY(0);
-}
-
-/* ---- drawer: dialog-opening actions, two to a row ---- */
-
-.compactRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
-}
-
-.compactBtn {
-  flex: 1 1 calc(50% - 4px);
-  min-width: 0;
-  min-height: 50px;
-  border: none;
-  border-radius: 12px;
-  padding: 11px 12px;
-  font: inherit;
-  font-size: clamp(0.8rem, 0.8rem + 0.7vw, 1rem);
-  font-weight: 700;
-  cursor: pointer;
-  color: inherit;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-align: center;
-  line-height: 1.1;
-  transition:
-    transform 120ms ease,
-    box-shadow 120ms ease;
-}
-
-.compactBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgb(0 0 0 / 0.12);
-}
-
-.compactBtn:active {
-  transform: translateY(0);
-}
-
-.compactIcon {
-  width: 1.4rem;
-  height: 1.4rem;
   flex-shrink: 0;
 }
 
@@ -195,140 +88,53 @@
 .categoriesSection {
   flex-shrink: 0;
   width: 100%;
-  padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
+  padding-top: var(--rep-panel-padding);
+  border-top: 1px solid var(--rep-color-border);
 }
 
 .categoriesSection :global(.card) {
-  margin-bottom: 0 !important;
-  border: none !important;
-  background: transparent !important;
-  color: inherit !important;
+  margin-bottom: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
 }
 
 .categoriesSection :global(.card-header) {
-  background: transparent !important;
-  color: inherit !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  padding-right: 0;
+  padding-left: 0;
+  background: transparent;
+  color: inherit;
 }
 
 .categoriesSection :global(.card-body) {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  padding-right: 0;
+  padding-left: 0;
 }
 
-.applyBtn {
-  width: 100%;
-  min-height: 54px;
-  margin-top: 12px;
-  border: none;
-  border-radius: 14px;
-  padding: 12px 20px;
-  background: #007bff;
-  color: #fff;
-  font: inherit;
-  font-size: clamp(1rem, 1rem + 1.2vw, 1.35rem);
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    transform 120ms ease,
-    box-shadow 120ms ease;
+.applyRow {
+  margin-top: var(--rep-panel-gap);
 }
 
-.applyBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgb(0 0 0 / 0.12);
-}
+/* ---- docked width ----
+   Once the page is centred the panel stops spanning the viewport and lines up
+   with the reading column above it. */
 
-.applyBtn:active {
-  transform: translateY(0);
-}
-
-/* ---- compact size ---- */
-
-.sizeCompact {
-  gap: 8px;
-  padding: 10px;
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
-}
-
-.sizeCompact .buttonsRow {
-  gap: 8px;
-}
-
-.sizeCompact .btn {
-  min-height: 64px;
-  border-radius: 12px;
-  padding: 8px 12px;
-  font-size: clamp(0.875rem, 0.875rem + 1vw, 1.25rem);
-  font-weight: 600;
-}
-
-.sizeCompact .icon {
-  width: 1.6rem;
-  height: 1.6rem;
-}
-
-.sizeCompact .grip {
-  padding: 4px 16px;
-}
-
-.sizeCompact .gripBar {
-  width: 20px;
-  height: 2.5px;
-}
-
-.sizeCompact .applyBtn {
-  min-height: 48px;
-}
-
-/* ---- desktop ---- */
-
-@media (min-width: 641px) {
-  .container {
-    padding: 12px 16px;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-  }
-
-  .buttonsRow {
-    flex-wrap: nowrap;
-  }
-
-  .correct {
-    flex: 1 1 0;
-  }
-
-  .secondary {
-    flex: 1 1 0;
-  }
-
-  .drawerBtn {
-    min-height: 64px;
-    font-size: clamp(1rem, 1rem + 1.4vw, 1.5rem);
-  }
-
-  .compactBtn {
-    /* Three to a row once there is width for it. */
-    flex: 1 1 calc(33.333% - 6px);
-    min-height: 60px;
-    font-size: 1.05rem;
-  }
-
-  .compactIcon {
-    width: 1.6rem;
-    height: 1.6rem;
-  }
-}
-
-/* The docked panel stops spanning the whole width once the page is centred. */
 @media (min-width: 900px) {
   .container {
-    left: 50%;
     right: auto;
-    width: min(1100px, 100%);
+    left: 50%;
+    width: min(var(--rep-quiz-max-width), 100%);
+    padding: var(--rep-panel-padding) var(--rep-quiz-gap);
     transform: translateX(-50%);
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
+    border-top-left-radius: var(--rep-panel-radius);
+    border-top-right-radius: var(--rep-panel-radius);
+  }
+}
+
+/* The verdict a reader reaches for most takes the whole first row while the
+   panel is a phone-width strip; once the page is centred all three fit one. */
+@media (min-width: 900px) {
+  .correct {
+    --rep-btn-cluster-basis: 0;
   }
 }

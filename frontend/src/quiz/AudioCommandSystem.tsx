@@ -16,7 +16,7 @@ import { registerReload } from './commands/reload';
 import { registerStopListening } from './commands/stopListening';
 import { resolveQuizCommandHandler } from './commands/resolveQuizCommand';
 import styles from './AudioCommandSystem.module.css';
-import actionStyles from '../styles/ActionButton.module.css';
+import sharedStyles from '../styles/shared.module.css';
 import type { QuizCommandHandlers } from './types';
 import {
   logMediaStreamDiagnostics,
@@ -28,13 +28,13 @@ import { cx } from './AudioControls';
 
 const AVAILABLE_COMMANDS = [
   'READ QUESTION',
-  'GET ANSWER',
+  'ANSWER',
   'CORRECT',
   'WRONG',
   'PAUSE',
   'RESUME',
   'RELOAD',
-  'ASK AI',
+  'ASK',
   'STOP LISTENING',
 ];
 
@@ -153,7 +153,7 @@ export const AudioCommandSystemComponent = forwardRef<
     (keyword: string) => {
       const normalized = normalizeCommand(keyword);
 
-      if (normalized === 'ASK AI') {
+      if (normalized === 'ASK') {
         if (!commandsDisabledRef.current) {
           const wasListening =
             engineState === 'listening' ||
@@ -202,12 +202,12 @@ export const AudioCommandSystemComponent = forwardRef<
     const manager = commandManagerRef.current;
     registerReload(manager);
     registerStopListening(manager);
-    // ASK AI is handled directly by the parent (QuizPage), so register a
+    // ASK is handled directly by the parent (QuizPage), so register a
     // guard that warns if no handler is wired.
-    manager.registerCommand('ASK AI', () => {
+    manager.registerCommand('ASK', () => {
       if (!commandsRef.current?.askAi) {
         console.warn(
-          '[AudioCommandSystem] ASK AI triggered but no askAi handler is registered.',
+          '[AudioCommandSystem] ASK triggered but no askAi handler is registered.',
         );
       }
     });
@@ -500,65 +500,74 @@ export const AudioCommandSystemComponent = forwardRef<
   const isListening = engineState === 'listening';
 
   const renderControls = (isBanner: boolean) => {
+    // Both halves of the split button wear the same base, size and intent; the
+    // container clips them into one pill, so neither owns a corner radius.
+    const intent = isListening
+      ? sharedStyles.btnRed
+      : engineState === 'loading'
+        ? sharedStyles.btnAmber
+        : sharedStyles.btnGreen;
+
+    const splitBtnClass = cx(
+      sharedStyles.actionButton,
+      // The banner is a fixed strip across the top, so it uses the compact tier.
+      isBanner ? sharedStyles.buttonTouchSm : sharedStyles.buttonTouchLg,
+      sharedStyles.buttonFlush,
+      sharedStyles.buttonWrap,
+      intent,
+    );
+
     return (
       <div className={cx(styles.controlsRow, isBanner && styles.bannerControlsRow)}>
         <div className={styles.splitButtonContainer}>
-          <button
-            type="button"
-            onClick={startListening}
-            disabled={engineState === 'loading'}
-            className={cx(
-              actionStyles.largeBtn,
-              styles.mainSplitBtn,
-              isListening && cx(actionStyles.redBtn, styles.pulseListening),
-              engineState === 'loading' && actionStyles.orangeBtn,
-              engineState === 'idle' && actionStyles.greenBtn,
-              isBanner && styles.bannerMainSplitBtn,
-            )}
-          >
-            {isListening ? (
-              <div className={styles.btnContentCol}>
-                <div className={actionStyles.btnContent}>
-                  <span className={styles.spinnerGrow} role="status" aria-hidden="true"></span>
-                  <span>Listening for commands...</span>
-                </div>
-                {lastCommand && (
-                  <div className={styles.detectedInside}>
-                    Detected: <span className={styles.commandBadgeInside}>{lastCommand}</span>
+          <div className={styles.splitButtonGroup}>
+            <button
+              type="button"
+              onClick={startListening}
+              disabled={engineState === 'loading'}
+              className={cx(
+                splitBtnClass,
+                styles.mainSplitBtn,
+                isListening && styles.pulseListening,
+              )}
+            >
+              {isListening ? (
+                <div className={styles.btnContentCol}>
+                  <div className={styles.btnContentRow}>
+                    <span className={styles.spinnerGrow} role="status" aria-hidden="true"></span>
+                    <span>Listening for commands...</span>
                   </div>
-                )}
-              </div>
-            ) : engineState === 'loading' ? (
-              <div className={actionStyles.btnContent}>
-                <span className={styles.spinnerBorder} role="status" aria-hidden="true"></span>
-                <span>Initializing...</span>
-              </div>
-            ) : (
-              <div className={actionStyles.btnContent}>
-                <span className={styles.micIcon}>🎤</span>
-                <span>Listen</span>
-              </div>
-            )}
-          </button>
+                  {lastCommand && (
+                    <div className={styles.detectedInside}>
+                      Detected: <span className={styles.commandBadgeInside}>{lastCommand}</span>
+                    </div>
+                  )}
+                </div>
+              ) : engineState === 'loading' ? (
+                <div className={styles.btnContentRow}>
+                  <span className={styles.spinnerBorder} role="status" aria-hidden="true"></span>
+                  <span>Initializing...</span>
+                </div>
+              ) : (
+                <div className={styles.btnContentRow}>
+                  <span className={styles.micIcon}>🎤</span>
+                  <span>Listen</span>
+                </div>
+              )}
+            </button>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen((prev) => !prev);
-            }}
-            className={cx(
-              actionStyles.largeBtn,
-              styles.menuSplitBtn,
-              isListening && actionStyles.redBtn,
-              engineState === 'loading' && actionStyles.orangeBtn,
-              engineState === 'idle' && actionStyles.greenBtn,
-              isBanner && styles.bannerMenuSplitBtn,
-            )}
-            title="Available commands"
-          >
-            ☰
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen((prev) => !prev);
+              }}
+              className={cx(splitBtnClass, styles.menuSplitBtn)}
+              title="Available commands"
+            >
+              ☰
+            </button>
+          </div>
 
           {menuOpen && (
             <div className={styles.dropdownMenu}>

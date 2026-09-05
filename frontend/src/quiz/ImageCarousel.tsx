@@ -49,7 +49,7 @@ export function ImageCarousel({ images, onImageClick }: ImageCarouselProps) {
   if (filtered.length === 1) {
     // Single image — no carousel UI, but clicking opens the modal.
     return (
-      <div className={styles.carouselWrapper} style={{ cursor: 'pointer' }}>
+      <div className={styles.carouselWrapper}>
         <div className={styles.viewport} onClick={() => onImageClick(0)}>
           <img
             src={filtered[0]}

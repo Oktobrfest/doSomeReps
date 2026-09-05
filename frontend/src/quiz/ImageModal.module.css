@@ -198,9 +198,10 @@
   background: #fff;
 }
 
+/* Doubled class so the panel's own chrome loses to this without !important. */
 .modalAnswerBar.modalAnswerBar {
   z-index: 9999;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%) !important;
-  border-top: none !important;
-  box-shadow: none !important;
+  background: var(--rep-gradient-image-scrim);
+  border-top: none;
+  box-shadow: none;
 }

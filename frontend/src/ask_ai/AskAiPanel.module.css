@@ -57,11 +57,6 @@
   padding-top: 0.5rem;
 }
 
-.askAiBtnFollowUp {
-  background-color: #3b82f6 !important;
-  color: white !important;
-}
-
 .askAiContainer {
   padding: 1.25rem;
   background: #f8fafc;
@@ -103,16 +98,6 @@
   margin-top: 1rem;
 }
 
-.askAiBtnStop {
-  background-color: #ef4444 !important;
-  color: white !important;
-}
-
-.askAiBtnCancel {
-  background-color: #64748b !important;
-  color: white !important;
-}
-
 .askAiTranscriptBox {
   margin-top: 1rem;
   padding: 0.75rem;
@@ -150,11 +135,6 @@
 
 .askAiAnswerPlayer {
   margin-top: 0.75rem;
-}
-
-.askAiAnswerPlayerBox {
-  background-color: #16a34a !important;
-  color: white !important;
 }
 
 .spinnerBorder {

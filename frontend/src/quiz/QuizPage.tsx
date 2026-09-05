@@ -6,8 +6,7 @@ import { ImageModal } from './ImageModal';
 import { Volume2, BookOpen, Ban, Edit, Lightbulb, PenLine, Star, User } from 'lucide-react';
 import type { QuizPageProps } from './types';
 import styles from './QuizPage.module.css';
-import actionStyles from '../styles/ActionButton.module.css';
-import slideOutStyles from './SlideOutButtons.module.css';
+import sharedStyles from '../styles/shared.module.css';
 import { SlideOutButtons, type CompactAction, type ExtraAction, type Metrics } from './SlideOutButtons';
 import type { SlideOutButtonsHandle } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
@@ -24,18 +23,8 @@ import { useAskAi } from '../ask_ai/useAskAi';
 import { AskAiPanel } from '../ask_ai/AskAiPanel';
 import type { AskAiContext } from '../ask_ai/types';
 
-/*
- * How much room the content leaves for the docked panel at each snap point.
- *
- * The collapsed and trio values are tuned by hand and must not drift. Only the
- * fully-open panel is measured, because its height depends on how many
- * secondary actions the current question offers.
- */
-const answerPaddingBySnap: Record<'collapsed' | 'trio' | 'full', number> = {
-  collapsed: 12,
-  trio: 188,
-  full: 340,
-};
+/** Breathing room between the end of the answer and the docked panel. */
+const PANEL_CLEARANCE = 12;
 
 function validImages(images?: Array<string | null>): string[] {
   return images?.filter((image): image is string => Boolean(image)) ?? [];
@@ -65,14 +54,17 @@ function QuizEmpty({
     <div className={styles.emptyContainer}>
       <p className={styles.emptyMessage}>{message}</p>
 
-      <div className={styles.emptyActions}>
-        <a href="/quemore" className={styles.secondaryBtn}>
+      <div className={`${sharedStyles.actionCluster} ${styles.emptyActions}`}>
+        <a
+          href="/quemore"
+          className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
+        >
           Que More Questions
         </a>
         {unselected.length > 0 && (
           <button
             type="button"
-            className={styles.secondaryBtn}
+            className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
             onClick={() => setPicking(true)}
           >
             Select More Categories
@@ -257,8 +249,8 @@ export function QuizPage(props: QuizPageProps) {
           {quiz.error ? (
             <p className={styles.errorText} role="alert">{quiz.error}</p>
           ) : (
-            <div className={styles.spinner} role="status">
-              <span className="sr-only">Loading…</span>
+            <div className={sharedStyles.spinner} role="status">
+              <span className={sharedStyles.srOnly}>Loading…</span>
             </div>
           )}
         </div>
@@ -315,16 +307,16 @@ function QuizBody({
 
   const closeDialog = useCallback(() => setDialog(null), []);
 
-  const [panelFullHeight, setPanelFullHeight] = useState(0);
-  const onMetricsChange = useCallback(
-    (metrics: Metrics) => setPanelFullHeight(metrics.full),
-    [],
-  );
+  const [panelMetrics, setPanelMetrics] = useState<Metrics | null>(null);
+  const onMetricsChange = useCallback((metrics: Metrics) => setPanelMetrics(metrics), []);
 
+  // Clear the panel by exactly what it currently measures. The panel is both
+  // taller on a phone and shorter once the touch tiers collapse, so a hand-tuned
+  // number would be wrong on one of the two.
   const answerPadding =
-    quiz.panelSnap === 'full'
-      ? Math.max(answerPaddingBySnap.full, panelFullHeight)
-      : answerPaddingBySnap[quiz.panelSnap];
+    quiz.answerRevealed && panelMetrics
+      ? panelMetrics[quiz.panelSnap] + PANEL_CLEARANCE
+      : 0;
 
   const hintImages = validImages(currentQuestion.pics.hint_image);
   const isOwnQuestion = currentQuestion.created_by_username === currentUsername;
@@ -334,13 +326,13 @@ function QuizBody({
       {
         key: 'answerDraft',
         label: 'Your Answer',
-        icon: <PenLine className={slideOutStyles.compactIcon} />,
+        icon: <PenLine className={sharedStyles.buttonIcon} />,
         onClick: () => setDialog('answerDraft'),
       },
       {
         key: 'rate',
         label: 'Rate',
-        icon: <Star className={slideOutStyles.compactIcon} />,
+        icon: <Star className={sharedStyles.buttonIcon} />,
         onClick: () => setDialog('rate'),
       },
     ];
@@ -349,7 +341,7 @@ function QuizBody({
       actions.unshift({
         key: 'hint',
         label: 'Hint',
-        icon: <Lightbulb className={slideOutStyles.compactIcon} />,
+        icon: <Lightbulb className={sharedStyles.buttonIcon} />,
         onClick: () => setDialog('hint'),
       });
     }
@@ -358,7 +350,7 @@ function QuizBody({
       actions.push({
         key: 'author',
         label: 'Author',
-        icon: <User className={slideOutStyles.compactIcon} />,
+        icon: <User className={sharedStyles.buttonIcon} />,
         onClick: () => setDialog('author'),
       });
     }
@@ -371,7 +363,7 @@ function QuizBody({
       {
         key: 'exclude',
         label: 'Exclude',
-        icon: <Ban className={actionStyles.iconLarge} />,
+        icon: <Ban className={sharedStyles.buttonIcon} />,
         variant: 'exclude',
         onClick: quiz.actions.exclude,
       },
@@ -381,7 +373,7 @@ function QuizBody({
       actions.push({
         key: 'edit',
         label: 'Edit Question',
-        icon: <Edit className={actionStyles.iconLarge} />,
+        icon: <Edit className={sharedStyles.buttonIcon} />,
         variant: 'edit',
         href: `${editQuestionUrl}?q_id=${currentQuestion.question_id}`,
       });
@@ -460,7 +452,7 @@ function QuizBody({
               <LargePlayableControl
                 onClick={quiz.actions.readQuestion}
                 isPlaying={quiz.questionPlaying}
-                className={actionStyles.orangeBtn}
+                intentClass={sharedStyles.btnAmber}
                 assets={quiz.questionAssets}
                 onSequenceEnd={quiz.actions.questionEnded}
               />
@@ -468,12 +460,10 @@ function QuizBody({
               <LargeActionButton
                 onClick={quiz.actions.readQuestion}
                 disabled={quiz.questionAssets.length === 0 || quiz.isSubmitting}
-                className={actionStyles.orangeBtn}
+                className={sharedStyles.btnAmber}
               >
-                <div className={actionStyles.btnContent}>
-                  <Volume2 className={actionStyles.iconLarge} />
-                  <span>Read Question</span>
-                </div>
+                <Volume2 className={sharedStyles.buttonIcon} />
+                <span>Read Question</span>
               </LargeActionButton>
             )
           )}
@@ -491,12 +481,10 @@ function QuizBody({
                 id="audio-get-answer-btn"
                 onClick={quiz.actions.getAnswer}
                 disabled={quiz.isSubmitting}
-                className={actionStyles.blueBtn}
+                className={sharedStyles.btnBlue}
               >
-                <div className={actionStyles.btnContent}>
-                  <BookOpen className={actionStyles.iconLarge} />
-                  <span>Get Answer</span>
-                </div>
+                <BookOpen className={sharedStyles.buttonIcon} />
+                <span>Get Answer</span>
               </LargeActionButton>
             )}
 
@@ -504,7 +492,7 @@ function QuizBody({
               <LargePlayableControl
                 onClick={quiz.actions.toggleAnswerAudio}
                 isPlaying={quiz.answerPlaying}
-                className={actionStyles.blueBtn}
+                intentClass={sharedStyles.btnBlue}
                 assets={quiz.answerAssets}
                 onSequenceEnd={quiz.actions.answerEnded}
               />
@@ -537,14 +525,9 @@ function QuizBody({
           </div>
 
           {quiz.answerRevealed && (
-            <div
-              ref={answerRef}
-              tabIndex={-1}
-              className={styles.card}
-              style={{ outline: 'none' }}
-            >
+            <div ref={answerRef} tabIndex={-1} className={styles.card}>
               <h5 className={styles.cardTitle}>
-                <BookOpen className={actionStyles.iconSmall} />
+                <BookOpen className={styles.cardTitleIcon} />
                 The Answer
               </h5>
               <div className={styles.cardContent}>

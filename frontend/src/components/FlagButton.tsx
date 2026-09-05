@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Settings } from "lucide-react";
 import styles from "./FlagButton.module.css";
+import sharedStyles from "../styles/shared.module.css";
 import {
   FlagCategory,
   FLAG_METADATA,
@@ -136,25 +137,11 @@ export function FlagButton({
       type="button"
       onClick={() => setIsOpen(true)}
       disabled={disabled || isSaving}
-      className={`compact-flag-btn btn btn-sm ${isFlagged ? (initialFlag.category === FlagCategory.STUDY_ME ? "flag-color-study-me" : "flag-color-other") : ""}`}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "6px",
-        borderRadius: "50%",
-        border: "1px solid #ccc",
-        backgroundColor: isFlagged ? undefined : "#fff",
-        color: isFlagged ? undefined : "#666",
-        cursor: "pointer",
-        width: "36px",
-        height: "36px",
-        marginLeft: "10px",
-      }}
+      className={`${styles.compactTrigger} ${flagClass}`}
       title={isFlagged ? `Flagged: ${FLAG_METADATA[initialFlag.category].label}` : "Flag Question"}
     >
       {React.cloneElement((isFlagged ? FLAG_METADATA[initialFlag.category].icon : DEFAULT_FLAG_METADATA.icon) as React.ReactElement, {
-        style: { width: "20px", height: "20px" }
+        className: styles.compactIcon,
       })}
     </button>
   ) : (
@@ -259,7 +246,7 @@ export function FlagButton({
             {isFlagged && (
               <button
                 type="button"
-                className={`${styles.btn} ${styles.btnDanger}`}
+                className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnRed} ${styles.btnDangerPlacement}`}
                 onClick={handleModalRemove}
                 disabled={isSaving}
               >
@@ -268,7 +255,7 @@ export function FlagButton({
             )}
             <button
               type="button"
-              className={`${styles.btn} ${styles.btnSecondary}`}
+              className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
               onClick={() => setIsOpen(false)}
               disabled={isSaving}
             >
@@ -276,7 +263,7 @@ export function FlagButton({
             </button>
             <button
               type="button"
-              className={`${styles.btn} ${styles.btnPrimary}`}
+              className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnBlue}`}
               onClick={handleModalSave}
               disabled={isSaving}
             >

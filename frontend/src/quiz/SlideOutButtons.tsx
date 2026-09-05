@@ -12,36 +12,76 @@ import {
 import { Check, X, Minus, Volume2, VolumeX } from 'lucide-react';
 import { CatPicker } from '../components/CatPicker';
 import { FlagButton, type QuestionFlag } from '../components/FlagButton';
-import actionStyles from '../styles/ActionButton.module.css';
+import sharedStyles from '../styles/shared.module.css';
 import styles from './SlideOutButtons.module.css';
 
+/** Class list for one control in the panel: base + size + intent. */
+function panelBtn(intent: string, size: string = sharedStyles.buttonTouchSm) {
+  return `${sharedStyles.actionButton} ${size} ${sharedStyles.buttonWrap} ${intent}`;
+}
+
+const VERDICT_INTENT = {
+  correct: sharedStyles.btnGreen,
+  wrong: sharedStyles.btnRed,
+  slightlyWrong: sharedStyles.btnAmber,
+} as const;
+
+const VERDICT_ICON = {
+  correct: Check,
+  wrong: X,
+  slightlyWrong: Minus,
+} as const;
+
 interface SlideOutActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant: 'correct' | 'wrong' | 'slightlyWrong';
+  variant: keyof typeof VERDICT_INTENT;
+  /** The size tier the panel is running at, so the modal can use a denser one. */
+  sizeClass: string;
 }
 
 function SlideOutActionButton({
   variant,
+  sizeClass,
   className,
   children,
   ...props
 }: SlideOutActionButtonProps) {
-  const variantClass =
-    variant === 'correct'
-      ? actionStyles.greenBtn
-      : variant === 'wrong'
-        ? actionStyles.redBtn
-        : actionStyles.orangeBtn;
+  const Icon = VERDICT_ICON[variant];
 
   return (
     <button
       type="button"
-      className={`${styles.btn} ${variantClass} ${className || ''}`}
+      className={`${panelBtn(VERDICT_INTENT[variant], sizeClass)} ${className || ''}`}
       {...props}
     >
-      {variant === 'correct' && <Check className={styles.icon} />}
-      {variant === 'wrong' && <X className={styles.icon} />}
-      {variant === 'slightlyWrong' && <Minus className={styles.icon} />}
+      <Icon className={sharedStyles.buttonIcon} />
       <span>{children}</span>
+    </button>
+  );
+}
+
+/** An on/off switch in the panel. Green reads as on, amber as off. */
+function ToggleButton({
+  on,
+  label,
+  disabled,
+  onClick,
+}: {
+  on: boolean;
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const Icon = on ? Volume2 : VolumeX;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={panelBtn(on ? sharedStyles.btnGreen : sharedStyles.btnAmber)}
+    >
+      <Icon className={sharedStyles.buttonIcon} />
+      <span>{`${label}: ${on ? 'ON' : 'OFF'}`}</span>
     </button>
   );
 }
@@ -142,14 +182,16 @@ function CategoriesSection({
     <div className={styles.categoriesSection}>
       <CatPicker selectedCategories={selected} onChange={setSelected} />
 
-      <button
-        type="button"
-        className={styles.applyBtn}
-        disabled={disabled}
-        onClick={() => onApply?.(selected)}
-      >
-        Apply Categories
-      </button>
+      <div className={`${sharedStyles.actionCluster} ${styles.applyRow}`}>
+        <button
+          type="button"
+          className={panelBtn(sharedStyles.btnBlue)}
+          disabled={disabled}
+          onClick={() => onApply?.(selected)}
+        >
+          Apply Categories
+        </button>
+      </div>
     </div>
   );
 }
@@ -362,9 +404,13 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
     }
   }, [metrics]);
 
+  // The image modal shows the same verdicts over a photo, where the full-height
+  // tier would swallow the picture, so it drops one tier.
+  const verdictSize =
+    size === 'compact' ? sharedStyles.buttonTouchSm : sharedStyles.buttonTouchMd;
+
   const containerClasses = [
     styles.container,
-    size === 'compact' ? styles.sizeCompact : '',
     isDragging ? styles.dragging : '',
     className || '',
   ]
@@ -396,10 +442,14 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
         <span className={styles.gripBar} />
       </div>
 
-      <div ref={buttonsRowRef} className={styles.buttonsRow}>
+      <div
+        ref={buttonsRowRef}
+        className={`${sharedStyles.actionCluster} ${styles.buttonsRow}`}
+      >
         {onCorrect && (
           <SlideOutActionButton
             variant="correct"
+            sizeClass={verdictSize}
             name="correct_submit"
             value="Correct!"
             onClick={onCorrect}
@@ -413,11 +463,11 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
         {onWrong && (
           <SlideOutActionButton
             variant="wrong"
+            sizeClass={verdictSize}
             name="incorrect_submit"
             value="Wrong!"
             onClick={onWrong}
             disabled={disabled}
-            className={styles.secondary}
           >
             Wrong!
           </SlideOutActionButton>
@@ -426,11 +476,11 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
         {onSlightlyWrong && (
           <SlideOutActionButton
             variant="slightlyWrong"
+            sizeClass={verdictSize}
             name="incorrect_submit"
             value="Slightly Wrong"
             onClick={onSlightlyWrong}
             disabled={disabled}
-            className={styles.secondary}
           >
             Slightly Wrong
           </SlideOutActionButton>
@@ -438,34 +488,23 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
       </div>
 
       {hasExtra && (
-        <div ref={drawerRef} className={styles.drawer}>
-          {compactActions && compactActions.length > 0 && (
-            <div className={styles.compactRow}>
-              {compactActions.map((action) => (
-                <button
-                  key={action.key}
-                  type="button"
-                  onClick={action.onClick}
-                  disabled={disabled}
-                  className={`${styles.compactBtn} ${actionStyles.cyanBtn}`}
-                >
-                  {action.icon}
-                  <span>{action.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
+        <div ref={drawerRef} className={`${sharedStyles.actionCluster} ${styles.drawer}`}>
+          {(compactActions ?? []).map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              onClick={action.onClick}
+              disabled={disabled}
+              className={panelBtn(sharedStyles.btnCyan)}
+            >
+              {action.icon}
+              <span>{action.label}</span>
+            </button>
+          ))}
 
           {(extraActions ?? []).map((action) => {
-            const drawerClassName = `${styles.drawerBtn} ${
-              action.variant === 'exclude' ? actionStyles.redBtn : actionStyles.cyanBtn
-            }`;
-
-            const content = (
-              <div className={actionStyles.btnContent}>
-                {action.icon}
-                <span>{action.label}</span>
-              </div>
+            const buttonClass = panelBtn(
+              action.variant === 'exclude' ? sharedStyles.btnRed : sharedStyles.btnCyan,
             );
 
             if (action.href) {
@@ -474,84 +513,52 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
                   key={action.key}
                   href={disabled ? undefined : action.href}
                   aria-disabled={disabled}
-                  className={drawerClassName}
-                  style={{ textDecoration: 'none' }}
+                  className={buttonClass}
                   onClick={(e) => {
                     if (disabled) e.preventDefault();
                   }}
                 >
-                  {content}
+                  {action.icon}
+                  <span>{action.label}</span>
                 </a>
-              );
-            }
-
-            if (action.onClick) {
-              return (
-                <button
-                  key={action.key}
-                  type="button"
-                  onClick={action.onClick}
-                  disabled={disabled}
-                  className={drawerClassName}
-                >
-                  {content}
-                </button>
               );
             }
 
             return (
               <button
                 key={action.key}
-                type="submit"
+                type={action.onClick ? 'button' : 'submit'}
                 name={action.submitName}
                 value={action.submitValue}
+                onClick={action.onClick}
                 disabled={disabled}
-                className={drawerClassName}
+                className={buttonClass}
               >
-                {content}
+                {action.icon}
+                <span>{action.label}</span>
               </button>
             );
           })}
+
           {onToggleAudioEnabled && (
-            <button
-              type="button"
-              onClick={onToggleAudioEnabled}
+            <ToggleButton
+              on={Boolean(audioEnabled)}
               disabled={disabled}
-              className={`${styles.drawerBtn} ${
-                audioEnabled ? actionStyles.greenBtn : actionStyles.orangeBtn
-              }`}
-            >
-              <div className={actionStyles.btnContent}>
-                {audioEnabled ? (
-                  <Volume2 className={actionStyles.iconLarge} />
-                ) : (
-                  <VolumeX className={actionStyles.iconLarge} />
-                )}
-                <span>{audioEnabled ? 'Audio: ON' : 'Audio: OFF'}</span>
-              </div>
-            </button>
+              onClick={onToggleAudioEnabled}
+              label="Audio"
+            />
           )}
 
           {/* Auto-play only means anything while audio is on, so it nests under it. */}
           {audioEnabled && onToggleAutoPlay && (
-            <button
-              type="button"
-              onClick={onToggleAutoPlay}
+            <ToggleButton
+              on={Boolean(autoPlay)}
               disabled={disabled}
-              className={`${styles.drawerBtn} ${
-                autoPlay ? actionStyles.greenBtn : actionStyles.orangeBtn
-              }`}
-            >
-              <div className={actionStyles.btnContent}>
-                {autoPlay ? (
-                  <Volume2 className={actionStyles.iconLarge} />
-                ) : (
-                  <VolumeX className={actionStyles.iconLarge} />
-                )}
-                <span>{autoPlay ? 'Auto-Play: ON' : 'Auto-Play: OFF'}</span>
-              </div>
-            </button>
+              onClick={onToggleAutoPlay}
+              label="Auto-Play"
+            />
           )}
+
           {questionId && (
             <FlagButton
               questionId={questionId}

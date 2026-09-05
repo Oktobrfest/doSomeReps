@@ -167,16 +167,17 @@
   align-items: center;
   justify-content: center;
   gap: var(--rep-btn-gap);
-  height: var(--rep-btn-height);
+  min-height: var(--rep-btn-height);
   min-width: var(--rep-btn-min-width);
-  padding: 0 var(--rep-btn-padding-x);
+  padding: var(--rep-btn-padding-y) var(--rep-btn-padding-x);
   border: none;
   border-radius: var(--rep-btn-radius);
   font-family: inherit;
   font-size: var(--rep-btn-font-size);
   font-weight: var(--rep-btn-font-weight);
-  line-height: 1;
+  line-height: var(--rep-btn-line-height);
   white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
   box-shadow: var(--rep-btn-shadow);
   transition: var(--rep-btn-transition);
@@ -196,50 +197,63 @@
   opacity: 0.55;
 }
 
+/* Intent modifiers set background-colour and colour. Nothing else. */
+
 .btnRed {
-  background-color: #ef4444;
-  color: #fff;
+  background-color: var(--rep-intent-red-bg);
+  color: var(--rep-intent-red-fg);
 }
 
 .btnRed:hover:not(:disabled) {
-  background-color: #dc2626;
+  background-color: var(--rep-intent-red-bg-hover);
+}
+
+.btnGreen {
+  background-color: var(--rep-intent-green-bg);
+  color: var(--rep-intent-green-fg);
+}
+
+.btnGreen:hover:not(:disabled) {
+  background-color: var(--rep-intent-green-bg-hover);
 }
 
 .btnBlue {
-  background-color: #007bff;
-  color: #fff;
+  background-color: var(--rep-intent-blue-bg);
+  color: var(--rep-intent-blue-fg);
 }
 
 .btnBlue:hover:not(:disabled) {
-  background-color: #0069d9;
+  background-color: var(--rep-intent-blue-bg-hover);
 }
 
 .btnCyan {
-  background-color: #06b6d4;
-  color: #fff;
+  background-color: var(--rep-intent-cyan-bg);
+  color: var(--rep-intent-cyan-fg);
 }
 
 .btnCyan:hover:not(:disabled) {
-  background-color: #0891b2;
+  background-color: var(--rep-intent-cyan-bg-hover);
 }
 
 .btnAmber {
-  background-color: #f59e0b;
-  color: #fff;
+  background-color: var(--rep-intent-amber-bg);
+  color: var(--rep-intent-amber-fg);
 }
 
 .btnAmber:hover:not(:disabled) {
-  background-color: #d97706;
+  background-color: var(--rep-intent-amber-bg-hover);
 }
 
 .btnSlate {
-  background-color: #475569;
-  color: #fff;
+  background-color: var(--rep-intent-slate-bg);
+  color: var(--rep-intent-slate-fg);
 }
 
 .btnSlate:hover:not(:disabled) {
-  background-color: #334155;
+  background-color: var(--rep-intent-slate-bg-hover);
 }
+
+/* Size modifiers rebind the semantic aliases and nothing else. */
 
 .buttonSm {
   --rep-btn-height: var(--rep-btn-height-sm);
@@ -248,6 +262,56 @@
   --rep-btn-min-width: var(--rep-btn-min-width-sm);
 }
 
+.buttonTouchSm {
+  --rep-btn-height: var(--rep-btn-height-touch-sm);
+  --rep-btn-padding-x: var(--rep-btn-padding-x-touch-sm);
+  --rep-btn-font-size: var(--rep-btn-font-size-touch-sm);
+  --rep-btn-min-width: var(--rep-btn-min-width-touch);
+  --rep-btn-radius: var(--rep-btn-radius-touch-sm);
+  --rep-btn-icon-size: var(--rep-btn-icon-size-touch-sm);
+}
+
+.buttonTouchMd {
+  --rep-btn-height: var(--rep-btn-height-touch-md);
+  --rep-btn-padding-x: var(--rep-btn-padding-x-touch-md);
+  --rep-btn-font-size: var(--rep-btn-font-size-touch-md);
+  --rep-btn-min-width: var(--rep-btn-min-width-touch);
+  --rep-btn-radius: var(--rep-btn-radius-touch-md);
+  --rep-btn-icon-size: var(--rep-btn-icon-size-touch-md);
+}
+
+.buttonTouchLg {
+  --rep-btn-height: var(--rep-btn-height-touch-lg);
+  --rep-btn-padding-x: var(--rep-btn-padding-x-touch-lg);
+  --rep-btn-font-size: var(--rep-btn-font-size-touch-lg);
+  --rep-btn-min-width: var(--rep-btn-min-width-touch);
+  --rep-btn-radius: var(--rep-btn-radius-touch-lg);
+  --rep-btn-icon-size: var(--rep-btn-icon-size-touch-lg);
+}
+
+/* Corners are handed to a clipping parent, e.g. the two halves of a split
+   button. Geometry comes from the alias, so this stays a modifier. */
+.buttonFlush {
+  --rep-btn-radius: 0;
+}
+
+/* For a control labelled with a phrase rather than a word: it wraps onto a
+   second line instead of overflowing a narrow row. */
+.buttonWrap {
+  --rep-btn-line-height: var(--rep-btn-line-height-wrap);
+
+  white-space: normal;
+  text-align: center;
+}
+
+/* An icon inside a control. Sized by whichever tier the control is wearing. */
+.buttonIcon {
+  width: var(--rep-btn-icon-size);
+  height: var(--rep-btn-icon-size);
+  flex-shrink: 0;
+}
+
+/* Layout: one row of equal controls. */
 .actionRow {
   display: flex;
   flex-wrap: wrap;
@@ -257,4 +321,16 @@
 
 .actionRow > * {
   flex: 1 1 0;
+}
+
+/* Layout: controls that share rows and wrap onto as many as they need. */
+.actionCluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rep-btn-row-gap);
+  width: 100%;
+}
+
+.actionCluster > * {
+  flex: 1 1 var(--rep-btn-cluster-basis);
 }

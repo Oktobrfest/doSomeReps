@@ -1,58 +1,80 @@
-.centerContainer {
-  min-height: 60vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/*
+ * The quiz page.
+ *
+ * Layout, surfaces and typography only: every control on this page composes the
+ * shared button base, so no button geometry or colour is written down here.
+ */
 
 .quizContainer {
+  box-sizing: border-box;
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
   padding: 24px;
 }
 
-.actionsSection {
+.centerContainer {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
 }
 
 .audioCommandRoot {
   width: 100%;
+  margin-bottom: var(--rep-quiz-gap);
 }
 
+/* ---- the controls above the question ---- */
+
+.actionsSection,
 .middleSection {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--rep-quiz-gap);
 }
 
-.playableControl {
-  width: 100%;
+/* The audio player is a surface rather than a control: it wears an intent so it
+   reads as the button it stands in for, and holds a play toggle and a slider. */
+.playerPanel {
+  --rep-btn-icon-size: var(--rep-btn-icon-size-touch-lg);
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rep-btn-gap);
+  padding: var(--rep-btn-padding-x-touch-lg);
+  border-radius: var(--rep-btn-radius-touch-lg);
+  box-shadow: var(--rep-btn-shadow);
 }
 
-.startBtn {
-  min-width: 220px;
-  min-height: 120px;
+.playerToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--rep-btn-gap);
+  padding: 0;
   border: none;
-  border-radius: 18px;
-  padding: 24px 48px;
-  background: #f59e0b;
-  color: #111;
-  font-size: 2rem;
-  font-weight: 800;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--rep-btn-font-size-touch-lg);
+  font-weight: var(--rep-btn-font-weight);
   cursor: pointer;
 }
 
-.startBtn:hover {
-  box-shadow: 0 8px 20px rgb(0 0 0 / 0.15);
+.playerToggle:focus-visible {
+  outline: 2px solid var(--rep-color-focus);
+  outline-offset: 4px;
 }
+
+/* ---- the question and its answer ---- */
 
 .contentDivider {
   margin-top: 6px;
   padding-top: 4px;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--rep-color-border);
 }
 
 .metaRow {
@@ -60,19 +82,19 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
-  padding: 5px;
   margin: 5px;
+  margin-bottom: var(--rep-quiz-gap);
+  padding: 5px;
   font-size: clamp(0.8em, 1rem + 1.4vw, 2rem);
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
   padding: 4px 11px 3px 11px;
-  background: orange;
-  color: #111827;
+  background: var(--rep-intent-amber-bg);
+  color: var(--rep-intent-amber-fg);
+  border-radius: 999px;
   font-size: clamp(0.8em, 1rem + 1.4vw, 2rem);
   font-weight: 600;
 }
@@ -85,11 +107,18 @@
 
 .card {
   margin-top: 20px;
-  border: 1px solid #d1d5db;
-  border-radius: 16px;
-  background: #fff;
   overflow: hidden;
+  background: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: 16px;
   scroll-margin-top: 90px;
+}
+
+/* The card is focused programmatically when the answer is revealed, purely to
+   move the screen reader there. A keyboard user reaching it themselves still
+   gets a ring, so only the scripted focus is silent. */
+.card:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .cardTitle {
@@ -98,9 +127,15 @@
   gap: 8px;
   margin: 0;
   padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--rep-color-border);
   font-size: 1.1rem;
   font-weight: 800;
+}
+
+.cardTitleIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
 }
 
 .cardContent {
@@ -108,10 +143,10 @@
   padding-top: 10px;
   padding-bottom: 2px;
   padding-inline: 10px;
-  white-space: pre-wrap;
   font-family: inherit;
   font-size: 1.4rem;
   line-height: 1.2;
+  white-space: pre-wrap;
 }
 
 .askAiConversationRoot {
@@ -120,63 +155,21 @@
 }
 
 .errorText {
-  color: #dc2626;
+  margin-top: var(--rep-quiz-gap);
+  color: var(--rep-color-error-text-strong);
   font-weight: 600;
-  margin-top: 16px;
   text-align: center;
 }
 
-.spinner {
-  width: 3rem;
-  height: 3rem;
-  display: inline-block;
-  border-radius: 50%;
-  border: 0.25rem solid #2563eb;
-  border-right-color: transparent;
-  animation: spin 0.75s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-
-
-.secondaryBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 42px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  padding: 8px 14px;
-  background: #fff;
-  color: #111827;
-  font: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.secondaryBtn:hover {
-  background: #f3f4f6;
-}
-
-.playPauseToggleBtn {
-  outline: none;
-}
+/* ---- nothing left in the queue ---- */
 
 .emptyContainer {
-  min-height: 60vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 24px;
+  min-height: 60vh;
   padding: 24px;
   text-align: center;
 }
@@ -189,59 +182,66 @@
 }
 
 .emptyActions {
-  display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
+  max-width: var(--rep-quiz-control-width);
 }
 
 @media (max-width: 640px) {
   .quizContainer {
-    padding: 16px;
-  }
-
-  .secondaryBtn {
-    width: 100%;
+    padding: var(--rep-quiz-gap);
   }
 }
 
-/* ---- large screens ----
-   Additive only: every rule here sits behind a min-width query so the mobile
-   rendering this page was tuned for is left exactly as it was. */
+/* ---- full-sized page ----
+   The touch tiers have already collapsed onto the app-wide control by here, so
+   what is left is to stop the page behaving like a phone screen: give the text
+   a readable measure, and stop the controls stretching the width of it. */
 
 @media (min-width: 900px) {
   .quizContainer {
-    max-width: 1100px;
+    max-width: var(--rep-quiz-max-width);
+    padding: 32px var(--rep-quiz-gap) var(--rep-quiz-gap);
+  }
+
+  .actionsSection,
+  .middleSection {
+    align-items: center;
+    width: 100%;
+    max-width: var(--rep-quiz-control-width);
+    margin-inline: auto;
+  }
+
+  .actionsSection > *,
+  .middleSection > * {
+    width: 100%;
+  }
+
+  .contentDivider {
+    margin-top: 24px;
+    padding-top: var(--rep-quiz-gap);
+  }
+
+  .metaRow {
+    margin: 0 0 var(--rep-quiz-gap);
+    padding: 0;
+    font-size: 1rem;
+  }
+
+  .badge {
+    font-size: 0.9rem;
   }
 
   .textBlock,
   .cardContent {
-    font-size: 1.55rem;
-    line-height: 1.35;
+    font-size: 1.25rem;
+    line-height: 1.6;
   }
 
-  .metaRow,
-  .badge {
-    font-size: 1.1rem;
+  .cardContent {
+    padding: var(--rep-quiz-gap) 20px 20px;
   }
-}
 
-.audioCommandRoot {
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.playableControlInner { cursor: default; }
-
-.playPauseToggleBtn {
-  background: none;
-  border: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0;
-  outline: none;   /* you already have .playPauseToggleBtn — merge into it */
+  .card {
+    margin-top: 24px;
+  }
 }

@@ -39,11 +39,18 @@
   --rep-color-error-border-subtle: #feb2b2;
 
   --rep-color-overlay: rgba(0, 0, 0, 0.45);
+  /* Fades the answer bar into a full-bleed image behind it. */
+  --rep-gradient-image-scrim: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 0.5) 60%,
+    transparent 100%
+  );
 
-  --rep-color-rating-star: #f59e0b;
+  --rep-color-rating-star: var(--rep-intent-amber-bg);
   --rep-color-rating-star-empty: #cbd5e0;
-  --rep-color-danger: #ef4444;
-  --rep-color-on-danger: #ffffff;
+  --rep-color-danger: var(--rep-intent-red-bg);
+  --rep-color-on-danger: var(--rep-intent-red-fg);
 
   /* Navbar Design Tokens */
   --rep-color-navbar-bg-start: #1e293b;
@@ -65,6 +72,51 @@
   --rep-cp-item-text: #000000;
   --rep-cp-item-text-active: #000000;
 
+
+  /* ---- Intent palette ----
+     One background / hover / foreground triple per intent. Buttons, badges and
+     panels all draw from these, so a colour is written down exactly once. */
+  --rep-intent-red-bg: #ef4444;
+  --rep-intent-red-bg-hover: #dc2626;
+  --rep-intent-red-fg: #ffffff;
+
+  --rep-intent-green-bg: #22c55e;
+  --rep-intent-green-bg-hover: #16a34a;
+  --rep-intent-green-fg: #052e16;
+
+  --rep-intent-amber-bg: #f59e0b;
+  --rep-intent-amber-bg-hover: #d97706;
+  --rep-intent-amber-fg: #111827;
+
+  --rep-intent-blue-bg: #007bff;
+  --rep-intent-blue-bg-hover: #0069d9;
+  --rep-intent-blue-fg: #ffffff;
+
+  --rep-intent-cyan-bg: #06b6d4;
+  --rep-intent-cyan-bg-hover: #0891b2;
+  --rep-intent-cyan-fg: #ffffff;
+
+  --rep-intent-slate-bg: #475569;
+  --rep-intent-slate-bg-hover: #334155;
+  --rep-intent-slate-fg: #ffffff;
+
+  /* ---- Quiz page ----
+     The reading column and the panel docked beneath it share one width so the
+     two edges line up once the page stops being full-bleed. */
+  --rep-quiz-max-width: 960px;
+  --rep-quiz-gap: 16px;
+  /* Controls stop stretching the full reading column once there is room. */
+  --rep-quiz-control-width: 560px;
+
+  --rep-color-panel-surface: rgba(255, 255, 255, 0.98);
+  --rep-color-panel-grip: #9ca3af;
+  --rep-color-panel-grip-hover: #6b7280;
+  --rep-shadow-panel: 0 -4px 24px rgba(0, 0, 0, 0.12);
+  --rep-shadow-listening: 0 0 24px rgba(239, 68, 68, 0.35);
+  --rep-panel-gap: 10px;
+  --rep-panel-padding: 12px;
+  --rep-panel-radius: 16px;
+
   --rep-radius-small: 0.25rem;
   --rep-radius-control: 6px;
   --rep-radius-dialog: 8px;
@@ -76,24 +128,63 @@
     0 20px 25px -5px rgba(0, 0, 0, 0.15),
     0 10px 10px -5px rgba(0, 0, 0, 0.08);
 
---rep-btn-height-md: 46px;
+  /* ---- Button size scale ----
+     Primitive tiers. `md` is the app-wide control; `sm` is its dense variant.
+     The three `touch-*` tiers exist for the quiz, which is driven by a thumb on
+     a phone and by a pointer everywhere else. */
+  --rep-btn-height-md: 46px;
   --rep-btn-padding-x-md: 24px;
   --rep-btn-font-size-md: 1rem;
   --rep-btn-min-width-md: 180px;
+  --rep-btn-radius-md: 12px;
+  --rep-btn-icon-size-md: 1.25rem;
 
   --rep-btn-height-sm: 34px;
   --rep-btn-padding-x-sm: 14px;
   --rep-btn-font-size-sm: 0.875rem;
   --rep-btn-min-width-sm: 0;
 
+  /* Secondary thumb target: several share a row. */
+  --rep-btn-height-touch-sm: 50px;
+  --rep-btn-padding-x-touch-sm: 12px;
+  --rep-btn-font-size-touch-sm: 1rem;
+  --rep-btn-radius-touch-sm: 12px;
+  --rep-btn-icon-size-touch-sm: 1.4rem;
+
+  /* The verdict buttons: the one decision every question ends on. */
+  --rep-btn-height-touch-md: 74px;
+  --rep-btn-padding-x-touch-md: 16px;
+  --rep-btn-font-size-touch-md: 1.25rem;
+  --rep-btn-radius-touch-md: 14px;
+  --rep-btn-icon-size-touch-md: 1.95rem;
+
+  /* Read Question / Get Answer: aimed at without looking. */
+  --rep-btn-height-touch-lg: 120px;
+  --rep-btn-padding-x-touch-lg: 24px;
+  --rep-btn-font-size-touch-lg: 1.25rem;
+  --rep-btn-radius-touch-lg: 18px;
+  --rep-btn-icon-size-touch-lg: 2.5rem;
+
+  /* A touch target is sized by its height, never stretched to a minimum. */
+  --rep-btn-min-width-touch: 0;
+
+  /* Semantic aliases. Size modifiers rebind these and nothing else. */
   --rep-btn-height: var(--rep-btn-height-md);
   --rep-btn-padding-x: var(--rep-btn-padding-x-md);
   --rep-btn-font-size: var(--rep-btn-font-size-md);
   --rep-btn-min-width: var(--rep-btn-min-width-md);
+  --rep-btn-radius: var(--rep-btn-radius-md);
+  --rep-btn-icon-size: var(--rep-btn-icon-size-md);
 
-  --rep-btn-radius: 12px;
   --rep-btn-gap: 8px;
   --rep-btn-row-gap: 12px;
+  --rep-btn-cluster-basis: 150px;
+
+  /* Inert while a label fits on one line, because the tier height wins; it is
+     what keeps a wrapped label off the button's edges. */
+  --rep-btn-padding-y: 8px;
+  --rep-btn-line-height: 1;
+  --rep-btn-line-height-wrap: 1.2;
 
   --rep-btn-font-weight: 700;
   --rep-btn-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -103,4 +194,30 @@
     opacity 120ms ease,
     box-shadow 120ms ease,
     background-color 120ms ease;
+}
+
+/* Above this width the quiz is driven by a pointer on a page that is no longer
+   the whole screen, so thumb-sized targets are wasted height. Collapsing the
+   touch tiers onto `md` here is what makes the desktop quiz use the same
+   controls as the rest of the app, without a single component-level @media. */
+@media (min-width: 900px) {
+  :root {
+    --rep-btn-height-touch-sm: var(--rep-btn-height-md);
+    --rep-btn-padding-x-touch-sm: var(--rep-btn-padding-x-md);
+    --rep-btn-font-size-touch-sm: var(--rep-btn-font-size-md);
+    --rep-btn-radius-touch-sm: var(--rep-btn-radius-md);
+    --rep-btn-icon-size-touch-sm: var(--rep-btn-icon-size-md);
+
+    --rep-btn-height-touch-md: var(--rep-btn-height-md);
+    --rep-btn-padding-x-touch-md: var(--rep-btn-padding-x-md);
+    --rep-btn-font-size-touch-md: var(--rep-btn-font-size-md);
+    --rep-btn-radius-touch-md: var(--rep-btn-radius-md);
+    --rep-btn-icon-size-touch-md: var(--rep-btn-icon-size-md);
+
+    --rep-btn-height-touch-lg: var(--rep-btn-height-md);
+    --rep-btn-padding-x-touch-lg: var(--rep-btn-padding-x-md);
+    --rep-btn-font-size-touch-lg: var(--rep-btn-font-size-md);
+    --rep-btn-radius-touch-lg: var(--rep-btn-radius-md);
+    --rep-btn-icon-size-touch-lg: var(--rep-btn-icon-size-md);
+  }
 }

@@ -23,8 +23,8 @@ export function resolveQuizCommandHandler(
     case 'PARTIALLY WRONG':
       return handlers.slightlyWrong;
 
-    case 'GET ANSWER':
     case 'ANSWER':
+    case 'GET ANSWER':
     case 'SHOW ANSWER':
       return handlers.getAnswer;
 
@@ -33,6 +33,7 @@ export function resolveQuizCommandHandler(
       return handlers.readQuestion;
 
     case 'PAUSE':
+    case 'STOP':
       return handlers.pause;
 
     case 'RESUME':
