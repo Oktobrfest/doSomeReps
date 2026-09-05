@@ -52,6 +52,13 @@
   --rep-color-danger: var(--rep-intent-red-bg);
   --rep-color-on-danger: var(--rep-intent-red-fg);
 
+  /* ---- Rating star scale ----
+     `md` reads a rating inline with the question's meta; `lg` is the target the
+     rating dialog is rated with. Holders rebind the alias, never the primitives. */
+  --rep-rating-star-size-md: 1.25rem;
+  --rep-rating-star-size-lg: 2.5rem;
+  --rep-rating-star-size: var(--rep-rating-star-size-md);
+
   /* Navbar Design Tokens */
   --rep-color-navbar-bg-start: #1e293b;
   --rep-color-navbar-bg-end: #0f172a;
@@ -103,10 +110,13 @@
   /* ---- Quiz page ----
      The reading column and the panel docked beneath it share one width so the
      two edges line up once the page stops being full-bleed. */
-  --rep-quiz-max-width: 960px;
+  --rep-quiz-max-width: 1280px;
   --rep-quiz-gap: 16px;
   /* Controls stop stretching the full reading column once there is room. */
   --rep-quiz-control-width: 560px;
+  /* The audio plane beside the question: about a fifth of a wide page, never
+     wider than this, and never so narrow its controls stop being readable. */
+  --rep-quiz-aside-width: clamp(220px, 20%, 400px);
 
   --rep-color-panel-surface: rgba(255, 255, 255, 0.98);
   --rep-color-panel-grip: #9ca3af;

@@ -1,0 +1,13 @@
+/*
+ * Flow only: every control in the toolbar composes the shared button base, so
+ * no button geometry or colour is written down here.
+ */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rep-btn-gap);
+  /* The level and the categories keep the left of the meta row. */
+  margin-left: auto;
+}

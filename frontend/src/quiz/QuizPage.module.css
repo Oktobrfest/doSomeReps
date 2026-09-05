@@ -192,6 +192,70 @@
   }
 }
 
+/* ---- the full-sized layout ----
+   Mounted only where it applies rather than switched on by a breakpoint: the
+   reading column, the category disclosure above it and the audio plane beside
+   it are a different composition of the same parts, not a restyling of the
+   phone's one. */
+
+.pageLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rep-quiz-aside-width);
+  gap: var(--rep-quiz-gap);
+  align-items: start;
+}
+
+.readingColumn {
+  min-width: 0;
+}
+
+.categoriesDisclosure {
+  margin-bottom: var(--rep-quiz-gap);
+  padding: 0 var(--rep-quiz-gap);
+  background: var(--rep-color-surface-subtle);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-dialog);
+}
+
+.categoriesSummary {
+  padding: 10px 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Where the reader writes their answer before revealing the real one. */
+
+.answerDraft {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--rep-btn-gap);
+  margin-top: var(--rep-quiz-gap);
+}
+
+.answerLabel {
+  font-weight: 700;
+}
+
+.answerField {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  background: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-control);
+  color: var(--rep-color-text-primary);
+  font: inherit;
+  /* Two lines to start with; the browser's own handle grows it from there. */
+  resize: vertical;
+}
+
+.answerField:focus {
+  outline: none;
+  border-color: var(--rep-color-focus);
+  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
+}
+
 /* ---- full-sized page ----
    The touch tiers have already collapsed onto the app-wide control by here, so
    what is left is to stop the page behaving like a phone screen: give the text

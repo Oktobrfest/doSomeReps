@@ -9,9 +9,10 @@ import {
   type ReactNode,
   type PointerEvent,
 } from 'react';
-import { Check, X, Minus, Volume2, VolumeX } from 'lucide-react';
+import { Check, X, Minus } from 'lucide-react';
 import { AuthorButton, type QuestionAuthor } from './AuthorButton';
-import { CatPicker } from '../components/CatPicker';
+import { ToggleButton } from './AudioControls';
+import { CategoriesSection } from './CategoriesSection';
 import { FlagButton, type QuestionFlag } from '../components/FlagButton';
 import sharedStyles from '../styles/shared.module.css';
 import styles from './SlideOutButtons.module.css';
@@ -56,33 +57,6 @@ function SlideOutActionButton({
     >
       <Icon className={sharedStyles.buttonIcon} />
       <span>{children}</span>
-    </button>
-  );
-}
-
-/** An on/off switch in the panel. Green reads as on, amber as off. */
-function ToggleButton({
-  on,
-  label,
-  disabled,
-  onClick,
-}: {
-  on: boolean;
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  const Icon = on ? Volume2 : VolumeX;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={panelBtn(on ? sharedStyles.btnGreen : sharedStyles.btnAmber)}
-    >
-      <Icon className={sharedStyles.buttonIcon} />
-      <span>{`${label}: ${on ? 'ON' : 'OFF'}`}</span>
     </button>
   );
 }
@@ -148,54 +122,6 @@ export interface Metrics {
   collapsed: number;
   trio: number;
   full: number;
-}
-
-function normaliseCategories(initial?: string[], all?: string[]) {
-  if (!initial) return [];
-
-  const known = new Set(all ?? []);
-
-  return initial.map((raw) => {
-    if (known.has(raw)) return raw;
-
-    const decoded = raw.replace(/_/g, ' ');
-    if (known.has(decoded)) return decoded;
-
-    return decoded;
-  });
-}
-
-function CategoriesSection({
-  categoryList,
-  initialSelectedCategories,
-  onApply,
-  disabled = false,
-}: {
-  categoryList?: string[];
-  initialSelectedCategories?: string[];
-  onApply?: (categories: string[]) => void;
-  disabled?: boolean;
-}) {
-  const [selected, setSelected] = useState<string[]>(() =>
-    normaliseCategories(initialSelectedCategories, categoryList),
-  );
-
-  return (
-    <div className={styles.categoriesSection}>
-      <CatPicker selectedCategories={selected} onChange={setSelected} />
-
-      <div className={`${sharedStyles.actionCluster} ${styles.applyRow}`}>
-        <button
-          type="button"
-          className={panelBtn(sharedStyles.btnBlue)}
-          disabled={disabled}
-          onClick={() => onApply?.(selected)}
-        >
-          Apply Categories
-        </button>
-      </div>
-    </div>
-  );
 }
 
 export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtonsProps>(function SlideOutButtons(

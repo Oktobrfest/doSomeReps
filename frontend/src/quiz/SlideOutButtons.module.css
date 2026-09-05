@@ -67,6 +67,14 @@
   background: var(--rep-color-panel-grip-hover);
 }
 
+/* On a full-sized page the panel is left holding the verdict alone: with
+   nothing under the buttons to drag into view, the grip goes with it. */
+@media (min-width: 900px) {
+  .grip {
+    display: none;
+  }
+}
+
 /* ---- body ----
    Everything under the grip. The grip stays pinned to the top of the panel, so
    capping the panel is enough to keep it reachable; the overflow the cap
@@ -102,38 +110,6 @@
    override never has to out-specify `.actionCluster > *`. */
 .correct {
   --rep-btn-cluster-basis: 100%;
-}
-
-/* ---- categories ---- */
-
-.categoriesSection {
-  flex-shrink: 0;
-  width: 100%;
-  padding-top: var(--rep-panel-padding);
-  border-top: 1px solid var(--rep-color-border);
-}
-
-.categoriesSection :global(.card) {
-  margin-bottom: 0;
-  background: transparent;
-  border: none;
-  color: inherit;
-}
-
-.categoriesSection :global(.card-header) {
-  padding-right: 0;
-  padding-left: 0;
-  background: transparent;
-  color: inherit;
-}
-
-.categoriesSection :global(.card-body) {
-  padding-right: 0;
-  padding-left: 0;
-}
-
-.applyRow {
-  margin-top: var(--rep-panel-gap);
 }
 
 /* ---- docked width ----

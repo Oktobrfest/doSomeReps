@@ -3,17 +3,27 @@ import { AudioCommandSystemComponent } from './AudioCommandSystem';
 import type { AudioCommandSystemHandle } from './AudioCommandSystem';
 import { ImageCarousel } from './ImageCarousel';
 import { ImageModal } from './ImageModal';
-import { Volume2, BookOpen, Ban, Edit, Lightbulb, PenLine, Star } from 'lucide-react';
+import { BookOpen, Ban, Edit, Lightbulb, PenLine, Star } from 'lucide-react';
 import type { QuizPageProps } from './types';
 import styles from './QuizPage.module.css';
 import sharedStyles from '../styles/shared.module.css';
-import { SlideOutButtons, type CompactAction, type ExtraAction, type Metrics } from './SlideOutButtons';
+import {
+  SlideOutButtons,
+  type CompactAction,
+  type ExtraAction,
+  type Metrics,
+  type SlideOutButtonsProps,
+} from './SlideOutButtons';
 import type { SlideOutButtonsHandle } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { FlagButton } from '../components/FlagButton';
-import { useQuizController } from './useQuizController';
-import { useQuizMode } from './useQuizMode';
-import { LargeActionButton, LargePlayableControl } from './AudioControls';
+import { useQuizController, type QuizController } from './useQuizController';
+import { useQuizMode, type QuizMode } from './useQuizMode';
+import { useFullSizedPage } from './useFullSizedPage';
+import { AnswerPlayer, GetAnswerButton, ReadQuestionControl } from './AudioControls';
+import { AudioPlane } from './AudioPlane';
+import { CategoriesSection } from './CategoriesSection';
+import { QuestionToolbar } from './QuestionToolbar';
 import { AnswerDraftModal } from './modals/AnswerDraftModal';
 import { CategoriesModal } from './modals/CategoriesModal';
 import { HintModal } from './modals/HintModal';
@@ -93,6 +103,7 @@ export function QuizPage(props: QuizPageProps) {
   } = props;
 
   const mode = useQuizMode();
+  const fullSized = useFullSizedPage();
   const quiz = useQuizController({
     csrfToken,
     audioEnabled: mode.audioEnabled,
@@ -141,10 +152,12 @@ export function QuizPage(props: QuizPageProps) {
         el.setAttribute('tabindex', '-1');
         window.setTimeout(() => el.focus({ preventScroll: true }), 50);
       }
-      slideOutRef.current?.collapse();
+      // A full-sized panel is a single row of verdicts with no grip to reopen
+      // it by, so there it stays where it is.
+      if (!fullSized) slideOutRef.current?.collapse();
     }
     prevAskAiActiveRef.current = askAi.isActive;
-  }, [askAi.isActive]);
+  }, [askAi.isActive, fullSized]);
 
   // Sync playback state and register Bluetooth play/pause media handlers
   useEffect(() => {
@@ -198,61 +211,85 @@ export function QuizPage(props: QuizPageProps) {
     quiz.currentQuestion,
   ]);
 
-  return (
-    <div className={styles.quizContainer}>
-      {/*
-        Mounted ONCE per audio session. The mic + KWS worker live here and must
-        never be torn down by a question change, an empty queue, or a submit.
-        Quiz commands are delivered via props (commandsRef), so this component
-        always sees the latest handlers without re-subscribing.
+  /*
+    Mounted ONCE per audio session. The mic + KWS worker live here and must
+    never be torn down by a question change, an empty queue, or a submit.
+    Quiz commands are delivered via props (commandsRef), so this component
+    always sees the latest handlers without re-subscribing.
 
-        With audio off it is not mounted at all, so the reader is never asked
-        for the microphone.
-      */}
-      {mode.audioEnabled && (
-        <div className={styles.audioCommandRoot}>
-          <AudioCommandSystemComponent
-            commands={commandHandlers}
-            commandsDisabled={quiz.isSubmitting}
-            ref={commandSystemRef}
-          />
+    With audio off it is not mounted at all, so the reader is never asked
+    for the microphone.
+  */
+  const commandSystem = mode.audioEnabled ? (
+    <AudioCommandSystemComponent
+      commands={commandHandlers}
+      commandsDisabled={quiz.isSubmitting}
+      ref={commandSystemRef}
+    />
+  ) : null;
+
+  const body = quiz.currentQuestion ? (
+    <QuizBody
+      quiz={quiz}
+      mode={mode}
+      fullSized={fullSized}
+      currentUsername={currentUsername}
+      editQuestionUrl={editQuestionUrl}
+      categoryList={categoryList}
+      selectedCategories={selectedCategories}
+      slideOutRef={slideOutRef}
+      csrfToken={csrfToken}
+    />
+  ) : quiz.queueExhausted ? (
+    <QuizEmpty
+      message={quiz.queueExhaustedMessage}
+      categoryList={categoryList}
+      selectedCategories={selectedCategories}
+      onApplyCategories={quiz.actions.applyCategories}
+    />
+  ) : (
+    <div className={styles.centerContainer}>
+      {quiz.error ? (
+        <p className={styles.errorText} role="alert">{quiz.error}</p>
+      ) : (
+        <div className={sharedStyles.spinner} role="status">
+          <span className={sharedStyles.srOnly}>Loading…</span>
         </div>
       )}
+    </div>
+  );
 
+  return (
+    <div className={styles.quizContainer}>
       {/*
         CSRF lives in the shell so getCsrfToken() in the command system still
         resolves it even while the body is showing the loading spinner.
       */}
       {csrfToken && <input type="hidden" name="csrf_token" value={csrfToken} />}
 
-      {quiz.currentQuestion ? (
-        <QuizBody
-          quiz={quiz}
-          mode={mode}
-          currentUsername={currentUsername}
-          editQuestionUrl={editQuestionUrl}
-          categoryList={categoryList}
-          selectedCategories={selectedCategories}
-          slideOutRef={slideOutRef}
-          csrfToken={csrfToken}
-        />
-      ) : quiz.queueExhausted ? (
-        <QuizEmpty
-          message={quiz.queueExhaustedMessage}
-          categoryList={categoryList}
-          selectedCategories={selectedCategories}
-          onApplyCategories={quiz.actions.applyCategories}
-        />
-      ) : (
-        <div className={styles.centerContainer}>
-          {quiz.error ? (
-            <p className={styles.errorText} role="alert">{quiz.error}</p>
-          ) : (
-            <div className={sharedStyles.spinner} role="status">
-              <span className={sharedStyles.srOnly}>Loading…</span>
-            </div>
-          )}
+      {fullSized ? (
+        <div className={styles.pageLayout}>
+          <div className={styles.readingColumn}>
+            <details className={styles.categoriesDisclosure}>
+              <summary className={styles.categoriesSummary}>Categories</summary>
+              <CategoriesSection
+                categoryList={categoryList}
+                initialSelectedCategories={selectedCategories}
+                onApply={quiz.actions.applyCategories}
+                disabled={quiz.isSubmitting}
+              />
+            </details>
+
+            {body}
+          </div>
+
+          <AudioPlane quiz={quiz} mode={mode}>{commandSystem}</AudioPlane>
         </div>
+      ) : (
+        <>
+          {commandSystem && <div className={styles.audioCommandRoot}>{commandSystem}</div>}
+          {body}
+        </>
       )}
 
       {/* Ask AI conversation UI rendered at the bottom of the quiz page. */}
@@ -264,8 +301,10 @@ export function QuizPage(props: QuizPageProps) {
 }
 
 interface QuizBodyProps {
-  quiz: ReturnType<typeof useQuizController>;
-  mode: ReturnType<typeof useQuizMode>;
+  quiz: QuizController;
+  mode: QuizMode;
+  /** Whether the page has room to lay the quiz out beside its controls. */
+  fullSized: boolean;
   currentUsername: string;
   editQuestionUrl: string;
   categoryList?: string[];
@@ -280,6 +319,7 @@ type OpenDialog = 'hint' | 'answerDraft' | 'rate' | null;
 function QuizBody({
   quiz,
   mode,
+  fullSized,
   currentUsername,
   editQuestionUrl,
   categoryList,
@@ -319,6 +359,7 @@ function QuizBody({
 
   const hintImages = validImages(currentQuestion.pics.hint_image);
   const isOwnQuestion = currentQuestion.created_by_username === currentUsername;
+  const hasHint = Boolean(currentQuestion.hint) || hintImages.length > 0;
 
   const compactActions = useMemo((): CompactAction[] => {
     const actions: CompactAction[] = [
@@ -336,7 +377,7 @@ function QuizBody({
       },
     ];
 
-    if (currentQuestion.hint || hintImages.length > 0) {
+    if (hasHint) {
       actions.unshift({
         key: 'hint',
         label: 'Hint',
@@ -346,7 +387,7 @@ function QuizBody({
     }
 
     return actions;
-  }, [currentQuestion.hint, hintImages.length]);
+  }, [hasHint]);
 
   const extraActions = useMemo((): ExtraAction[] => {
     const actions: ExtraAction[] = [
@@ -371,6 +412,35 @@ function QuizBody({
 
     return actions;
   }, [currentQuestion, isOwnQuestion, editQuestionUrl, quiz.actions.exclude]);
+
+  /*
+   * A full-sized page gives every secondary control a home of its own — the
+   * toolbar beside the level, the answer field, the audio plane, the category
+   * disclosure — so the panel is left holding the one thing it is for.
+   */
+  const panelExtras: SlideOutButtonsProps = fullSized
+    ? {}
+    : {
+        extraActions,
+        compactActions,
+        showCategories: true,
+        categoryList,
+        initialSelectedCategories: selectedCategories,
+        onApplyCategories: quiz.actions.applyCategories,
+        questionId: currentQuestion.question_id,
+        author: {
+          id: currentQuestion.created_by_id,
+          username: currentQuestion.created_by_username,
+          isSelf: isOwnQuestion,
+        },
+        initialFlag: currentQuestion.flag,
+        csrfToken,
+        onFlagChange: quiz.actions.setFlag,
+        audioEnabled: mode.audioEnabled,
+        onToggleAudioEnabled: mode.toggleAudioEnabled,
+        autoPlay: mode.autoPlay,
+        onToggleAutoPlay: mode.toggleAutoPlay,
+      };
 
   const questionImages = validImages(currentQuestion.pics.question_image);
   const answerImages = validImages(currentQuestion.pics.answer_pics);
@@ -429,26 +499,8 @@ function QuizBody({
             />
           )}
 
-          {mode.audioEnabled && (
-            quiz.questionActive ? (
-              <LargePlayableControl
-                onClick={quiz.actions.readQuestion}
-                isPlaying={quiz.questionPlaying}
-                intentClass={sharedStyles.btnAmber}
-                assets={quiz.questionAssets}
-                onSequenceEnd={quiz.actions.questionEnded}
-              />
-            ) : (
-              <LargeActionButton
-                onClick={quiz.actions.readQuestion}
-                disabled={quiz.questionAssets.length === 0 || quiz.isSubmitting}
-                className={sharedStyles.btnAmber}
-              >
-                <Volume2 className={sharedStyles.buttonIcon} />
-                <span>Read Question</span>
-              </LargeActionButton>
-            )
-          )}
+          {/* On a full-sized page the audio plane holds these instead. */}
+          {!fullSized && mode.audioEnabled && <ReadQuestionControl quiz={quiz} />}
 
           <div className={styles.middleSection}>
             {quiz.answerRevealed && answerImages.length > 0 && (
@@ -458,26 +510,10 @@ function QuizBody({
               />
             )}
 
-            {!quiz.answerRevealed && (
-              <LargeActionButton
-                id="audio-get-answer-btn"
-                onClick={quiz.actions.getAnswer}
-                disabled={quiz.isSubmitting}
-                className={sharedStyles.btnBlue}
-              >
-                <BookOpen className={sharedStyles.buttonIcon} />
-                <span>Get Answer</span>
-              </LargeActionButton>
-            )}
+            {!fullSized && !quiz.answerRevealed && <GetAnswerButton quiz={quiz} />}
 
-            {mode.audioEnabled && quiz.answerActive && (
-              <LargePlayableControl
-                onClick={quiz.actions.toggleAnswerAudio}
-                isPlaying={quiz.answerPlaying}
-                intentClass={sharedStyles.btnBlue}
-                assets={quiz.answerAssets}
-                onSequenceEnd={quiz.actions.answerEnded}
-              />
+            {!fullSized && mode.audioEnabled && quiz.answerActive && (
+              <AnswerPlayer quiz={quiz} />
             )}
           </div>
         </div>
@@ -491,20 +527,53 @@ function QuizBody({
             {currentQuestion.categories.map((cat) => (
               <span key={cat} className={styles.badge}>{cat}</span>
             ))}
-            {currentQuestion.flag && (
-              <FlagButton
-                questionId={currentQuestion.question_id}
-                initialFlag={currentQuestion.flag}
+
+            {fullSized ? (
+              <QuestionToolbar
+                question={currentQuestion}
+                isOwnQuestion={isOwnQuestion}
+                editQuestionUrl={editQuestionUrl}
                 csrfToken={csrfToken}
+                disabled={quiz.isSubmitting}
+                onHint={hasHint ? () => setDialog('hint') : undefined}
+                onRate={() => setDialog('rate')}
+                onExclude={quiz.actions.exclude}
                 onFlagChange={quiz.actions.setFlag}
-                compact={true}
               />
+            ) : (
+              currentQuestion.flag && (
+                <FlagButton
+                  questionId={currentQuestion.question_id}
+                  initialFlag={currentQuestion.flag}
+                  csrfToken={csrfToken}
+                  onFlagChange={quiz.actions.setFlag}
+                  compact={true}
+                />
+              )
             )}
           </div>
 
           <div className={styles.textBlock}>
             <MarkdownContent content={currentQuestion.question_text} />
           </div>
+
+          {/* A phone writes its answer in a dialog, for want of the room. */}
+          {fullSized && (
+            <div className={styles.answerDraft}>
+              <label className={styles.answerLabel} htmlFor="quiz-answer-draft">
+                Your Answer
+              </label>
+              <textarea
+                id="quiz-answer-draft"
+                className={styles.answerField}
+                rows={2}
+                value={quiz.providedAnswer}
+                onChange={(event) => quiz.actions.setProvidedAnswer(event.target.value)}
+                placeholder="Write your answer before revealing the real one."
+              />
+              {!quiz.answerRevealed && <GetAnswerButton quiz={quiz} />}
+            </div>
+          )}
 
           {quiz.answerRevealed && (
             <div ref={answerRef} tabIndex={-1} className={styles.card}>
@@ -526,28 +595,10 @@ function QuizBody({
             onCorrect={quiz.actions.correct}
             onWrong={quiz.actions.wrong}
             onSlightlyWrong={quiz.actions.slightlyWrong}
-            extraActions={extraActions}
-            compactActions={compactActions}
             onSnapChange={quiz.actions.setPanelSnap}
             onMetricsChange={onMetricsChange}
             expandToTrio
-            showCategories
-            categoryList={categoryList}
-            initialSelectedCategories={selectedCategories}
-            onApplyCategories={quiz.actions.applyCategories}
-            questionId={currentQuestion.question_id}
-            author={{
-              id: currentQuestion.created_by_id,
-              username: currentQuestion.created_by_username,
-              isSelf: isOwnQuestion,
-            }}
-            initialFlag={currentQuestion.flag}
-            csrfToken={csrfToken}
-            onFlagChange={quiz.actions.setFlag}
-            audioEnabled={mode.audioEnabled}
-            onToggleAudioEnabled={mode.toggleAudioEnabled}
-            autoPlay={mode.autoPlay}
-            onToggleAutoPlay={mode.toggleAutoPlay}
+            {...panelExtras}
           />
         )}
       </div>

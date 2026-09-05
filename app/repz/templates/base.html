@@ -49,7 +49,8 @@
   {% endwith %}
 </div>
 
-  <div class="container">
+  {# The quiz overrides this: it lays itself out across the whole page. #}
+  <div class="{% block container_class %}container{% endblock %}">
     {% block content %}{% endblock %}
   </div>
 

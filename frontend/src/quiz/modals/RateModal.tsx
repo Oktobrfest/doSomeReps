@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { Star } from 'lucide-react';
+import { RatingStars } from '../RatingStars';
 import { QuizModal } from './QuizModal';
 import styles from './modalContent.module.css';
-
-const STARS = [1, 2, 3, 4, 5];
 
 interface RateModalProps {
   quizqId: string | number;
@@ -58,25 +56,12 @@ export function RateModal({
           : 'Nobody has rated this question yet.'}
       </p>
 
-      <div className={styles.stars} role="radiogroup" aria-label="Your rating">
-        {STARS.map((value) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={rating === value}
-            aria-label={`${value} star${value === 1 ? '' : 's'}`}
-            className={styles.starBtn}
-            onClick={() => rate(value)}
-          >
-            <Star
-              className={
-                rating !== null && value <= rating ? styles.starOn : styles.starOff
-              }
-            />
-          </button>
-        ))}
-      </div>
+      <RatingStars
+        value={rating ?? 0}
+        label="Your rating"
+        onRate={rate}
+        className={styles.ratingStars}
+      />
 
       {error && <p className={styles.error} role="alert">{error}</p>}
     </QuizModal>

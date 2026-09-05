@@ -290,6 +290,9 @@ function verdictToServerValue(verdict: VerdictKind): string {
   }
 }
 
+/** The quiz state and every action the page drives it with. */
+export type QuizController = ReturnType<typeof useQuizController>;
+
 interface UseQuizControllerOptions {
   csrfToken?: string;
   /** When false the queue is fetched without audio and nothing ever plays. */

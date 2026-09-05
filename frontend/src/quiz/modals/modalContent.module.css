@@ -100,33 +100,9 @@
   flex-shrink: 0;
 }
 
-.stars {
-  display: flex;
-  gap: 8px;
-}
-
-.starBtn {
-  padding: 4px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  line-height: 0;
-}
-
-.starOn,
-.starOff {
-  width: 2.5rem;
-  height: 2.5rem;
-}
-
-.starOn {
-  fill: var(--rep-color-rating-star);
-  stroke: var(--rep-color-rating-star);
-}
-
-.starOff {
-  fill: none;
-  stroke: var(--rep-color-rating-star-empty);
+/* Rating is what this dialog is for, so its stars take the larger tier. */
+.ratingStars {
+  --rep-rating-star-size: var(--rep-rating-star-size-lg);
 }
 
 .error {
