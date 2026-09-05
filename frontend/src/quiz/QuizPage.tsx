@@ -360,6 +360,8 @@ function QuizBody({
   const hintImages = validImages(currentQuestion.pics.hint_image);
   const isOwnQuestion = currentQuestion.created_by_username === currentUsername;
   const hasHint = Boolean(currentQuestion.hint) || hintImages.length > 0;
+  /** A reader rates a question once, so the offer to rate outlives its use. */
+  const hasRated = userRating !== null;
 
   const compactActions = useMemo((): CompactAction[] => {
     const actions: CompactAction[] = [
@@ -369,13 +371,16 @@ function QuizBody({
         icon: <PenLine className={sharedStyles.buttonIcon} />,
         onClick: () => setDialog('answerDraft'),
       },
-      {
+    ];
+
+    if (!hasRated) {
+      actions.push({
         key: 'rate',
         label: 'Rate',
         icon: <Star className={sharedStyles.buttonIcon} />,
         onClick: () => setDialog('rate'),
-      },
-    ];
+      });
+    }
 
     if (hasHint) {
       actions.unshift({
@@ -387,7 +392,7 @@ function QuizBody({
     }
 
     return actions;
-  }, [hasHint]);
+  }, [hasHint, hasRated]);
 
   const extraActions = useMemo((): ExtraAction[] => {
     const actions: ExtraAction[] = [
@@ -536,7 +541,7 @@ function QuizBody({
                 csrfToken={csrfToken}
                 disabled={quiz.isSubmitting}
                 onHint={hasHint ? () => setDialog('hint') : undefined}
-                onRate={() => setDialog('rate')}
+                onRate={hasRated ? undefined : () => setDialog('rate')}
                 onExclude={quiz.actions.exclude}
                 onFlagChange={quiz.actions.setFlag}
               />

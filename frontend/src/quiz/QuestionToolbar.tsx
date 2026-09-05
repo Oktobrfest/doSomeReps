@@ -19,7 +19,8 @@ interface QuestionToolbarProps {
   disabled: boolean;
   /** Absent when the question has nothing to hint at. */
   onHint?: () => void;
-  onRate: () => void;
+  /** Absent once the reader has rated the question. */
+  onRate?: () => void;
   onExclude: () => void;
   onFlagChange: (flag: QuestionFlag | null) => void;
 }
@@ -109,15 +110,17 @@ export function QuestionToolbar({
         }
       />
 
-      <button
-        type="button"
-        className={toolbarBtn(sharedStyles.btnCyan)}
-        onClick={onRate}
-        disabled={disabled}
-      >
-        <Star className={sharedStyles.buttonIcon} />
-        <span>Rate</span>
-      </button>
+      {onRate && (
+        <button
+          type="button"
+          className={toolbarBtn(sharedStyles.btnCyan)}
+          onClick={onRate}
+          disabled={disabled}
+        >
+          <Star className={sharedStyles.buttonIcon} />
+          <span>Rate</span>
+        </button>
+      )}
     </div>
   );
 }
