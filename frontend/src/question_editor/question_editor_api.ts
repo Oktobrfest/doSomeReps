@@ -74,18 +74,22 @@ export async function deleteQuestion(questionId: number): Promise<void> {
   }
 }
 
-export async function extendQuestion({
-  questionId,
-  questionText,
-  hintText,
-  answerText,
-  categories,
-  customInstructions,
-  selectedOptions,
-}: ExtendQuestionInput): Promise<ExtendQuestionResponse> {
+export async function extendQuestion(
+  {
+    questionId,
+    questionText,
+    hintText,
+    answerText,
+    categories,
+    customInstructions,
+    selectedOptions,
+  }: ExtendQuestionInput,
+  signal?: AbortSignal
+): Promise<ExtendQuestionResponse> {
   const response = await fetch("/ai_question_generator/api/extend", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal,
     body: JSON.stringify({
       question_id: questionId,
       question: {

@@ -41,11 +41,13 @@ async function requestJson<T>(
 
 function postJson<TResponse>(
   path: string,
-  body?: unknown
+  body?: unknown,
+  signal?: AbortSignal
 ): Promise<TResponse> {
   return requestJson<TResponse>(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
@@ -102,14 +104,19 @@ export function extendQuestion(
   index: number,
   question: GeneratedQuestion,
   customInstructions: string,
-  options: unknown
+  options: unknown,
+  signal?: AbortSignal
 ): Promise<GeneratorMutationResponse> {
-  return postJson<GeneratorMutationResponse>("/extend", {
-    index,
-    question,
-    custom_instructions: customInstructions,
-    options,
-  });
+  return postJson<GeneratorMutationResponse>(
+    "/extend",
+    {
+      index,
+      question,
+      custom_instructions: customInstructions,
+      options,
+    },
+    signal
+  );
 }
 
 export function saveAllQuestions(

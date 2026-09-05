@@ -169,7 +169,8 @@ export function AiQuestionGenerator() {
 
   const handleExtendOne = async (
     index: number,
-    payload: ExtendPayload
+    payload: ExtendPayload,
+    signal: AbortSignal
   ): Promise<void> => {
     setError(null);
     setSuccess(null);
@@ -180,8 +181,10 @@ export function AiQuestionGenerator() {
         index,
         item,
         payload.customInstructions,
-        payload.selectedOptions
+        payload.selectedOptions,
+        signal
       );
+      signal.throwIfAborted();
 
       if (!data.success) {
         throw new Error(data.error || "Extend failed");
@@ -199,6 +202,9 @@ export function AiQuestionGenerator() {
       );
       setSuccess("Answer extended.");
     } catch (err) {
+      // The user cancelled: drop whatever came back instead of applying it.
+      if (signal.aborted) return;
+
       const msg = err instanceof Error ? err.message : "Extend failed";
       setError(msg);
       throw err;
@@ -621,7 +627,9 @@ export function AiQuestionGenerator() {
                   </button>
 
                   <ExtendButton
-                    onExtend={(payload) => handleExtendOne(i, payload)}
+                    onExtend={(payload, signal) =>
+                      handleExtendOne(i, payload, signal)
+                    }
                   />
                 </div>
               </div>

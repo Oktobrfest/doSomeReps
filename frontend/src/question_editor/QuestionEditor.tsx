@@ -102,9 +102,12 @@ export function QuestionEditor({
               Ask AI Tutor
             </button>
 
+            {/* An extend belongs to the question it was started from: moving
+                to another question drops the request rather than applying it. */}
             <ExtendButton
+              key={questionId}
               onExtend={editor.handleExtend}
-              disabled={!questionId || editor.extending}
+              disabled={!questionId}
             />
 
             {!previewOpen && (

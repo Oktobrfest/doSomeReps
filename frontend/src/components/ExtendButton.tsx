@@ -1,6 +1,6 @@
 // doSomeReps/frontend/src/components/ExtendButton.tsx
 import { useEffect, useId, useRef, useState } from "react";
-import { Settings } from "lucide-react";
+import { Loader2, Settings } from "lucide-react";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./ExtendButton.module.css";
 
@@ -17,7 +17,7 @@ export interface ExtendPayload {
 }
 
 interface ExtendButtonProps {
-  onExtend: (payload: ExtendPayload) => Promise<void>;
+  onExtend: (payload: ExtendPayload, signal: AbortSignal) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -28,8 +28,8 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
   const [options, setOptions] = useState<ExtendOption[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [isExtending, setIsExtending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const extendAbortRef = useRef<AbortController | null>(null);
   const instructionsId = useId();
 
   // Load available options when the settings modal is first opened.
@@ -76,6 +76,9 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
     }
   }, [isOpen]);
 
+  // Drop an in-flight extend whose button is going away.
+  useEffect(() => () => extendAbortRef.current?.abort(), []);
+
   const toggleOption = (key: string) => {
     setSelectedOptions((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
@@ -83,32 +86,51 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
   };
 
   const handleExtend = async () => {
-    setError(null);
+    const controller = new AbortController();
+    extendAbortRef.current = controller;
     setIsExtending(true);
+    // The request runs in the background: the modal must not hold the page.
+    setIsOpen(false);
+
     try {
-      await onExtend({
-        customInstructions: customInstructions.trim(),
-        selectedOptions,
-      });
-      setIsOpen(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Extend failed");
+      await onExtend(
+        {
+          customInstructions: customInstructions.trim(),
+          selectedOptions,
+        },
+        controller.signal
+      );
+    } catch {
+      // The page that owns the request reports the failure.
     } finally {
+      extendAbortRef.current = null;
       setIsExtending(false);
     }
   };
 
+  const handleCancel = () => extendAbortRef.current?.abort();
+
   return (
     <>
-      <div className={`${styles.widget} ${disabled || isExtending ? styles.disabled : ''}`} role="group" aria-label="AI extend">
+      <div className={`${styles.widget} ${disabled ? styles.disabled : ""}`} role="group" aria-label="AI extend">
         <button
           type="button"
           className={styles.extendBtn}
-          onClick={handleExtend}
-          disabled={disabled || isExtending}
-          aria-label={isExtending ? "Extending" : "Extend"}
+          onClick={isExtending ? handleCancel : handleExtend}
+          disabled={disabled}
+          aria-label={isExtending ? "Cancel extend" : "Extend"}
         >
-          {isExtending ? "Extending..." : "Extend"}
+          {isExtending ? (
+            <>
+              <Loader2
+                className={`${sharedStyles.buttonIcon} ${sharedStyles.spinIcon}`}
+                aria-hidden="true"
+              />
+              Cancel
+            </>
+          ) : (
+            "Extend"
+          )}
         </button>
         <button
           type="button"
@@ -139,7 +161,6 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
               type="button"
               className={styles.closeBtn}
               onClick={() => setIsOpen(false)}
-              disabled={isExtending}
               aria-label="Close"
             >
               &times;
@@ -147,8 +168,6 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
           </div>
 
           <div className={styles.modalBody}>
-            {error && <div className={styles.error}>{error}</div>}
-
             <div className={styles.field}>
               <label htmlFor={instructionsId} className={styles.fieldLabel}>
                 Extra instructions (optional)
@@ -197,7 +216,6 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
               type="button"
               className={`${sharedStyles.button} ${sharedStyles.buttonSecondary}`}
               onClick={() => setIsOpen(false)}
-              disabled={isExtending}
             >
               Cancel
             </button>

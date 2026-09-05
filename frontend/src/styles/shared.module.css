@@ -320,6 +320,11 @@
   flex-shrink: 0;
 }
 
+/* An icon that turns while the control's work is in flight. */
+.spinIcon {
+  animation: sharedSpin 0.75s linear infinite;
+}
+
 /* Layout: one row of equal controls. */
 .actionRow {
   display: flex;
