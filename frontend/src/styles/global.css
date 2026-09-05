@@ -111,11 +111,15 @@
   --rep-color-panel-surface: rgba(255, 255, 255, 0.98);
   --rep-color-panel-grip: #9ca3af;
   --rep-color-panel-grip-hover: #6b7280;
+  --rep-color-panel-scroll-thumb: var(--rep-color-panel-grip-hover);
   --rep-shadow-panel: 0 -4px 24px rgba(0, 0, 0, 0.12);
   --rep-shadow-listening: 0 0 24px rgba(239, 68, 68, 0.35);
   --rep-panel-gap: 10px;
   --rep-panel-padding: 12px;
   --rep-panel-radius: 16px;
+  /* Strip of page a fully open panel always leaves uncovered, which is what
+     keeps its grip on screen and grabbable. */
+  --rep-panel-peek: 56px;
 
   --rep-radius-small: 0.25rem;
   --rep-radius-control: 6px;

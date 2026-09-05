@@ -20,6 +20,7 @@
   box-sizing: border-box;
   padding: var(--rep-panel-padding);
   padding-bottom: max(var(--rep-panel-gap), env(safe-area-inset-bottom));
+  max-height: calc(100dvh - max(var(--rep-panel-peek), env(safe-area-inset-top)));
   overflow: hidden;
   background: var(--rep-color-panel-surface);
   border-top: 1px solid var(--rep-color-border);
@@ -66,21 +67,41 @@
   background: var(--rep-color-panel-grip-hover);
 }
 
-/* ---- rows ----
-   Flow only. The buttons themselves carry their own size and colour. */
+/* ---- body ----
+   Everything under the grip. The grip stays pinned to the top of the panel, so
+   capping the panel is enough to keep it reachable; the overflow the cap
+   creates lives in here. */
 
-.buttonsRow {
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--rep-panel-gap);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.body > * {
   flex-shrink: 0;
 }
+
+/* Once the panel is open as far as it goes, dragging can reveal nothing more,
+   so the panel takes the vertical scroll off the page behind it. Its own thin
+   scrollbar is the tell that the gesture has changed hands. */
+.body.scrollable {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rep-color-panel-scroll-thumb) transparent;
+}
+
+/* ---- rows ----
+   Flow only. The buttons themselves carry their own size and colour. */
 
 /* Cluster children set their width by rebinding the basis token, so an
    override never has to out-specify `.actionCluster > *`. */
 .correct {
   --rep-btn-cluster-basis: 100%;
-}
-
-.drawer {
-  flex-shrink: 0;
 }
 
 /* ---- categories ---- */

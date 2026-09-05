@@ -232,6 +232,7 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gripRef = useRef<HTMLDivElement | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
   const buttonsRowRef = useRef<HTMLDivElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const categoriesRef = useRef<HTMLDivElement | null>(null);
@@ -259,9 +260,10 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
   const measure = useCallback(() => {
     const panel = containerRef.current;
     const grip = gripRef.current;
+    const body = bodyRef.current;
     const buttons = buttonsRowRef.current;
 
-    if (!panel || !grip || !buttons) return;
+    if (!panel || !grip || !body || !buttons) return;
 
     const panelStyle = getComputedStyle(panel);
     const padTop = parseFloat(panelStyle.paddingTop) || 0;
@@ -269,16 +271,14 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
     const gap = parseFloat(panelStyle.gap) || 0;
 
     const collapsed = padTop + grip.offsetHeight + padBottom;
-    let trio = collapsed + gap + buttons.offsetHeight;
-    let full = trio;
+    const trio = collapsed + gap + buttons.offsetHeight;
+    const natural = collapsed + gap + body.scrollHeight;
 
-    if (drawerRef.current) {
-      full += gap + drawerRef.current.offsetHeight;
-    }
-
-    if (categoriesRef.current) {
-      full += gap + categoriesRef.current.offsetHeight;
-    }
+    // The cap is the panel's CSS max-height, so the number is written down once
+    // and the tier can never ask for a height the panel is not allowed to take.
+    // Whatever the cap cuts off is reached by scrolling the body instead.
+    const cap = parseFloat(panelStyle.maxHeight);
+    const full = Number.isNaN(cap) ? natural : Math.max(trio, Math.min(natural, cap));
 
     setMetrics({ collapsed, trio, full });
   }, []);
@@ -404,6 +404,19 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
     }
   }, [metrics]);
 
+  // At the top tier the drag has nothing left to give, which is the point the
+  // body takes the vertical scroll over from the page behind the panel.
+  const atFull = metrics != null && currentHeight != null && currentHeight >= metrics.full;
+
+  // Below it the body is clipped again, and a scroll offset left behind would
+  // park the verdict row off the top of the panel.
+  useEffect(() => {
+    if (atFull) return;
+
+    const body = bodyRef.current;
+    if (body) body.scrollTop = 0;
+  }, [atFull]);
+
   // The image modal shows the same verdicts over a photo, where the full-height
   // tier would swallow the picture, so it drops one tier.
   const verdictSize =
@@ -443,144 +456,146 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
       </div>
 
       <div
-        ref={buttonsRowRef}
-        className={`${sharedStyles.actionCluster} ${styles.buttonsRow}`}
+        ref={bodyRef}
+        className={`${styles.body} ${atFull ? styles.scrollable : ''}`}
       >
-        {onCorrect && (
-          <SlideOutActionButton
-            variant="correct"
-            sizeClass={verdictSize}
-            name="correct_submit"
-            value="Correct!"
-            onClick={onCorrect}
-            disabled={disabled}
-            className={styles.correct}
-          >
-            Correct!
-          </SlideOutActionButton>
-        )}
-
-        {onWrong && (
-          <SlideOutActionButton
-            variant="wrong"
-            sizeClass={verdictSize}
-            name="incorrect_submit"
-            value="Wrong!"
-            onClick={onWrong}
-            disabled={disabled}
-          >
-            Wrong!
-          </SlideOutActionButton>
-        )}
-
-        {onSlightlyWrong && (
-          <SlideOutActionButton
-            variant="slightlyWrong"
-            sizeClass={verdictSize}
-            name="incorrect_submit"
-            value="Slightly Wrong"
-            onClick={onSlightlyWrong}
-            disabled={disabled}
-          >
-            Slightly Wrong
-          </SlideOutActionButton>
-        )}
-      </div>
-
-      {hasExtra && (
-        <div ref={drawerRef} className={`${sharedStyles.actionCluster} ${styles.drawer}`}>
-          {(compactActions ?? []).map((action) => (
-            <button
-              key={action.key}
-              type="button"
-              onClick={action.onClick}
+        <div ref={buttonsRowRef} className={sharedStyles.actionCluster}>
+          {onCorrect && (
+            <SlideOutActionButton
+              variant="correct"
+              sizeClass={verdictSize}
+              name="correct_submit"
+              value="Correct!"
+              onClick={onCorrect}
               disabled={disabled}
-              className={panelBtn(sharedStyles.btnCyan)}
+              className={styles.correct}
             >
-              {action.icon}
-              <span>{action.label}</span>
-            </button>
-          ))}
+              Correct!
+            </SlideOutActionButton>
+          )}
 
-          {(extraActions ?? []).map((action) => {
-            const buttonClass = panelBtn(
-              action.variant === 'exclude' ? sharedStyles.btnRed : sharedStyles.btnCyan,
-            );
+          {onWrong && (
+            <SlideOutActionButton
+              variant="wrong"
+              sizeClass={verdictSize}
+              name="incorrect_submit"
+              value="Wrong!"
+              onClick={onWrong}
+              disabled={disabled}
+            >
+              Wrong!
+            </SlideOutActionButton>
+          )}
 
-            if (action.href) {
-              return (
-                <a
-                  key={action.key}
-                  href={disabled ? undefined : action.href}
-                  aria-disabled={disabled}
-                  className={buttonClass}
-                  onClick={(e) => {
-                    if (disabled) e.preventDefault();
-                  }}
-                >
-                  {action.icon}
-                  <span>{action.label}</span>
-                </a>
-              );
-            }
+          {onSlightlyWrong && (
+            <SlideOutActionButton
+              variant="slightlyWrong"
+              sizeClass={verdictSize}
+              name="incorrect_submit"
+              value="Slightly Wrong"
+              onClick={onSlightlyWrong}
+              disabled={disabled}
+            >
+              Slightly Wrong
+            </SlideOutActionButton>
+          )}
+        </div>
 
-            return (
+        {hasExtra && (
+          <div ref={drawerRef} className={sharedStyles.actionCluster}>
+            {(compactActions ?? []).map((action) => (
               <button
                 key={action.key}
-                type={action.onClick ? 'button' : 'submit'}
-                name={action.submitName}
-                value={action.submitValue}
+                type="button"
                 onClick={action.onClick}
                 disabled={disabled}
-                className={buttonClass}
+                className={panelBtn(sharedStyles.btnCyan)}
               >
                 {action.icon}
                 <span>{action.label}</span>
               </button>
-            );
-          })}
+            ))}
 
-          {onToggleAudioEnabled && (
-            <ToggleButton
-              on={Boolean(audioEnabled)}
+            {(extraActions ?? []).map((action) => {
+              const buttonClass = panelBtn(
+                action.variant === 'exclude' ? sharedStyles.btnRed : sharedStyles.btnCyan,
+              );
+
+              if (action.href) {
+                return (
+                  <a
+                    key={action.key}
+                    href={disabled ? undefined : action.href}
+                    aria-disabled={disabled}
+                    className={buttonClass}
+                    onClick={(e) => {
+                      if (disabled) e.preventDefault();
+                    }}
+                  >
+                    {action.icon}
+                    <span>{action.label}</span>
+                  </a>
+                );
+              }
+
+              return (
+                <button
+                  key={action.key}
+                  type={action.onClick ? 'button' : 'submit'}
+                  name={action.submitName}
+                  value={action.submitValue}
+                  onClick={action.onClick}
+                  disabled={disabled}
+                  className={buttonClass}
+                >
+                  {action.icon}
+                  <span>{action.label}</span>
+                </button>
+              );
+            })}
+
+            {onToggleAudioEnabled && (
+              <ToggleButton
+                on={Boolean(audioEnabled)}
+                disabled={disabled}
+                onClick={onToggleAudioEnabled}
+                label="Audio"
+              />
+            )}
+
+            {/* Auto-play only means anything while audio is on, so it nests under it. */}
+            {audioEnabled && onToggleAutoPlay && (
+              <ToggleButton
+                on={Boolean(autoPlay)}
+                disabled={disabled}
+                onClick={onToggleAutoPlay}
+                label="Auto-Play"
+              />
+            )}
+
+            {questionId && (
+              <FlagButton
+                questionId={questionId}
+                initialFlag={initialFlag}
+                csrfToken={csrfToken}
+                onFlagChange={onFlagChange}
+                disabled={disabled}
+              />
+            )}
+          </div>
+        )}
+
+        {showCategories && (
+          <div ref={categoriesRef}>
+            <CategoriesSection
+              categoryList={categoryList}
+              initialSelectedCategories={initialSelectedCategories}
+              onApply={onApplyCategories}
               disabled={disabled}
-              onClick={onToggleAudioEnabled}
-              label="Audio"
             />
-          )}
-
-          {/* Auto-play only means anything while audio is on, so it nests under it. */}
-          {audioEnabled && onToggleAutoPlay && (
-            <ToggleButton
-              on={Boolean(autoPlay)}
-              disabled={disabled}
-              onClick={onToggleAutoPlay}
-              label="Auto-Play"
-            />
-          )}
-
-          {questionId && (
-            <FlagButton
-              questionId={questionId}
-              initialFlag={initialFlag}
-              csrfToken={csrfToken}
-              onFlagChange={onFlagChange}
-              disabled={disabled}
-            />
-          )}
-        </div>
-      )}
-
-      {showCategories && (
-        <div ref={categoriesRef}>
-          <CategoriesSection
-            categoryList={categoryList}
-            initialSelectedCategories={initialSelectedCategories}
-            onApply={onApplyCategories}
-            disabled={disabled}
-          />
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 });
