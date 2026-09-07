@@ -38,24 +38,15 @@
   -webkit-user-drag: none;
 }
 
-/* Arrows */
+/* Arrows. The shared button base is the control; the carousel only places it
+   and decides when it shows. Centred on a margin rather than a transform,
+   which the base owns for its hover lift. */
 .arrow {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
+  margin-top: calc(var(--rep-btn-height) / -2);
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s ease;
 }
 
 .carouselWrapper:hover .arrow,
@@ -92,13 +83,13 @@
   border-radius: 50%;
   border: none;
   padding: 0;
-  background: #d1d5db;
+  background: var(--rep-color-border-strong);
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
 .dotActive {
-  background: #f59e0b;
+  background: var(--rep-intent-amber-bg);
 }
 
 /* Counter badge */
@@ -107,8 +98,8 @@
   bottom: 10px;
   right: 10px;
   z-index: 2;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  background: var(--rep-color-overlay);
+  color: var(--rep-color-on-overlay);
   font-size: 0.75rem;
   font-weight: 600;
   padding: 3px 8px;

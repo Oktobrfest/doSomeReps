@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.94);
+  background: var(--rep-color-overlay-strong);
   animation: fadeIn 0.15s ease;
 }
 
@@ -59,19 +59,8 @@
   top: 16px;
   right: 16px;
   z-index: 20001; /* Raise above listening banner (10000) */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  cursor: pointer;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  transition: background 0.15s ease;
 }
 
 /* Create a solid background in the upper right 1/3rd to cover the listening banner */
@@ -82,7 +71,7 @@
   right: 0;
   width: 33.33vw;
   height: 88px;
-  background: rgba(0, 0, 0, 0.94);
+  background: var(--rep-color-overlay-strong);
   z-index: -1;
   pointer-events: none;
 }
@@ -93,49 +82,22 @@
   }
 }
 
-.closeBtn:hover {
-  background: rgba(255, 255, 255, 0.35);
-}
-
-.closeBtn:active {
-  background: rgba(255, 255, 255, 0.45);
-}
-
 @media (max-width: 640px) {
   .closeBtn {
-    width: 64px;
-    height: 64px;
     top: 12px;
     right: 12px;
   }
 }
 
+/* Centred on a margin rather than a transform, which the base button owns
+   for its hover lift. */
 .modalArrow {
   position: fixed;
   top: 50%;
-  transform: translateY(-50%);
+  margin-top: calc(var(--rep-btn-height) / -2);
   z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  cursor: pointer;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  transition: background 0.15s ease;
-}
-
-.modalArrow:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.modalArrow:active {
-  background: rgba(255, 255, 255, 0.35);
 }
 
 .modalArrowLeft {
@@ -152,8 +114,8 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 10000;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--rep-color-glass);
+  color: var(--rep-color-on-overlay);
   font-size: 0.85rem;
   font-weight: 600;
   padding: 6px 14px;
@@ -190,12 +152,12 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--rep-color-on-overlay-muted);
   transition: background 0.2s ease;
 }
 
 .modalDotActive {
-  background: #fff;
+  background: var(--rep-color-on-overlay);
 }
 
 /* Doubled class so the panel's own chrome loses to this without !important. */

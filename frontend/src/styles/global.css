@@ -39,6 +39,15 @@
   --rep-color-error-border-subtle: #feb2b2;
 
   --rep-color-overlay: rgba(0, 0, 0, 0.45);
+  --rep-color-overlay-strong: rgba(0, 0, 0, 0.94);
+  --rep-color-on-overlay: #ffffff;
+  --rep-color-on-overlay-muted: rgba(255, 255, 255, 0.35);
+
+  /* Chrome floating on a scrim: a wash of its foreground that brightens as
+     the control is hovered and pressed. */
+  --rep-color-glass: rgba(255, 255, 255, 0.12);
+  --rep-color-glass-hover: rgba(255, 255, 255, 0.25);
+  --rep-color-glass-active: var(--rep-color-on-overlay-muted);
   /* Fades the answer bar into a full-bleed image behind it. */
   --rep-gradient-image-scrim: linear-gradient(
     to top,
@@ -148,6 +157,10 @@
     0 20px 25px -5px rgba(0, 0, 0, 0.15),
     0 10px 10px -5px rgba(0, 0, 0, 0.08);
 
+  /* A knob raised off the surface it rides, and a face pressed into one. */
+  --rep-shadow-knob: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --rep-shadow-well: inset 0 2px 2px rgba(0, 0, 0, 0.1);
+
   /* ---- Button size scale ----
      Primitive tiers. `md` is the app-wide control; `sm` is its dense variant.
      The three `touch-*` tiers exist for the quiz, which is driven by a thumb on
@@ -187,6 +200,9 @@
 
   /* A touch target is sized by its height, never stretched to a minimum. */
   --rep-btn-min-width-touch: 0;
+
+  /* An icon-only control is a circle, whichever tier it is wearing. */
+  --rep-btn-radius-round: 50%;
 
   /* Semantic aliases. Size modifiers rebind these and nothing else. */
   --rep-btn-height: var(--rep-btn-height-md);

@@ -1,7 +1,20 @@
 import { useState, useCallback, useRef, useEffect, type TouchEvent, type KeyboardEvent } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './ImageModal.module.css';
+import sharedStyles from '../styles/shared.module.css';
 import { SlideOutButtons } from './SlideOutButtons';
+
+/* The lightbox's chrome is the shared button base, round and glass. The close
+   button takes the touch tier, which is what makes it the larger of the two
+   on a phone and the same as every other control on a desktop. */
+const glassRoundClass = [
+  sharedStyles.actionButton,
+  sharedStyles.buttonRound,
+  sharedStyles.btnGlass,
+].join(' ');
+
+const closeClass = `${glassRoundClass} ${sharedStyles.buttonTouchSm} ${styles.closeBtn}`;
+const modalArrowClass = `${glassRoundClass} ${styles.modalArrow}`;
 
 interface ImageModalProps {
   images: string[];
@@ -124,26 +137,26 @@ export function ImageModal({ images, startIndex, onClose, onCorrect, onWrong, on
           <>
             <button
               type="button"
-              className={`${styles.modalArrow} ${styles.modalArrowLeft}`}
+              className={`${modalArrowClass} ${styles.modalArrowLeft}`}
               onClick={(e) => {
                 e.stopPropagation();
                 goPrev();
               }}
               aria-label="Previous image"
             >
-              <ChevronLeft size={22} />
+              <ChevronLeft className={sharedStyles.buttonIcon} />
             </button>
 
             <button
               type="button"
-              className={`${styles.modalArrow} ${styles.modalArrowRight}`}
+              className={`${modalArrowClass} ${styles.modalArrowRight}`}
               onClick={(e) => {
                 e.stopPropagation();
                 goNext();
               }}
               aria-label="Next image"
             >
-              <ChevronRight size={22} />
+              <ChevronRight className={sharedStyles.buttonIcon} />
             </button>
           </>
         )}
@@ -152,11 +165,11 @@ export function ImageModal({ images, startIndex, onClose, onCorrect, onWrong, on
       {/* Close button */}
       <button
         type="button"
-        className={styles.closeBtn}
+        className={closeClass}
         onClick={onClose}
         aria-label="Close"
       >
-        <X size={28} />
+        <X className={sharedStyles.buttonIcon} />
       </button>
 
       {/* Answer buttons at the very bottom */}

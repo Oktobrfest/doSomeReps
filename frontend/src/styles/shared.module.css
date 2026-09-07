@@ -262,6 +262,29 @@
   background-color: var(--rep-intent-overlay-bg-hover);
 }
 
+/* For a control that floats over content instead of sitting on a surface: it
+   wears the page scrim, so it stays legible whatever it covers. */
+.btnScrim {
+  background-color: var(--rep-color-overlay);
+  color: var(--rep-color-on-overlay);
+}
+
+/* For a control on a scrim already dark enough that darkening it further would
+   hide the control: a wash of the foreground colour instead. */
+.btnGlass {
+  background-color: var(--rep-color-glass);
+  color: var(--rep-color-on-overlay);
+}
+
+.btnGlass:hover:not(:disabled) {
+  background-color: var(--rep-color-glass-hover);
+}
+
+/* A thumb never hovers, and this is the chrome of a lightbox. */
+.btnGlass:active:not(:disabled) {
+  background-color: var(--rep-color-glass-active);
+}
+
 /* Size modifiers rebind the semantic aliases and nothing else. */
 
 .buttonSm {
@@ -302,6 +325,15 @@
    button. Geometry comes from the alias, so this stays a modifier. */
 .buttonFlush {
   --rep-btn-radius: 0;
+}
+
+/* An icon-only control: no label to pad, so the tier's height is also its
+   diameter. Pair it with a size modifier, never with a geometry of its own. */
+.buttonRound {
+  --rep-btn-padding-x: 0;
+  --rep-btn-padding-y: 0;
+  --rep-btn-min-width: var(--rep-btn-height);
+  --rep-btn-radius: var(--rep-btn-radius-round);
 }
 
 /* For a control labelled with a phrase rather than a word: it wraps onto a

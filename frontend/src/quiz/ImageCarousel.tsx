@@ -1,6 +1,17 @@
 import { useState, useCallback, useRef, type TouchEvent } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './ImageCarousel.module.css';
+import sharedStyles from '../styles/shared.module.css';
+
+/* An arrow is the shared button base at its dense tier: round, and wearing the
+   scrim so it stays readable over any image. */
+const arrowClass = [
+  sharedStyles.actionButton,
+  sharedStyles.buttonSm,
+  sharedStyles.buttonRound,
+  sharedStyles.btnScrim,
+  styles.arrow,
+].join(' ');
 
 interface ImageCarouselProps {
   images: (string | null)[];
@@ -95,26 +106,26 @@ export function ImageCarousel({ images, onImageClick }: ImageCarouselProps) {
         {/* Left / Right arrows */}
         <button
           type="button"
-          className={`${styles.arrow} ${styles.arrowLeft}`}
+          className={`${arrowClass} ${styles.arrowLeft}`}
           onClick={(e) => {
             e.stopPropagation();
             goPrev();
           }}
           aria-label="Previous image"
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft className={sharedStyles.buttonIcon} />
         </button>
 
         <button
           type="button"
-          className={`${styles.arrow} ${styles.arrowRight}`}
+          className={`${arrowClass} ${styles.arrowRight}`}
           onClick={(e) => {
             e.stopPropagation();
             goNext();
           }}
           aria-label="Next image"
         >
-          <ChevronRight size={20} />
+          <ChevronRight className={sharedStyles.buttonIcon} />
         </button>
       </div>
 
