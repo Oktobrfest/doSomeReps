@@ -39,7 +39,7 @@ function CategoriesWrapper({
       {collapsible && (
         <button
           type="button"
-          className={`${sharedStyles.button} ${sharedStyles.buttonSecondary}`}
+          className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
           onClick={() => setCollapsed(!collapsed)}
           aria-expanded={!collapsed}
         >

@@ -74,7 +74,7 @@ export function QuestionSearchPanel({
         </button>
         <button
           type="button"
-          className={styles.ghostBtn}
+          className={styles.secondaryBtn}
           onClick={() => setExpanded((prev) => !prev)}
           aria-expanded={expanded}
         >
@@ -145,7 +145,7 @@ export function QuestionSearchPanel({
             </button>
             <button
               type="button"
-              className={styles.ghostBtn}
+              className={styles.secondaryBtn}
               onClick={() => onChange({ ...EMPTY_FILTERS })}
             >
               Clear all

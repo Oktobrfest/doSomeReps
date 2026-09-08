@@ -3,7 +3,8 @@ import { Pause, Play } from 'lucide-react';
 import { MarkdownContent } from '../../components/MarkdownContent';
 import { AudioPlayer } from '../AudioPlayer';
 import type { AudioAsset } from '../types';
-import { QuizModal } from './QuizModal';
+import { QuizModal } from '../../components/QuizModal';
+import sharedStyles from '../../styles/shared.module.css';
 import styles from './modalContent.module.css';
 
 interface HintModalProps {
@@ -23,13 +24,13 @@ export function HintModal({ hint, images, assets, onClose }: HintModalProps) {
         <div className={styles.playerRow}>
           <button
             type="button"
-            className={styles.playBtn}
+            className={`${sharedStyles.actionButton} ${sharedStyles.btnTeal}`}
             onClick={() => setIsPlaying((playing) => !playing)}
           >
             {isPlaying ? (
-              <Pause className={styles.playIcon} />
+              <Pause className={sharedStyles.buttonIcon} />
             ) : (
-              <Play className={styles.playIcon} />
+              <Play className={sharedStyles.buttonIcon} />
             )}
             <span>{isPlaying ? 'Pause' : 'Play hint'}</span>
           </button>

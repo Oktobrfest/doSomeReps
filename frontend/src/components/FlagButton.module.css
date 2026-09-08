@@ -112,68 +112,7 @@
   height: var(--rep-btn-icon-size-md);
 }
 
-/* Modal dialog styling */
-.dialog {
-  border: none;
-  border-radius: 12px;
-  padding: 0;
-  margin: auto;
-  max-width: 500px;
-  width: min(500px, 92vw);
-  background-color: var(--rep-color-surface);
-  box-shadow: var(--rep-shadow-dialog);
-  font-family: inherit;
-}
-
-.dialog::backdrop {
-  background-color: var(--rep-color-overlay);
-}
-
-.modalContent {
-  display: flex;
-  flex-direction: column;
-  max-height: 85vh;
-}
-
-.modalHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--rep-color-border);
-}
-
-.modalTitle {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--rep-color-text-primary);
-}
-
-.closeBtn {
-  background: none;
-  border: none;
-  font-size: 2rem;
-  line-height: 1;
-  color: var(--rep-color-text-subtle);
-  cursor: pointer;
-  padding: 0 4px;
-}
-
-.closeBtn:hover:not(:disabled) {
-  color: var(--rep-color-text-primary);
-}
-
-.closeBtn:disabled {
-  opacity: var(--rep-opacity-disabled);
-  cursor: not-allowed;
-}
-
-.modalBody {
-  padding: 20px;
-  overflow-y: auto;
-}
-
+/* Contents of the flag dialog. The chrome around them is QuizModal's. */
 .field {
   margin-bottom: 20px;
 }
@@ -255,11 +194,13 @@
   margin-bottom: 16px;
 }
 
+/* The dialog's actions, set off from the fields they submit. */
 .modalFooter {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding: 16px 20px;
+  margin-top: 20px;
+  padding-top: 16px;
   border-top: 1px solid var(--rep-color-border);
 }
 

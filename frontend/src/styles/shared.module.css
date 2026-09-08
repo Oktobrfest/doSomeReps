@@ -118,48 +118,6 @@
   color: var(--rep-color-text-muted);
 }
 
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 18px;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--rep-radius-control);
-  cursor: pointer;
-  transition: background-color var(--rep-transition-fast);
-}
-
-.button:focus-visible {
-  outline: 2px solid var(--rep-color-focus);
-  outline-offset: 2px;
-}
-
-.button:disabled {
-  opacity: var(--rep-opacity-disabled);
-  cursor: not-allowed;
-}
-
-.buttonPrimary {
-  background-color: var(--rep-color-action-primary);
-  color: var(--rep-color-on-action);
-}
-
-.buttonPrimary:hover:not(:disabled) {
-  background-color: var(--rep-color-action-primary-hover);
-}
-
-.buttonSecondary {
-  background-color: var(--rep-color-surface-secondary);
-  color: var(--rep-color-text-secondary);
-}
-
-.buttonSecondary:hover:not(:disabled) {
-  background-color: var(--rep-color-surface-secondary-hover);
-}
-
 /* Generic Regular-sized Form/Action Button styles */
 .actionButton {
   box-sizing: border-box;
@@ -181,6 +139,11 @@
   cursor: pointer;
   box-shadow: var(--rep-btn-shadow);
   transition: var(--rep-btn-transition);
+}
+
+.actionButton:focus-visible {
+  outline: 2px solid var(--rep-color-focus);
+  outline-offset: 2px;
 }
 
 .actionButton:hover:not(:disabled) {
@@ -242,6 +205,15 @@
 
 .btnAmber:hover:not(:disabled) {
   background-color: var(--rep-intent-amber-bg-hover);
+}
+
+.btnTeal {
+  background-color: var(--rep-intent-teal-bg);
+  color: var(--rep-intent-teal-fg);
+}
+
+.btnTeal:hover:not(:disabled) {
+  background-color: var(--rep-intent-teal-bg-hover);
 }
 
 .btnSlate {

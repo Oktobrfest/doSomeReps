@@ -69,12 +69,7 @@
 /* ---------- Buttons ---------- */
 
 .btn {
-  composes: button buttonSecondary from '../styles/shared.module.css';
-  gap: 5px;
-  height: 30px;
-  padding: 0 12px;
-  font-size: 0.82rem;
-  white-space: nowrap;
+  composes: actionButton buttonSm btnSlate from '../styles/shared.module.css';
 }
 
 @container (min-width: 1000px) {
@@ -85,24 +80,14 @@
     padding: 0 11px;
   }
 
-  .btn {
-    height: 34px;
-    padding: 0 16px;
-    font-size: 0.9rem;
-  }
-
   .btnIcon {
     width: 16px;
     height: 16px;
   }
 }
 
-.btnPrimary {
-  composes: buttonPrimary from '../styles/shared.module.css';
-}
-
 .btnDanger {
-  composes: btnRed from '../styles/shared.module.css';
+  composes: actionButton buttonSm btnRed from '../styles/shared.module.css';
 }
 
 .btnIcon {

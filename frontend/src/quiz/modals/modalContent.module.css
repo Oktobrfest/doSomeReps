@@ -42,62 +42,9 @@
   margin-bottom: 16px;
 }
 
-.actionRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.primaryBtn,
-.dangerBtn,
-.playBtn {
-  display: inline-flex;
-  flex: 1 1 auto;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: var(--rep-btn-height);
-  padding: 0 var(--rep-btn-padding-x);
-  border: none;
-  border-radius: var(--rep-btn-radius);
-  font: inherit;
-  font-size: var(--rep-btn-font-size);
-  font-weight: var(--rep-btn-font-weight);
-  cursor: pointer;
-  transition: var(--rep-btn-transition);
-}
-
-.primaryBtn {
+/* An action that follows the content it acts on, so it carries the gap between. */
+.trailingAction {
   margin-top: 16px;
-  background: var(--rep-color-action-primary);
-  color: var(--rep-color-on-action);
-}
-
-.primaryBtn:hover {
-  background: var(--rep-color-action-primary-hover);
-}
-
-.dangerBtn {
-  margin-top: 16px;
-  background: var(--rep-color-danger);
-  color: var(--rep-color-on-danger);
-}
-
-.playBtn {
-  margin-top: 0;
-  background: var(--rep-color-action-accent);
-  color: var(--rep-color-on-action);
-}
-
-.playBtn:hover {
-  background: var(--rep-color-action-accent-hover);
-}
-
-.playIcon,
-.actionIcon {
-  width: 1.5rem;
-  height: 1.5rem;
-  flex-shrink: 0;
 }
 
 /* Rating is what this dialog is for, so its stars take the larger tier. */

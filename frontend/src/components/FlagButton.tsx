@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
+import { QuizModal } from "./QuizModal";
 import styles from "./FlagButton.module.css";
 import sharedStyles from "../styles/shared.module.css";
 import {
@@ -36,7 +37,6 @@ export function FlagButton({
   const [note, setNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Sync state with initialFlag when it changes
   useEffect(() => {
@@ -48,17 +48,6 @@ export function FlagButton({
       setNote("");
     }
   }, [initialFlag]);
-
-  // Sync the modal open/close state with the native <dialog> element.
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (isOpen) {
-      dialog.showModal();
-    } else {
-      dialog.close();
-    }
-  }, [isOpen]);
 
   const saveFlag = async (cat: FlagCategory | "", flagNote: string | null) => {
     setError(null);
@@ -179,67 +168,44 @@ export function FlagButton({
     <>
       {trigger}
 
-      <dialog
-        ref={dialogRef}
-        className={styles.dialog}
-        onClick={(e) => {
-          if (e.target === dialogRef.current) {
-            setIsOpen(false);
-          }
-        }}
-      >
-        <div className={styles.modalContent}>
-          <div className={styles.modalHeader}>
-            <h4 className={styles.modalTitle}>Flag Question Settings</h4>
-            <button
-              type="button"
-              className={styles.closeBtn}
-              onClick={() => setIsOpen(false)}
-              disabled={isSaving}
-              aria-label="Close"
-            >
-              &times;
-            </button>
+      {isOpen && (
+        <QuizModal title="Flag Question Settings" onClose={() => setIsOpen(false)}>
+          {error && <div className={styles.error}>{error}</div>}
+
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Flag Category</span>
+            <div className={styles.radioGroup}>
+              {Object.entries(FLAG_METADATA).map(([key, metadata]) => (
+                <label key={key} className={styles.radioLabel}>
+                  <input
+                    type="radio"
+                    name="flag_category"
+                    value={key}
+                    checked={category === key}
+                    onChange={(e) => setCategory(e.target.value as FlagCategory)}
+                    className={styles.radioInput}
+                  />
+                  {React.cloneElement(metadata.icon as React.ReactElement, {
+                    className: styles.radioIcon,
+                  })}
+                  <span className={styles.radioText}>{metadata.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
-          <div className={styles.modalBody}>
-            {error && <div className={styles.error}>{error}</div>}
-
-            <div className={styles.field}>
-              <span className={styles.fieldLabel}>Flag Category</span>
-              <div className={styles.radioGroup}>
-                {Object.entries(FLAG_METADATA).map(([key, metadata]) => (
-                  <label key={key} className={styles.radioLabel}>
-                    <input
-                      type="radio"
-                      name="flag_category"
-                      value={key}
-                      checked={category === key}
-                      onChange={(e) => setCategory(e.target.value as FlagCategory)}
-                      className={styles.radioInput}
-                    />
-                    {React.cloneElement(metadata.icon as React.ReactElement, {
-                      className: styles.radioIcon,
-                    })}
-                    <span className={styles.radioText}>{metadata.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.field}>
-              <label htmlFor="flag-note" className={styles.fieldLabel}>
-                Add Note (optional)
-              </label>
-              <textarea
-                id="flag-note"
-                className={styles.textarea}
-                rows={4}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Why are you flagging this question?..."
-              />
-            </div>
+          <div className={styles.field}>
+            <label htmlFor="flag-note" className={styles.fieldLabel}>
+              Add Note (optional)
+            </label>
+            <textarea
+              id="flag-note"
+              className={styles.textarea}
+              rows={4}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Why are you flagging this question?..."
+            />
           </div>
 
           <div className={styles.modalFooter}>
@@ -270,8 +236,8 @@ export function FlagButton({
               {isSaving ? "Saving..." : "Save Flag"}
             </button>
           </div>
-        </div>
-      </dialog>
+        </QuizModal>
+      )}
     </>
   );
 }

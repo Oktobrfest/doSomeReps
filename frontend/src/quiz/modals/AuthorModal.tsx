@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Ban, Star } from 'lucide-react';
-import { QuizModal } from './QuizModal';
+import { QuizModal } from '../../components/QuizModal';
+import sharedStyles from '../../styles/shared.module.css';
 import styles from './modalContent.module.css';
 
 type AuthorAction = 'favorited' | 'blocked';
@@ -64,14 +65,22 @@ export function AuthorModal({ authorId, authorUsername, onClose }: AuthorModalPr
             : `${authorUsername} is now blocked.`}
         </p>
       ) : (
-        <div className={styles.actionRow}>
-          <button type="button" className={styles.primaryBtn} onClick={favorite}>
-            <Star className={styles.actionIcon} />
+        <div className={`${sharedStyles.actionCluster} ${styles.trailingAction}`}>
+          <button
+            type="button"
+            className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
+            onClick={favorite}
+          >
+            <Star className={sharedStyles.buttonIcon} />
             <span>Add to Favorites</span>
           </button>
 
-          <button type="button" className={styles.dangerBtn} onClick={block}>
-            <Ban className={styles.actionIcon} />
+          <button
+            type="button"
+            className={`${sharedStyles.actionButton} ${sharedStyles.btnRed}`}
+            onClick={block}
+          >
+            <Ban className={sharedStyles.buttonIcon} />
             <span>Block User</span>
           </button>
         </div>

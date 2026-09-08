@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AutoResizeTextarea } from '../../components/AutoResizeTextarea';
-import { QuizModal } from './QuizModal';
+import { QuizModal } from '../../components/QuizModal';
+import sharedStyles from '../../styles/shared.module.css';
 import styles from './modalContent.module.css';
 
 interface AnswerDraftModalProps {
@@ -34,7 +35,11 @@ export function AnswerDraftModal({ value, onSave, onClose }: AnswerDraftModalPro
         placeholder="Write your answer before revealing the real one."
       />
 
-      <button type="button" className={styles.primaryBtn} onClick={save}>
+      <button
+        type="button"
+        className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue} ${styles.trailingAction}`}
+        onClick={save}
+      >
         Save Answer
       </button>
     </QuizModal>

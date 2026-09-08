@@ -268,7 +268,7 @@ export function CategoryPicker({
               />
               <button
                 type="button"
-                className={`${styles.btn} ${styles.btnPrimary}`}
+                className={styles.btn}
                 onClick={handleCreate}
                 disabled={isSaving || !newListName.trim() || selectedCategories.length === 0}
               >
@@ -307,7 +307,7 @@ export function CategoryPicker({
               {selectedListId && hasUnsavedChanges && (
                 <button
                   type="button"
-                  className={`${styles.btn} ${styles.btnPrimary}`}
+                  className={styles.btn}
                   onClick={handleSaveChanges}
                   disabled={isSaving}
                   title="Save the current selection to this list"
@@ -330,7 +330,7 @@ export function CategoryPicker({
                   </button>
                   <button
                     type="button"
-                    className={`${styles.btn} ${styles.btnDanger}`}
+                    className={styles.btnDanger}
                     onClick={handleDelete}
                     title="Delete this list"
                   >
@@ -401,7 +401,7 @@ export function CategoryPicker({
               type="submit"
               name="apply-categories"
               value="Apply"
-              className={`${styles.btn} ${styles.btnPrimary}`}
+              className={styles.btn}
             >
               Apply
             </button>

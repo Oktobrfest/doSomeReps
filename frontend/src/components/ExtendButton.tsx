@@ -214,14 +214,14 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
           <div className={styles.modalFooter}>
             <button
               type="button"
-              className={`${sharedStyles.button} ${sharedStyles.buttonSecondary}`}
+              className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
               onClick={() => setIsOpen(false)}
             >
               Cancel
             </button>
             <button
               type="button"
-              className={`${sharedStyles.button} ${sharedStyles.buttonPrimary}`}
+              className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnBlue}`}
               onClick={handleExtend}
               disabled={isExtending}
             >

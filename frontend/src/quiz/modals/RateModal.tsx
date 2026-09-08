@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { RatingStars } from '../RatingStars';
-import { QuizModal } from './QuizModal';
+import { QuizModal } from '../../components/QuizModal';
 import styles from './modalContent.module.css';
 
 interface RateModalProps {

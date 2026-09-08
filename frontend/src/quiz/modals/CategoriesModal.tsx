@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CatPicker } from '../../components/CatPicker';
-import { QuizModal } from './QuizModal';
+import { QuizModal } from '../../components/QuizModal';
+import sharedStyles from '../../styles/shared.module.css';
 import styles from './modalContent.module.css';
 
 interface CategoriesModalProps {
@@ -41,7 +42,7 @@ export function CategoriesModal({
 
       <button
         type="button"
-        className={styles.primaryBtn}
+        className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue} ${styles.trailingAction}`}
         onClick={() => {
           onApply(selected);
           onClose();
