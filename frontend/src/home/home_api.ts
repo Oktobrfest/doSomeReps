@@ -1,11 +1,8 @@
+import { readBootstrap as readShared } from "../lib/bootstrap";
 import type { HomeBootstrap } from "./home_types";
 
 export function readBootstrap(): HomeBootstrap {
-  const node = document.getElementById("home-data");
-  if (!node?.textContent) {
-    throw new Error("Missing home bootstrap data.");
-  }
-  return JSON.parse(node.textContent) as HomeBootstrap;
+  return readShared<HomeBootstrap>("home-data", "home");
 }
 
 /** These endpoints answer with the bare JSON string "ok". */

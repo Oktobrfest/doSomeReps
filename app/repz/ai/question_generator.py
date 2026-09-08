@@ -12,7 +12,6 @@ when the user ticks "Try to provide hints".
 
 import json
 import logging
-import re
 from typing import Any, Dict, List, Optional
 
 from flask import (
@@ -25,7 +24,6 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.sql import func
 
@@ -46,8 +44,7 @@ from ..bluehelpers import (
 from ..database import session as db_session
 from ..models import category, question
 from .litellm_client import AIConfigError, completion_for_user
-from .question_generator_forms import AIQuestionGenForm
-from .question_pipeline import generate_questions, generate_hints
+from .qgen_service import ExtendedAnswer, _parse_extended_answer
 
 
 # Session key holding the current batch of AI-generated questions
@@ -55,158 +52,6 @@ from .question_pipeline import generate_questions, generate_hints
 # Flask session backend doesn't need to know about Pydantic.
 SESSION_KEY_GENERATED = "ai_qgen_generated_questions"
 
-
-
-# --- Pydantic schema for the AI response -----------------------------
-class GeneratedQA(BaseModel):
-    question: str = Field(..., description="The quiz question text.")
-    answer: str = Field(..., description="A short, factual answer.")
-    # `min_length=1` enforces "each question must have at least one
-    # category" at the schema level, so providers that honor JSON
-    # Schema constraints will refuse to emit a Q&A with zero tags.
-    categories: List[str] = Field(
-        ...,
-        min_length=1,
-        description=(
-            "One or more categories chosen from the user-selected list. "
-            "Must contain at least one entry; never empty."
-        ),
-    )
-    # Hints are NOT produced by the question-generation call. They
-    # are populated later from a separate hint-generation call (see
-    # `HINT_GENERATION_PROMPT_TEMPLATE` / `GeneratedHintSet`) and only
-    # when the user opts in via the "Try to provide hints" checkbox.
-    # Always optional; null means "no hint warranted".
-    hint: Optional[str] = Field(
-        default=None,
-        description=(
-            "Optional study hint. Only set by the separate hint-generation "
-            "call, and only when the question is difficult enough to warrant "
-            "a hint. Null otherwise."
-        ),
-    )
-
-
-class GeneratedQuestionSet(BaseModel):
-    questions: List[GeneratedQA]
-
-
-class GeneratedHint(BaseModel):
-    """One hint slot, paired by index to an input question.
-
-    `hint` is null when the model decides the question doesn't
-    warrant a hint.
-    """
-
-    hint: Optional[str] = Field(
-        default=None,
-        description="Hint text, or null if no hint is warranted.",
-    )
-
-
-class GeneratedHintSet(BaseModel):
-    hints: List[GeneratedHint]
-
-
-class ExtendedAnswer(BaseModel):
-    """Structured response for a single "Extend" call.
-
-    The route assembles `short_answer` + `long_answer` back into the
-    SHORT ANSWER / LONG ANSWER text format used in the answer field.
-    `hint` is optional - the model only fills it in when it thinks a
-    hint would meaningfully help.
-    """
-
-    short_answer: str = Field(
-        ..., description="A concise summary answer (1-2 sentences)."
-    )
-    long_answer: str = Field(
-        ...,
-        description=(
-            "A detailed, explanatory answer. Multiple paragraphs allowed; "
-            "keep on-topic and within the question's category."
-        ),
-    )
-    hint: Optional[str] = Field(
-        default=None,
-        description=(
-            "Optional hint - only set when a hint would materially help "
-            "a learner approach the question. Null otherwise."
-        ),
-    )
-
-
-# --- Helpers ---------------------------------------------------------
-
-# Some providers wrap structured output in ```json ... ``` fences even
-# when asked for raw JSON; this strips a single surrounding fence if
-# present so `model_validate_json` won't choke on it.
-_JSON_FENCE_RE = re.compile(r"^```(?:json)?\s*\n?(.*?)\n?```$", re.DOTALL)
-
-
-def _extract_message_content(resp: Any) -> str:
-    """Pull the assistant message text out of a LiteLLM response."""
-    try:
-        return resp["choices"][0]["message"]["content"] or ""
-    except (KeyError, IndexError, TypeError):
-        # litellm.ModelResponse also supports attribute access
-        return getattr(
-            getattr(getattr(resp.choices[0], "message", None), "content", "") or "",
-            "__str__",
-            lambda: "",
-        )()
-
-
-def _strip_json_fence(content: str) -> str:
-    content = (content or "").strip()
-    m = _JSON_FENCE_RE.match(content)
-    if m:
-        return m.group(1).strip()
-    return content
-
-
-def _parse_question_set(resp: Any) -> GeneratedQuestionSet:
-    raw = _strip_json_fence(_extract_message_content(resp))
-    return GeneratedQuestionSet.model_validate_json(raw)
-
-
-def _parse_hint_set(resp: Any) -> GeneratedHintSet:
-    raw = _strip_json_fence(_extract_message_content(resp))
-    return GeneratedHintSet.model_validate_json(raw)
-
-
-def _parse_extended_answer(resp: Any) -> ExtendedAnswer:
-    raw = _strip_json_fence(_extract_message_content(resp))
-    try:
-        return ExtendedAnswer.model_validate_json(raw)
-    except Exception:
-        # Some models may return the SHORT ANSWER / LONG ANSWER text
-        # format instead of JSON despite response_format being set.
-        # Parse the text format as a fallback.
-        return _parse_text_extended_answer(raw)
-
-
-_SHORT_ANSWER_RE = re.compile(
-    r"^SHORT ANSWER:\s*\n(.*?)\n+\nLONG ANSWER:\s*\n(.*)",
-    re.DOTALL,
-)
-
-
-def _parse_text_extended_answer(raw: str) -> ExtendedAnswer:
-    """Parse a SHORT ANSWER / LONG ANSWER text response into ExtendedAnswer."""
-    m = _SHORT_ANSWER_RE.match(raw.strip())
-    if m:
-        short = m.group(1).strip()
-        long = m.group(2).strip()
-        # Strip off any trailing hint section if present
-        hint = None
-        hint_match = re.search(r"\nHINT:\s*\n(.*)", long, re.DOTALL)
-        if hint_match:
-            long = long[: hint_match.start()].strip()
-            hint = hint_match.group(1).strip()
-        return ExtendedAnswer(short_answer=short, long_answer=long, hint=hint)
-    # If we can't parse it, raise a clearer error
-    raise ValueError(f"Could not parse extended answer: {raw[:200]!r}")
 
 
 def _extend_one(
@@ -338,21 +183,6 @@ def _save_one_to_db(
         create_brand_new_quizq([new_q.question_id], uid)
 
     return True
-
-
-def _read_edited_item(form, idx: int) -> Dict[str, Any]:
-    """Pull the user-edited values for question N out of the POST."""
-    return {
-        "question": (form.get(f"gen_question_{idx}", "") or "").strip(),
-        "hint": (form.get(f"gen_hint_{idx}", "") or "").strip(),
-        "answer": (form.get(f"gen_answer_{idx}", "") or "").strip(),
-        "categories": form.getlist(f"gen_categories_{idx}"),
-        # HTML checkboxes are absent from the form payload when
-        # unchecked and present (value "on") when checked, matching
-        # the convention used on the Add Content page.
-        "privacy": form.get(f"gen_privacy_{idx}") == "on",
-        "auto_que": form.get(f"gen_auto_que_{idx}") == "on",
-    }
 
 
 # --- Route -----------------------------------------------------------

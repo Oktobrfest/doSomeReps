@@ -1,8 +1,8 @@
+import { LoadingState } from "../components/LoadingState";
 import { ChevronLeft } from "lucide-react";
 import { QuestionResultRow } from "./QuestionResultRow";
 import type { SearchResultItem } from "./question_search_types";
 import styles from "./QuestionSearch.module.css";
-import sharedStyles from "../styles/shared.module.css";
 
 interface QuestionResultsListProps {
   items: SearchResultItem[];
@@ -48,11 +48,7 @@ export function QuestionResultsList({
 
       <div className={styles.resultsScroll}>
         {loading && (
-          <div className={sharedStyles.loadingState}>
-            <div className={sharedStyles.spinner} role="status">
-              <span className={sharedStyles.srOnly}>Loading...</span>
-            </div>
-          </div>
+          <LoadingState />
         )}
 
         {!loading && error && <p className={styles.resultsEmpty}>{error}</p>}

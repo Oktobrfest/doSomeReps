@@ -5,6 +5,7 @@ import { CategoryPicker } from "../components/CategoryPicker";
 import { QueFilters } from "./QueFilters";
 import { QueResultsTable } from "./QueResultsTable";
 import { blockUser, readBootstrap, saveToQue, searchQue } from "./quemore_api";
+import { resolveCategoryNames, toSlug } from "../lib/categories";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./QueMore.module.css";
 import type {
@@ -15,8 +16,6 @@ import type {
 
 const bootstrap = readBootstrap();
 
-const toSlug = (value: string) => value.replace(/ /g, "_");
-
 const DEFAULT_FILTERS: QueFilterState = {
   personal: true,
   favorate: true,
@@ -26,10 +25,9 @@ const DEFAULT_FILTERS: QueFilterState = {
 };
 
 function resolveInitialSelection(): string[] {
-  return bootstrap.selectedCategories.map(
-    (slug) =>
-      bootstrap.categoryList.find((cat) => toSlug(cat) === slug) ??
-      slug.replace(/_/g, " ")
+  return resolveCategoryNames(
+    bootstrap.selectedCategories,
+    bootstrap.categoryList
   );
 }
 

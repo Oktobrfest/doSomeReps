@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { useState } from "react";
 import { CategoryPicker } from "../components/CategoryPicker";
+import { resolveCategoryNames, toSlug } from "../lib/categories";
 import sharedStyles from "../styles/shared.module.css";
 import "../styles/global.css";
 
@@ -11,8 +12,6 @@ interface CategoriesCoreData {
   hideSavedLists?: boolean;
   hideHeader?: boolean;
 }
-
-const toSlug = (value: string) => value.replace(/ /g, "_");
 
 interface CategoriesWrapperProps {
   initialSelected: string[];
@@ -76,12 +75,9 @@ function mount() {
         ? [data.selectedCategories]
         : [];
 
-    const normalizedSelected = Array.from(
-      new Set([...initialSelectedSlugs, ...(data.catsDue ?? [])])
-    ).map(
-      (slug) =>
-        categoryList.find((cat) => toSlug(cat) === slug) ??
-        slug.replace(/_/g, " ")
+    const normalizedSelected = resolveCategoryNames(
+      Array.from(new Set([...initialSelectedSlugs, ...(data.catsDue ?? [])])),
+      categoryList
     );
 
     const collapsible = !(data.hideHeader ?? false);

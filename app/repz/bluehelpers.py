@@ -1,27 +1,22 @@
-import base64
 import logging
 import os
 import re
 import time
+from collections import Counter
 from datetime import datetime, timedelta
-from io import BytesIO
-import unicodedata
+from itertools import chain
 import urllib
 
 
-import matplotlib.pyplot as plt
-import numpy as np
 from flask import current_app, flash, session as local_session
 from sqlalchemy import and_, select, text
 from sqlalchemy.exc import OperationalError
-from werkzeug.utils import secure_filename
 
 
 from .database import session
-from .models import category, level, q_pic, question, question_categories, quizq, rating, users
+from .models import category, level, question, quizq, rating, users
 from repz.extensions import cache
 from .s3_ext import get_s3
-from .home.form_validation import validate_filename, allowed_file
 
 
 def clean_for_html(unclean: str) -> str:
@@ -81,23 +76,6 @@ def get_all_categories():
         cache.set('category_list', category_list, timeout=60*60*24*7) # 1 week
 
     return category_list
-
-
-def score(question_id):
-    ratings = session.execute(select(rating.rating).where(rating.question_id == question_id)).scalars().all()
-
-    score = 0.0
-    count = 0
-    for rate in ratings:
-        score += rate
-        count += 1
-
-    if count == 0:
-        final_score = 0
-    else:
-        final_score = score / count
-
-    return final_score
 
 
 def get_quizes(selected_cats, UID):
@@ -176,16 +154,13 @@ def get_quizes(selected_cats, UID):
 
             creator_username = session.execute(creator).first()[0]
 
-            rating_score = score(r.question.question_id)
+            rating_score = get_rating(r.question.question_id)
 
             from .models import flag
             q_flag_obj = session.execute(
                 select(flag).where(flag.question_id == r.question.question_id, flag.user_id == UID)
             ).scalars().first()
-            flag_data = {
-                "category": q_flag_obj.flag_category.value,
-                "note": q_flag_obj.note
-            } if q_flag_obj else None
+            flag_data = flag_payload(q_flag_obj)
 
             q = {
                 "quizq_id": r.quizq.quizq_id,
@@ -216,6 +191,18 @@ def get_quizes(selected_cats, UID):
     return que_list
 
 
+def flag_payload(flag_obj):
+    """A flag row in the shape every client expects, or None when unflagged."""
+    if flag_obj is None:
+        return None
+
+    category = flag_obj.flag_category
+    return {
+        "category": category.value if hasattr(category, "value") else str(category),
+        "note": flag_obj.note,
+    }
+
+
 def get_user(user_id):
     if not isinstance(user_id, int):
         try:
@@ -239,28 +226,21 @@ def listify_sql(models):
     return obj_list
 
 
-#list of dicts of lists
+def _tally_category_names(name_groups) -> Counter:
+    """Count how many questions carry each category name."""
+    return Counter(chain.from_iterable(name_groups))
+
+
 def tally_que_catz(quizq_list):
-    category_count = {}
-    for q in quizq_list:
-        for c in q['categories']:
-            if c in category_count:
-                category_count[c] += 1
-            else:
-                category_count[c] = 1
-    return category_count
+    """Category counts across quiz-queue dicts, whose categories are names."""
+    return _tally_category_names(q["categories"] for q in quizq_list)
 
 
 def tally_catz(questions_list):
-    category_count = {}
-    for q in questions_list:
-        for c in q.categories:
-            cat = c.category_name
-            if cat in category_count:
-                category_count[cat] += 1
-            else:
-                category_count[cat] = 1
-    return category_count
+    """Category counts across question models, whose categories are rows."""
+    return _tally_category_names(
+        [c.category_name for c in q.categories] for q in questions_list
+    )
 
 
 def split_dict(dict):

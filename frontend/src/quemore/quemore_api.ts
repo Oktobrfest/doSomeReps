@@ -1,3 +1,4 @@
+import { readBootstrap as readShared } from "../lib/bootstrap";
 import type {
   AjaxEnvelope,
   QueFilterState,
@@ -7,11 +8,7 @@ import type {
 } from "./quemore_types";
 
 export function readBootstrap(): QueMoreBootstrap {
-  const node = document.getElementById("quemore-data");
-  if (!node?.textContent) {
-    throw new Error("Missing quemore bootstrap data.");
-  }
-  return JSON.parse(node.textContent) as QueMoreBootstrap;
+  return readShared<QueMoreBootstrap>("quemore-data", "quemore");
 }
 
 export interface SearchOutcome {

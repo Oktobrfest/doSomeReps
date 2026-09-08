@@ -1,11 +1,8 @@
+import { readBootstrap as readShared } from "../lib/bootstrap";
 import type { AddContentBootstrap } from "./add_content_types";
 
 export function readBootstrap(): AddContentBootstrap {
-  const node = document.getElementById("add-content-data");
-  if (!node?.textContent) {
-    throw new Error("Missing add-content bootstrap data.");
-  }
-  return JSON.parse(node.textContent) as AddContentBootstrap;
+  return readShared<AddContentBootstrap>("add-content-data", "add-content");
 }
 
 /**

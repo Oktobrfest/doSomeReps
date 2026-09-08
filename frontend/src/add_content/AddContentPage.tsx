@@ -5,12 +5,11 @@ import { AutoResizeTextarea } from "../components/AutoResizeTextarea";
 import { CategoryPicker } from "../components/CategoryPicker";
 import { NewCategoryForm } from "./NewCategoryForm";
 import { readBootstrap } from "./add_content_api";
+import { resolveCategoryNames, toSlug } from "../lib/categories";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./AddContent.module.css";
 
 const bootstrap = readBootstrap();
-
-const toSlug = (value: string) => value.replace(/ /g, "_");
 
 /**
  * Mirrors `repz.home.form_validation.validate_filename` so the user hears about
@@ -32,10 +31,9 @@ function filenameError(filename: string): string | null {
 }
 
 function resolveInitialSelection(): string[] {
-  return bootstrap.selectedCategories.map(
-    (slug) =>
-      bootstrap.categoryList.find((cat) => toSlug(cat) === slug) ??
-      slug.replace(/_/g, " ")
+  return resolveCategoryNames(
+    bootstrap.selectedCategories,
+    bootstrap.categoryList
   );
 }
 

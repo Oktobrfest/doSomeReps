@@ -25,18 +25,18 @@ from ..database import session as db_session
 from .litellm_client import completion_for_user
 from .qgen_service import (
     GeneratedHintSet,
-    GeneratedQuestionSet,
     _get_user_by_id,
-    _extract_message_content,
-    _strip_json_fence,
     _parse_hint_set,
+    _parse_question_set,
 )
 
 logger = logging.getLogger(__name__)
 
 
-# --- Pydantic schemas (custom/extended for pipeline) -----------------
-class GeneratedQAWithoutHint(BaseModel):
+# --- Pydantic schemas -------------------------------------------------
+# Hints are never produced by the generation call; they come from the separate
+# generate_hints pass below, so the generation schema has no hint field.
+class GeneratedQA(BaseModel):
     question: str = Field(..., description="The quiz question text.")
     answer: str = Field(..., description="A short, factual answer.")
     categories: List[str] = Field(
@@ -49,15 +49,8 @@ class GeneratedQAWithoutHint(BaseModel):
     )
 
 
-class GeneratedQuestionSetWithoutHint(BaseModel):
-    questions: List[GeneratedQAWithoutHint]
-
-
-# --- Helpers ------------------------------------------------------------
-
-def _parse_question_set(resp: Any, response_format=GeneratedQuestionSet) -> Any:
-    raw = _strip_json_fence(_extract_message_content(resp))
-    return response_format.model_validate_json(raw)
+class GeneratedQuestionSet(BaseModel):
+    questions: List[GeneratedQA]
 
 
 def generate_questions(
@@ -131,13 +124,12 @@ def generate_questions(
 
     logger.info("Generating %d-%d questions for user %d (try_hints=%s)", qty_from, qty_to, user_id, try_hints)
 
-    fmt = GeneratedQuestionSetWithoutHint
     resp = completion_for_user(
         user,
         messages=[{"role": "user", "content": full_prompt}],
-        response_format=fmt,
+        response_format=GeneratedQuestionSet,
     )
-    qset = _parse_question_set(resp, response_format=fmt)
+    qset = _parse_question_set(resp, response_format=GeneratedQuestionSet)
     generated: List[Dict[str, Any]] = [q.model_dump() for q in qset.questions]
 
     for q in generated:

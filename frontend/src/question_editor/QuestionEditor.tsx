@@ -1,3 +1,4 @@
+import { LoadingState } from "../components/LoadingState";
 import { useMemo, useState, type FormEvent } from "react";
 import { Toaster } from "sonner";
 import { Sparkles } from "lucide-react";
@@ -53,12 +54,7 @@ export function QuestionEditor({
 
   if (editor.loading) {
     return (
-      <div className={sharedStyles.loadingState}>
-        <div className={sharedStyles.spinner} role="status">
-          <span className={sharedStyles.srOnly}>Loading...</span>
-        </div>
-        <p className={sharedStyles.loadingText}>Loading question data...</p>
-      </div>
+      <LoadingState message="Loading question data..." />
     );
   }
 
@@ -288,7 +284,7 @@ export function QuestionEditor({
                                     >
                                       <button
                                         type="button"
-                                        className={styles.audioDeleteBtn}
+                                        className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnRed}`}
                                         onClick={() =>
                                           editor.handleAudioDelete(audio.audio_id)
                                         }

@@ -1,3 +1,4 @@
+import { jsonHeaders } from '../../lib/http';
 import { useState } from 'react';
 import { RatingStars } from '../RatingStars';
 import { QuizModal } from '../../components/QuizModal';
@@ -28,13 +29,10 @@ export function RateModal({
     setRating(value);
     setError(null);
 
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (csrfToken) headers['X-CSRFToken'] = csrfToken;
-
     try {
       const response = await fetch('/rateq', {
         method: 'POST',
-        headers,
+        headers: jsonHeaders(csrfToken),
         credentials: 'same-origin',
         body: JSON.stringify({ quizq_id: quizqId, rating: value }),
       });

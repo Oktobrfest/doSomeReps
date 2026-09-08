@@ -5,16 +5,33 @@
 
 .spinner {
   display: inline-block;
-  width: 2rem;
-  height: 2rem;
+  width: var(--rep-spinner-size);
+  height: var(--rep-spinner-size);
+  flex-shrink: 0;
 
   color: var(--rep-color-loading-indicator);
 
   vertical-align: -0.125em;
-  border: 0.25em solid currentColor;
+  border: var(--rep-spinner-border) solid currentColor;
   border-right-color: transparent;
-  border-radius: 50%;
+  border-radius: var(--rep-radius-circle);
   animation: sharedSpin 0.75s linear infinite;
+}
+
+/* Size modifiers rebind the aliases and nothing else. */
+
+.spinnerLg {
+  --rep-spinner-size: var(--rep-spinner-size-lg);
+}
+
+.spinnerSm {
+  --rep-spinner-size: var(--rep-spinner-size-sm);
+  --rep-spinner-border: var(--rep-spinner-border-sm);
+}
+
+/* Takes its colour from the text it sits in rather than the loading blue. */
+.spinnerCurrentColor {
+  color: inherit;
 }
 
 @keyframes sharedSpin {
@@ -255,6 +272,19 @@
 /* A thumb never hovers, and this is the chrome of a lightbox. */
 .btnGlass:active:not(:disabled) {
   background-color: var(--rep-color-glass-active);
+}
+
+/* The colour a flagged question's chip wears. Same intent palette as the
+   buttons, so a flag and a button never drift apart. */
+
+.flagStudyMe {
+  background-color: var(--rep-intent-amber-bg);
+  color: var(--rep-intent-amber-fg);
+}
+
+.flagOther {
+  background-color: var(--rep-intent-red-bg);
+  color: var(--rep-intent-red-fg);
 }
 
 /* Size modifiers rebind the semantic aliases and nothing else. */

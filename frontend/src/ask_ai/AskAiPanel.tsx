@@ -119,7 +119,11 @@ export function AskAiPanel({ state }: AskAiPanelProps) {
         <div className={styles.askAiContainer}>
           <div className={styles.askAiTitle}>
             <span
-              className={cx(styles.spinnerBorder, styles.spinnerInline)}
+              className={cx(
+                sharedStyles.spinner,
+                sharedStyles.spinnerSm,
+                sharedStyles.spinnerCurrentColor,
+              )}
               role="status"
               aria-hidden="true"
             />

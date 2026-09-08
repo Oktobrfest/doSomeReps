@@ -1,3 +1,4 @@
+import { jsonHeaders } from "../lib/http";
 import React, { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
 import { QuizModal } from "./QuizModal";
@@ -53,16 +54,9 @@ export function FlagButton({
     setError(null);
     setIsSaving(true);
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (csrfToken) {
-        headers["X-CSRFToken"] = csrfToken;
-      }
-
       const response = await fetch("/api/flag", {
         method: "POST",
-        headers,
+        headers: jsonHeaders(csrfToken),
         body: JSON.stringify({
           questionId,
           category: cat || null,

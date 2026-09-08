@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Plus, Star, Trash2, X } from "lucide-react";
 import { useCategories } from "../hooks/useCategories";
+import { toSlug } from "../lib/categories";
 import styles from "./CategoryPicker.module.css";
 
 interface CategoryList {
@@ -28,8 +29,6 @@ interface CategoryPickerProps {
   /** Hides the picker without unmounting, so checked inputs still submit. */
   collapsed?: boolean;
 }
-
-const toSlug = (value: string) => value.replace(/ /g, "_");
 
 const sameSelection = (a: string[], b: string[]): boolean => {
   if (a.length !== b.length) return false;

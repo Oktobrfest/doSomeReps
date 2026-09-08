@@ -1,3 +1,4 @@
+import { readBootstrap as readShared } from "../lib/bootstrap";
 import type {
   EditQuestionsBootstrap,
   SearchFilters,
@@ -5,11 +6,7 @@ import type {
 } from "./question_search_types";
 
 export function readBootstrap(): EditQuestionsBootstrap {
-  const node = document.getElementById("edit-questions-bootstrap");
-  if (!node?.textContent) {
-    throw new Error("Missing edit-questions bootstrap data.");
-  }
-  return JSON.parse(node.textContent) as EditQuestionsBootstrap;
+  return readShared<EditQuestionsBootstrap>("edit-questions-bootstrap", "edit-questions");
 }
 
 async function readError(response: Response, fallback: string): Promise<string> {

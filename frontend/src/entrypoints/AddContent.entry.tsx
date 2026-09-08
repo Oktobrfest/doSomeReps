@@ -1,15 +1,4 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-
 import { AddContentPage } from "../add_content/AddContentPage";
-import "../index.css";
-import "../styles/global.css";
+import { mountPage } from "./mountPage";
 
-const rootElement = document.getElementById("add-content-root");
-if (rootElement) {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <AddContentPage />
-    </React.StrictMode>
-  );
-}
+mountPage("add-content-root", <AddContentPage />);

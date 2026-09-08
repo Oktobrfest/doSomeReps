@@ -12,6 +12,7 @@
   --rep-color-surface-secondary: #edf2f7;
   --rep-color-surface-secondary-hover: #e2e8f0;
 
+  --rep-color-text-strong: #0f172a;
   --rep-color-text-primary: #2d3748;
   --rep-color-text-secondary: #4a5568;
 
@@ -34,6 +35,28 @@
   --rep-color-error-text-strong: #c53030;
   --rep-color-error-surface-subtle: #fff5f5;
   --rep-color-error-border-subtle: #feb2b2;
+
+  /* Hover for the primary action colour, and its foreground dimmed for
+     secondary copy sitting on a primary-coloured surface. */
+  --rep-color-action-primary-hover: #2b6cb0;
+  --rep-color-on-action-muted: rgba(255, 255, 255, 0.8);
+
+  /* Status families, each a foreground plus the tinted surface and border it
+     sits on. `error` already exists above; these complete the set. */
+  --rep-color-success-text-strong: #2f855a;
+  --rep-color-success-surface-subtle: #f0fff4;
+  --rep-color-success-border-subtle: #9ae6b4;
+
+  --rep-color-info-text-strong: var(--rep-color-action-primary-hover);
+  /* The deep navy a panel titles itself in, and the blue it is outlined with. */
+  --rep-color-info-text-deep: #1e3a8a;
+  --rep-color-info-border-strong: #3b82f6;
+  --rep-color-info-surface-subtle: #ebf8ff;
+  --rep-color-info-border-subtle: #90cdf4;
+
+  --rep-color-teal-text-strong: #234e52;
+  --rep-color-teal-surface-subtle: #e6fffa;
+  --rep-color-teal-border-subtle: #b2f5ea;
 
   --rep-color-overlay: rgba(0, 0, 0, 0.45);
   --rep-color-overlay-strong: rgba(0, 0, 0, 0.94);
@@ -74,6 +97,39 @@
   --rep-color-navbar-accent-bg-highlight: rgba(255, 140, 0, 0.1);
   --rep-color-navbar-accent-bg-hover: rgba(255, 140, 0, 0.05);
   --rep-shadow-navbar: 0 4px 20px rgba(0, 0, 0, 0.25);
+
+  /* Hairlines and washes that read as a tint of whatever they sit on, rather
+     than as a colour of their own. */
+  --rep-color-border-faint: rgba(0, 0, 0, 0.06);
+  --rep-color-border-input: rgba(0, 0, 0, 0.15);
+  --rep-color-surface-stripe: rgba(0, 0, 0, 0.05);
+
+  /* ---- Question parts ----
+     The editor and its live preview colour-code question, hint and answer so a
+     writer can tell at a glance which field they are in. `-strong` is the
+     header of a preview card; the plain pair is the editor's own field. */
+  --rep-part-question-surface: #f2fff2;
+  --rep-part-question-border: #b3ffb3;
+
+  --rep-part-hint-surface: #f0ffff;
+  --rep-part-hint-border: #99ffff;
+  --rep-part-hint-surface-strong: #ecfeff;
+  --rep-part-hint-border-strong: #cffafe;
+  --rep-part-hint-text: #0e7490;
+
+  --rep-part-answer-surface: #fff2ff;
+  --rep-part-answer-border: #ffccff;
+  --rep-part-answer-surface-strong: #fdf2f8;
+  --rep-part-answer-border-strong: #fbcfe8;
+  --rep-part-answer-text: #be185d;
+
+  /* The editor's own title bar, which wears the answer colour at full strength. */
+  --rep-editor-header-bg: #ff99ff;
+  --rep-editor-header-border: #ff66ff;
+
+  /* The chip a question's category is named in, on the search results list. */
+  --rep-color-category-chip-bg: #ffe6bf;
+  --rep-color-category-chip-text: #7a4a00;
 
   /* Category Picker Design Tokens */
   --rep-cp-item-bg: #ffa500;
@@ -145,9 +201,33 @@
      keeps its grip on screen and grabbable. */
   --rep-panel-peek: 56px;
 
+  /* The two type stacks the app uses: its UI face, and the face for anything
+     the machine wrote back (keys, model ids, raw completions). */
+  --rep-font-family-system: -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --rep-font-family-mono: SFMono-Regular, Consolas, Monaco, monospace;
+
+  /* A panel resting on the page, and one lifted off it. */
+  --rep-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --rep-shadow-card-raised: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
   --rep-radius-small: 0.25rem;
   --rep-radius-control: 6px;
   --rep-radius-dialog: 8px;
+  --rep-radius-card: 12px;
+  --rep-radius-circle: 50%;
+
+  /* ---- Spinner scale ----
+     `md` is the app-wide indicator; `lg` fills a waiting panel and `sm` sits
+     inside a line of text. Holders rebind the aliases, never the primitives. */
+  --rep-spinner-size-md: 2rem;
+  --rep-spinner-size-lg: 3rem;
+  --rep-spinner-size-sm: 1.2rem;
+  --rep-spinner-border-md: 0.25em;
+  --rep-spinner-border-sm: 0.2rem;
+  --rep-spinner-size: var(--rep-spinner-size-md);
+  --rep-spinner-border: var(--rep-spinner-border-md);
 
   --rep-opacity-disabled: 0.65;
   --rep-transition-fast: 0.15s ease;
@@ -201,7 +281,7 @@
   --rep-btn-min-width-touch: 0;
 
   /* An icon-only control is a circle, whichever tier it is wearing. */
-  --rep-btn-radius-round: 50%;
+  --rep-btn-radius-round: var(--rep-radius-circle);
 
   /* Semantic aliases. Size modifiers rebind these and nothing else. */
   --rep-btn-height: var(--rep-btn-height-md);

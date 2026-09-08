@@ -140,7 +140,7 @@ def searchquefilters():
             "username": username,
             "created_by": r.created_by,
             "favorite": fav,
-            "rating": get_rating(question.question_id),
+            "rating": get_rating(r.question_id),
             "excluded": excluded,
         }
         search_results.append(q)

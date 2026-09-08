@@ -1,28 +1,15 @@
 import React, { useState, useEffect } from "react";
 import styles from "./AiIntegration.module.css";
+import {
+  deleteProvider,
+  getConfig,
+  saveIntegration,
+  saveProvider,
+  testPrompt,
+} from "./ai_integration_api";
+import type { AIConfig } from "./ai_integration_types";
 import sharedStyles from "./styles/shared.module.css";
-
-interface SavedProvider {
-  id: number;
-  provider: string;
-  apiBase: string;
-  hasKey: boolean;
-  maskedKey: string;
-}
-
-interface SavedIntegration {
-  id: number;
-  modality: string;
-  provider_id: number | null;
-  model: string;
-}
-
-interface AIConfig {
-  providers: SavedProvider[];
-  integrations: SavedIntegration[];
-  predefinedOptions: Record<string, string[]>;
-  modelPrices?: Record<string, string>;
-}
+import { LoadingState } from "./components/LoadingState";
 
 const MODALITIES = [
   { value: "text", label: "Text Generation (LLM)", desc: "Used for question formulation, chat, and explanation features." },
@@ -63,18 +50,7 @@ export default function AiIntegration() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/integration/api/config?_=${Date.now()}`);
-      let data: any;
-      try {
-        data = await res.json();
-      } catch (jsonErr) {
-        throw new Error(`Failed to load configuration: Server returned a non-JSON response (Status: ${res.status}).`);
-      }
-
-      if (!res.ok) {
-        throw new Error(data?.error || `Failed to load configuration (Status: ${res.status})`);
-      }
-      setConfig(data);
+      setConfig(await getConfig());
     } catch (err: any) {
       setError(err.message || "An unknown error occurred while fetching settings.");
     } finally {
@@ -164,27 +140,18 @@ export default function AiIntegration() {
     setError(null);
 
     try {
-      const res = await fetch("/integration/api/provider", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider: finalProvider,
-          apiBase: providerApiBase,
-          apiKey: providerApiKey,
-        }),
+      const message = await saveProvider({
+        provider: finalProvider,
+        apiBase: providerApiBase,
+        apiKey: providerApiKey,
       });
 
-      const result = await res.json();
-      if (res.ok && result.success) {
-        setSuccessMsg(result.message || "Provider credentials saved successfully!");
-        setProviderApiKey("");
-        setProviderName("");
-        setCustomProviderName("");
-        setProviderApiBase("");
-        await fetchConfig();
-      } else {
-        throw new Error(result.error || "Failed to save provider.");
-      }
+      setSuccessMsg(message || "Provider credentials saved successfully!");
+      setProviderApiKey("");
+      setProviderName("");
+      setCustomProviderName("");
+      setProviderApiBase("");
+      await fetchConfig();
     } catch (err: any) {
       setError(err.message || "An error occurred.");
     } finally {
@@ -200,16 +167,9 @@ export default function AiIntegration() {
     setError(null);
     setSuccessMsg(null);
     try {
-      const res = await fetch(`/integration/api/provider/${providerId}`, {
-        method: "DELETE",
-      });
-      const result = await res.json();
-      if (res.ok && result.success) {
-        setSuccessMsg("Provider deleted successfully.");
-        await fetchConfig();
-      } else {
-        throw new Error(result.error || "Failed to delete provider.");
-      }
+      await deleteProvider(providerId);
+      setSuccessMsg("Provider deleted successfully.");
+      await fetchConfig();
     } catch (err: any) {
       setError(err.message || "An error occurred.");
     } finally {
@@ -224,23 +184,14 @@ export default function AiIntegration() {
     setError(null);
 
     try {
-      const res = await fetch("/integration/api/integration", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          modality: selectedModality,
-          provider_id: integrationProviderId ? Number(integrationProviderId) : null,
-          model: integrationModel,
-        }),
+      const message = await saveIntegration({
+        modality: selectedModality,
+        provider_id: integrationProviderId ? Number(integrationProviderId) : null,
+        model: integrationModel,
       });
 
-      const result = await res.json();
-      if (res.ok && result.success) {
-        setSuccessMsg(result.message || "Integration configured successfully!");
-        await fetchConfig();
-      } else {
-        throw new Error(result.error || "Failed to save integration.");
-      }
+      setSuccessMsg(message || "Integration configured successfully!");
+      await fetchConfig();
     } catch (err: any) {
       setError(err.message || "An error occurred.");
     } finally {
@@ -258,22 +209,9 @@ export default function AiIntegration() {
     setPlaygroundModelUsed(null);
 
     try {
-      const res = await fetch("/integration/api/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt,
-          modality: playgroundModality,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setPlaygroundResponse(data.response);
-        setPlaygroundModelUsed(data.model_used);
-      } else {
-        throw new Error(data.error || "Failed to generate completion.");
-      }
+      const result = await testPrompt(prompt, playgroundModality);
+      setPlaygroundResponse(result.response);
+      setPlaygroundModelUsed(result.modelUsed);
     } catch (err: any) {
       setPlaygroundError(err.message || "An unexpected error occurred.");
     } finally {
@@ -283,9 +221,8 @@ export default function AiIntegration() {
 
   if (loading && !config) {
     return (
-      <div className={`${styles.textCenter} ${styles.my5} ${styles.py5}`}>
-        <div className={styles.spinner} role="status"></div>
-        <p className={`${styles.textMuted} ${styles.bold}`} style={{ marginTop: "1rem" }}>Fetching current AI status...</p>
+      <div className={`${styles.my5} ${styles.py5}`}>
+        <LoadingState message="Fetching current AI status..." />
       </div>
     );
   }
@@ -336,22 +273,36 @@ export default function AiIntegration() {
       </ul>
 
       {error && (
-        <div className={`${styles.alert} ${styles.alertError}`} role="alert">
+        <div
+          className={`${sharedStyles.alert} ${sharedStyles.alertError} ${styles.alertRow}`}
+          role="alert"
+        >
           <div>
             <strong>Error:</strong> {error}
           </div>
-          <button type="button" className={styles.alertClose} onClick={() => setError(null)}>
+          <button
+            type="button"
+            className={sharedStyles.alertCloseButton}
+            onClick={() => setError(null)}
+          >
             <span>&times;</span>
           </button>
         </div>
       )}
 
       {successMsg && (
-        <div className={`${styles.alert} ${styles.alertSuccess}`} role="alert">
+        <div
+          className={`${sharedStyles.alert} ${sharedStyles.alertSuccess} ${styles.alertRow}`}
+          role="alert"
+        >
           <div>
             <strong>Success!</strong> {successMsg}
           </div>
-          <button type="button" className={styles.alertClose} onClick={() => setSuccessMsg(null)}>
+          <button
+            type="button"
+            className={sharedStyles.alertCloseButton}
+            onClick={() => setSuccessMsg(null)}
+          >
             <span>&times;</span>
           </button>
         </div>
@@ -368,7 +319,7 @@ export default function AiIntegration() {
               {config.providers.length === 0 ? (
                 <div className={`${styles.textCenter} ${styles.textMuted}`} style={{ padding: "1.5rem 0" }}>
                   <p style={{ marginBottom: "0.5rem" }}>No API keys or provider credentials added yet.</p>
-                  <button className={`${styles.btn} ${styles.btnPrimary} ${styles.small}`} onClick={() => setActiveTab("providers")}>
+                  <button className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnBlue}`} onClick={() => setActiveTab("providers")}>
                     Add Credentials
                   </button>
                 </div>
@@ -436,7 +387,7 @@ export default function AiIntegration() {
                 </tbody>
               </table>
               <div className={styles.textCenter} style={{ marginTop: "1.5rem" }}>
-                <button className={`${styles.btn} ${styles.btnOutlineSuccess} ${styles.small}`} onClick={() => setActiveTab("integrations")}>
+                <button className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnGreen}`} onClick={() => setActiveTab("integrations")}>
                   Configure Modalities
                 </button>
               </div>
@@ -498,9 +449,17 @@ export default function AiIntegration() {
                   />
                 </div>
 
-                <button type="submit" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnBlock}`} disabled={saving}>
-                  {saving ? "Saving..." : "Save Provider Credentials"}
-                </button>
+                {/* A row of one: the layout is what makes it fill the form,
+                    so the control itself carries no width. */}
+                <div className={sharedStyles.actionRow}>
+                  <button
+                    type="submit"
+                    className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnBlue}`}
+                    disabled={saving}
+                  >
+                    {saving ? "Saving..." : "Save Provider Credentials"}
+                  </button>
+                </div>
               </form>
             </div>
           </div>
@@ -536,7 +495,7 @@ export default function AiIntegration() {
                             </span>
                           </td>
                           <td>
-                            <button className={`${styles.btn} ${styles.btnOutlineDanger}`} onClick={() => handleDeleteProvider(p.id)}>
+                            <button className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnRed} ${sharedStyles.buttonRound}`} onClick={() => handleDeleteProvider(p.id)}>
                               <i className="fa fa-trash"></i>
                             </button>
                           </td>
@@ -565,7 +524,9 @@ export default function AiIntegration() {
                     onClick={() => setSelectedModality(m.value)}
                   >
                     <h6 className={styles.bold} style={{ margin: "0 0 4px 0", fontSize: "0.95rem" }}>{m.label}</h6>
-                    <p className={styles.small} style={{ margin: 0, color: selectedModality === m.value ? "rgba(255, 255, 255, 0.8)" : "#718096" }}>{m.desc}</p>
+                    {/* Colour comes from .listGroupItem / .listGroupItemActive p,
+                        so the active state is not restated here. */}
+                    <p className={`${styles.small} ${styles.textMuted} ${styles.listItemDesc}`}>{m.desc}</p>
                   </button>
                 ))}
               </div>
@@ -580,7 +541,7 @@ export default function AiIntegration() {
               {config.providers.length === 0 ? (
                 <div className={styles.textCenter} style={{ padding: "1.5rem 0" }}>
                   <p className={styles.textMuted}>You must add provider credentials before assigning models to modalities.</p>
-                  <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setActiveTab("providers")}>
+                  <button className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnBlue}`} onClick={() => setActiveTab("providers")}>
                     Go to Credentials
                   </button>
                 </div>
@@ -650,7 +611,7 @@ export default function AiIntegration() {
                     </div>
                   )}
 
-                  <button type="submit" className={`${styles.btn} ${styles.btnSuccess}`} style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem" }} disabled={saving}>
+                  <button type="submit" className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnGreen}`} disabled={saving}>
                     {saving ? "Saving..." : "Apply Integration Model"}
                   </button>
                 </form>
@@ -696,8 +657,7 @@ export default function AiIntegration() {
                 <div className={styles.textRight}>
                   <button
                     type="submit"
-                    className={`${styles.btn} ${styles.btnSuccess}`}
-                    style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem" }}
+                    className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnGreen}`}
                     disabled={testing || !prompt.trim()}
                   >
                     {testing ? "Generating..." : "Send Request"}
@@ -707,7 +667,7 @@ export default function AiIntegration() {
 
               {(playgroundResponse || playgroundError || playgroundModelUsed) && (
                 <div className={styles.resultConsole}>
-                  <h6 className={styles.bold} style={{ color: "#718096", margin: "0 0 8px 0" }}>Result Console:</h6>
+                  <h6 className={`${styles.bold} ${styles.textMuted} ${styles.consoleHeading}`}>Result Console:</h6>
                   {playgroundModelUsed && (
                     <div className={`${styles.small} ${styles.textMuted}`} style={{ marginBottom: "8px" }}>
                       🤖 <strong>Model resolved:</strong> <code>{playgroundModelUsed}</code>

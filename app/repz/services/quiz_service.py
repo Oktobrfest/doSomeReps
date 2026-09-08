@@ -1,4 +1,3 @@
-import hashlib
 import logging
 import random
 from enum import StrEnum
@@ -13,7 +12,9 @@ from repz.extensions import cache
 from repz.cache_helper import CacheHelper
 from repz.database import session
 from repz.models import level, question, quizq
+from repz.services.audio_asset_service import audio_object_key, default_tts_texts
 from repz.bluehelpers import (
+    flag_payload,
     get_quizes,
     get_session,
     get_user,
@@ -88,11 +89,7 @@ def _build_audio_assets_for_template(q: dict, raw_assets: dict) -> dict:
     if not raw_assets:
         return audio_assets
 
-    part_to_text = {
-        "question": q.get("question_text"),
-        "answer": q.get("answer"),
-        "hint": q.get("hint"),
-    }
+    part_to_text = default_tts_texts(q)
 
     for lang, lang_assets in raw_assets.items():
         for part, ensured_asset_url in lang_assets.items():
@@ -111,8 +108,12 @@ def _build_audio_assets_for_template(q: dict, raw_assets: dict) -> dict:
                 )
                 continue
 
-            text_hash = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
-            object_key = f"audio/{lang}/{q['question_id']}/{part}-{text_hash}.mp3"
+            object_key = audio_object_key(
+                question_id=q["question_id"],
+                part=part,
+                language=lang,
+                source_text=source_text,
+            )
             audio_url = url_for("audio.serve_audio_by_key", object_key=object_key)
 
             audio_assets.setdefault(part, []).append({
@@ -155,6 +156,23 @@ def get_selected_categories() -> list[str] | str:
 def set_selected_categories(category_slugs: list[str]) -> None:
     """Persist the user's category selection for subsequent quiz requests."""
     set_session("quiz_category_names", category_slugs)
+
+
+def invalidate_quiz_queue_cache(user_id: int) -> None:
+    """
+    Drop the reader's cached queue so edits to a question show up next request.
+
+    Best-effort: a cache that cannot be reached must not fail the write that
+    prompted the invalidation.
+    """
+    try:
+        selected_categories = get_session("quiz_category_names")
+        if not selected_categories or selected_categories == "Not set":
+            return
+
+        cache.delete(CacheHelper(user_id).generate_cache_key(selected_categories))
+    except Exception as e:
+        logging.error(f"Failed to clear the cached quiz queue: {e}")
 
 
 def exclude_quiz_question(
@@ -419,14 +437,4 @@ def _get_question_flag(user_id: int, question_id) -> dict[str, Any] | None:
         logging.error(f"❌ Failed to fetch flag for question {question_id}: {e}")
         return None
 
-    if not f:
-        return None
-
-    return {
-        "category": (
-            f.flag_category.value
-            if hasattr(f.flag_category, "value")
-            else str(f.flag_category)
-        ),
-        "note": f.note,
-    }
+    return flag_payload(f)

@@ -129,13 +129,7 @@ def homepage():
 
         que_list = get_quizes(selected_cats, UID)
 
-        category_count = {}
-        for q in que_list:
-            for c in q['categories']:
-                if c in category_count:
-                    category_count[c] += 1
-                else:
-                    category_count[c] = 1
+        category_count = tally_que_catz(que_list)
 
         sorted_cats = sorted(category_count.items(), key = lambda x: x[1], reverse = True)
         limited_sorted_cats = sorted_cats[:5]

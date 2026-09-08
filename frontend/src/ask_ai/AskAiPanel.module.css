@@ -7,46 +7,46 @@
 
 .askAiTurnBlock {
   position: relative;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  background: var(--rep-color-surface-subtle);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-card);
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--rep-shadow-card);
 }
 
 .askAiTurnHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--rep-color-surface-secondary);
   padding-bottom: 0.5rem;
 }
 
 .askAiTurnTitle {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #1e3a8a;
+  color: var(--rep-color-info-text-deep);
 }
 
 .askAiDiscardBtn {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--rep-color-text-subtle);
   cursor: pointer;
   padding: 0.25rem;
-  border-radius: 4px;
+  border-radius: var(--rep-radius-small);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: var(--rep-transition-fast);
 }
 
 .askAiDiscardBtn:hover {
-  background-color: #fee2e2;
-  color: #ef4444;
+  background-color: var(--rep-color-error-surface-subtle);
+  color: var(--rep-intent-red-bg);
 }
 
 .askAiSessionActions {
@@ -59,29 +59,30 @@
 
 .askAiContainer {
   padding: 1.25rem;
-  background: #f8fafc;
-  border: 2px solid #3b82f6;
-  border-radius: 12px;
+  background: var(--rep-color-surface-subtle);
+  border: 2px solid var(--rep-color-info-border-strong);
+  border-radius: var(--rep-radius-card);
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--rep-shadow-card-raised);
 }
 
 .askAiTitle {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #1e3a8a;
+  color: var(--rep-color-info-text-deep);
   margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 }
 
 .askAiPulse {
   display: inline-block;
   width: 12px;
   height: 12px;
-  background-color: #ef4444;
-  border-radius: 50%;
+  background-color: var(--rep-intent-red-bg);
+  border-radius: var(--rep-radius-circle);
   margin-right: 8px;
   animation: askAiPulsing 1s ease-in-out infinite alternate;
 }
@@ -101,69 +102,45 @@
 .askAiTranscriptBox {
   margin-top: 1rem;
   padding: 0.75rem;
-  background: #f1f5f9;
-  border-radius: 8px;
-  border-left: 4px solid #3b82f6;
+  background: var(--rep-color-surface-secondary);
+  border-radius: var(--rep-radius-dialog);
+  border-left: 4px solid var(--rep-color-info-border-strong);
   text-align: left;
 }
 
 .askAiTranscriptTitle {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #475569;
+  color: var(--rep-color-text-secondary);
   margin-bottom: 0.25rem;
 }
 
 .askAiTranscriptText {
   font-size: 0.95rem;
-  color: #0f172a;
+  color: var(--rep-color-text-strong);
 }
 
 .askAiAnswerBox {
   margin-top: 1rem;
   padding: 0.9rem;
-  background: #eff6ff;
-  border-radius: 8px;
-  border-left: 4px solid #22c55e;
+  background: var(--rep-color-info-surface-subtle);
+  border-radius: var(--rep-radius-dialog);
+  border-left: 4px solid var(--rep-intent-green-bg);
   text-align: left;
 }
 
 .askAiAnswerText {
   font-size: 0.95rem;
-  color: #0f172a;
+  color: var(--rep-color-text-strong);
 }
 
 .askAiAnswerPlayer {
   margin-top: 0.75rem;
 }
 
-.spinnerBorder {
-  width: 3rem;
-  height: 3rem;
-  display: inline-block;
-  border-radius: 50%;
-  flex-shrink: 0;
-  border: 0.25rem solid currentColor;
-  border-right-color: transparent;
-  animation: spinnerBorder 0.75s linear infinite;
-}
-
-.spinnerInline {
-  width: 1.2rem;
-  height: 1.2rem;
-  border-width: 0.2rem;
-  margin-right: 8px;
-}
-
-@keyframes spinnerBorder {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .errorMessage {
   margin-top: 0.5rem;
-  color: #dc3545;
+  color: var(--rep-color-error-text-strong);
   font-size: 0.875rem;
   font-weight: 700;
   white-space: pre-wrap;
@@ -175,12 +152,12 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.6rem;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  background: var(--rep-color-surface-secondary);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-dialog);
   font-size: 0.9rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--rep-color-text-primary);
   cursor: pointer;
   user-select: none;
 }

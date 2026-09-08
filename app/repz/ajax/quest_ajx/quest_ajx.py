@@ -3,7 +3,7 @@ import json
 import copy
 
 from flask import flash, request, jsonify, current_app
-from flask_login import login_required
+from flask_login import current_user, login_required
 from flask import g, make_response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload, Query
@@ -13,7 +13,9 @@ from ...models import q_pic, users, question, quizq, category, rating, audio, fl
 from repz.extensions import cache
 from ...database import session
 from repz.routes import quest_ajx
-from ...bluehelpers import clean_for_html, get_all_db_categories, get_user, remove_underscore, delete_pic
+from repz.services.quiz_service import invalidate_quiz_queue_cache
+from ...bluehelpers import (clean_for_html, delete_pic, flag_payload,
+                            get_all_db_categories, get_user, remove_underscore)
 
 from ...home.form_helpers import save_pictures
 
@@ -123,18 +125,7 @@ def saveq():
     # commit the changes to the database
     session.commit()
 
-    # Clear the user's cached quiz queue so they see the updated question details
-    try:
-        from repz.bluehelpers import get_session
-        from repz.cache_helper import CacheHelper
-        from flask_login import current_user
-        selected_categories = get_session("quiz_category_names")
-        if selected_categories and selected_categories != "Not set":
-            cache_helper = CacheHelper(current_user.id)
-            key = cache_helper.generate_cache_key(selected_categories)
-            cache.delete(key)
-    except Exception as e:
-        print("Error clearing quiz cache on saveq:", e)
+    invalidate_quiz_queue_cache(current_user.id)
 
     msg = "Question Saved"
     flash(msg, category="success")
@@ -215,10 +206,7 @@ def searchq():
             flag.question_id.in_(result_ids),
         ).all()
         for f in flag_rows:
-            flags_by_qid[f.question_id] = {
-                "category": f.flag_category.value,
-                "note": f.note,
-            }
+            flags_by_qid[f.question_id] = flag_payload(f)
 
     search_results = []
     for r in results:
@@ -349,18 +337,7 @@ def deleteq():
     session.delete(q)
     session.commit()
 
-    # Clear the user's cached quiz queue so they don't see the deleted question details
-    try:
-        from repz.bluehelpers import get_session
-        from repz.cache_helper import CacheHelper
-        from flask_login import current_user
-        selected_categories = get_session("quiz_category_names")
-        if selected_categories and selected_categories != "Not set":
-            cache_helper = CacheHelper(current_user.id)
-            key = cache_helper.generate_cache_key(selected_categories)
-            cache.delete(key)
-    except Exception as e:
-        print("Error clearing quiz cache on deleteq:", e)
+    invalidate_quiz_queue_cache(current_user.id)
 
     msg = "Question Deleted"
     flash(msg, category="success")

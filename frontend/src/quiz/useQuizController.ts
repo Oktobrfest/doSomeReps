@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 import { flushSync } from 'react-dom';
+import { jsonHeaders } from '../lib/http';
 import type {
   AudioAssets,
   QuizCommandHandlers,
@@ -415,17 +416,9 @@ export function useQuizController({
 
   const postQuizAction = useCallback(
     async (body: QuizActionRequest) => {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      if (csrfToken) {
-        headers['X-CSRFToken'] = csrfToken;
-      }
-
       const response = await fetch('/quiz/api/action', {
         method: 'POST',
-        headers,
+        headers: jsonHeaders(csrfToken),
         credentials: 'same-origin',
         body: JSON.stringify(body),
       });
@@ -693,18 +686,10 @@ export function useQuizController({
 
   const applyCategories = useCallback(
     async (categories: string[]) => {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      if (csrfToken) {
-        headers['X-CSRFToken'] = csrfToken;
-      }
-
       try {
         const response = await fetch('/quiz/api/categories', {
           method: 'POST',
-          headers,
+          headers: jsonHeaders(csrfToken),
           credentials: 'same-origin',
           body: JSON.stringify({ categories }),
         });

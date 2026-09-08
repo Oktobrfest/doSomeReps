@@ -1,5 +1,6 @@
 import React from 'react';
 import { Wrench, ShieldAlert, BookOpen, Trash2, Flag } from 'lucide-react';
+import sharedStyles from '../styles/shared.module.css';
 
 export enum FlagCategory {
   NEEDS_CHANGES = "NEEDS_CHANGES",
@@ -17,17 +18,17 @@ export const FLAG_METADATA: Record<FlagCategory, FlagMetadata> = {
   [FlagCategory.NEEDS_CHANGES]: {
     label: "Needs Changes",
     icon: <Wrench />,
-    colorClass: "flag-color-other",
+    colorClass: sharedStyles.flagOther,
   },
   [FlagCategory.INAPPROPRIATE]: {
     label: "Inappropriate",
     icon: <ShieldAlert />,
-    colorClass: "flag-color-other",
+    colorClass: sharedStyles.flagOther,
   },
   [FlagCategory.STUDY_ME]: {
     label: "Study Me",
     icon: <BookOpen />,
-    colorClass: "flag-color-study-me",
+    colorClass: sharedStyles.flagStudyMe,
   },
 };
 
