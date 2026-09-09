@@ -1,8 +1,16 @@
+import { Ban, ListPlus, UserX } from "lucide-react";
+import { RatingStars } from "../quiz/RatingStars";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./QueMore.module.css";
+import { NO_SELECTION } from "./quemore_types";
 import type { QueSearchResult, RowSelection } from "./quemore_types";
 
-interface QueResultsTableProps {
+/** Class list for one control on a card: base + size + intent. */
+function cardBtn(intent: string) {
+  return `${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${intent}`;
+}
+
+interface QueResultsListProps {
   results: QueSearchResult[];
   selections: Record<number, RowSelection>;
   onToggle: (questionId: number, field: keyof RowSelection, value: boolean) => void;
@@ -10,84 +18,100 @@ interface QueResultsTableProps {
   blockingUserId: number | null;
 }
 
-export function QueResultsTable({
+/**
+ * One card per question found, rather than one row of a table nobody can read
+ * on a phone: everything about a question stacks in a column narrow enough to
+ * fit the screen it is on, and the two verdicts are buttons big enough for a
+ * thumb instead of a pair of checkboxes.
+ */
+export function QueResultsList({
   results,
   selections,
   onToggle,
   onBlock,
   blockingUserId,
-}: QueResultsTableProps) {
+}: QueResultsListProps) {
   return (
-    <div className={sharedStyles.tableResponsive}>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th scope="col">Que</th>
-            <th scope="col">Exclude</th>
-            <th scope="col">Username</th>
-            <th scope="col">Rating</th>
-            <th scope="col">Question</th>
-            <th scope="col">Categories</th>
-          </tr>
-        </thead>
-        <tbody>
-          {results.map((result) => {
-            const selection = selections[result.question_id] ?? {
-              que: false,
-              exclude: false,
-            };
+    <ul className={styles.cardGrid}>
+      {results.map((result) => {
+        const selection = selections[result.question_id] ?? NO_SELECTION;
+        const state = selection.que
+          ? styles.cardQued
+          : selection.exclude
+            ? styles.cardExcluded
+            : "";
 
-            return (
-              <tr key={result.question_id}>
-                <td className={styles.checkCell}>
-                  <input
-                    type="checkbox"
-                    checked={selection.que}
-                    aria-label={`Add question ${result.question_id} to your que`}
-                    onChange={(event) =>
-                      onToggle(result.question_id, "que", event.target.checked)
-                    }
-                  />
-                </td>
-                <td className={styles.checkCell}>
-                  <input
-                    type="checkbox"
-                    checked={selection.exclude}
-                    aria-label={`Exclude question ${result.question_id}`}
-                    onChange={(event) =>
-                      onToggle(result.question_id, "exclude", event.target.checked)
-                    }
-                  />
-                </td>
-                <td>
-                  <div className={styles.userCell}>
-                    <span>{result.username}</span>
-                    <button
-                      type="button"
-                      className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnRed}`}
-                      onClick={() => onBlock(result.created_by, result.username)}
-                      disabled={blockingUserId === result.created_by}
-                    >
-                      Block
-                    </button>
-                  </div>
-                </td>
-                <td className={styles.ratingCell}>{result.rating ?? "—"}</td>
-                <td className={styles.questionCell}>{result.question_text}</td>
-                <td>
-                  <div className={styles.categoryCell}>
-                    {result.categories.map((category) => (
-                      <span key={category} className={styles.categoryBadge}>
-                        {category}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+        return (
+          <li key={result.question_id} className={`${styles.card} ${state}`}>
+            <p className={styles.cardQuestion}>{result.question_text}</p>
+
+            {result.categories.length > 0 && (
+              <div className={styles.categoryRow}>
+                {result.categories.map((category) => (
+                  <span key={category} className={styles.categoryChip}>
+                    {category}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className={styles.cardMeta}>
+              {result.rating === null ? (
+                <span className={styles.unrated}>Unrated</span>
+              ) : (
+                <RatingStars
+                  value={result.rating}
+                  label={`Rated ${result.rating} out of 5`}
+                />
+              )}
+
+              <div className={styles.byline}>
+                <span className={styles.author}>by {result.username}</span>
+                <button
+                  type="button"
+                  className={`${cardBtn(sharedStyles.btnRed)} ${sharedStyles.buttonRound}`}
+                  onClick={() => onBlock(result.created_by, result.username)}
+                  disabled={blockingUserId === result.created_by}
+                  title={`Block ${result.username}`}
+                  aria-label={`Block ${result.username}`}
+                >
+                  <UserX className={sharedStyles.buttonIcon} />
+                </button>
+              </div>
+            </div>
+
+            <div className={sharedStyles.actionRow}>
+              <button
+                type="button"
+                aria-pressed={selection.que}
+                className={cardBtn(
+                  selection.que ? sharedStyles.btnCyan : sharedStyles.btnQuiet
+                )}
+                onClick={() =>
+                  onToggle(result.question_id, "que", !selection.que)
+                }
+              >
+                <ListPlus className={sharedStyles.buttonIcon} />
+                <span>Que</span>
+              </button>
+
+              <button
+                type="button"
+                aria-pressed={selection.exclude}
+                className={cardBtn(
+                  selection.exclude ? sharedStyles.btnRed : sharedStyles.btnQuiet
+                )}
+                onClick={() =>
+                  onToggle(result.question_id, "exclude", !selection.exclude)
+                }
+              >
+                <Ban className={sharedStyles.buttonIcon} />
+                <span>Exclude</span>
+              </button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
