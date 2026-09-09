@@ -66,7 +66,7 @@ function autoSelect(
 export function QueMorePage() {
   const [categories, setCategories] = useState<string[]>(resolveInitialSelection);
   const [filters, setFilters] = useState<QueFilterState>(DEFAULT_FILTERS);
-  const [qty, setQty] = useState(10);
+  const [qty, setQty] = useState("10");
 
   const [results, setResults] = useState<QueSearchResult[]>([]);
   const [selections, setSelections] = useState<Record<number, RowSelection>>({});
@@ -89,7 +89,7 @@ export function QueMorePage() {
 
       setHasSearched(true);
       setResults(outcome.results);
-      setSelections(autoSelect(outcome.results, qty));
+      setSelections(autoSelect(outcome.results, Number(qty)));
 
       if (outcome.msg) {
         if (outcome.msgCategory === "error") toast.error(outcome.msg);
@@ -136,9 +136,9 @@ export function QueMorePage() {
 
   /** The quantity is what picks the rows, so editing it re-picks them. */
   const handleQtyChange = useCallback(
-    (value: number) => {
+    (value: string) => {
       setQty(value);
-      setSelections(autoSelect(results, value));
+      setSelections(autoSelect(results, Number(value)));
     },
     [results]
   );
@@ -228,9 +228,7 @@ export function QueMorePage() {
               min={0}
               max={999999}
               value={qty}
-              onChange={(event) =>
-                handleQtyChange(Number(event.target.value) || 0)
-              }
+              onChange={(event) => handleQtyChange(event.target.value)}
             />
           </label>
 
