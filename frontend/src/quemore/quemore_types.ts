@@ -27,11 +27,14 @@ export interface QueSearchResult {
   excluded: boolean;
 }
 
-/** Per-row checkbox state. Que and exclude are mutually exclusive. */
+/** Per-row selection state. Que and exclude are mutually exclusive. */
 export interface RowSelection {
   que: boolean;
   exclude: boolean;
 }
+
+/** A row the reader has not given a verdict on. */
+export const NO_SELECTION: RowSelection = { que: false, exclude: false };
 
 export interface SavePayload {
   que: number[];

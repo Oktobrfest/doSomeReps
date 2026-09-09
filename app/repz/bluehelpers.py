@@ -39,7 +39,25 @@ def set_session(key, value):
 def create_brand_new_quizq(question_ids, UID):
     new_q_quiz_list = []
     from repz.hatchet_client import trigger_audio_generation
+
+    # A question already waiting in the que must not be put there a second time:
+    # the same id can arrive twice in one request, and a caller can ask for one
+    # that is already queued. Answered reps are history rather than a clash, so
+    # only the open ones are looked at.
+    already_qued = set(
+        session.execute(
+            select(quizq.question_id)
+            .where(quizq.user_id == UID)
+            .where(quizq.question_id.in_(question_ids))
+            .where(quizq.answered_on.is_(None))
+        ).scalars()
+    )
+
     for question_id in question_ids:
+        if question_id in already_qued:
+            continue
+        already_qued.add(question_id)
+
         new_quizq = quizq(
             user_id=UID,
             level_no=1,
@@ -111,8 +129,14 @@ def get_quizes(selected_cats, UID):
     result = session.execute(quest_wCats_qry.distinct()).all()
 
     que_list = []
+    qued_question_ids = set()
     now = datetime.now()
     for r in result:
+        # Duplicate open quizq rows would otherwise put one question in the que
+        # more than once.
+        if r.question.question_id in qued_question_ids:
+            continue
+
         question_cats = [c.category_name for c in r.question.categories]
         if not set(question_cats) & set(selected_cats):
             continue  # Skip the current iteration if there's no intersection
@@ -179,6 +203,7 @@ def get_quizes(selected_cats, UID):
                 "flag": flag_data
             }
             que_list.append(q)
+            qued_question_ids.add(r.question.question_id)
 
     # Calculate the elapsed time of function excecution for Development ONLY
     elapsed_time = time.time() - start_time

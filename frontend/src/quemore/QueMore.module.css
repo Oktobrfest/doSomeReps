@@ -13,42 +13,43 @@
   color: var(--rep-color-text-primary);
 }
 
-/* ---------- Filters ---------- */
+/* ---------- Search panel ---------- */
 
-.filters {
-  padding: 0.75rem 1rem;
-  margin: 0;
+/* The filters and the controls that act on them are one unit, split by a rule
+   rather than by a gap between two floating boxes. */
+.searchPanel {
+  display: flex;
+  flex-direction: column;
 
   background-color: var(--rep-color-surface);
   border: 1px solid var(--rep-color-border);
-  border-radius: var(--rep-radius-dialog);
+  border-radius: var(--rep-radius-card);
+  box-shadow: var(--rep-shadow-card);
+}
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  padding: 0.85rem;
+  margin: 0;
+
+  /* A fieldset is min-content wide by default, which is what would push the
+     page sideways on a phone. */
+  min-width: 0;
+  border: 0;
 }
 
 .filtersLegend {
-  width: auto;
-  padding: 0 0.4rem;
+  padding: 0;
   margin: 0;
 
-  font-size: 1rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: var(--rep-color-text-primary);
-}
-
-.filterRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.25rem;
-}
-
-.filterOption {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--rep-color-text-secondary);
-  cursor: pointer;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--rep-color-text-muted);
 }
 
 /* ---------- Controls ---------- */
@@ -59,11 +60,17 @@
   align-items: center;
   gap: var(--rep-btn-row-gap);
 
-  padding: 0.75rem 1rem;
+  padding: 0.85rem;
 
   background-color: var(--rep-color-surface-subtle);
-  border: 1px solid var(--rep-color-border);
-  border-radius: var(--rep-radius-dialog);
+  border-top: 1px solid var(--rep-color-border);
+  border-radius: 0 0 var(--rep-radius-card) var(--rep-radius-card);
+}
+
+/* The two actions take the row on a phone and sit either side of the quantity
+   once there is room for all three. */
+.controlRow > button {
+  flex: 1 1 var(--rep-btn-cluster-basis);
 }
 
 .qtyLabel {
@@ -78,8 +85,8 @@
 }
 
 .qtyInput {
-  width: 6rem;
-  padding: 0.4rem 0.6rem;
+  width: 5rem;
+  padding: 0.5rem 0.6rem;
 
   font-family: inherit;
   font-size: 0.95rem;
@@ -101,89 +108,141 @@
 .results {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 
-  padding: 0.75rem 1rem;
+  padding: 0.75rem;
 
-  background-color: var(--rep-color-surface);
+  background-color: var(--rep-color-surface-subtle);
   border: 1px solid var(--rep-color-border);
   border-radius: var(--rep-radius-dialog);
 }
 
+.resultsHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .resultsTitle {
   margin: 0;
-  text-align: center;
   font-size: 1.25rem;
   color: var(--rep-color-text-primary);
 }
 
+.resultsActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.resultsSummary {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--rep-color-text-muted);
+}
+
 .empty {
   margin: 0;
+  padding: 1.5rem 0;
   text-align: center;
   font-size: 0.9rem;
   color: var(--rep-color-text-muted);
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
+/* One column on a phone and as many as fit once there is room, without a media
+   query and without ever making the page wider than the screen. */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: 0.75rem;
+
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
-.table th,
-.table td {
-  padding: 0.5rem 0.6rem;
-  text-align: left;
-  vertical-align: top;
-  border-bottom: 1px solid var(--rep-color-border);
-}
-
-.table th {
-  position: sticky;
-  top: 0;
-
-  font-weight: 700;
-  color: var(--rep-color-text-primary);
-  background-color: var(--rep-color-surface-secondary);
-}
-
-.checkCell {
-  width: 4rem;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.ratingCell {
-  width: 5rem;
-  vertical-align: middle;
-}
-
-.questionCell {
-  min-width: 16rem;
-  color: var(--rep-color-text-secondary);
-}
-
-.userCell {
+.card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
+  gap: 0.6rem;
 
-  color: var(--rep-color-text-secondary);
+  padding: 0.85rem;
+
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-card);
+  box-shadow: var(--rep-shadow-card);
+  transition:
+    border-color var(--rep-transition-fast),
+    box-shadow var(--rep-transition-fast);
 }
 
-.categoryCell {
+/* The verdict a card is left on, read off the colour of its edge rather than
+   off which of two checkboxes happens to be ticked. */
+.cardQued {
+  border-color: var(--rep-intent-cyan-bg);
+  box-shadow: var(--rep-shadow-card-raised);
+}
+
+.cardExcluded {
+  border-color: var(--rep-intent-red-bg);
+}
+
+.cardQuestion {
+  margin: 0;
+
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--rep-color-text-primary);
+
+  /* A pasted URL or an unspaced string breaks rather than widening the page. */
+  overflow-wrap: anywhere;
+}
+
+.categoryRow {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
 }
 
-.categoryBadge {
+.categoryChip {
   padding: 0.15rem 0.5rem;
 
-  font-size: 0.75rem;
-  color: var(--rep-cp-item-text);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--rep-color-category-chip-text);
 
-  background-color: var(--rep-cp-item-bg);
+  background-color: var(--rep-color-category-chip-bg);
   border-radius: 999px;
+}
+
+/* Pushed to the foot of the card so that cards sharing a row line their
+   ratings and their buttons up, however long the questions above them run. */
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  margin-top: auto;
+  padding-top: 0.6rem;
+
+  border-top: 1px solid var(--rep-color-border);
+}
+
+.byline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.author,
+.unrated {
+  font-size: 0.8rem;
+  color: var(--rep-color-text-muted);
 }

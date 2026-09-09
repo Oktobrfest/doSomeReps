@@ -36,7 +36,9 @@ def searchquefilters():
     cur_user = get_user(UID)
     excluded_question_ids = [q.question_id for q in cur_user.excluded_questions]
 
-    question_que = []
+    # Keyed by question_id, because the personal and the public queries below
+    # are independent and can both answer with the same question.
+    question_que = {}
     if filters['personal'] == True:
 
         # first grab all that users questions within the categories selected
@@ -56,7 +58,7 @@ def searchquefilters():
         dif = session.execute(query.distinct()).scalars().all()
 
         for r in dif:
-            question_que.append(r)
+            question_que.setdefault(r.question_id, r)
 
     user_list = []
     # fav_qry = select(users.favorates).where(users.id == UID)
@@ -104,10 +106,10 @@ def searchquefilters():
     filtered_questions = session.execute(final_query.distinct()).scalars().all()
 
     for r in filtered_questions:
-        question_que.append(r)
+        question_que.setdefault(r.question_id, r)
 
     search_results = []
-    for r in question_que:
+    for r in question_que.values():
         catz = []
         for c in r.categories:
             catz.append(c.category_name)

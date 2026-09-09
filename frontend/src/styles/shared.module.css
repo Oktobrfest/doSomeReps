@@ -242,6 +242,17 @@
   background-color: var(--rep-intent-slate-bg-hover);
 }
 
+/* For one side of a choice not yet taken: it wears the app's neutral surface,
+   so whichever side has been chosen is the only colour in the row. */
+.btnQuiet {
+  background-color: var(--rep-color-surface-secondary);
+  color: var(--rep-color-text-secondary);
+}
+
+.btnQuiet:hover:not(:disabled) {
+  background-color: var(--rep-color-surface-secondary-hover);
+}
+
 .btnOverlay {
   background-color: var(--rep-intent-overlay-bg);
   color: var(--rep-intent-overlay-fg);

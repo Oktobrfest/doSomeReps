@@ -1,13 +1,14 @@
 import { useCallback, useMemo, useState } from "react";
-import { Search, Save } from "lucide-react";
+import { ListChecks, Save, Search } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { CategoryPicker } from "../components/CategoryPicker";
 import { QueFilters } from "./QueFilters";
-import { QueResultsTable } from "./QueResultsTable";
+import { QueResultsList } from "./QueResultsList";
 import { blockUser, readBootstrap, saveToQue, searchQue } from "./quemore_api";
 import { resolveCategoryNames, toSlug } from "../lib/categories";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./QueMore.module.css";
+import { NO_SELECTION } from "./quemore_types";
 import type {
   QueFilterState,
   QueSearchResult,
@@ -31,9 +32,20 @@ function resolveInitialSelection(): string[] {
   );
 }
 
+/** Que and exclude are mutually exclusive: setting one clears the other. */
+function applySelection(
+  current: RowSelection,
+  field: keyof RowSelection,
+  value: boolean
+): RowSelection {
+  return field === "que"
+    ? { que: value, exclude: value ? false : current.exclude }
+    : { exclude: value, que: value ? false : current.que };
+}
+
 /**
  * Pre-checks the first `qty` rows that are not already excluded, matching the
- * "Quantity to Add" field the user set before searching.
+ * "Quantity to Add" field the user set.
  */
 function autoSelect(
   results: QueSearchResult[],
@@ -93,18 +105,42 @@ export function QueMorePage() {
 
   const toggle = useCallback(
     (questionId: number, field: keyof RowSelection, value: boolean) => {
-      setSelections((prev) => {
-        const current = prev[questionId] ?? { que: false, exclude: false };
-        // Que and exclude are mutually exclusive: checking one clears the other.
-        const next: RowSelection =
-          field === "que"
-            ? { que: value, exclude: value ? false : current.exclude }
-            : { exclude: value, que: value ? false : current.que };
-
-        return { ...prev, [questionId]: next };
-      });
+      setSelections((prev) => ({
+        ...prev,
+        [questionId]: applySelection(prev[questionId] ?? NO_SELECTION, field, value),
+      }));
     },
     []
+  );
+
+  /** A row already excluded is left out of "Que All", as it is of `autoSelect`. */
+  const queable = useMemo(() => results.filter((r) => !r.excluded), [results]);
+
+  const allQued =
+    queable.length > 0 &&
+    queable.every((result) => selections[result.question_id]?.que);
+
+  const toggleAll = useCallback(() => {
+    setSelections((prev) => {
+      const next = { ...prev };
+      for (const result of queable) {
+        next[result.question_id] = applySelection(
+          prev[result.question_id] ?? NO_SELECTION,
+          "que",
+          !allQued
+        );
+      }
+      return next;
+    });
+  }, [allQued, queable]);
+
+  /** The quantity is what picks the rows, so editing it re-picks them. */
+  const handleQtyChange = useCallback(
+    (value: number) => {
+      setQty(value);
+      setSelections(autoSelect(results, value));
+    },
+    [results]
   );
 
   const payload = useMemo(() => {
@@ -169,48 +205,72 @@ export function QueMorePage() {
         showSelectAll={true}
       />
 
-      <QueFilters filters={filters} onChange={setFilters} />
+      <section className={styles.searchPanel}>
+        <QueFilters filters={filters} onChange={setFilters} />
 
-      <div className={styles.controlRow}>
-        <button
-          type="button"
-          className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
-          onClick={() => void runSearch()}
-          disabled={searching}
-        >
-          <Search size={18} />
-          <span>{searching ? "Searching..." : "Search"}</span>
-        </button>
+        <div className={styles.controlRow}>
+          <button
+            type="button"
+            className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
+            onClick={() => void runSearch()}
+            disabled={searching}
+          >
+            <Search className={sharedStyles.buttonIcon} />
+            <span>{searching ? "Searching..." : "Search"}</span>
+          </button>
 
-        <label className={styles.qtyLabel} htmlFor="qty_to_que">
-          Quantity to Add:
-          <input
-            type="number"
-            id="qty_to_que"
-            className={styles.qtyInput}
-            min={0}
-            max={999999}
-            value={qty}
-            onChange={(event) => setQty(Number(event.target.value) || 0)}
-          />
-        </label>
+          <label className={styles.qtyLabel} htmlFor="qty_to_que">
+            Quantity to Add:
+            <input
+              type="number"
+              id="qty_to_que"
+              className={styles.qtyInput}
+              min={0}
+              max={999999}
+              value={qty}
+              onChange={(event) =>
+                handleQtyChange(Number(event.target.value) || 0)
+              }
+            />
+          </label>
 
-        <button
-          type="button"
-          className={`${sharedStyles.actionButton} ${sharedStyles.btnCyan}`}
-          onClick={() => void handleSave()}
-          disabled={saving || nothingToSave}
-        >
-          <Save size={18} />
-          <span>{saving ? "Saving..." : "Save"}</span>
-        </button>
-      </div>
+          <button
+            type="button"
+            className={`${sharedStyles.actionButton} ${sharedStyles.btnCyan}`}
+            onClick={() => void handleSave()}
+            disabled={saving || nothingToSave}
+          >
+            <Save className={sharedStyles.buttonIcon} />
+            <span>{saving ? "Saving..." : "Save"}</span>
+          </button>
+        </div>
+      </section>
 
       <section className={styles.results}>
-        <h2 className={styles.resultsTitle}>Que Search Results</h2>
+        <header className={styles.resultsHeader}>
+          <h2 className={styles.resultsTitle}>Que Search Results</h2>
+          {results.length > 0 && (
+            <div className={styles.resultsActions}>
+              <p className={styles.resultsSummary}>
+                {results.length} found &middot; {payload.que.length} to add
+              </p>
+              <button
+                type="button"
+                className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${
+                  allQued ? sharedStyles.btnSlate : sharedStyles.btnCyan
+                }`}
+                onClick={toggleAll}
+                disabled={queable.length === 0}
+              >
+                <ListChecks className={sharedStyles.buttonIcon} />
+                <span>{allQued ? "Clear All" : "Que All"}</span>
+              </button>
+            </div>
+          )}
+        </header>
 
         {results.length > 0 ? (
-          <QueResultsTable
+          <QueResultsList
             results={results}
             selections={selections}
             onToggle={toggle}
