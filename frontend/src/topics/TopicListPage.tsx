@@ -1,30 +1,49 @@
-import { TopicTable } from "./TopicTable";
+import { TopicGrid } from "./TopicGrid";
+import { TopicToolbar } from "./TopicToolbar";
 import { readTopicListBootstrap } from "./topics_api";
-import { useTopicSort } from "./useTopicSort";
+import { useTopicView } from "./useTopicView";
 import styles from "./Topics.module.css";
 
 const bootstrap = readTopicListBootstrap();
 
-export function TopicListPage() {
-  const { sorted, sort, toggle } = useTopicSort(bootstrap.topics);
+const totalQuestions = bootstrap.topics.reduce(
+  (total, topic) => total + topic.questionCount,
+  0
+);
 
-  const midpoint = Math.ceil(sorted.length / 2);
-  const halves = [sorted.slice(0, midpoint), sorted.slice(midpoint)].filter(
-    (half) => half.length > 0
+const largest = Math.max(0, ...bootstrap.topics.map((topic) => topic.questionCount));
+
+export function TopicListPage() {
+  const { visible, sort, toggleSort, query, setQuery } = useTopicView(
+    bootstrap.topics
   );
+
+  const filtering = query.trim().length > 0;
 
   return (
     <div className={styles.page}>
-      {halves.length === 0 ? (
-        <p className={styles.empty}>No topics yet.</p>
+      <header className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>Topics</h1>
+        <p className={styles.pageSummary}>
+          {filtering
+            ? `${visible.length} of ${bootstrap.topics.length} topics`
+            : `${bootstrap.topics.length} topics; ${totalQuestions.toLocaleString()} questions`}
+        </p>
+      </header>
+
+      <TopicToolbar
+        query={query}
+        onQueryChange={setQuery}
+        sort={sort}
+        onSort={toggleSort}
+      />
+
+      {visible.length === 0 ? (
+        <p className={styles.empty}>
+          {filtering ? "No topics match that filter." : "No topics yet."}
+        </p>
       ) : (
-        <div className={styles.topicColumns}>
-          {halves.map((half) => (
-            <div className={styles.topicColumn} key={half[0].name}>
-              <TopicTable topics={half} sort={sort} onSort={toggle} />
-            </div>
-          ))}
-        </div>
+        <TopicGrid topics={visible} largest={largest} />
       )}
     </div>
   );

@@ -7,10 +7,24 @@
   box-sizing: border-box;
 }
 
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .pageTitle {
   margin: 0;
   text-align: center;
   color: var(--rep-color-text-primary);
+}
+
+.pageSummary {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--rep-color-text-muted);
 }
 
 .empty {
@@ -23,99 +37,160 @@
 
 /* ---------- Topic list ---------- */
 
-.topicColumns {
+/* The filter and the order it is read in are one unit: a bar the list hangs
+   under, which wraps onto a second line before it ever widens the page. */
+.toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.topicColumn {
-  flex: 1 1 320px;
-  min-width: 0;
-  overflow-x: auto;
-}
-
-.topicTable {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.topicTable th,
-.topicTable td {
-  padding: 0.5rem 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--rep-color-border);
-}
-
-.topicTable th {
-  background-color: var(--rep-color-surface-secondary);
-}
-
-.topicTable tbody tr:hover {
-  background-color: var(--rep-color-surface-subtle);
-}
-
-.sortButton {
-  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--rep-btn-row-gap);
 
-  padding: 0;
+  padding: 0.75rem;
+
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-card);
+  box-shadow: var(--rep-shadow-card);
+}
+
+/* The field owns the border and the focus ring so the icon sits inside them. */
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 14rem;
+  min-width: 0;
+
+  padding: 0 0.6rem;
+
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-control);
+}
+
+.searchField:focus-within {
+  border-color: var(--rep-color-focus);
+  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
+}
+
+.searchIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+
+  color: var(--rep-color-text-muted);
+}
+
+.searchInput {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  padding: 0.5rem 0;
 
   font-family: inherit;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 0.9rem;
   color: var(--rep-color-text-primary);
-  text-decoration: underline;
 
   background: none;
   border: none;
-  cursor: pointer;
 }
 
-.sortButton:focus-visible {
+.searchInput:focus {
+  outline: none;
+}
+
+.sortGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rep-btn-gap);
+}
+
+/* One column on a phone and as many as fit once there is room, without a media
+   query and without ever making the page wider than the screen. */
+.topicGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: 0.75rem;
+
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* The card is the link; the item it sits in is only there to keep the list a
+   list, so it hands the card the whole of its cell. */
+.topicGrid > li {
+  display: flex;
+}
+
+.topicCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+
+  padding: 0.85rem;
+
+  color: var(--rep-color-text-primary);
+  text-decoration: none;
+
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-card);
+  box-shadow: var(--rep-shadow-card);
+  transition:
+    transform var(--rep-transition-fast),
+    border-color var(--rep-transition-fast),
+    box-shadow var(--rep-transition-fast);
+}
+
+.topicCard:hover {
+  transform: translateY(-1px);
+  text-decoration: none;
+
+  border-color: var(--rep-color-action-primary);
+  box-shadow: var(--rep-shadow-card-raised);
+}
+
+.topicCard:focus-visible {
   outline: 2px solid var(--rep-color-focus);
   outline-offset: 2px;
 }
 
-.sortIndicator {
-  width: 0;
-  height: 0;
-  border-style: solid;
-}
-
-.sortIndicator.asc {
-  border-width: 0 0.35rem 0.35rem 0.35rem;
-  border-color: transparent transparent currentColor transparent;
-}
-
-.sortIndicator.desc {
-  border-width: 0.35rem 0.35rem 0 0.35rem;
-  border-color: currentColor transparent transparent transparent;
-}
-
-.topicLink {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-
+.topicName {
   font-size: 1rem;
-  color: var(--rep-cp-item-text);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--rep-color-text-strong);
 
-  background-color: var(--rep-cp-item-bg);
+  /* A long topic name breaks rather than widening its card. */
+  overflow-wrap: anywhere;
+}
+
+/* Pushed to the foot of the card so that cards sharing a row line their counts
+   and their bars up, however long the names above them run. */
+.topicCount {
+  margin-top: auto;
+
+  font-size: 0.8rem;
+  color: var(--rep-color-text-muted);
+}
+
+.topicBar {
+  height: 4px;
+  overflow: hidden;
+
+  background-color: var(--rep-color-surface-secondary);
   border-radius: 999px;
 }
 
-.topicLink:hover {
-  background-color: var(--rep-cp-item-bg-active);
-  color: var(--rep-cp-item-text-active);
-  text-decoration: none;
-}
+.topicBar::after {
+  content: "";
+  display: block;
+  width: var(--topic-share, 0%);
+  height: 100%;
 
-.countCell {
-  width: 6rem;
-  text-align: center;
+  background-color: var(--rep-color-action-primary);
 }
 
 /* ---------- Topic questions ---------- */
