@@ -1,3 +1,4 @@
+import { csrfHeaders, jsonHeaders } from "../lib/http";
 import type {
   GeneratedQuestion,
   GenerateQuestionsRequest,
@@ -46,7 +47,7 @@ function postJson<TResponse>(
 ): Promise<TResponse> {
   return requestJson<TResponse>(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     signal,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -70,6 +71,7 @@ export function generateQuestions(
 
     return requestJson<GeneratorMutationResponse>("/generate", {
       method: "POST",
+      headers: csrfHeaders(),
       body: formData,
     });
   }

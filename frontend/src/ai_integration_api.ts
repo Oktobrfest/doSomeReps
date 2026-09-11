@@ -1,3 +1,4 @@
+import { csrfHeaders, jsonHeaders } from "./lib/http";
 import type {
   AIConfig,
   IntegrationInput,
@@ -43,7 +44,7 @@ async function mutate(
 function postJson(body: unknown): RequestInit {
   return {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     body: JSON.stringify(body),
   };
 }
@@ -69,7 +70,7 @@ export function saveProvider(input: ProviderInput): Promise<string | undefined> 
 export function deleteProvider(providerId: number): Promise<string | undefined> {
   return mutate(
     `/provider/${providerId}`,
-    { method: "DELETE" },
+    { method: "DELETE", headers: csrfHeaders() },
     "Failed to delete provider."
   );
 }

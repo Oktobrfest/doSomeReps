@@ -10,7 +10,6 @@
     {{ {
       'currentUsername': user.username,
       'editQuestionUrl': url_for('home.edit_question'),
-      'csrfToken': csrf_token(),
       'categoryList': category_list,
       'selectedCategories': selected_categories if selected_categories != 'Not set' else []
     } | tojson | safe }}

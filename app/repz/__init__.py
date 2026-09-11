@@ -13,7 +13,7 @@ from sqlalchemy.sql import func
 
 from .flask_util_js import FlaskUtilJs
 
-from .extensions import cache, sess
+from .extensions import cache, csrf, sess
 from .s3_ext import init_s3
 
 def init_app():
@@ -28,9 +28,6 @@ def init_app():
 
     from .vite import vite_asset
     app.jinja_env.globals['vite_asset'] = vite_asset
-
-    from flask_wtf.csrf import generate_csrf
-    app.jinja_env.globals['csrf_token'] = generate_csrf
 
     with app.app_context():
 
@@ -58,6 +55,8 @@ def init_app():
 
         cache.init_app(app)
         sess.init_app(app)
+        # Guards every POST/PUT/PATCH/DELETE and exposes csrf_token() to Jinja.
+        csrf.init_app(app)
 
         if env != 'development':
             from .configs.oidc import OIDCConfig

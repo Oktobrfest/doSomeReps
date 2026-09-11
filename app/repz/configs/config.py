@@ -40,6 +40,12 @@ class Config:
     CACHE_REDIS_PORT = int(environ.get('CACHE_REDIS_PORT', 6379))
     CACHE_REDIS_DB = int(environ.get('CACHE_REDIS_DB', 0))
 
+    # CSRF
+    # The quiz is a single page the reader can sit on for a whole audio
+    # session, so the token must outlive Flask-WTF's one hour default; None
+    # ties it to the session instead, which is what expires it.
+    WTF_CSRF_TIME_LIMIT = None
+
     # SESSION
     SESSION_TYPE = "redis"
     SESSION_PERMANENT = False

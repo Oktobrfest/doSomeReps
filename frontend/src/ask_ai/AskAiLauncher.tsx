@@ -13,7 +13,6 @@ export interface AskAiLauncherProps {
   categories?: string[];
   questionImageUrls?: string[];
   answerImageUrls?: string[];
-  csrfToken?: string;
   inline?: boolean;
 }
 
@@ -25,7 +24,6 @@ export function AskAiLauncher({
   categories,
   questionImageUrls,
   answerImageUrls,
-  csrfToken,
   inline = false,
 }: AskAiLauncherProps) {
   const context = useMemo<AskAiContext>(
@@ -36,9 +34,8 @@ export function AskAiLauncher({
       categories,
       questionImageUrls,
       answerImageUrls,
-      csrfToken,
     }),
-    [questionId, questionText, answerText, categories, questionImageUrls, answerImageUrls, csrfToken],
+    [questionId, questionText, answerText, categories, questionImageUrls, answerImageUrls],
   );
 
   const askAi = useAskAi({ context, answerRevealed });

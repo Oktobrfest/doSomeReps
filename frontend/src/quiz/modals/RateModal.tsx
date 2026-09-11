@@ -9,7 +9,6 @@ interface RateModalProps {
   /** Average rating across all users, 0 when nobody has rated it yet. */
   averageRating: number;
   userRating: number | null;
-  csrfToken?: string;
   onRated: (rating: number) => void;
   onClose: () => void;
 }
@@ -18,7 +17,6 @@ export function RateModal({
   quizqId,
   averageRating,
   userRating,
-  csrfToken,
   onRated,
   onClose,
 }: RateModalProps) {
@@ -32,7 +30,7 @@ export function RateModal({
     try {
       const response = await fetch('/rateq', {
         method: 'POST',
-        headers: jsonHeaders(csrfToken),
+        headers: jsonHeaders(),
         credentials: 'same-origin',
         body: JSON.stringify({ quizq_id: quizqId, rating: value }),
       });

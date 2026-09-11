@@ -19,7 +19,6 @@ export interface QuestionFlag {
 interface FlagButtonProps {
   questionId: string | number;
   initialFlag?: QuestionFlag | null;
-  csrfToken?: string;
   onFlagChange?: (newFlag: QuestionFlag | null) => void;
   disabled?: boolean;
   compact?: boolean;
@@ -28,7 +27,6 @@ interface FlagButtonProps {
 export function FlagButton({
   questionId,
   initialFlag = null,
-  csrfToken,
   onFlagChange,
   disabled = false,
   compact = false,
@@ -56,7 +54,7 @@ export function FlagButton({
     try {
       const response = await fetch("/api/flag", {
         method: "POST",
-        headers: jsonHeaders(csrfToken),
+        headers: jsonHeaders(),
         body: JSON.stringify({
           questionId,
           category: cat || null,

@@ -15,7 +15,6 @@ interface QuestionToolbarProps {
   question: Question;
   isOwnQuestion: boolean;
   editQuestionUrl: string;
-  csrfToken?: string;
   disabled: boolean;
   /** Absent when the question has nothing to hint at. */
   onHint?: () => void;
@@ -37,7 +36,6 @@ export function QuestionToolbar({
   question,
   isOwnQuestion,
   editQuestionUrl,
-  csrfToken,
   disabled,
   onHint,
   onRate,
@@ -61,7 +59,6 @@ export function QuestionToolbar({
       <FlagButton
         questionId={question.question_id}
         initialFlag={question.flag}
-        csrfToken={csrfToken}
         onFlagChange={onFlagChange}
         disabled={disabled}
         compact

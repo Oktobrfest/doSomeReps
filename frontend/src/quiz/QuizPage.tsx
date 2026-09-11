@@ -97,7 +97,6 @@ export function QuizPage(props: QuizPageProps) {
   const {
     currentUsername,
     editQuestionUrl,
-    csrfToken,
     categoryList,
     selectedCategories,
   } = props;
@@ -105,7 +104,6 @@ export function QuizPage(props: QuizPageProps) {
   const mode = useQuizMode();
   const fullSized = useFullSizedPage();
   const quiz = useQuizController({
-    csrfToken,
     audioEnabled: mode.audioEnabled,
     autoPlay: mode.autoPlay,
   });
@@ -123,9 +121,8 @@ export function QuizPage(props: QuizPageProps) {
       categories: q.categories ?? [],
       questionImageUrls: validImages(q.pics?.question_image),
       answerImageUrls: validImages(q.pics?.answer_pics),
-      csrfToken,
     };
-  }, [quiz.currentQuestion, csrfToken]);
+  }, [quiz.currentQuestion]);
 
   const askAi = useAskAi({
     context: askAiContext,
@@ -238,7 +235,6 @@ export function QuizPage(props: QuizPageProps) {
       categoryList={categoryList}
       selectedCategories={selectedCategories}
       slideOutRef={slideOutRef}
-      csrfToken={csrfToken}
     />
   ) : quiz.queueExhausted ? (
     <QuizEmpty
@@ -261,12 +257,6 @@ export function QuizPage(props: QuizPageProps) {
 
   return (
     <div className={styles.quizContainer}>
-      {/*
-        CSRF lives in the shell so getCsrfToken() in the command system still
-        resolves it even while the body is showing the loading spinner.
-      */}
-      {csrfToken && <input type="hidden" name="csrf_token" value={csrfToken} />}
-
       {fullSized ? (
         <div className={styles.pageLayout}>
           <div className={styles.readingColumn}>
@@ -310,7 +300,6 @@ interface QuizBodyProps {
   categoryList?: string[];
   selectedCategories?: string[];
   slideOutRef: RefObject<SlideOutButtonsHandle>;
-  csrfToken?: string;
 }
 
 /** The secondary panels a question can open, one at a time. */
@@ -325,7 +314,6 @@ function QuizBody({
   categoryList,
   selectedCategories,
   slideOutRef,
-  csrfToken,
 }: QuizBodyProps) {
   const currentQuestion = quiz.currentQuestion!; // guarded by the shell
   const answerRef = useRef<HTMLDivElement>(null);
@@ -439,7 +427,6 @@ function QuizBody({
           isSelf: isOwnQuestion,
         },
         initialFlag: currentQuestion.flag,
-        csrfToken,
         onFlagChange: quiz.actions.setFlag,
         audioEnabled: mode.audioEnabled,
         onToggleAudioEnabled: mode.toggleAudioEnabled,
@@ -485,7 +472,6 @@ function QuizBody({
           quizqId={currentQuestion.quizq_id}
           averageRating={currentQuestion.rating}
           userRating={userRating}
-          csrfToken={csrfToken}
           onRated={setUserRating}
           onClose={closeDialog}
         />
@@ -538,7 +524,6 @@ function QuizBody({
                 question={currentQuestion}
                 isOwnQuestion={isOwnQuestion}
                 editQuestionUrl={editQuestionUrl}
-                csrfToken={csrfToken}
                 disabled={quiz.isSubmitting}
                 onHint={hasHint ? () => setDialog('hint') : undefined}
                 onRate={hasRated ? undefined : () => setDialog('rate')}
@@ -550,7 +535,6 @@ function QuizBody({
                 <FlagButton
                   questionId={currentQuestion.question_id}
                   initialFlag={currentQuestion.flag}
-                  csrfToken={csrfToken}
                   onFlagChange={quiz.actions.setFlag}
                   compact={true}
                 />

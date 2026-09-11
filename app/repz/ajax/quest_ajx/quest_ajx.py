@@ -66,6 +66,22 @@ def addcat():
             True}), 500
 
 
+def _owned_question(question_id, *options):
+    """Load a question the caller authored, or None.
+
+    The editors only ever list the caller's own questions, so a miss here means
+    a forged id rather than a reachable UI state. Answering 404 rather than 403
+    keeps it from confirming that someone else's question exists.
+    """
+    query = session.query(question)
+    if options:
+        query = query.options(*options)
+    return query.filter(
+        question.question_id == question_id,
+        question.created_by == current_user.id,
+    ).first()
+
+
 #save question changes within edit questions page
 @quest_ajx.route("/saveq", methods=["POST"], endpoint="saveq")
 @login_required
@@ -88,7 +104,9 @@ def saveq():
         return "Answer cannot exceed 4000 characters.", 400
 
     # loop through the database pics and see if they match the ones in the request
-    q = session.query(question).filter_by(question_id=updated_question['id']).first()
+    q = _owned_question(updated_question['id'])
+    if q is None:
+        return jsonify({"error": "Question not found."}), 404
 
     # Check if any existing images need to be deleted
     for pic in q.pics:
@@ -317,7 +335,9 @@ def deleteq():
     delete_q = request.get_json()
     question_id = delete_q["id"]
 
-    q = session.query(question).options(joinedload(question.pics)).filter_by(question_id=delete_q["id"]).first()
+    q = _owned_question(question_id, joinedload(question.pics))
+    if q is None:
+        return jsonify({"error": "Question not found."}), 404
 
     # gather the q_pics and remove them from s3
     q_pics = q.pics
@@ -326,13 +346,11 @@ def deleteq():
     for pic in q_pics:
         delete_pic(pic)
 
-    exquestion = session.query(question).filter(question.question_id == question_id).first()
     # find all entries in 'excluded_questions' where 'question_id' matches the question you want to delete
-    if exquestion is not None:
-        q_users = session.query(users).filter(users.excluded_questions.contains(exquestion)).all()
+    q_users = session.query(users).filter(users.excluded_questions.contains(q)).all()
 
-        for usr in q_users:
-            usr.excluded_questions.remove(exquestion)
+    for usr in q_users:
+        usr.excluded_questions.remove(q)
 
     session.delete(q)
     session.commit()

@@ -1,3 +1,4 @@
+import { jsonHeaders } from "../lib/http";
 import { readBootstrap as readShared } from "../lib/bootstrap";
 import type {
   EditQuestionsBootstrap,
@@ -26,7 +27,7 @@ export async function searchQuestions(
 ): Promise<SearchResultItem[]> {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     body: JSON.stringify({
       "search-terms": filters.terms,
       "search-categories": filters.categories,
@@ -50,7 +51,7 @@ export async function unexcludeQuestion(
 ): Promise<void> {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     body: JSON.stringify(questionId),
   });
 

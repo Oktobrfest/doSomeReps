@@ -1,3 +1,4 @@
+import { csrfHeaders } from "../lib/http";
 import { readBootstrap as readShared } from "../lib/bootstrap";
 import type { AddContentBootstrap } from "./add_content_types";
 
@@ -16,7 +17,7 @@ export async function createCategory(
   const body = new FormData();
   body.append("add_category_field", categoryName);
 
-  const response = await fetch(url, { method: "POST", body });
+  const response = await fetch(url, { method: "POST", headers: csrfHeaders(), body });
 
   if (!response.ok) {
     throw new Error("Could not reach the server. Try again.");

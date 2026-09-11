@@ -105,7 +105,6 @@ export interface SlideOutButtonsProps {
   questionId?: string | number;
   author?: QuestionAuthor;
   initialFlag?: QuestionFlag | null;
-  csrfToken?: string;
   onFlagChange?: (newFlag: QuestionFlag | null) => void;
   audioEnabled?: boolean;
   onToggleAudioEnabled?: () => void;
@@ -144,7 +143,6 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
     questionId,
     author,
     initialFlag,
-    csrfToken,
     onFlagChange,
     audioEnabled,
     onToggleAudioEnabled,
@@ -518,7 +516,6 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
               <FlagButton
                 questionId={questionId}
                 initialFlag={initialFlag}
-                csrfToken={csrfToken}
                 onFlagChange={onFlagChange}
                 disabled={disabled}
               />

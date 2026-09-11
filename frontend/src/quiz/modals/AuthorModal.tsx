@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Ban, Star } from 'lucide-react';
 import { QuizModal } from '../../components/QuizModal';
+import { csrfHeaders } from '../../lib/http';
 import sharedStyles from '../../styles/shared.module.css';
 import styles from './modalContent.module.css';
 
@@ -40,6 +41,7 @@ export function AuthorModal({ authorId, authorUsername, onClose }: AuthorModalPr
       fetch('/fav_user', {
         method: 'POST',
         credentials: 'same-origin',
+        headers: csrfHeaders(),
         body: String(authorId),
       }),
     );
@@ -50,7 +52,12 @@ export function AuthorModal({ authorId, authorUsername, onClose }: AuthorModalPr
 
     return run(
       'blocked',
-      fetch('/block_user', { method: 'POST', credentials: 'same-origin', body }),
+      fetch('/block_user', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: csrfHeaders(),
+        body,
+      }),
     );
   };
 

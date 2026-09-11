@@ -1,3 +1,4 @@
+import { csrfHeaders, jsonHeaders } from "../lib/http";
 import { readBootstrap as readShared } from "../lib/bootstrap";
 import type {
   AjaxEnvelope,
@@ -29,7 +30,7 @@ export async function searchQue(
 ): Promise<SearchOutcome> {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     body: JSON.stringify({ ...filters, catz: categorySlugs }),
   });
 
@@ -52,7 +53,7 @@ export async function searchQue(
 export async function saveToQue(url: string, payload: SavePayload): Promise<string> {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -71,7 +72,7 @@ export async function blockUser(url: string, userId: number): Promise<void> {
   const body = new FormData();
   body.append("block_user_id", String(userId));
 
-  const response = await fetch(url, { method: "POST", body });
+  const response = await fetch(url, { method: "POST", headers: csrfHeaders(), body });
   if (!response.ok) {
     throw new Error("Could not block that user.");
   }

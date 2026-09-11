@@ -9,7 +9,6 @@ export interface AskAiContext {
   categories?: string[];
   questionImageUrls?: string[];
   answerImageUrls?: string[];
-  csrfToken?: string;
 }
 
 export interface AskAiTurn {

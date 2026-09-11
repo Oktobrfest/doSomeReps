@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Plus, Star, Trash2, X } from "lucide-react";
 import { useCategories } from "../hooks/useCategories";
 import { toSlug } from "../lib/categories";
+import { csrfHeaders, jsonHeaders } from "../lib/http";
 import styles from "./CategoryPicker.module.css";
 
 interface CategoryList {
@@ -159,7 +160,7 @@ export function CategoryPicker({
 
     fetch("/api/category-lists", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
       body: JSON.stringify({
         name,
         categories: selectedCategories,
@@ -189,7 +190,7 @@ export function CategoryPicker({
 
     fetch(`/api/category-lists/${selectedListId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
       body: JSON.stringify({ categories: selectedCategories }),
     })
       .then((res) => res.json())
@@ -207,7 +208,10 @@ export function CategoryPicker({
     if (!selectedListId) return;
     setError(null);
 
-    fetch(`/api/category-lists/${selectedListId}`, { method: "DELETE" })
+    fetch(`/api/category-lists/${selectedListId}`, {
+      method: "DELETE",
+      headers: csrfHeaders(),
+    })
       .then((res) => res.json())
       .then((data: { success?: boolean; error?: string }) => {
         if (!data.success) throw new Error(data.error ?? "Failed to delete list.");
@@ -223,7 +227,10 @@ export function CategoryPicker({
     if (!selectedListId) return;
     setError(null);
 
-    fetch(`/api/category-lists/${selectedListId}/set-default`, { method: "POST" })
+    fetch(`/api/category-lists/${selectedListId}/set-default`, {
+      method: "POST",
+      headers: csrfHeaders(),
+    })
       .then((res) => res.json())
       .then((data: { success?: boolean; error?: string }) => {
         if (!data.success) throw new Error(data.error ?? "Failed to set default.");

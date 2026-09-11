@@ -1,3 +1,4 @@
+import { csrfHeaders, jsonHeaders } from "../lib/http";
 import type {
   ExtendQuestionInput,
   ExtendQuestionResponse,
@@ -33,7 +34,7 @@ async function getErrorMessage(
 export async function getQuestion(questionId: number): Promise<QuestionData> {
   const response = await fetch("/getq", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     body: JSON.stringify(questionId),
   });
 
@@ -49,7 +50,7 @@ export async function getQuestion(questionId: number): Promise<QuestionData> {
 export async function deleteAudio(audioId: number): Promise<void> {
   const response = await fetch("/delete_audio", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     body: JSON.stringify({ audio_id: audioId }),
   });
 
@@ -63,7 +64,7 @@ export async function deleteAudio(audioId: number): Promise<void> {
 export async function deleteQuestion(questionId: number): Promise<void> {
   const response = await fetch("/deleteq", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     body: JSON.stringify({ id: questionId }),
   });
 
@@ -88,7 +89,7 @@ export async function extendQuestion(
 ): Promise<ExtendQuestionResponse> {
   const response = await fetch("/ai_question_generator/api/extend", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     signal,
     body: JSON.stringify({
       question_id: questionId,
@@ -143,6 +144,7 @@ export async function saveQuestion({
 
   const response = await fetch("/saveq", {
     method: "POST",
+    headers: csrfHeaders(),
     body: formData,
   });
 

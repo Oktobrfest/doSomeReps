@@ -247,7 +247,6 @@ export function AddContentPage() {
         categories={selected}
         questionImageUrls={questionImage.dataUrls}
         answerImageUrls={answerImages.dataUrls}
-        csrfToken={bootstrap.csrfToken}
       />
     </div>
   );

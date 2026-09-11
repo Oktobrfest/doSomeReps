@@ -295,7 +295,6 @@ function verdictToServerValue(verdict: VerdictKind): string {
 export type QuizController = ReturnType<typeof useQuizController>;
 
 interface UseQuizControllerOptions {
-  csrfToken?: string;
   /** When false the queue is fetched without audio and nothing ever plays. */
   audioEnabled: boolean;
   /** Start reading each new question aloud. Only consulted while audio is on. */
@@ -303,7 +302,6 @@ interface UseQuizControllerOptions {
 }
 
 export function useQuizController({
-  csrfToken,
   audioEnabled,
   autoPlay,
 }: UseQuizControllerOptions) {
@@ -418,7 +416,7 @@ export function useQuizController({
     async (body: QuizActionRequest) => {
       const response = await fetch('/quiz/api/action', {
         method: 'POST',
-        headers: jsonHeaders(csrfToken),
+        headers: jsonHeaders(),
         credentials: 'same-origin',
         body: JSON.stringify(body),
       });
@@ -434,7 +432,7 @@ export function useQuizController({
 
       return result;
     },
-    [csrfToken],
+    [],
   );
 
   const topUpQueue = useCallback(
@@ -689,7 +687,7 @@ export function useQuizController({
       try {
         const response = await fetch('/quiz/api/categories', {
           method: 'POST',
-          headers: jsonHeaders(csrfToken),
+          headers: jsonHeaders(),
           credentials: 'same-origin',
           body: JSON.stringify({ categories }),
         });
@@ -708,7 +706,7 @@ export function useQuizController({
       commitItems(NO_ITEMS);
       loadQueue();
     },
-    [commitItems, csrfToken, loadQueue, stopAllAudio],
+    [commitItems, loadQueue, stopAllAudio],
   );
 
   /*
