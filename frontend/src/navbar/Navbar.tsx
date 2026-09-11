@@ -1,6 +1,5 @@
 import { useState } from "react";
 import styles from "./Navbar.module.css";
-import sharedStyles from "../styles/shared.module.css";
 
 export interface NavbarProps {
   currentPath: string;
@@ -42,9 +41,6 @@ export function Navbar({
 }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const isAudioPage = currentPath === "/audio";
-  const isQuizPage = currentPath === "/quiz";
-
   const navLinks: NavLinkItem[] = [
     { label: "About Us", href: aboutUrl, active: currentPath === aboutUrl, id: "signUp" },
     { label: "Home/Stats", href: homeUrl, active: currentPath === homeUrl, id: "home" },
@@ -77,25 +73,6 @@ export function Navbar({
             DoSomeReps
           </a>
 
-          {isAudioPage && (
-            <a
-              href="/quiz"
-              id="exit-audio-mode"
-              className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnRed} ${styles.audioModeButton}`}
-            >
-              Exit Audio Mode
-            </a>
-          )}
-
-          {isQuizPage && (
-            <a
-              href="/audio"
-              id="enter-audio-mode"
-              className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate} ${styles.audioModeButton}`}
-            >
-              🎧 Audio Mode
-            </a>
-          )}
         </div>
 
         {/* Hamburger Button for mobile */}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 import {
   deleteAllQuestions,
@@ -11,6 +12,8 @@ import {
 } from "./ai_question_generator_api";
 import type { GeneratedQuestion } from "./ai_question_generator_types";
 import styles from "./AiQuestionGenerator.module.css";
+import sharedStyles from "../styles/shared.module.css";
+import { LoadingState } from "../components/LoadingState";
 import { ExtendButton, ExtendPayload } from "@/components/ExtendButton";
 import { CatPicker } from "@/components/CatPicker";
 
@@ -169,7 +172,8 @@ export function AiQuestionGenerator() {
 
   const handleExtendOne = async (
     index: number,
-    payload: ExtendPayload
+    payload: ExtendPayload,
+    signal: AbortSignal
   ): Promise<void> => {
     setError(null);
     setSuccess(null);
@@ -180,8 +184,10 @@ export function AiQuestionGenerator() {
         index,
         item,
         payload.customInstructions,
-        payload.selectedOptions
+        payload.selectedOptions,
+        signal
       );
+      signal.throwIfAborted();
 
       if (!data.success) {
         throw new Error(data.error || "Extend failed");
@@ -199,6 +205,9 @@ export function AiQuestionGenerator() {
       );
       setSuccess("Answer extended.");
     } catch (err) {
+      // The user cancelled: drop whatever came back instead of applying it.
+      if (signal.aborted) return;
+
       const msg = err instanceof Error ? err.message : "Extend failed";
       setError(msg);
       throw err;
@@ -316,10 +325,7 @@ export function AiQuestionGenerator() {
   };
   if (loading) {
     return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner} />
-        <p className={styles.loadingText}>Loading AI Question Generator...</p>
-      </div>
+      <LoadingState message="Loading AI Question Generator..." />
     );
   }
 
@@ -332,8 +338,16 @@ export function AiQuestionGenerator() {
       <h1 className={styles.title}>AI Question Generator</h1>
       <p className={styles.description}>Have AI generate quiz questions from your material.</p>
 
-      {error && <div className={`${styles.alert} ${styles.alertDanger}`}>{error}</div>}
-      {success && <div className={`${styles.alert} ${styles.alertSuccess}`}>{success}</div>}
+      {error && (
+        <div className={`${sharedStyles.alert} ${sharedStyles.alertError}`} role="alert">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className={`${sharedStyles.alert} ${sharedStyles.alertSuccess}`} role="alert">
+          {success}
+        </div>
+      )}
 
       <form onSubmit={handleGenerate} className={styles.card}>
         <p className={styles.subLabel} style={{ textAlign: "center", marginBottom: "16px" }}>
@@ -456,10 +470,12 @@ export function AiQuestionGenerator() {
         <div className={styles.formGroup} style={{ marginBottom: 0 }}>
           <button
             type="submit"
-            className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`}
+            className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
             disabled={submitting}
           >
-            {submitting && <span className={styles.btnSpinner} />}
+            {submitting && (
+              <Loader2 className={`${sharedStyles.buttonIcon} ${sharedStyles.spinIcon}`} />
+            )}
             {submitting ? "Generating Questions..." : "Get AI Questions!"}
           </button>
         </div>
@@ -476,21 +492,21 @@ export function AiQuestionGenerator() {
             <div className={styles.bulkActions}>
               <button
                 type="button"
-                className={`${styles.btn} ${styles.btnSuccess}`}
+                className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnGreen}`}
                 onClick={handleSaveAll}
               >
                 Save All
               </button>
               <button
                 type="button"
-                className={`${styles.btn} ${styles.btnDanger}`}
+                className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnRed}`}
                 onClick={handleDeleteAll}
               >
                 Delete All
               </button>
               <button
                 type="button"
-                className={`${styles.btn} ${styles.btnInfo}`}
+                className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnTeal}`}
                 onClick={handleExtendAll}
               >
                 Extend All
@@ -604,24 +620,26 @@ export function AiQuestionGenerator() {
                   </div>
                 </div>
 
-                <div className={styles.actionRow}>
+                <div className={sharedStyles.actionCluster}>
                   <button
                     type="button"
-                    className={`${styles.btn} ${styles.btnSuccess} ${styles.btnSm}`}
+                    className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnGreen}`}
                     onClick={() => handleSaveOne(i)}
                   >
                     Save
                   </button>
                   <button
                     type="button"
-                    className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
+                    className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnRed}`}
                     onClick={() => handleDeleteOne(i)}
                   >
                     Delete
                   </button>
 
                   <ExtendButton
-                    onExtend={(payload) => handleExtendOne(i, payload)}
+                    onExtend={(payload, signal) =>
+                      handleExtendOne(i, payload, signal)
+                    }
                   />
                 </div>
               </div>

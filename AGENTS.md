@@ -47,3 +47,36 @@ Audio tiles are a separate scale (`--rep-tile-*`), intentionally not `--rep-btn-
 If the size, intent, or colour you need does not exist, DO NOT approximate it
 inline. Add it: token(s) to `global.css` `:root`, one modifier rule in
 `shared.module.css`, then use it.
+
+
+###
+
+make sure the code you add stays in line with good modern software development principles, SOLID, DRY,
+and best practices. However, what is extremely important is that you do not add any bloat to this. I dont want any
+new features, functionality, or complexity that I didn't explicitly ask for!
+---
+If the request involves re-factoring things, then you should be looking to delete as much of the old code as possible rather than including them as fallbacks or duplicate junk. You should never try to increase the amount of code if possible, but always look to reduce code size if possible.
+
+---
+if you're missing some files/code that is critical to finishing this IN A ROBUST, PROPER, BEST PRACTICES,
+ENTERPRISE FASHION then DO NOT GUESS! DO NOT WORK AROUND WHAT YOUR MISSING! DO NOT COMPRIMISE FOLLOWING
+ARCHITECTURAL BEST PRACTICES, DO NOT COMPRIMISE FOLLOWING SOLID, DRY, PROPER, MODERN DESIGN PRINCIPLES OR PATTERNS;
+
+Follow best modern development practices!
+
+Before writing any code, think of every file you need to do this properly!
+If even one is missing, stop and ask for it in this format:
+"filename.html"
+"subfolder-of-repo-root/filename2.html"
+— output nothing else that turn, but an explanation of why you cannot solve the problem without violating a best practice, or providing a less than optimal solution.
+ DO NOT PROCEED UNTIL YOU HAVE WHAT YOU NEED TO DO THIS PROPERLY! OTHERWISE IF YOU HAVE EVERYTHING YOU NEED, PROCEED.
+
+A workaround to is a failure, not a partial answer. Specifically banned (this is not an exclusive list by any stretch):
+- Parsing or regexing a string the backend built for display
+- Re-creating a color, constant, enum, style, or function that likely exists elsewhere
+- Presentation logic in the backend; domain logic in JS, CSS in html
+- Merging responsibilities that belong apart because you lack the other file
+- Other shortcuts and half measures which violate modern best practices in any way...
+
+---
+Before outputting your solution, ask yourself if this code is in allignment with modern architectural design and developmental best practices (like DRY, SOLID); for the language, framework, library, etc. if your code is not of a quality that could be used in official documentation demonstrating one of the most robust ways of solving the particular problem while utilizing principal level developer quality, then you need to reconsider your approach, or ask for explicit approval from me allowing you to return less than best quality code. Otherwise assume it is not acceptable and re-design your solution accordingly.

@@ -63,7 +63,6 @@ export function useQuestionEditor({
     useState<QuestionFilesByType>(createEmptyFiles);
 
   const [deleting, setDeleting] = useState(false);
-  const [extending, setExtending] = useState(false);
 
   const clearLoadedQuestion = useCallback(() => {
     setQuestionText("");
@@ -213,35 +212,39 @@ export function useQuestionEditor({
     }
   };
 
-  const handleExtend = async ({
-    customInstructions,
-    selectedOptions,
-  }: ExtendPayload) => {
+  const handleExtend = async (
+    { customInstructions, selectedOptions }: ExtendPayload,
+    signal: AbortSignal
+  ) => {
     if (!questionId) return;
 
-    setExtending(true);
     setError(null);
 
     try {
-      const data = await extendQuestion({
-        questionId,
-        questionText,
-        hintText,
-        answerText,
-        categories: selectedCats,
-        customInstructions,
-        selectedOptions,
-      });
+      const data = await extendQuestion(
+        {
+          questionId,
+          questionText,
+          hintText,
+          answerText,
+          categories: selectedCats,
+          customInstructions,
+          selectedOptions,
+        },
+        signal
+      );
+      signal.throwIfAborted();
 
       setAnswerText(data.question?.answer ?? answerText);
       setHintText(data.question?.hint ?? hintText);
       toast.success("Answer extended with AI.");
     } catch (err) {
+      // The user cancelled: drop whatever came back instead of applying it.
+      if (signal.aborted) return;
+
       const message = err instanceof Error ? err.message : "Extend failed";
       setError(message);
       toast.error(message);
-    } finally {
-      setExtending(false);
     }
   };
 
@@ -324,7 +327,6 @@ export function useQuestionEditor({
     loading,
     saving,
     deleting,
-    extending,
     error,
     successMsg,
     questionText,

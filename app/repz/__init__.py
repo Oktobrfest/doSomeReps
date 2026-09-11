@@ -13,7 +13,7 @@ from sqlalchemy.sql import func
 
 from .flask_util_js import FlaskUtilJs
 
-from .extensions import cache, sess
+from .extensions import cache, csrf, sess
 from .s3_ext import init_s3
 
 def init_app():
@@ -28,9 +28,6 @@ def init_app():
 
     from .vite import vite_asset
     app.jinja_env.globals['vite_asset'] = vite_asset
-
-    from flask_wtf.csrf import generate_csrf
-    app.jinja_env.globals['csrf_token'] = generate_csrf
 
     with app.app_context():
 
@@ -58,6 +55,8 @@ def init_app():
 
         cache.init_app(app)
         sess.init_app(app)
+        # Guards every POST/PUT/PATCH/DELETE and exposes csrf_token() to Jinja.
+        csrf.init_app(app)
 
         if env != 'development':
             from .configs.oidc import OIDCConfig
@@ -75,8 +74,10 @@ def init_app():
         # Blueprints
         # Import parts of our application
         from repz.home.home import home
+        # Importing the quiz API attaches its routes to the `home` blueprint.
+        from repz.home import quiz_api as _quiz_api  # noqa: F401
         from repz.auth.auth import auth
-        from repz.catz.catz import catz, catz_static
+        from repz.catz.catz import catz
         from repz.ajax.quest_ajx.quest_ajx import quest_ajx
         from repz.ajax.user_ajx.user_ajx import user_ajx
         from repz.ajax.que_ajx.que_ajx import que_ajx
@@ -95,7 +96,6 @@ def init_app():
         app.register_blueprint(catz)
         from repz.catz.catz_api import catz_api
         app.register_blueprint(catz_api)
-        app.register_blueprint(catz_static, url_prefix='/catz')
         app.register_blueprint(quest_ajx)
         app.register_blueprint(user_ajx)
         app.register_blueprint(que_ajx)

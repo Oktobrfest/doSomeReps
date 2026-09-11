@@ -25,7 +25,6 @@ class Config:
     APP_DIR = environ.get('APP_DIR', 'repz')
     # Static Assets
     STATIC_FOLDER = environ.get("STATIC_FOLDER", "static")
-    HOME_STATIC_FOLDER = environ.get("HOME_STATIC_FOLDER", "static")
     TEMPLATES_FOLDER = environ.get('TEMPLATES_FOLDER', 'templates')
    
     # file uploads
@@ -40,6 +39,12 @@ class Config:
     CACHE_REDIS_HOST = environ.get('CACHE_REDIS_HOST', 'localhost')
     CACHE_REDIS_PORT = int(environ.get('CACHE_REDIS_PORT', 6379))
     CACHE_REDIS_DB = int(environ.get('CACHE_REDIS_DB', 0))
+
+    # CSRF
+    # The quiz is a single page the reader can sit on for a whole audio
+    # session, so the token must outlive Flask-WTF's one hour default; None
+    # ties it to the session instead, which is what expires it.
+    WTF_CSRF_TIME_LIMIT = None
 
     # SESSION
     SESSION_TYPE = "redis"

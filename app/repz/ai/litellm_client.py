@@ -1,5 +1,5 @@
 """Thin wrapper around LiteLLM that pulls per-user provider settings
-from the `users` row.
+from the user's saved AI providers and per-modality integrations.
 
 Usage:
     from repz.ai.litellm_client import completion_for_user
@@ -19,6 +19,7 @@ See https://docs.litellm.ai/docs/providers
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from litellm import litellm
@@ -215,13 +216,53 @@ def _build_model_id(provider: Optional[str], model: Optional[str]) -> str:
     return f"{provider}/{model}"
 
 
+@dataclass(frozen=True)
+class UserAIConfig:
+    """The settings `completion_for_user` will call with for one modality."""
+
+    api_key: Optional[str]
+    provider: Optional[str]
+    api_base: Optional[str]
+    model: Optional[str]
+
+    @property
+    def is_usable(self) -> bool:
+        """Whether a completion can actually run: a key and a model are
+        required, a provider is not (`_build_model_id` accepts a bare model)."""
+        return bool(self.api_key and self.model)
+
+
+def resolve_user_ai_config(user, modality: str = "text") -> UserAIConfig:
+    """Resolve the settings for `modality` from the user's integration for it.
+
+    Returns an empty (unusable) config when the modality has no integration, or
+    the integration has no provider attached. Callers that need to know up front
+    whether AI is available should use this rather than inspecting the user row
+    themselves, so a precondition can never disagree with what
+    `completion_for_user` goes on to do.
+    """
+    integrations = getattr(user, "ai_integrations", None) or []
+    integration = next(
+        (i for i in integrations if i.modality == modality), None
+    )
+
+    if not integration or not integration.provider_relation:
+        return UserAIConfig(api_key=None, provider=None, api_base=None, model=None)
+
+    return UserAIConfig(
+        api_key=integration.provider_relation.api_key,
+        provider=integration.provider_relation.provider,
+        api_base=integration.provider_relation.api_base,
+        model=integration.model,
+    )
+
+
 def completion_for_user(user, messages: List[Dict[str, str]], modality: str = "text", **kwargs: Any):
     """Call `litellm.completion` using the given user's saved settings for the specified modality.
 
     `user` must be a `repz.models.users` instance with `ai_integrations` and `ai_providers`.
-    Defaults to 'text' modality. If user does not have a setup for this modality, falls back
-    to the legacy direct user-level columns (ai_provider, ai_model, ai_api_key, etc.)
-    for backward compatibility.
+    Defaults to 'text' modality. Raises `AIConfigError` if that modality has no
+    usable configuration. See `resolve_user_ai_config` for the lookup.
 
     Any extra kwargs are forwarded to `litellm.completion` as-is, so
     callers can pass `temperature`, `max_tokens`, `stream`, etc.
@@ -231,37 +272,22 @@ def completion_for_user(user, messages: List[Dict[str, str]], modality: str = "t
     # haven't pip-installed the new requirement).
     import litellm
 
-    # Try to find the integration for the given modality
-    integration = None
-    if hasattr(user, "ai_integrations"):
-        integration = next((i for i in user.ai_integrations if i.modality == modality), None)
+    config = resolve_user_ai_config(user, modality)
 
-    if integration and integration.provider_relation:
-        api_key = integration.provider_relation.api_key
-        provider = integration.provider_relation.provider
-        api_base = integration.provider_relation.api_base
-        model = integration.model
-    else:
-        # Fall back to legacy user-level columns
-        api_key = getattr(user, "ai_api_key", None)
-        provider = getattr(user, "ai_provider", None)
-        api_base = getattr(user, "ai_api_base", None)
-        model = getattr(user, "ai_model", None)
-
-    if not api_key:
+    if not config.api_key:
         raise AIConfigError(
             f"No API key configured for '{modality}' modality. Set one on your profile page."
         )
 
-    model_id = _build_model_id(provider, model)
+    model_id = _build_model_id(config.provider, config.model)
 
     call_kwargs: Dict[str, Any] = {
         "model": model_id,
         "messages": messages,
-        "api_key": api_key,
+        "api_key": config.api_key,
     }
-    if api_base:
-        call_kwargs["api_base"] = api_base
+    if config.api_base:
+        call_kwargs["api_base"] = config.api_base
     call_kwargs.update(kwargs)
 
     return litellm.completion(**call_kwargs)
@@ -352,26 +378,3 @@ def price_label(model_name, provider=None):
 
     logger.debug(f"✗ No pricing found for model {model_name}")
     return ""
-
-def build_price_map(choices, provider=None):
-    """choices = form.ai_model.choices  ->  {model_value: price_string}
-
-    Returns a dict with both original keys and normalized lowercase keys
-    to ensure the frontend can find prices regardless of case.
-    """
-
-
-    # logger.debug(f"Provider: {provider}, Choices count: {len(choices) if choices else 0}")
-
-    price_map = {}
-    for value, _ in choices:
-        if value:
-            price = price_label(value, provider)
-            # Store with original key
-            price_map[value] = price
-            # Also store with lowercase key for easier lookup
-            price_map[value.lower()] = price
-            logger.debug(f"Mapped {value} and {value.lower()} -> {price}")
-
-    # logger.debug(f"Final price_map has {len(price_map)} entries")
-    return price_map

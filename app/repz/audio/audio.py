@@ -1,22 +1,10 @@
-from flask import Response, abort, jsonify, request
-from flask_login import current_user, login_required
+from flask import abort
+from flask_login import login_required
 import tempfile
 from pathlib import Path
 from typing import Optional
 
 from repz.routes import audio
-from repz.services.quiz_service import (
-    AnswerVerdict,
-    QuizPageConfig,
-    render_quiz_page,
-    _get_selected_categories,
-    get_quiz_queue,
-    build_audio_quiz_items,
-    _exclude_quiz_question,
-    _submit_quiz_answer,
-)
-from repz.bluehelpers import get_all_categories, get_quizes, tally_que_catz
-from repz.cache_helper import CacheHelper
 from repz.services.audio_asset_service import AudioAssetService, S3StorageClient
 from .create_audio import create_audio
 
@@ -71,104 +59,10 @@ class TTSClientAdapter:
             temp_path.unlink(missing_ok=True)
 
 
-@audio.route("/audio", methods=["GET", "POST"], endpoint="audio_quiz")
-@login_required
-def audio_quiz():
-    storage_client = S3StorageClient()
-    tts_client = TTSClientAdapter()
-    audio_service = AudioAssetService(tts_client, storage_client)
 
-    return render_quiz_page(
-        QuizPageConfig(
-            mode="audio",
-            template_name="audio.html",
-            endpoint_name="audio.audio_quiz",
-            title="Audio Quiz",
-            description="Mobile-optimised quiz mode.",
-        ),
-        audio_service=audio_service,
-    )
-
-
-@audio.route("/audio/api/action", methods=["POST"], endpoint="audio_quiz_action")
-@login_required
-def audio_quiz_action():
-    """
-    JSON mutation endpoint for the audio SPA.
-
-    This intentionally does NOT render /audio and does NOT redirect.
-    The normal non-audio page can keep using the existing form POST route.
-    """
-    data = request.get_json(silent=True) or {}
-
-    action = data.get("action")
-    raw_quizq_id = data.get("quizqId")
-    provided_answer = data.get("providedAnswer")
-
-    try:
-        quizq_id = int(raw_quizq_id)
-    except (TypeError, ValueError):
-        return jsonify({
-            "ok": False,
-            "error": "quizqId is required and must be an integer.",
-        }), 400
-
-    selected_categories = _get_selected_categories()
-    if selected_categories == "Not set" or not selected_categories:
-        return jsonify({
-            "ok": False,
-            "error": "No quiz categories are selected.",
-        }), 400
-
-    cache_helper = CacheHelper(current_user.id)
-    que_list, que_cache_key = cache_helper.get_cached_questions(selected_categories)
-
-    if action == "exclude":
-        _exclude_quiz_question(
-            user_id=current_user.id,
-            quizq_id=quizq_id,
-            que_list=que_list,
-            que_cache_key=que_cache_key,
-        )
-
-        return jsonify({
-            "ok": True,
-            "action": "exclude",
-            "quizqId": quizq_id,
-        })
-
-    if action == "submit":
-        verdict_raw = data.get("verdict")
-
-        try:
-            verdict = AnswerVerdict(verdict_raw)
-        except ValueError:
-            return jsonify({
-                "ok": False,
-                "error": f"Invalid verdict: {verdict_raw!r}",
-            }), 400
-
-        _submit_quiz_answer(
-            user_id=current_user.id,
-            quizq_id=quizq_id,
-            verdict=verdict,
-            provided_answer=provided_answer,
-            que_list=que_list,
-            que_cache_key=que_cache_key,
-            endpoint_name="audio.audio_quiz",
-        )
-
-        return jsonify({
-            "ok": True,
-            "action": "submit",
-            "quizqId": quizq_id,
-            "verdict": verdict.value,
-        })
-
-    return jsonify({
-        "ok": False,
-        "error": f"Invalid action: {action!r}",
-    }), 400
+def build_audio_service() -> AudioAssetService:
+    """The TTS-backed audio service, wired to S3 storage."""
+    return AudioAssetService(TTSClientAdapter(), S3StorageClient())
 
 
 @audio.route("/audio/file/<int:audio_id>", methods=["GET"])
@@ -225,74 +119,3 @@ def serve_audio_by_key(object_key):
         download_name=object_key.split('/')[-1],
         conditional=True
     )
-
-
-
-
-
-@audio.route("/audio/quiz-data", methods=["GET"], endpoint="audio_quiz_data")
-@login_required
-def audio_quiz_data():
-    """Return fully-populated audio quiz items for the SPA queue."""
-    storage_client = S3StorageClient()
-    tts_client = TTSClientAdapter()
-    audio_service = AudioAssetService(tts_client, storage_client)
-
-    selected_categories = _get_selected_categories()
-    if selected_categories == "Not set" or not selected_categories:
-        return jsonify({"items": [], "queueExhausted": True, "message": "You need to select some question categories."})
-
-    user_id = current_user.id
-    que_list = get_quiz_queue(user_id, selected_categories)
-
-    count = request.args.get("count", 1, type=int)
-    if count < 1:
-        count = 1
-
-    exclude_raw = request.args.get("exclude_quizq_ids", "")
-    exclude_quizq_ids = [
-        x.strip() for x in exclude_raw.split(",") if x.strip()
-    ]
-
-    if not que_list:
-        return jsonify({"items": [], "queueExhausted": True, "message": "No quiz questions are available."})
-
-    items = build_audio_quiz_items(
-        que_list=que_list,
-        audio_service=audio_service,
-        user=current_user,
-        count=count,
-        exclude_quizq_ids=exclude_quizq_ids,
-    )
-
-    if not items:
-        # All remaining questions matched the exclude list, so queue is effectively exhausted.
-        category_list = get_all_categories()
-        # Normalize: selected_categories may have underscores, category_list uses spaces.
-        selected_normalized = [c.replace("_", " ") for c in (selected_categories if isinstance(selected_categories, list) else [])]
-        unselected = [c for c in category_list if c not in selected_normalized]
-        if unselected:
-            unselected_cat_quizes = get_quizes(unselected, user_id)
-            if unselected_cat_quizes:
-                cats_w_quizes = tally_que_catz(unselected_cat_quizes)
-                cats_due_txt = ""
-                for cat, num in cats_w_quizes.items():
-                    cats_due_txt += f"{cat}: {num}, "
-                msg_txt = (
-                    "No more questions in your selected categories are currently due. "
-                    "Either que more questions for those categories or select the "
-                    "following categories which have questions due: "
-                )
-                return jsonify({
-                    "items": [],
-                    "queueExhausted": True,
-                    "message": msg_txt + cats_due_txt,
-                })
-
-        return jsonify({
-            "items": [],
-            "queueExhausted": True,
-            "message": "Congradulations! You've completed all the questions currently due! You have two options: Either wait for the questions you've already answered to come due again, or to start answering more questions immediately you need to expand your training que!",
-        })
-
-    return jsonify({"items": items, "queueExhausted": False, "message": ""})

@@ -1,7 +1,7 @@
 import { MarkdownContent } from '../components/MarkdownContent';
-import { cx, LargePlayableControl } from '../audio/AudioControls';
+import { cx, LargePlayableControl } from '../quiz/AudioControls';
 import { X, Mic } from 'lucide-react';
-import actionStyles from '../styles/ActionButton.module.css';
+import sharedStyles from '../styles/shared.module.css';
 import styles from './AskAiPanel.module.css';
 import type { AskAiState } from './types';
 
@@ -73,7 +73,7 @@ export function AskAiPanel({ state }: AskAiPanelProps) {
               <LargePlayableControl
                 onClick={() => actions.toggleHistoryAudio(turn.id)}
                 isPlaying={turn.audioPlaying}
-                className={styles.askAiAnswerPlayerBox}
+                intentClass={sharedStyles.btnGreen}
                 assets={turn.audioAssets}
                 onSequenceEnd={() => actions.historyPlaybackEnded(turn.id)}
               />
@@ -91,7 +91,7 @@ export function AskAiPanel({ state }: AskAiPanelProps) {
           <div className={styles.askAiActions}>
             <button
               type="button"
-              className={cx(actionStyles.largeBtn, styles.askAiBtnStop)}
+              className={cx(sharedStyles.actionButton, sharedStyles.btnRed)}
               onClick={actions.stopAndSend}
               disabled={!!phase}
             >
@@ -99,7 +99,7 @@ export function AskAiPanel({ state }: AskAiPanelProps) {
             </button>
             <button
               type="button"
-              className={cx(actionStyles.largeBtn, styles.askAiBtnCancel)}
+              className={cx(sharedStyles.actionButton, sharedStyles.btnSlate)}
               onClick={actions.cancel}
             >
               Cancel
@@ -119,7 +119,11 @@ export function AskAiPanel({ state }: AskAiPanelProps) {
         <div className={styles.askAiContainer}>
           <div className={styles.askAiTitle}>
             <span
-              className={cx(styles.spinnerBorder, styles.spinnerInline)}
+              className={cx(
+                sharedStyles.spinner,
+                sharedStyles.spinnerSm,
+                sharedStyles.spinnerCurrentColor,
+              )}
               role="status"
               aria-hidden="true"
             />
@@ -128,7 +132,7 @@ export function AskAiPanel({ state }: AskAiPanelProps) {
           <div className={styles.askAiActions}>
             <button
               type="button"
-              className={cx(actionStyles.largeBtn, styles.askAiBtnCancel)}
+              className={cx(sharedStyles.actionButton, sharedStyles.btnSlate)}
               onClick={actions.cancel}
             >
               Cancel
@@ -143,16 +147,16 @@ export function AskAiPanel({ state }: AskAiPanelProps) {
         {!isRecording && !phase && (
           <button
             type="button"
-            className={cx(actionStyles.largeBtn, styles.askAiBtnFollowUp)}
+            className={cx(sharedStyles.actionButton, sharedStyles.btnBlue)}
             onClick={() => actions.start(false)}
           >
-            <Mic size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            <Mic className={sharedStyles.buttonIcon} />
             <span>Ask Follow Up</span>
           </button>
         )}
         <button
           type="button"
-          className={cx(actionStyles.largeBtn, styles.askAiBtnCancel)}
+          className={cx(sharedStyles.actionButton, sharedStyles.btnSlate)}
           onClick={actions.cancelSession}
         >
           Cancel Session

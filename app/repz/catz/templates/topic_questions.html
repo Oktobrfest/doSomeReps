@@ -1,37 +1,17 @@
 {% extends "base.html" %}
 {% block title %}
-	Questions for {{ selected_topic }}
+	Questions for {{ topic_name }}
 {% endblock title %}
-
 {% block content %}
 
-<!-- Container for the questions -->
-<div class="questions-container">
-    <h2 class="section-title">Questions for {{ selected_topic }}</h2>
+<div id="topic-questions-root"></div>
 
-    <table class="questions-table">
-        <thead>
-            <tr>
-                <th>Question</th>
-                <th>Answer</th>
-                <th>Rating</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for question in questions %}
-                <tr>
-                    <td>{{ question.question_text }}</td>
-                    <td>{{ question.answer }}</td>
-                    <td class="rating-column">{{ question.rating }}</td>
-                </tr>
-            {% endfor %}
-            {% if questions|length == 0 %}
-                <tr>
-                    <td colspan="3" class="no-questions-message">No questions found for this topic.</td>
-                </tr>
-            {% endif %}
-        </tbody>
-    </table>
-</div>
+<script id="topic-questions-data" type="application/json">
+{{ {
+  'topicName': topic_name,
+  'questions': questions
+} | tojson }}
+</script>
 
+{{ vite_asset("src/entrypoints/TopicQuestions.entry.tsx") }}
 {% endblock content %}

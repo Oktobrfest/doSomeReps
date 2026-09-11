@@ -1,0 +1,37 @@
+/*
+ * A question's rating, read or given.
+ *
+ * The tier comes from `--rep-rating-star-size`, which whatever holds the stars
+ * rebinds, so no size is written down here.
+ */
+
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rep-btn-gap);
+}
+
+.starBtn {
+  display: inline-flex;
+  padding: 4px;
+  border: none;
+  background: none;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.starOn,
+.starOff {
+  width: var(--rep-rating-star-size);
+  height: var(--rep-rating-star-size);
+}
+
+.starOn {
+  fill: var(--rep-color-rating-star);
+  stroke: var(--rep-color-rating-star);
+}
+
+.starOff {
+  fill: none;
+  stroke: var(--rep-color-rating-star-empty);
+}

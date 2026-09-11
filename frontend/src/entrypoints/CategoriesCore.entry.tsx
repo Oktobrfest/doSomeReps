@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { useState } from "react";
 import { CategoryPicker } from "../components/CategoryPicker";
+import { resolveCategoryNames, toSlug } from "../lib/categories";
 import sharedStyles from "../styles/shared.module.css";
 import "../styles/global.css";
 
@@ -11,8 +12,6 @@ interface CategoriesCoreData {
   hideSavedLists?: boolean;
   hideHeader?: boolean;
 }
-
-const toSlug = (value: string) => value.replace(/ /g, "_");
 
 interface CategoriesWrapperProps {
   initialSelected: string[];
@@ -39,7 +38,7 @@ function CategoriesWrapper({
       {collapsible && (
         <button
           type="button"
-          className={`${sharedStyles.button} ${sharedStyles.buttonSecondary}`}
+          className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
           onClick={() => setCollapsed(!collapsed)}
           aria-expanded={!collapsed}
         >
@@ -61,11 +60,10 @@ function CategoriesWrapper({
 }
 
 function mount() {
-  const coreRoot = document.getElementById("react-categories-core-root");
   const fullRoot = document.getElementById("react-categories-root");
   const dataEl = document.getElementById("categories-core-data");
 
-  if (!dataEl) return;
+  if (!dataEl || !fullRoot) return;
 
   try {
     const data: CategoriesCoreData = JSON.parse(dataEl.textContent || "{}");
@@ -77,41 +75,23 @@ function mount() {
         ? [data.selectedCategories]
         : [];
 
-    const normalizedSelected = Array.from(
-      new Set([...initialSelectedSlugs, ...(data.catsDue ?? [])])
-    ).map(
-      (slug) =>
-        categoryList.find((cat) => toSlug(cat) === slug) ??
-        slug.replace(/_/g, " ")
+    const normalizedSelected = resolveCategoryNames(
+      Array.from(new Set([...initialSelectedSlugs, ...(data.catsDue ?? [])])),
+      categoryList
     );
 
-    if (coreRoot) {
-      createRoot(coreRoot).render(
-        <CategoriesWrapper
-          initialSelected={normalizedSelected}
-          showSavedLists={false}
-          showSelectAll={false}
-          showApplyButton={false}
-          collapsible={false}
-          defaultCollapsed={false}
-        />
-      );
-    }
+    const collapsible = !(data.hideHeader ?? false);
 
-    if (fullRoot) {
-      const collapsible = !(data.hideHeader ?? false);
-
-      createRoot(fullRoot).render(
-        <CategoriesWrapper
-          initialSelected={normalizedSelected}
-          showSavedLists={!(data.hideSavedLists ?? false)}
-          showSelectAll={true}
-          showApplyButton={true}
-          collapsible={collapsible}
-          defaultCollapsed={collapsible && normalizedSelected.length > 0}
-        />
-      );
-    }
+    createRoot(fullRoot).render(
+      <CategoriesWrapper
+        initialSelected={normalizedSelected}
+        showSavedLists={!(data.hideSavedLists ?? false)}
+        showSelectAll={true}
+        showApplyButton={true}
+        collapsible={collapsible}
+        defaultCollapsed={collapsible && normalizedSelected.length > 0}
+      />
+    );
   } catch (err) {
     console.error("Error mounting CategoryPicker:", err);
   }

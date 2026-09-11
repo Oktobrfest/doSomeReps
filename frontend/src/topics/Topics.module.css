@@ -1,0 +1,226 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pageTitle {
+  margin: 0;
+  text-align: center;
+  color: var(--rep-color-text-primary);
+}
+
+.pageSummary {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--rep-color-text-muted);
+}
+
+.empty {
+  margin: 0;
+  padding: 1rem;
+  text-align: center;
+  font-style: italic;
+  color: var(--rep-color-text-muted);
+}
+
+/* ---------- Topic list ---------- */
+
+/* The filter and the order it is read in are one unit: a bar the list hangs
+   under, which wraps onto a second line before it ever widens the page. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rep-btn-row-gap);
+
+  padding: 0.75rem;
+
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-card);
+  box-shadow: var(--rep-shadow-card);
+}
+
+/* The field owns the border and the focus ring so the icon sits inside them. */
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 14rem;
+  min-width: 0;
+
+  padding: 0 0.6rem;
+
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-control);
+}
+
+.searchField:focus-within {
+  border-color: var(--rep-color-focus);
+  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
+}
+
+.searchIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+
+  color: var(--rep-color-text-muted);
+}
+
+.searchInput {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  padding: 0.5rem 0;
+
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--rep-color-text-primary);
+
+  background: none;
+  border: none;
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+.sortGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rep-btn-gap);
+}
+
+/* One column on a phone and as many as fit once there is room, without a media
+   query and without ever making the page wider than the screen. */
+.topicGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: 0.75rem;
+
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* The card is the link; the item it sits in is only there to keep the list a
+   list, so it hands the card the whole of its cell. */
+.topicGrid > li {
+  display: flex;
+}
+
+.topicCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+
+  padding: 0.85rem;
+
+  color: var(--rep-color-text-primary);
+  text-decoration: none;
+
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-card);
+  box-shadow: var(--rep-shadow-card);
+  transition:
+    transform var(--rep-transition-fast),
+    border-color var(--rep-transition-fast),
+    box-shadow var(--rep-transition-fast);
+}
+
+.topicCard:hover {
+  transform: translateY(-1px);
+  text-decoration: none;
+
+  border-color: var(--rep-color-action-primary);
+  box-shadow: var(--rep-shadow-card-raised);
+}
+
+.topicCard:focus-visible {
+  outline: 2px solid var(--rep-color-focus);
+  outline-offset: 2px;
+}
+
+.topicName {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--rep-color-text-strong);
+
+  /* A long topic name breaks rather than widening its card. */
+  overflow-wrap: anywhere;
+}
+
+/* Pushed to the foot of the card so that cards sharing a row line their counts
+   and their bars up, however long the names above them run. */
+.topicCount {
+  margin-top: auto;
+
+  font-size: 0.8rem;
+  color: var(--rep-color-text-muted);
+}
+
+.topicBar {
+  height: 4px;
+  overflow: hidden;
+
+  background-color: var(--rep-color-surface-secondary);
+  border-radius: 999px;
+}
+
+.topicBar::after {
+  content: "";
+  display: block;
+  width: var(--topic-share, 0%);
+  height: 100%;
+
+  background-color: var(--rep-color-action-primary);
+}
+
+/* ---------- Topic questions ---------- */
+
+.questionsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.questionsTable th,
+.questionsTable td {
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rep-color-border);
+}
+
+.questionsTable th {
+  font-weight: 700;
+  color: var(--rep-color-text-primary);
+  background-color: var(--rep-color-surface-secondary);
+}
+
+.questionsTable tbody tr:hover {
+  background-color: var(--rep-color-surface-subtle);
+}
+
+.ratingCell {
+  width: 6rem;
+  text-align: center;
+  font-weight: 700;
+}

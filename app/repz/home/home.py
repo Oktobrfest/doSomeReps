@@ -1,14 +1,4 @@
-import copy
-import hashlib
-import json
-import logging
-import math
 import os
-import random
-import re
-
-from re import A
-from typing import final
 
 from flask import (
     Blueprint,
@@ -58,7 +48,7 @@ from wtforms.validators import DataRequired, NumberRange
 from repz.extensions import cache
 from repz.cache_helper import CacheHelper
 from repz.routes import home
-from repz.services.quiz_service import QuizPageConfig, render_quiz_page
+from repz.services.quiz_service import get_selected_categories
 
 from ..bluehelpers import (
     cat_questions_count,
@@ -71,8 +61,7 @@ from ..bluehelpers import (
     remove_underscore,
     set_session,
     split_dict,
-    tally_que_catz,
-    get_categories_questions
+    tally_que_catz
 )
 from ..charts import rep_vs_forget, render_chart
 from ..database import session
@@ -87,7 +76,7 @@ from ..models import (
     users
 )
 from .form_helpers import save_pictures
-from .homeforms import QueAdditionForm, QuestionForm
+from .homeforms import QuestionForm
 
 
 @home.route("/favicon.ico")
@@ -106,15 +95,16 @@ def about():
     day_qry = select(level.level_no,level.days_hence)
     days_obj_all = session.execute(day_qry).all()
 
-    days = [ (d.level_no, d.days_hence) for d in days_obj_all ]
+    intervals = [
+        {"levelNo": d.level_no, "daysHence": d.days_hence} for d in days_obj_all
+    ]
 
     return render_template(
         "about.html",
         user=current_user,
-        days=days,
+        intervals=intervals,
         title="About",
         description="About us page.",
-        #catz_chart=catz_chart,
     )
 
 
@@ -129,26 +119,17 @@ def homepage():
 
         user = session.execute(user_qry).scalars().first()
 
-        favorites = {}
-        blocked = {}
-        for u in user.favorates:
-            favorites[u.id] = u.username
-
-        for b in user.blocked_users:
-            blocked[b.id] = b.username
+        # Lists of objects, not id->name maps: the React home page needs a
+        # stable key and a display name per row.
+        favorites = [{"id": u.id, "username": u.username} for u in user.favorates]
+        blocked = [{"id": b.id, "username": b.username} for b in user.blocked_users]
 
 
         selected_cats = get_all_categories()
 
         que_list = get_quizes(selected_cats, UID)
 
-        category_count = {}
-        for q in que_list:
-            for c in q['categories']:
-                if c in category_count:
-                    category_count[c] += 1
-                else:
-                    category_count[c] = 1
+        category_count = tally_que_catz(que_list)
 
         sorted_cats = sorted(category_count.items(), key = lambda x: x[1], reverse = True)
         limited_sorted_cats = sorted_cats[:5]
@@ -294,27 +275,29 @@ def addcontent():
     )
 
 
-@home.route("/quiz", methods=["GET", "POST"], endpoint="quiz")
+@home.route("/quiz", methods=["GET"], endpoint="quiz")
 @login_required
 def quiz():
-    return render_quiz_page(
-        QuizPageConfig(
-            mode="standard",
-            template_name="quiz.html",
-            endpoint_name="home.quiz",
-            title="Quiz",
-            description=".",
-        )
+    """
+    Shell for the quiz SPA.
+
+    The page fetches its own question queue from /quiz/queue, so nothing here
+    depends on whether the reader has audio switched on.
+    """
+    return render_template(
+        "quiz.html",
+        title="Quiz",
+        description=".",
+        user=current_user,
+        category_list=get_all_categories(),
+        selected_categories=get_selected_categories(),
     )
 
 
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
 @login_required
 def quemore():
-    form = QueAdditionForm()
-    UID = g._login_user.id
     category_list = get_all_categories()
-    description = "Que More Questions"
     search_que_filters = get_session("search_que_filters")
     if search_que_filters == 'Not set':
         selected_categories = []
@@ -324,9 +307,8 @@ def quemore():
     return render_template(
         "quemore.html",
         title="Que More Questions",
-        description=description,
+        description="Que More Questions",
         user=current_user,
-        form=form,
         category_list=category_list,
         selected_categories=selected_categories,
     )
@@ -349,50 +331,6 @@ def edit_question():
     return render_template(
         "edit_question.html",
         user=current_user,
-    )
-
-
-@home.route("/studymaterials", methods=["GET", "POST"], endpoint="studymaterials")
-@login_required
-def studymaterials():
-    logging.debug('Rendering studymaterials.html')
-
-    return render_template(
-        "studymaterials.html",
-        title="Study Materials",
-        user=current_user,
-       )
-
-
-# @home.route("/exclude_q", methods=["POST"], endpoint="exclude_q")
-# @login_required
-# def exclude_q():
-#     UID = g._login_user.id
-
-
-#     msg = "Excluded Question"
-#     flash(msg, category="success")
-
-#     response_msg = jsonify('ok')
-
-#     return response_msg
-
-
-@home.route("/topics/<selected_topic>", methods=["GET"], endpoint="topic_questions")
-@login_required
-def topic_questions(selected_topic):
-    # Fetch the list of all topics with their question counts
-    category_list = get_all_categories()
-
-    # Fetch the questions for the selected topic
-    questions = get_categories_questions(selected_topic)
-
-    return render_template(
-        "topic_questions.html",
-        title=f"Questions for {selected_topic}",
-        selected_topic=selected_topic,
-        topics=topics,
-        questions=questions
     )
 
 

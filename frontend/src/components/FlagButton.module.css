@@ -1,190 +1,118 @@
-/* Fully cohesive split action pill button styling matching .drawerBtn and .cyanBtn */
+/*
+ * The flag control is a split pill: a flag action and a settings action that
+ * read as one button. Both halves are transparent and inherit their colour from
+ * the widget, which wears an intent, so no colour is written down twice.
+ */
+
 .widget {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: stretch;
   width: 100%;
-  min-height: 50px;
-  border: none;
-  border-radius: 12px;
+  min-height: var(--rep-btn-height-touch-sm);
   overflow: hidden;
-  box-sizing: border-box;
-  background-color: #f59e0b; /* Amber/Orange color scheme to signal flagging */
-  color: #111;
-  transition:
-    transform 120ms ease,
-    box-shadow 120ms ease,
-    background-color 120ms ease;
+  background-color: var(--rep-intent-amber-bg);
+  border: none;
+  border-radius: var(--rep-btn-radius-touch-sm);
+  box-shadow: var(--rep-btn-shadow);
+  color: var(--rep-intent-amber-fg);
+  transition: var(--rep-btn-transition);
 }
 
-/* Hover scales the entire button widget, matching .drawerBtn:hover */
 .widget:hover:not(.disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgb(0 0 0 / 0.12);
+  box-shadow: var(--rep-btn-shadow-hover);
 }
 
 .widget:active:not(.disabled) {
   transform: translateY(0);
 }
 
-/* Active flagged state matches .redBtn style */
-.flaggedWidget {
-  background-color: var(--flag-color-red-bg);
-  color: var(--flag-color-red-text);
-}
-
+/* A question already flagged reads as something to undo. */
 .flaggedStudyMe {
-  background-color: var(--flag-color-study-me-bg);
-  color: var(--flag-color-study-me-text);
+  background-color: var(--rep-intent-amber-bg);
+  color: var(--rep-intent-amber-fg);
 }
 
 .flaggedOther {
-  background-color: var(--flag-color-red-bg);
-  color: var(--flag-color-red-text);
+  background-color: var(--rep-intent-red-bg);
+  color: var(--rep-intent-red-fg);
 }
 
 .flagBtn,
 .settingsBtn {
-  border: none;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
   font: inherit;
-  font-size: clamp(0.875rem, 0.875rem + 0.9vw, 1.15rem);
-  font-weight: 700;
-  transition: background-color 120ms ease;
+  font-size: var(--rep-btn-font-size-touch-sm);
+  font-weight: var(--rep-btn-font-weight);
+  cursor: pointer;
+  transition: background-color var(--rep-transition-fast);
 }
 
 .flagBtn {
   flex: 1;
-  padding: 11px 15px;
-  justify-content: center;
-  gap: 14px; /* Matches action content gap */
+  gap: var(--rep-btn-gap);
+  padding: 0 var(--rep-btn-padding-x-touch-sm);
+  min-width: 0;
 }
 
-/* Vertical divider between main button and gear settings button */
 .settingsBtn {
-  width: 54px;
   flex-shrink: 0;
-  border-left: 1px solid rgba(0, 0, 0, 0.15);
+  width: calc(var(--rep-btn-height-touch-sm) + var(--rep-btn-padding-x-touch-sm));
+  border-left: 1px solid var(--rep-color-divider-on-action);
 }
 
-.flaggedWidget .settingsBtn,
-.flaggedStudyMe .settingsBtn,
-.flaggedOther .settingsBtn {
-  border-left-color: rgba(255, 255, 255, 0.25);
-}
-
-/* Internal hover states on sub-buttons for polished interaction feedback */
 .flagBtn:hover:not(:disabled),
 .settingsBtn:hover:not(:disabled) {
-  background-color: rgba(0, 0, 0, 0.08);
-}
-
-.flaggedWidget .flagBtn:hover:not(:disabled),
-.flaggedWidget .settingsBtn:hover:not(:disabled),
-.flaggedStudyMe .flagBtn:hover:not(:disabled),
-.flaggedStudyMe .settingsBtn:hover:not(:disabled),
-.flaggedOther .flagBtn:hover:not(:disabled),
-.flaggedOther .settingsBtn:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: var(--rep-color-divider-on-action);
 }
 
 .flagBtn:disabled,
 .settingsBtn:disabled {
-  opacity: 0.65;
+  opacity: var(--rep-opacity-disabled);
   cursor: not-allowed;
 }
 
 .flagIcon {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: var(--rep-btn-icon-size-touch-sm);
+  height: var(--rep-btn-icon-size-touch-sm);
   flex-shrink: 0;
 }
 
-/* Larger desktop buttons matching media query in SlideOutButtons.module.css */
-@media (min-width: 641px) {
-  .widget {
-    min-height: 64px;
-  }
-  
-  .flagBtn,
-  .settingsBtn {
-    font-size: clamp(1rem, 1rem + 1.4vw, 1.5rem);
-  }
-
-  .flagIcon {
-    width: 2rem;
-    height: 2rem;
-  }
-}
-
-/* Modal dialog styling */
-.dialog {
-  border: none;
-  border-radius: 12px;
-  padding: 0;
-  margin: auto;
-  max-width: 500px;
-  width: min(500px, 92vw);
-  background-color: #fff;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15),
-    0 10px 10px -5px rgba(0, 0, 0, 0.08);
-  font-family: inherit;
-}
-
-.dialog::backdrop {
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modalContent {
-  display: flex;
-  flex-direction: column;
-  max-height: 85vh;
-}
-
-.modalHeader {
-  display: flex;
-  justify-content: space-between;
+/* The compact trigger that sits inline with the question's meta row: a round
+   icon button, sized off the small control tier. */
+.compactTrigger {
+  display: inline-flex;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modalTitle {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.closeBtn {
-  background: none;
-  border: none;
-  font-size: 2rem;
-  line-height: 1;
-  color: #9ca3af;
+  justify-content: center;
+  width: var(--rep-btn-height-sm);
+  height: var(--rep-btn-height-sm);
+  padding: 0;
+  margin-left: var(--rep-btn-gap);
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: 50%;
+  color: var(--rep-color-text-muted);
   cursor: pointer;
-  padding: 0 4px;
 }
 
-.closeBtn:hover:not(:disabled) {
-  color: #1f2937;
+.compactTrigger.flaggedStudyMe,
+.compactTrigger.flaggedOther {
+  border-color: transparent;
 }
 
-.closeBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.compactIcon {
+  width: var(--rep-btn-icon-size-md);
+  height: var(--rep-btn-icon-size-md);
 }
 
-.modalBody {
-  padding: 20px;
-  overflow-y: auto;
-}
-
+/* Contents of the flag dialog. The chrome around them is QuizModal's. */
 .field {
   margin-bottom: 20px;
 }
@@ -194,7 +122,7 @@
   font-weight: 700;
   font-size: 0.95rem;
   margin-bottom: 8px;
-  color: #374151;
+  color: var(--rep-color-text-secondary);
 }
 
 .radioGroup {
@@ -209,15 +137,15 @@
   gap: 10px;
   cursor: pointer;
   padding: 10px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--rep-color-border);
   border-radius: 8px;
-  background-color: #f9fafb;
+  background-color: var(--rep-color-surface-subtle);
   transition: all 0.15s ease;
 }
 
 .radioLabel:hover {
-  background-color: #f3f4f6;
-  border-color: #d1d5db;
+  background-color: var(--rep-color-surface-secondary);
+  border-color: var(--rep-color-border-strong);
 }
 
 .radioInput {
@@ -229,20 +157,20 @@
 .radioIcon {
   width: 1.25rem;
   height: 1.25rem;
-  color: #4b5563;
+  color: var(--rep-color-text-secondary);
   flex-shrink: 0;
 }
 
 .radioText {
   font-size: 1rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--rep-color-text-primary);
 }
 
 .textarea {
   width: 100%;
   padding: 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--rep-color-border-strong);
   border-radius: 8px;
   font-size: 1rem;
   font-family: inherit;
@@ -252,70 +180,31 @@
 
 .textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--rep-color-focus);
+  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
 }
 
 .error {
-  background-color: #fee2e2;
-  border: 1px solid #fca5a5;
-  color: #991b1b;
+  background-color: var(--rep-color-error-surface);
+  border: 1px solid var(--rep-color-error-border);
+  color: var(--rep-color-error-text);
   border-radius: 8px;
   padding: 12px;
   font-size: 0.95rem;
   margin-bottom: 16px;
 }
 
+/* The dialog's actions, set off from the fields they submit. */
 .modalFooter {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding: 16px 20px;
-  border-top: 1px solid #e5e7eb;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rep-color-border);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 20px;
-  font-size: 1rem;
-  font-weight: 700;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 150ms ease;
-}
-
-.btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.btnPrimary {
-  background-color: #3182ce;
-  color: #fff;
-}
-
-.btnPrimary:hover:not(:disabled) {
-  background-color: #2b6cb0;
-}
-
-.btnSecondary {
-  background-color: #edf2f7;
-  color: #4a5568;
-}
-
-.btnSecondary:hover:not(:disabled) {
-  background-color: #e2e8f0;
-}
-
-.btnDanger {
-  background-color: #ef4444;
-  color: #fff;
+/* The remove action sits opposite the confirm/cancel pair. */
+.btnDangerPlacement {
   margin-right: auto;
-}
-
-.btnDanger:hover:not(:disabled) {
-  background-color: #dc2626;
 }

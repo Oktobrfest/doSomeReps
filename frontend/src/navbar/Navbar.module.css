@@ -123,14 +123,6 @@
   background: var(--rep-color-navbar-accent-bg-highlight);
 }
 
-/* CHANGED THIS - border and white-space are geometry/decoration owned by
-   .actionButton; a composing component must add flow properties only (rule 5/6) */
-.audioModeButton {
-  text-decoration: none;
-  margin-left: auto;
-  order: 2;
-}
-
 @media (max-width: 991px) {
   .togglerBtn {
     display: block;

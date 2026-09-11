@@ -1,13 +1,10 @@
-import hashlib
 import logging
 import random
-from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-from flask import flash, redirect, render_template, request, url_for, g
+from flask import flash, url_for
 from flask_login import current_user
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
 
@@ -15,15 +12,14 @@ from repz.extensions import cache
 from repz.cache_helper import CacheHelper
 from repz.database import session
 from repz.models import level, question, quizq
+from repz.services.audio_asset_service import audio_object_key, default_tts_texts
 from repz.bluehelpers import (
-    clean_for_html,
-    get_all_categories,
+    flag_payload,
     get_quizes,
     get_session,
     get_user,
     remove_underscore,
     set_session,
-    tally_que_catz,
 )
 
 
@@ -36,8 +32,8 @@ class AnswerVerdict(StrEnum):
     """
     The three possible outcomes a user can submit for a quiz question.
 
-    The string values MUST match the `value=` attributes on the verdict
-    buttons in the quiz templates (currently quiz.html and audio.html).
+    The string values are part of the quiz API contract: the SPA sends them
+    verbatim as the `verdict` field of a submit action.
     """
 
     CORRECT = "Correct!"
@@ -57,242 +53,9 @@ class AnswerVerdict(StrEnum):
         return self is AnswerVerdict.SLIGHTLY_WRONG
 
 
-# ---------------------------------------------------------------------------
-# Form action models
-#
-# The quiz form can submit one of four distinct user intents. Parsing the
-# raw Flask form into a tagged union of these models keeps validation at
-# the boundary and lets the handler dispatch on type instead of probing
-# raw strings.
-# ---------------------------------------------------------------------------
-
-
-class _QuizActionBase(BaseModel):
-    """Shared config for all quiz action models."""
-
-    model_config = ConfigDict(frozen=True, extra="ignore")
-
-
-class QuizStart(_QuizActionBase):
-    """User clicked the start-quiz button on an empty quiz page."""
-
-
-class QuizApplyCategories(_QuizActionBase):
-    """User clicked 'Apply' on the category sidebar."""
-
-    quizq_id: int = 0  # 0 means "no current question on the page"
-
-
-class QuizExclusion(_QuizActionBase):
-    """User clicked 'Exclude Question' on the current question."""
-
-    quizq_id: int = Field(gt=0)
-
-
-class QuizSubmission(_QuizActionBase):
-    """User clicked Correct / Wrong / Slightly Wrong on the current question."""
-
-    quizq_id: int = Field(gt=0)
-    verdict: AnswerVerdict
-    provided_answer: str | None = None
-
-
-QuizAction = QuizStart | QuizApplyCategories | QuizExclusion | QuizSubmission
-
-
-def _parse_quiz_action(form) -> QuizAction | None:
-    """
-    Convert a raw Flask `request.form` into a typed quiz action.
-
-    Returns None when the POST does not correspond to any recognized action
-    (matches the original handler's silent fall-through behavior).
-    """
-    # Apply-categories takes precedence over everything else, exactly as
-    # the original handler ordered it.
-    if form.get("apply-categories") == "Apply":
-        raw_id = form.get("quizq-id")
-        try:
-            quizq_id = int(raw_id) if raw_id is not None else 0
-        except (TypeError, ValueError):
-            quizq_id = 0
-        return QuizApplyCategories(quizq_id=quizq_id)
-
-    # Start-quiz short-circuits before any quizq_id checks in the original.
-    if form.get("start-quiz") is not None:
-        return QuizStart()
-
-    raw_id = form.get("quizq-id")
-    try:
-        quizq_id = int(raw_id) if raw_id is not None else 0
-    except (TypeError, ValueError):
-        quizq_id = 0
-
-    # Exclude requires a real quizq_id.
-    if form.get("exclude-question-button") == "exclude" and quizq_id != 0:
-        return QuizExclusion(quizq_id=quizq_id)
-
-    # Verdict submission. The template currently uses two mutually-exclusive
-    # form fields (`correct_submit` and `incorrect_submit`); we collapse them
-    # into a single AnswerVerdict here so the rest of the code never sees
-    # that quirk.
-    verdict_raw = form.get("correct_submit") or form.get("incorrect_submit")
-    if verdict_raw is not None and quizq_id != 0:
-        try:
-            return QuizSubmission(
-                quizq_id=quizq_id,
-                verdict=verdict_raw,
-                provided_answer=form.get("provided-answer"),
-            )
-        except ValidationError:
-            logging.warning(
-                "Discarding quiz submission with unrecognized verdict=%r",
-                verdict_raw,
-            )
-            return None
-
-    return None
-
-
-# ---------------------------------------------------------------------------
-# Page config
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class QuizPageConfig:
-    mode: str
-    template_name: str
-    endpoint_name: str
-    title: str
-    description: str
-
-
-# ---------------------------------------------------------------------------
-# Main entry point
-# ---------------------------------------------------------------------------
-
-
-def render_quiz_page(config: QuizPageConfig, audio_service=None):
-    """Shared route workflow for normal quiz and audio quiz."""
-    UID = g._login_user.id
-
-    cats_due = []
-    category_list = get_all_categories()
-
-    selected_categories = _get_selected_categories()
-
-    if selected_categories == "Not set":
-        msg = "You need to select some question categories."
-        flash(msg)
-        return render_template(
-            config.template_name,
-            title=config.title,
-            description=config.description,
-            user=current_user,
-            category_list=category_list,
-            q="",
-            selected_categories=selected_categories,
-            audio_assets={},
-        )
-
-    cache_helper = CacheHelper(UID)
-    que_list, que_cache_key = cache_helper.get_cached_questions(selected_categories)
-
-    if request.method == "POST":
-        redirect_response = _handle_quiz_post(
-            user_id=UID,
-            que_list=que_list,
-            que_cache_key=que_cache_key,
-            endpoint_name=config.endpoint_name,
-            selected_categories=selected_categories,
-        )
-        if redirect_response is not None:
-            return redirect_response
-
-        if len(selected_categories) < 1:
-            flash("You didn't select any question categories! Try again.")
-            return render_template(
-                config.template_name,
-                title=config.title,
-                description=config.description,
-                user=current_user,
-                category_list=category_list,
-                q="",
-                selected_categories=selected_categories,
-                audio_assets={},
-            )
-
-    if len(que_list) < 1:
-        selected_cats = [remove_underscore(x) for x in selected_categories]
-        que_list = get_quizes(selected_cats, UID)
-        cache.set(que_cache_key, que_list, timeout=600)
-
-    q, maybe_redirect = _select_next_question_or_redirect(
-        que_list=que_list,
-        selected_categories=selected_categories,
-        category_list=category_list,
-        cats_due=cats_due,
-        user_id=UID,
-    )
-
-    if maybe_redirect is not None:
-        return maybe_redirect
-
-    audio_assets = {}
-    initial_items = []
-
-    if config.mode == "audio" and audio_service is not None and len(que_list) > 0:
-        try:
-            initial_items = build_audio_quiz_items(que_list, audio_service, current_user, count=2)
-        except Exception as e:
-            logging.error(f"❌ Failed to build initial audio quiz items: {e}")
-
-    # Audio assets for the SPA are generated on-demand via /audio/quiz-data,
-    # so we only generate them here for non-GET requests (e.g. standard quiz mode).
-    if (
-        config.mode == "audio"
-        and q
-        and audio_service is not None
-        and request.method != "GET"
-    ):
-        try:
-            raw_assets = audio_service.ensure_audio_for_quiz_question(
-                q=q,
-                user=current_user,
-                parts=("question", "answer", "hint"),
-            )
-            # logging.info(f"Service returned raw assets: {raw_assets}")
-        except Exception as e:
-            logging.error(f"❌ Failed to generate audio assets: {e}")
-            flash(f"Failed to generate audio: {str(e)}", category="error")
-            raw_assets = {}
-
-        audio_assets = _build_audio_assets_for_template(q=q, raw_assets=raw_assets)
-
-        # logging.info(f"Final audio_assets for template: {audio_assets}")
-    template_vars = {
-        "title": config.title,
-        "description": config.description,
-        "user": current_user,
-        "category_list": category_list,
-        "q": q,
-        "selected_categories": selected_categories,
-        "cats_due": cats_due,
-        "audio_assets": audio_assets,
-        "initial_items": initial_items,
-    }
-
-    if config.mode == "audio":
-        logging.info(f"Rendering audio template with assets: {bool(audio_assets)}")
-        if q:
-            logging.info(f"📄 Question: {q.get('question_text', '')[:40]}...")
-
-    return render_template(config.template_name, **template_vars)
-
-
 def _build_audio_assets_for_template(q: dict, raw_assets: dict) -> dict:
     """
-    Convert AudioAssetService's language-keyed result into the shape expected by audio.html.
+    Convert AudioAssetService's language-keyed result into the shape the SPA expects.
 
     Input:
     {
@@ -326,11 +89,7 @@ def _build_audio_assets_for_template(q: dict, raw_assets: dict) -> dict:
     if not raw_assets:
         return audio_assets
 
-    part_to_text = {
-        "question": q.get("question_text"),
-        "answer": q.get("answer"),
-        "hint": q.get("hint"),
-    }
+    part_to_text = default_tts_texts(q)
 
     for lang, lang_assets in raw_assets.items():
         for part, ensured_asset_url in lang_assets.items():
@@ -349,8 +108,12 @@ def _build_audio_assets_for_template(q: dict, raw_assets: dict) -> dict:
                 )
                 continue
 
-            text_hash = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
-            object_key = f"audio/{lang}/{q['question_id']}/{part}-{text_hash}.mp3"
+            object_key = audio_object_key(
+                question_id=q["question_id"],
+                part=part,
+                language=lang,
+                source_text=source_text,
+            )
             audio_url = url_for("audio.serve_audio_by_key", object_key=object_key)
 
             audio_assets.setdefault(part, []).append({
@@ -363,124 +126,62 @@ def _build_audio_assets_for_template(q: dict, raw_assets: dict) -> dict:
     return audio_assets
 
 
-def _get_selected_categories():
-    """One source of truth for category session/form behavior."""
-    if request.method == "GET":
-        saved_names = get_session("quiz_category_names")
-        if saved_names == "Not set" or not saved_names:
-            # Check if user has a default category list
-            from repz.models import category_lists
-            from repz.database import session
-            default_list = session.execute(
-                select(category_lists)
-                .where(category_lists.user_id == current_user.id)
-                .where(category_lists.is_default == True)
-            ).scalars().first()
-            if default_list:
-                saved_names = [c.category_name.replace(" ", "_") for c in default_list.categories]
-                set_session("quiz_category_names", saved_names)
-        return saved_names
+def get_selected_categories() -> list[str] | str:
+    """
+    The categories the current user is quizzing on, as slugs.
 
-    if "apply-categories" in request.form or "category_name" in request.form:
-        selected_categories = request.form.getlist("category_name")
-        set_session("quiz_category_names", selected_categories)
-        return selected_categories
-
+    Falls back to the user's default category list the first time they arrive,
+    and returns the sentinel "Not set" when they have never chosen any.
+    """
     saved_names = get_session("quiz_category_names")
+
     if saved_names == "Not set" or not saved_names:
-        return []
+        from repz.models import category_lists
+
+        default_list = session.execute(
+            select(category_lists)
+            .where(category_lists.user_id == current_user.id)
+            .where(category_lists.is_default == True)
+        ).scalars().first()
+
+        if default_list:
+            saved_names = [
+                c.category_name.replace(" ", "_") for c in default_list.categories
+            ]
+            set_selected_categories(saved_names)
+
     return saved_names
 
 
-# ---------------------------------------------------------------------------
-# POST dispatch
-# ---------------------------------------------------------------------------
+def set_selected_categories(category_slugs: list[str]) -> None:
+    """Persist the user's category selection for subsequent quiz requests."""
+    set_session("quiz_category_names", category_slugs)
 
 
-def _handle_quiz_post(
-    user_id: int,
-    que_list: list[dict[str, Any]],
-    que_cache_key: str,
-    endpoint_name: str,
-    selected_categories: list[str],
-):
-    """Shared POST action handling for both quiz modes."""
-    action = _parse_quiz_action(request.form)
-
-    match action:
-        case QuizApplyCategories(quizq_id=qid):
-            return _handle_apply_categories(
-                quizq_id=qid,
-                que_list=que_list,
-                selected_categories=selected_categories,
-                endpoint_name=endpoint_name,
-            )
-
-        case QuizStart():
-            return None
-
-        case QuizExclusion(quizq_id=qid):
-            _exclude_quiz_question(user_id, qid, que_list, que_cache_key)
-            return redirect(url_for(endpoint_name))
-
-        case QuizSubmission(
-            quizq_id=qid, verdict=verdict, provided_answer=provided_answer
-        ):
-            _submit_quiz_answer(
-                user_id=user_id,
-                quizq_id=qid,
-                verdict=verdict,
-                provided_answer=provided_answer,
-                que_list=que_list,
-                que_cache_key=que_cache_key,
-                endpoint_name=endpoint_name,
-            )
-            return redirect(url_for(endpoint_name))
-
-        case _:
-            return None
-
-
-def _handle_apply_categories(
-    quizq_id: int,
-    que_list: list[dict[str, Any]],
-    selected_categories: list[str],
-    endpoint_name: str,
-):
+def invalidate_quiz_queue_cache(user_id: int) -> None:
     """
-    Apply-categories logic, preserved exactly from the original handler.
+    Drop the reader's cached queue so edits to a question show up next request.
 
-    If the categories of the current question no longer overlap with the
-    user's selected categories, redirect so a fresh question is loaded.
+    Best-effort: a cache that cannot be reached must not fail the write that
+    prompted the invalidation.
     """
-    current_q = None
-    if quizq_id != 0 and que_list:
-        for item in que_list:
-            if item.get("quizq_id") == quizq_id:
-                current_q = item
-                break
+    try:
+        selected_categories = get_session("quiz_category_names")
+        if not selected_categories or selected_categories == "Not set":
+            return
 
-    if current_q:
-        q_cats = [c.replace(" ", "_") for c in current_q.get("categories", [])]
-        # If ANY category of the current question is still in the
-        # selected_categories, keep the page as is. Otherwise, redirect to
-        # reload a question from the updated categories.
-        has_overlap = any(cat in selected_categories for cat in q_cats)
-        if not has_overlap:
-            return redirect(url_for(endpoint_name))
-    else:
-        # If there's no current question, redirect to refresh.
-        return redirect(url_for(endpoint_name))
-    return None
+        cache.delete(CacheHelper(user_id).generate_cache_key(selected_categories))
+    except Exception as e:
+        logging.error(f"Failed to clear the cached quiz queue: {e}")
 
 
-def _exclude_quiz_question(
+def exclude_quiz_question(
     user_id: int,
     quizq_id: int,
     que_list: list[dict[str, Any]],
     que_cache_key: str,
 ):
-    """One exclude implementation used by both visual and audio modes."""
+    """Exclude a question from the user's queue for good."""
     cur_user = get_user(user_id)
 
     q_id_qry = select(quizq.question_id).where(quizq.quizq_id == quizq_id)
@@ -507,16 +208,15 @@ def _exclude_quiz_question(
     session.commit()
 
 
-def _submit_quiz_answer(
+def submit_quiz_answer(
     user_id: int,
     quizq_id: int,
     verdict: AnswerVerdict,
     provided_answer: str | None,
     que_list: list[dict[str, Any]],
     que_cache_key: str,
-    endpoint_name: str,
 ):
-    """One correct/wrong implementation used by both routes."""
+    """Record a Correct / Wrong / Slightly Wrong verdict and re-level the question."""
     time_now = func.now()
 
     qry = (
@@ -622,66 +322,6 @@ def _submit_quiz_answer(
     session.commit()
 
 
-def _select_next_question_or_redirect(
-    que_list: list[dict[str, Any]],
-    selected_categories: list[str],
-    category_list: list[str],
-    cats_due: list[str],
-    user_id: int,
-):
-    """One next-question selection implementation for both modes."""
-    success_msg = (
-        "Congradulations! You've completed all the questions currently due! "
-        "You have two options: Either wait for the questions you've already "
-        "answered to come due again, or to start answering more questions "
-        "immediately you need to expand your training que! For the ladder option, "
-        "select how many more questions you'd like to add to your que below and "
-        "click 'Add More'"
-    )
-
-    if len(que_list) < 1:
-        if len(selected_categories) == len(category_list):
-            flash(success_msg)
-            return "", redirect(url_for("home.quemore"))
-
-        unselected_cat_quizes = get_quizes(category_list, user_id)
-
-        if len(unselected_cat_quizes) < 1:
-            flash(success_msg)
-            return "", redirect(url_for("home.quemore"))
-
-        cats_w_quizes = tally_que_catz(unselected_cat_quizes)
-
-        cats_due_txt = ""
-        for cat, num in cats_w_quizes.items():
-            cats_due_txt += f"{cat}: {num}, "
-            cleaned_cat = clean_for_html(cat)
-            cats_due.append(cleaned_cat)
-
-        msg_txt = (
-            "No more questions in your selected categories are currently due. "
-            "Either que more questions for those categories or select the "
-            "following categories which have questions due: "
-        )
-        msg = msg_txt + cats_due_txt
-        flash(msg)
-
-        return "", None
-
-    sorted_que_list = sorted(
-        que_list,
-        key=lambda k: (k["last_ansered"] is None, k["last_ansered"]),
-    )
-
-    if len(sorted_que_list) > 30:
-        sorted_que_list = sorted_que_list[:17]
-    else:
-        sorted_que_list = sorted_que_list[:7]
-
-    q = random.choice(sorted_que_list)
-    return q, None
-
-
 def pick_next_questions(
     que_list: list[dict[str, Any]],
     count: int = 1,
@@ -739,49 +379,62 @@ def get_quiz_queue(
     return que_list
 
 
-def build_audio_quiz_items(
+def build_quiz_items(
     que_list: list[dict[str, Any]],
-    audio_service,
     user,
     count: int = 1,
     exclude_quizq_ids: list[str | int] | None = None,
+    audio_service=None,
 ) -> list[dict[str, Any]]:
     """
     Build fully-populated SPA quiz items ({question, audioAssets}) for the next
-    `count` questions in the queue.  Audio generation failures are logged and do
-    not block the item from being returned.
+    `count` questions in the queue.
+
+    Text-to-speech is only run when an `audio_service` is supplied, so readers
+    who have audio switched off never pay for audio generation.  Generation
+    failures are logged and do not block the item from being returned.
     """
     questions = pick_next_questions(que_list, count, exclude_quizq_ids)
     items: list[dict[str, Any]] = []
 
     for q in questions:
-        # Fetch flag if present for the current user and question
-        from repz.models import flag
-        from repz.database import session
-        try:
-            f = session.query(flag).filter_by(user_id=user.id, question_id=q["question_id"]).first()
-            if f:
-                q["flag"] = {
-                    "category": f.flag_category.value if hasattr(f.flag_category, "value") else str(f.flag_category),
-                    "note": f.note
-                }
-            else:
-                q["flag"] = None
-        except Exception as e:
-            logging.error(f"❌ Failed to fetch flag for question {q.get('question_id')}: {e}")
-            q["flag"] = None
-
-        try:
-            raw_assets = audio_service.ensure_audio_for_quiz_question(
-                q=q,
-                user=user,
-                parts=("question", "answer", "hint"),
-            )
-        except Exception as e:
-            logging.error(f"❌ Failed to generate audio assets for quizq {q.get('quizq_id')}: {e}")
-            raw_assets = {}
-
-        audio_assets = _build_audio_assets_for_template(q=q, raw_assets=raw_assets)
-        items.append({"question": q, "audioAssets": audio_assets})
+        q["flag"] = _get_question_flag(user_id=user.id, question_id=q["question_id"])
+        items.append({
+            "question": q,
+            "audioAssets": build_audio_assets(q, user, audio_service),
+        })
 
     return items
+
+
+def build_audio_assets(q: dict[str, Any], user, audio_service) -> dict:
+    """Ensure and describe the audio assets for one question, or {} without a service."""
+    if audio_service is None:
+        return {}
+
+    try:
+        raw_assets = audio_service.ensure_audio_for_quiz_question(
+            q=q,
+            user=user,
+            parts=("question", "answer", "hint"),
+        )
+    except Exception as e:
+        logging.error(f"❌ Failed to generate audio assets for quizq {q.get('quizq_id')}: {e}")
+        raw_assets = {}
+
+    return _build_audio_assets_for_template(q=q, raw_assets=raw_assets)
+
+
+def _get_question_flag(user_id: int, question_id) -> dict[str, Any] | None:
+    """The current user's flag on a question, in the shape the SPA expects."""
+    from repz.models import flag
+
+    try:
+        f = session.query(flag).filter_by(
+            user_id=user_id, question_id=question_id
+        ).first()
+    except Exception as e:
+        logging.error(f"❌ Failed to fetch flag for question {question_id}: {e}")
+        return None
+
+    return flag_payload(f)

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getCsrfToken } from '../audio/csrf';
-import { base64ToBlob } from '../audio/audioUtils';
+import { csrfHeaders, jsonHeaders } from '../lib/http';
+import { base64ToBlob } from '../quiz/audioUtils';
 import type { AskAiContext, AskAiState, AskAiTurn } from './types';
 
 const logDebug = (message: string, ...args: any[]) => {
@@ -161,13 +161,6 @@ export function useAskAi({
         history: historyRef.current.map((t) => ({ transcript: t.transcript, answer: t.answer })),
       };
 
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const csrfToken = ctx.csrfToken || getCsrfToken();
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-        headers['X-CSRFToken'] = csrfToken;
-      }
-
       setPhase('Thinking');
       setError(null);
 
@@ -176,7 +169,7 @@ export function useAskAi({
         abortRef.current = abort;
         const response = await fetch('/api/ask-ai', {
           method: 'POST',
-          headers,
+          headers: jsonHeaders(),
           body: JSON.stringify(body),
           signal: abort.signal,
         });
@@ -198,7 +191,7 @@ export function useAskAi({
           abortRef.current = speakAbort;
           const speakResponse = await fetch('/api/ask-ai/speak', {
             method: 'POST',
-            headers,
+            headers: jsonHeaders(),
             body: JSON.stringify({ text: answerText, language }),
             signal: speakAbort.signal,
           });
@@ -280,18 +273,11 @@ export function useAskAi({
         const formData = new FormData();
         formData.append('audio', audioBlob, 'ask-ai-question.webm');
 
-        const headers: Record<string, string> = {};
-        const csrfToken = contextRef.current?.csrfToken || getCsrfToken();
-        if (csrfToken) {
-          headers['X-CSRF-Token'] = csrfToken;
-          headers['X-CSRFToken'] = csrfToken;
-        }
-
         const abort = new AbortController();
         abortRef.current = abort;
         const response = await fetch('/api/ask-ai/transcribe', {
           method: 'POST',
-          headers,
+          headers: csrfHeaders(),
           body: formData,
           signal: abort.signal,
         });

@@ -3,18 +3,17 @@
 Add Content
 {% endblock title %}
 {% block content %}
-<h1 align="center">New Question</h1>
-{% include "new_cat.html" %}
-<form id="add_question" enctype="multipart/form-data" method="post">
-    <div class="form-group">
-        {% include "_categories_core.html" %}
 
-        {% include "editquestionform.html" %}
+<div id="add-content-root"></div>
 
+<script id="add-content-data" type="application/json">
+{{ {
+  'csrfToken': csrf_token(),
+  'categoryList': category_list,
+  'selectedCategories': selected_categories if selected_categories is defined else [],
+  'addCategoryUrl': url_for('quest_ajx.addcat')
+} | tojson }}
+</script>
 
-    </div>
-
-</form>
-<div id="ask-ai-launcher-root"></div>
 {{ vite_asset("src/entrypoints/AddContent.entry.tsx") }}
 {% endblock content %}

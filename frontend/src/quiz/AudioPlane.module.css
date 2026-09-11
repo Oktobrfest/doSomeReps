@@ -1,0 +1,11 @@
+/*
+ * Flow only. The plane's width belongs to the page layout that places it, and
+ * every control in it carries its own size and colour.
+ */
+
+.plane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rep-quiz-gap);
+  min-width: 0;
+}

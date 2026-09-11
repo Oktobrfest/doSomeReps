@@ -3,7 +3,7 @@ import json
 import copy
 
 from flask import flash, request, jsonify, current_app
-from flask_login import login_required
+from flask_login import current_user, login_required
 from flask import g, make_response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload, Query
@@ -13,7 +13,9 @@ from ...models import q_pic, users, question, quizq, category, rating, audio, fl
 from repz.extensions import cache
 from ...database import session
 from repz.routes import quest_ajx
-from ...bluehelpers import clean_for_html, get_all_db_categories, get_user, remove_underscore, delete_pic
+from repz.services.quiz_service import invalidate_quiz_queue_cache
+from ...bluehelpers import (clean_for_html, delete_pic, flag_payload,
+                            get_all_db_categories, get_user, remove_underscore)
 
 from ...home.form_helpers import save_pictures
 
@@ -64,6 +66,22 @@ def addcat():
             True}), 500
 
 
+def _owned_question(question_id, *options):
+    """Load a question the caller authored, or None.
+
+    The editors only ever list the caller's own questions, so a miss here means
+    a forged id rather than a reachable UI state. Answering 404 rather than 403
+    keeps it from confirming that someone else's question exists.
+    """
+    query = session.query(question)
+    if options:
+        query = query.options(*options)
+    return query.filter(
+        question.question_id == question_id,
+        question.created_by == current_user.id,
+    ).first()
+
+
 #save question changes within edit questions page
 @quest_ajx.route("/saveq", methods=["POST"], endpoint="saveq")
 @login_required
@@ -86,7 +104,9 @@ def saveq():
         return "Answer cannot exceed 4000 characters.", 400
 
     # loop through the database pics and see if they match the ones in the request
-    q = session.query(question).filter_by(question_id=updated_question['id']).first()
+    q = _owned_question(updated_question['id'])
+    if q is None:
+        return jsonify({"error": "Question not found."}), 404
 
     # Check if any existing images need to be deleted
     for pic in q.pics:
@@ -123,18 +143,7 @@ def saveq():
     # commit the changes to the database
     session.commit()
 
-    # Clear the user's cached quiz queue so they see the updated question details
-    try:
-        from repz.bluehelpers import get_session
-        from repz.cache_helper import CacheHelper
-        from flask_login import current_user
-        selected_categories = get_session("quiz_category_names")
-        if selected_categories and selected_categories != "Not set":
-            cache_helper = CacheHelper(current_user.id)
-            key = cache_helper.generate_cache_key(selected_categories)
-            cache.delete(key)
-    except Exception as e:
-        print("Error clearing quiz cache on saveq:", e)
+    invalidate_quiz_queue_cache(current_user.id)
 
     msg = "Question Saved"
     flash(msg, category="success")
@@ -215,10 +224,7 @@ def searchq():
             flag.question_id.in_(result_ids),
         ).all()
         for f in flag_rows:
-            flags_by_qid[f.question_id] = {
-                "category": f.flag_category.value,
-                "note": f.note,
-            }
+            flags_by_qid[f.question_id] = flag_payload(f)
 
     search_results = []
     for r in results:
@@ -329,7 +335,9 @@ def deleteq():
     delete_q = request.get_json()
     question_id = delete_q["id"]
 
-    q = session.query(question).options(joinedload(question.pics)).filter_by(question_id=delete_q["id"]).first()
+    q = _owned_question(question_id, joinedload(question.pics))
+    if q is None:
+        return jsonify({"error": "Question not found."}), 404
 
     # gather the q_pics and remove them from s3
     q_pics = q.pics
@@ -338,29 +346,16 @@ def deleteq():
     for pic in q_pics:
         delete_pic(pic)
 
-    exquestion = session.query(question).filter(question.question_id == question_id).first()
     # find all entries in 'excluded_questions' where 'question_id' matches the question you want to delete
-    if exquestion is not None:
-        q_users = session.query(users).filter(users.excluded_questions.contains(exquestion)).all()
+    q_users = session.query(users).filter(users.excluded_questions.contains(q)).all()
 
-        for usr in q_users:
-            usr.excluded_questions.remove(exquestion)
+    for usr in q_users:
+        usr.excluded_questions.remove(q)
 
     session.delete(q)
     session.commit()
 
-    # Clear the user's cached quiz queue so they don't see the deleted question details
-    try:
-        from repz.bluehelpers import get_session
-        from repz.cache_helper import CacheHelper
-        from flask_login import current_user
-        selected_categories = get_session("quiz_category_names")
-        if selected_categories and selected_categories != "Not set":
-            cache_helper = CacheHelper(current_user.id)
-            key = cache_helper.generate_cache_key(selected_categories)
-            cache.delete(key)
-    except Exception as e:
-        print("Error clearing quiz cache on deleteq:", e)
+    invalidate_quiz_queue_cache(current_user.id)
 
     msg = "Question Deleted"
     flash(msg, category="success")

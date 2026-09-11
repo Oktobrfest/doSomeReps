@@ -1,19 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Topic List{% endblock title %}
-{% block head %}
-	<link href="{{ url_for('catz_static.custom_static', filename='catz.css') }}"
-							rel="stylesheet">
-	{{ super() }}
-{% endblock head %}
 {% block content %}
 
-	<div class="topic-container">
-	{% include 'topic_table.html' %}
+<div id="topic-list-root"></div>
 
+<script id="topic-list-data" type="application/json">
+{{ {
+  'topics': topics
+} | tojson }}
+</script>
 
-
-	</div>
-
-
-
+{{ vite_asset("src/entrypoints/TopicList.entry.tsx") }}
 {% endblock content %}

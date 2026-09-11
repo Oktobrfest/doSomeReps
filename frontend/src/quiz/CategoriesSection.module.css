@@ -1,0 +1,34 @@
+/*
+ * The category picker's frame. Flow and chrome only: the Apply control composes
+ * the shared button base, so no button geometry or colour is written down here.
+ */
+
+.categoriesSection {
+  flex-shrink: 0;
+  width: 100%;
+  padding-top: var(--rep-panel-padding);
+  border-top: 1px solid var(--rep-color-border);
+}
+
+.categoriesSection :global(.card) {
+  margin-bottom: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+}
+
+.categoriesSection :global(.card-header) {
+  padding-right: 0;
+  padding-left: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.categoriesSection :global(.card-body) {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.applyRow {
+  margin-top: var(--rep-panel-gap);
+}

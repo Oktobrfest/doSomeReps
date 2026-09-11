@@ -1,0 +1,306 @@
+/*
+ * The voice-command bar.
+ *
+ * The Listen control is a split button: two halves of the shared button base
+ * with their corners handed to a clipping group, so nothing here overrides the
+ * base and nothing here is !important.
+ */
+
+.voiceCommandContainer {
+  text-align: center;
+}
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* ---- split button ---- */
+
+.splitButtonContainer {
+  position: relative;
+  display: flex;
+  flex: 1;
+  width: 100%;
+}
+
+/* Rounds the pair into one control. The dropdown is a sibling, so it is not
+   clipped by this. */
+.splitButtonGroup {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--rep-btn-radius-touch-lg);
+  box-shadow: var(--rep-btn-shadow);
+}
+
+/*
+ * Both halves stop claiming the tier's minimum width: the group divides the row
+ * between them instead. The class is doubled so these rebinds beat the size
+ * modifier's regardless of which stylesheet the bundler emits first — the two
+ * live in different chunks, so source order is not something to rely on.
+ */
+.mainSplitBtn.mainSplitBtn {
+  --rep-btn-min-width: var(--rep-btn-min-width-touch);
+
+  flex: 1;
+}
+
+.menuSplitBtn.menuSplitBtn {
+  --rep-btn-min-width: var(--rep-btn-min-width-touch);
+  --rep-btn-font-size: var(--rep-btn-icon-size-touch-md);
+
+  flex: 0 0 auto;
+}
+
+.btnContentRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rep-btn-gap);
+}
+
+.btnContentCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detectedInside {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+.commandBadgeInside {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: var(--rep-color-divider-on-action);
+  border: 1px solid var(--rep-color-divider-on-action);
+  border-radius: var(--rep-radius-small);
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+/* ---- command list ---- */
+
+.dropdownMenu {
+  position: absolute;
+  top: 105%;
+  right: 0;
+  z-index: 200;
+  min-width: 220px;
+  padding: 0.5rem 0;
+  overflow: hidden;
+  background: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-btn-radius);
+  box-shadow: var(--rep-shadow-dialog);
+  text-align: left;
+}
+
+.dropdownHeader {
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid var(--rep-color-border);
+  color: var(--rep-color-text-subtle);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border: none;
+  background: none;
+  color: var(--rep-color-text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--rep-transition-fast);
+}
+
+.dropdownItem:hover {
+  background-color: var(--rep-color-surface-subtle);
+}
+
+/* ---- stop ---- */
+
+.stopButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--rep-color-text-muted);
+  border-radius: 50%;
+  color: var(--rep-color-text-muted);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--rep-btn-transition);
+}
+
+.stopButton:hover {
+  background: var(--rep-color-text-muted);
+  color: var(--rep-color-on-action);
+  transform: translateY(-1px);
+}
+
+.stopButton:active {
+  transform: translateY(0);
+}
+
+/* ---- state indicators ---- */
+
+.micIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--rep-btn-icon-size);
+  line-height: 1;
+}
+
+.spinnerGrow,
+.spinnerBorder {
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--rep-btn-icon-size);
+  height: var(--rep-btn-icon-size);
+  border-radius: 50%;
+}
+
+.spinnerGrow {
+  background-color: currentColor;
+  opacity: 0;
+  animation: spinnerGrow 0.75s linear infinite;
+}
+
+.spinnerBorder {
+  border: 0.25rem solid currentColor;
+  border-right-color: transparent;
+  animation: spinnerBorder 0.75s linear infinite;
+}
+
+.errorMessage {
+  margin-top: 0.5rem;
+  color: var(--rep-color-error-text-strong);
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: pre-wrap;
+}
+
+.pulseListening {
+  animation: pulseListening 1.4s ease-in-out infinite;
+}
+
+@keyframes pulseListening {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+
+  50% {
+    transform: scale(1.025);
+    box-shadow: var(--rep-shadow-listening);
+  }
+}
+
+@keyframes spinnerGrow {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes spinnerBorder {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- listening banner ----
+   While listening the control leaves the page flow and pins itself to the top,
+   so the reader can stop it from anywhere. */
+
+.listeningBanner {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background-color: var(--rep-color-navbar-bg-end);
+  border-bottom: 2px solid var(--rep-intent-red-bg);
+  box-shadow: var(--rep-shadow-navbar);
+  animation: slideDown 0.2s ease-out;
+}
+
+.voiceCommandContainerListening {
+  height: 0;
+  padding: 0;
+  margin: 0;
+  margin-bottom: -28px;
+}
+
+.bannerControlsRow {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.bannerControlsRow .splitButtonGroup {
+  border-radius: var(--rep-btn-radius-touch-sm);
+}
+
+.listeningBanner .btnContentCol {
+  gap: 0.15rem;
+}
+
+.listeningBanner .detectedInside {
+  margin-top: 0.1rem;
+  font-size: 0.85rem;
+}
+
+.listeningBanner .commandBadgeInside {
+  padding: 0.1rem 0.35rem;
+  font-size: 0.8rem;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}

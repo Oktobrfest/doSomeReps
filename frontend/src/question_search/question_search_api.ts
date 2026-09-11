@@ -1,3 +1,5 @@
+import { jsonHeaders } from "../lib/http";
+import { readBootstrap as readShared } from "../lib/bootstrap";
 import type {
   EditQuestionsBootstrap,
   SearchFilters,
@@ -5,11 +7,7 @@ import type {
 } from "./question_search_types";
 
 export function readBootstrap(): EditQuestionsBootstrap {
-  const node = document.getElementById("edit-questions-bootstrap");
-  if (!node?.textContent) {
-    throw new Error("Missing edit-questions bootstrap data.");
-  }
-  return JSON.parse(node.textContent) as EditQuestionsBootstrap;
+  return readShared<EditQuestionsBootstrap>("edit-questions-bootstrap", "edit-questions");
 }
 
 async function readError(response: Response, fallback: string): Promise<string> {
@@ -29,7 +27,7 @@ export async function searchQuestions(
 ): Promise<SearchResultItem[]> {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     body: JSON.stringify({
       "search-terms": filters.terms,
       "search-categories": filters.categories,
@@ -53,7 +51,7 @@ export async function unexcludeQuestion(
 ): Promise<void> {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: jsonHeaders(),
     body: JSON.stringify(questionId),
   });
 

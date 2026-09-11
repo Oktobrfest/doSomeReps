@@ -1,13 +1,4 @@
 .page {
-  --eq-cat-bg: #ffe6bf;
-  --eq-cat-text: #7a4a00;
-
-  --cp-item-bg: #fff6e8;
-  --cp-item-bg-active: #ffd79a;
-  --cp-item-border: #f2d7ae;
-  --cp-item-border-active: #e08a00;
-  --cp-item-text: #4a2c00;
-
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -26,8 +17,8 @@
   container-type: inline-size;
   background-color: var(--rep-color-surface);
   border: 1px solid var(--rep-color-border);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-radius: var(--rep-radius-card);
+  box-shadow: var(--rep-shadow-card);
   overflow: hidden;
 }
 
@@ -40,7 +31,7 @@
 }
 
 .searchRow > .primaryBtn,
-.searchRow > .ghostBtn {
+.searchRow > .secondaryBtn {
   flex: 1 1 auto;
   max-width: 220px;
 }
@@ -71,16 +62,11 @@
 }
 
 .primaryBtn {
-  composes: button buttonPrimary from '../styles/shared.module.css';
-  font-size: 0.85rem;
-  padding: 8px 14px;
+  composes: actionButton buttonSm btnBlue from '../styles/shared.module.css';
 }
 
-.ghostBtn {
-  composes: button buttonSecondary from '../styles/shared.module.css';
-  gap: 6px;
-  font-size: 0.85rem;
-  padding: 8px 12px;
+.secondaryBtn {
+  composes: actionButton buttonSm btnSlate from '../styles/shared.module.css';
 }
 
 .filterCount {
@@ -151,8 +137,13 @@
 }
 
 .chip {
-  composes: button from '../styles/shared.module.css';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
   border-radius: 999px;
   border: 1px solid var(--rep-color-border);
   color: var(--rep-color-text-secondary);
@@ -192,16 +183,6 @@
     padding: 9px 14px;
   }
 
-  .primaryBtn {
-    font-size: 0.9rem;
-    padding: 9px 18px;
-  }
-
-  .ghostBtn {
-    font-size: 0.9rem;
-    padding: 9px 16px;
-  }
-
   .chipRow {
     --chip-col: 150px;
   }
@@ -216,16 +197,6 @@
   .searchInput {
     font-size: 1.02rem;
     padding: 10px 16px;
-  }
-
-  .primaryBtn {
-    font-size: 1rem;
-    padding: 11px 24px;
-  }
-
-  .ghostBtn {
-    font-size: 1rem;
-    padding: 11px 20px;
   }
 
   .chipRow {
@@ -463,8 +434,8 @@
   padding: 2px 8px;
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--eq-cat-text);
-  background-color: var(--eq-cat-bg);
+  color: var(--rep-color-category-chip-text);
+  background-color: var(--rep-color-category-chip-bg);
   border-radius: 999px;
 }
 

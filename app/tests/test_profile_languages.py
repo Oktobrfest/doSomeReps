@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from flask import Flask
 from werkzeug.datastructures import MultiDict
-from repz.ai.profile_forms import AIProfileForm
+from repz.ai.profile_forms import ProfileLanguagesForm
 
 class TestProfileLanguagesValidation(unittest.TestCase):
     def setUp(self):
@@ -21,17 +21,17 @@ class TestProfileLanguagesValidation(unittest.TestCase):
         self.ctx.pop()
 
     def test_validation_empty_languages(self):
-        form = AIProfileForm(MultiDict([]))
+        form = ProfileLanguagesForm(MultiDict([]))
         form.languages.choices = [("en_US", "en_US"), ("fr_FR", "fr_FR"), ("es_ES", "es_ES")]
         self.assertTrue(form.validate())
 
     def test_validation_valid_languages(self):
-        form = AIProfileForm(MultiDict([("languages", "en_US"), ("languages", "fr_FR")]))
+        form = ProfileLanguagesForm(MultiDict([("languages", "en_US"), ("languages", "fr_FR")]))
         form.languages.choices = [("en_US", "en_US"), ("fr_FR", "fr_FR"), ("es_ES", "es_ES")]
         self.assertTrue(form.validate())
 
     def test_validation_too_many_languages(self):
-        form = AIProfileForm(MultiDict([
+        form = ProfileLanguagesForm(MultiDict([
             ("languages", "en_US"),
             ("languages", "fr_FR"),
             ("languages", "es_ES"),
@@ -42,7 +42,7 @@ class TestProfileLanguagesValidation(unittest.TestCase):
         self.assertIn("You can select up to 3 languages only.", form.languages.errors)
 
     def test_validation_invalid_language_choice(self):
-        form = AIProfileForm(MultiDict([("languages", "en_US"), ("languages", "it_IT")]))
+        form = ProfileLanguagesForm(MultiDict([("languages", "en_US"), ("languages", "it_IT")]))
         form.languages.choices = [("en_US", "en_US"), ("fr_FR", "fr_FR")]
         self.assertFalse(form.validate())
         has_invalid_choice_error = any(

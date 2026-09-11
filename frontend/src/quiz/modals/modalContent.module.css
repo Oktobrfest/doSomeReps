@@ -1,0 +1,59 @@
+.prose {
+  font-size: 1.1rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.meta {
+  margin: 0 0 12px;
+  color: var(--rep-color-text-secondary);
+}
+
+.image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 12px;
+  border-radius: var(--rep-radius-control);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 8rem;
+  padding: 10px;
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-control);
+  background: var(--rep-color-surface);
+  color: var(--rep-color-text-primary);
+  font: inherit;
+  resize: vertical;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--rep-color-focus);
+  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
+}
+
+.playerRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* An action that follows the content it acts on, so it carries the gap between. */
+.trailingAction {
+  margin-top: 16px;
+}
+
+/* Rating is what this dialog is for, so its stars take the larger tier. */
+.ratingStars {
+  --rep-rating-star-size: var(--rep-rating-star-size-lg);
+}
+
+.error {
+  margin: 12px 0 0;
+  color: var(--rep-color-error-text-strong);
+  font-weight: 600;
+}

@@ -9,7 +9,37 @@ from repz.ai.prompts import GENERATE_TTS_AUDIO_TEXT
 from repz.database import session
 from repz.models import audio
 from repz.aws_s3 import S3
-from repz.ai.litellm_client import completion_for_user
+from repz.ai.litellm_client import completion_for_user, resolve_user_ai_config
+
+# Rewriting a question into TTS-friendly prose is an LLM call, so it runs on
+# the "text" modality - not "tts", which is the voice synthesis step.
+TTS_TEXT_MODALITY = "text"
+
+
+def default_tts_texts(q: dict) -> dict:
+    """The source text for each quiz part, keyed the way callers name parts."""
+    return {
+        "question": q.get("question_text"),
+        "answer": q.get("answer"),
+        "hint": q.get("hint"),
+    }
+
+
+def audio_object_key(
+    question_id: int,
+    part: str,
+    language: str,
+    source_text: str,
+) -> str:
+    """
+    Build the deterministic audio object key.
+
+    IMPORTANT:
+    This intentionally keeps the existing cache behavior: the object key is
+    based on the original source text, not the AI-generated TTS text.
+    """
+    text_hash = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
+    return f"audio/{language}/{question_id}/{part}-{text_hash}.mp3"
 
 
 class S3StorageClient:
@@ -77,43 +107,18 @@ class AudioAssetService:
 
         return 0.35
 
-    def _default_tts_texts(self, q: dict) -> dict:
-        """Return the default source text for each quiz part."""
-        return {
-            "question": q.get("question_text"),
-            "answer": q.get("answer"),
-            "hint": q.get("hint"),
-        }
-
     def _can_generate_ai_tts_text(self, user) -> bool:
         """Return whether this user has enough AI config to generate TTS-friendly text."""
-        has_provider = bool(getattr(user, "ai_provider", None))
-        has_model = bool(getattr(user, "ai_model", None))
-        has_key = bool(getattr(user, "ai_api_key", None))
+        config = resolve_user_ai_config(user, TTS_TEXT_MODALITY)
 
         logging.info(
             "🤖 AI TTS config check: "
-            f"provider={has_provider}, model={has_model}, api_key={has_key}"
+            f"provider={bool(config.provider)}, model={bool(config.model)}, "
+            f"api_key={bool(config.api_key)}"
         )
 
-        return has_provider and has_model and has_key
+        return config.is_usable
 
-    def _audio_object_key(
-        self,
-        question_id: int,
-        part: str,
-        language: str,
-        source_text: str,
-    ) -> str:
-        """
-        Build the deterministic audio object key.
-
-        IMPORTANT:
-        This intentionally keeps the existing cache behavior: the object key is
-        based on the original source text, not the AI-generated TTS text.
-        """
-        text_hash = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
-        return f"audio/{language}/{question_id}/{part}-{text_hash}.mp3"
 
     def _get_existing_audio_url(self, object_key: str) -> str | None:
         """Return an existing audio URL/object key if this audio row already exists."""
@@ -217,6 +222,7 @@ Avoid difficult rarely used words and jargon.
         response: Any = completion_for_user(
             user,
             [{"role": "user", "content": prompt}],
+            modality=TTS_TEXT_MODALITY,
             temperature=0.1,
         )
 
@@ -264,7 +270,7 @@ Avoid difficult rarely used words and jargon.
             session.commit()
 
         assets_by_language = {}
-        part_to_text = self._default_tts_texts(q)
+        part_to_text = default_tts_texts(q)
 
         for lang_obj in user.languages:
             lang = lang_obj.language
@@ -279,7 +285,7 @@ Avoid difficult rarely used words and jargon.
                     logging.debug(f"Skipping {part} - no text")
                     continue
 
-                object_key = self._audio_object_key(
+                object_key = audio_object_key(
                     question_id=q["question_id"],
                     part=part,
                     language=lang,
@@ -339,7 +345,7 @@ Avoid difficult rarely used words and jargon.
         source_text controls the object key/cache identity.
         tts_text is the only text ever sent to the TTS engine.
         """
-        object_key = self._audio_object_key(
+        object_key = audio_object_key(
             question_id=question_id,
             part=part,
             language=language,
