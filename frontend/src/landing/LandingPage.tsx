@@ -67,10 +67,7 @@ export function LandingPage() {
         </a>
       </MediaSection>
 
-      <p className={styles.seekingHelp}>
-        I am looking for partners to help me finish the website faster to make
-        it more appealing and convenient to use. Join me by messaging me on
-        github or sending me an email if interested. daveemail@gmx.com
+
       </p>
 
       {charts.map((chart) => (

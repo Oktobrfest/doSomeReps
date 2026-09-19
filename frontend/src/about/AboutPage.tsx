@@ -17,6 +17,15 @@ function intervalLabel(daysHence: number, previousDaysHence?: number): string {
 export function AboutPage() {
   return (
     <div className={styles.page}>
+      <header className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>About DoSomeReps</h1>
+        <p className={styles.pageIntro}>
+          DoSomeReps is a spaced repetition study site. You answer questions at
+          widening intervals, ideally just before your brain would have forgotten
+          the answer.
+        </p>
+      </header>
+
       <MediaSection
         imageSrc={bootstrap.images.siteFormat}
         imageAlt="Site Format Image"
