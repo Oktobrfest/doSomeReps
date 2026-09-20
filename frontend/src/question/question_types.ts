@@ -29,6 +29,8 @@ export interface QuestionDraft {
   categories: string[];
   privacy: boolean;
   autoQue: boolean;
+  /** True when added manually in the browser rather than by the AI backend. */
+  isLocal?: boolean;
 }
 
 export interface AudioAsset {

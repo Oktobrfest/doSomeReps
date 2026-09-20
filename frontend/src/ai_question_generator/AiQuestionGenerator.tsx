@@ -11,7 +11,7 @@ import { QuestionDraftActions } from "../question/QuestionDraftActions";
 import { QuestionFields } from "../question/QuestionFields";
 import { QuestionPreview } from "../question/QuestionPreview";
 import { createQuestion, extendQuestion } from "../question/question_api";
-import type { QuestionDraft } from "../question/question_types";
+import { emptyDraft, type QuestionDraft } from "../question/question_types";
 import {
   clearGenerated,
   generateQuestions,
@@ -68,7 +68,7 @@ function GeneratedCard({
         {/* The extended answer is kept in the working list, not the database. */}
         <QuestionDraftActions
           draft={draft}
-          extendTarget={{ index }}
+          extendTarget={draft.isLocal ? {} : { index }}
           onExtended={onChange}
           onAskAi={() => askAi.actions.start()}
           askAiDisabled={askAi.isActive}
@@ -175,7 +175,9 @@ export function AiQuestionGenerator() {
   /** Write one generated question, then drop it from the working list. */
   const saveOne = async (index: number) => {
     await createQuestion(drafts[index]);
-    await removeGenerated(index);
+    if (!drafts[index].isLocal) {
+      await removeGenerated(index);
+    }
     dropAt(index);
   };
 
@@ -194,7 +196,9 @@ export function AiQuestionGenerator() {
   const handleDeleteOne = async (index: number) => {
     setBusy(true);
     try {
-      await removeGenerated(index);
+      if (!drafts[index].isLocal) {
+        await removeGenerated(index);
+      }
       dropAt(index);
     } catch (err) {
       toast.error(errorMessage(err, "Delete failed"));
@@ -252,7 +256,7 @@ export function AiQuestionGenerator() {
     for (const [index, draft] of drafts.entries()) {
       try {
         const { answer, hint } = await extendQuestion(
-          { index },
+          draft.isLocal ? {} : { index },
           draft,
           "",
           [],
@@ -436,14 +440,22 @@ export function AiQuestionGenerator() {
       <section id="ai-generated-questions">
         <h2 className={styles.sectionTitle}>Generated Questions</h2>
 
-        {drafts.length === 0 ? (
-          <p className={styles.subLabel}>
-            Generated questions will appear here once you click "Get AI
-            Questions!" above.
-          </p>
-        ) : (
-          <>
-            <div className={sharedStyles.actionCluster}>
+        <div className={sharedStyles.actionCluster}>
+          <button
+            type="button"
+            className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnTeal}`}
+            onClick={() =>
+              setDrafts((prev) => [
+                ...prev,
+                { ...emptyDraft(), categories, isLocal: true },
+              ])
+            }
+            disabled={busy}
+          >
+            Add Question
+          </button>
+          {drafts.length > 0 && (
+            <>
               <button
                 type="button"
                 className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnGreen}`}
@@ -468,8 +480,17 @@ export function AiQuestionGenerator() {
               >
                 Extend All
               </button>
-            </div>
+            </>
+          )}
+        </div>
 
+        {drafts.length === 0 ? (
+          <p className={styles.subLabel}>
+            Generated questions will appear here once you click "Get AI
+            Questions!" above, or you can add one manually.
+          </p>
+        ) : (
+          <>
             <div className={styles.masterToggles}>
               <span className={styles.masterTogglesTitle}>Apply to all:</span>
               <label className={styles.checkboxContainer}>
