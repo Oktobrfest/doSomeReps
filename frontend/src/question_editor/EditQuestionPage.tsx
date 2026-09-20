@@ -1,23 +1,17 @@
 import { useEffect, useState } from "react";
+import { Toaster } from "sonner";
 import { QuestionEditor } from "./QuestionEditor";
+import sharedStyles from "../styles/shared.module.css";
 
 export function EditQuestionPage() {
   const [questionId, setQuestionId] = useState<number | null>(null);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const qIdStr = urlParams.get("q_id");
-    if (qIdStr) {
-      const qId = parseInt(qIdStr, 10);
-      setQuestionId(qId);
-    }
+    const qId = new URLSearchParams(window.location.search).get("q_id");
+    if (qId) setQuestionId(parseInt(qId, 10));
   }, []);
 
-  const handleDeleted = () => {
-    window.location.href = "/editquestions";
-  };
-
-  const handleBack = () => {
+  const goBack = () => {
     if (window.history.length > 1) {
       window.history.back();
     } else {
@@ -25,25 +19,24 @@ export function EditQuestionPage() {
     }
   };
 
-  const handleSaved = () => {
-    handleBack();
-  };
-
   return (
     <div>
-      <div className="mb-3">
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          onClick={handleBack}
-        >
-          <i className="fa fa-arrow-left mr-2"></i> Go Back
-        </button>
-      </div>
+      <Toaster richColors position="top-right" />
+
+      <button
+        type="button"
+        className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
+        onClick={goBack}
+      >
+        <i className={`fa fa-arrow-left ${sharedStyles.iconSpacing}`}></i> Go Back
+      </button>
+
       <QuestionEditor
         questionId={questionId}
-        onDeleted={handleDeleted}
-        onSaved={handleSaved}
+        onDeleted={() => {
+          window.location.href = "/editquestions";
+        }}
+        onSaved={goBack}
       />
     </div>
   );

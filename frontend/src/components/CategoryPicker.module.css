@@ -96,74 +96,6 @@
   flex-shrink: 0;
 }
 
-/* ---------- Category grid ---------- */
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 6px;
-  margin: 0;
-  padding: 6px;
-  list-style: none;
-  max-height: 232px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background-color: var(--rep-color-surface-subtle);
-  border: 1px solid var(--rep-color-border);
-  border-radius: var(--rep-radius-control);
-}
-
-.item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  padding: 5px 8px;
-  background-color: var(--cp-item-bg, var(--rep-cp-item-bg));
-  border: 1px solid var(--cp-item-border, var(--rep-cp-item-border));
-  border-radius: var(--rep-radius-control);
-  cursor: pointer;
-  transition: background-color var(--rep-transition-fast),
-    border-color var(--rep-transition-fast);
-}
-
-.item:hover {
-  border-color: var(--cp-item-border-active, var(--rep-cp-item-border-active));
-}
-
-.itemChecked {
-  background-color: var(--cp-item-bg-active, var(--rep-cp-item-bg-active));
-  border-color: var(--cp-item-border-active, var(--rep-cp-item-border-active));
-}
-
-.checkbox {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-  cursor: pointer;
-  accent-color: var(--cp-item-border-active, var(--rep-cp-item-border-active));
-}
-
-.itemLabel {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--cp-item-text, var(--rep-cp-item-text));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  user-select: none;
-  transition: color var(--rep-transition-fast);
-}
-
-.itemLabelChecked {
-  font-weight: 700;
-  color: var(--cp-item-text-active, var(--rep-cp-item-text-active));
-}
-
 /* ---------- Footer ---------- */
 
 .footer {
@@ -174,15 +106,6 @@
 
 .count {
   font-size: 0.8rem;
-  color: var(--rep-color-text-muted);
-}
-
-.empty {
-  margin: 0;
-  padding: 20px 12px;
-  grid-column: 1 / -1;
-  text-align: center;
-  font-size: 0.85rem;
   color: var(--rep-color-text-muted);
 }
 

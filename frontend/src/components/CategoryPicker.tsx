@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Plus, Star, Trash2, X } from "lucide-react";
 import { useCategories } from "../hooks/useCategories";
-import { toSlug } from "../lib/categories";
+import { byName, toSlug } from "../lib/categories";
+import { CategoryChoices } from "./CategoryChoices";
 import { csrfHeaders, jsonHeaders } from "../lib/http";
 import styles from "./CategoryPicker.module.css";
 
@@ -57,18 +58,7 @@ export function CategoryPicker({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sorted = useMemo(
-    () =>
-      [...allCategories].sort((a, b) =>
-        a.localeCompare(b, undefined, { sensitivity: "base", numeric: true })
-      ),
-    [allCategories]
-  );
-
-  const selectedSet = useMemo(
-    () => new Set(selectedCategories),
-    [selectedCategories]
-  );
+  const sorted = useMemo(() => [...allCategories].sort(byName), [allCategories]);
 
   const selectedList = useMemo(
     () => savedLists.find((list) => list.id.toString() === selectedListId),
@@ -132,7 +122,7 @@ export function CategoryPicker({
 
   const toggle = (category: string) =>
     onChange(
-      selectedSet.has(category)
+      selectedCategories.includes(category)
         ? selectedCategories.filter((item) => item !== category)
         : [...selectedCategories, category]
     );
@@ -361,36 +351,13 @@ export function CategoryPicker({
         </div>
       )}
 
-      <ul className={styles.grid}>
-        {sorted.length === 0 && <p className={styles.empty}>No categories yet.</p>}
-        {sorted.map((category) => {
-          const checked = selectedSet.has(category);
-          return (
-            <li
-              key={category}
-              className={`${styles.item} ${checked ? styles.itemChecked : ""}`}
-              onClick={() => toggle(category)}
-            >
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={checked}
-                onChange={() => toggle(category)}
-                onClick={(event) => event.stopPropagation()}
-                aria-label={category}
-                name={checkboxName}
-                value={checkboxValueFn ? checkboxValueFn(category) : category}
-              />
-              <span
-                className={`${styles.itemLabel} ${checked ? styles.itemLabelChecked : ""}`}
-                title={category}
-              >
-                {category}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <CategoryChoices
+        categories={sorted}
+        selected={selectedCategories}
+        onToggle={toggle}
+        checkboxName={checkboxName}
+        checkboxValueFn={checkboxValueFn}
+      />
 
       {(showSelectAll || showApplyButton) && (
         <div className={styles.footer}>

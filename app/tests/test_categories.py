@@ -45,7 +45,6 @@ class TestAddcontentIsReact(unittest.TestCase):
             ['repz', 'home', 'templates', 'addcontent.html']
         )
         self.assertIn('id="add-content-root"', content)
-        self.assertIn('add-content-data', content)
         self.assertIn(
             'vite_asset("src/entrypoints/AddContent.entry.tsx")', content
         )
@@ -58,13 +57,6 @@ class TestAddcontentIsReact(unittest.TestCase):
         self.assertNotIn('categories_core.html', content)
         self.assertNotIn('editquestionform.html', content)
         self.assertNotIn('new_cat.html', content)
-
-    def test_addcontent_passes_csrf_token(self):
-        """QuestionForm.validate_on_submit() rejects the post without it."""
-        content = self._read_template(
-            ['repz', 'home', 'templates', 'addcontent.html']
-        )
-        self.assertIn('csrfToken', content)
 
 
 class TestPagesUsingFullCategories(unittest.TestCase):

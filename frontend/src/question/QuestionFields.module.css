@@ -1,0 +1,176 @@
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---------- One part of a question ---------- */
+
+.part {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  padding: 8px;
+
+  border: 1.5px solid var(--rep-color-border-faint);
+  border-radius: var(--rep-radius-card);
+}
+
+/* The editor colour-codes the three parts so a writer can tell at a glance
+   which field they are in; the preview cards wear the same pairs. */
+
+.question {
+  background-color: var(--rep-part-question-surface);
+  border-color: var(--rep-part-question-border);
+}
+
+.hint {
+  background-color: var(--rep-part-hint-surface);
+  border-color: var(--rep-part-hint-border);
+}
+
+.answer {
+  background-color: var(--rep-part-answer-surface);
+  border-color: var(--rep-part-answer-border);
+}
+
+.label {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--rep-color-text-primary);
+}
+
+.textarea {
+  width: 100%;
+  padding: 6px;
+
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--rep-color-text-primary);
+
+  background-color: var(--rep-color-surface);
+  border: 2px solid var(--rep-color-border-input);
+  border-radius: var(--rep-radius-card);
+
+  resize: none;
+  overflow: hidden;
+  transition: border-color var(--rep-transition-fast),
+    box-shadow var(--rep-transition-fast);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--rep-color-text-secondary);
+  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
+}
+
+/* ---------- Images ---------- */
+
+.thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Image and its remove control share one grid cell, so the control rides the
+   corner without either of them being positioned. */
+.thumb {
+  display: grid;
+  width: 72px;
+  height: 72px;
+}
+
+.thumb > * {
+  grid-area: 1 / 1;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+  border: 2px solid var(--rep-color-surface);
+  border-radius: var(--rep-radius-dialog);
+  box-shadow: var(--rep-shadow-card-raised);
+}
+
+.removeImage {
+  composes: actionButton buttonXs buttonRound btnRed from '../styles/shared.module.css';
+
+  justify-self: end;
+  align-self: start;
+}
+
+/* ---------- Picking images ---------- */
+
+/* Kept in the tab order and reachable by a screen reader; the label is what
+   the eye sees, and it lights up when the input behind it takes focus. */
+.fileInput {
+  composes: srOnly from '../styles/shared.module.css';
+}
+
+.fileLabel {
+  margin: 0;
+  padding: 10px;
+
+  font-weight: 600;
+  text-align: center;
+  color: var(--rep-color-text-secondary);
+
+  background-color: var(--rep-color-surface);
+  border: 2px dashed var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-card);
+
+  cursor: pointer;
+  transition: border-color var(--rep-transition-fast),
+    background-color var(--rep-transition-fast);
+}
+
+.fileLabel:hover {
+  border-color: var(--rep-color-text-subtle);
+  background-color: var(--rep-color-surface-subtle);
+}
+
+.fileInput:focus-visible + .fileLabel {
+  outline: 2px solid var(--rep-color-focus);
+  outline-offset: 2px;
+}
+
+/* ---------- Options ---------- */
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  padding: 12px;
+
+  background-color: var(--rep-color-surface-secondary);
+  border-radius: var(--rep-radius-card);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin: 0;
+  font-weight: 700;
+  color: var(--rep-color-text-primary);
+
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}

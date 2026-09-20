@@ -8,6 +8,15 @@ from .form_validation import allowed_file, validate_filename
 from ..models import q_pic, question
 from ..s3_ext import get_s3
 
+# Which part of a question each stored picture belongs to. The upload field
+# names, the `q_pic.pic_type` column and the editors' three image strips are all
+# the same three things, named once here.
+PIC_PART_BY_TYPE = {
+    "question_image": "question",
+    "hint_image": "hint",
+    "answer_pics": "answer",
+}
+
 
 def gen_unique_filename(filename):
     base_name, extension = os.path.splitext(filename)
@@ -18,7 +27,7 @@ def gen_unique_filename(filename):
 
 def save_pictures(question, request) -> question:
     """Saves picture to UPLOADED_IMAGES_DEST & S3 Bucket! & adds that URL to q_pic model, but doesn't commit that final part. Need to commit it to save the pic to the question. """
-    pic_types = {"answer_pics", "hint_image", "question_image"}
+    pic_types = PIC_PART_BY_TYPE
     file_directory = current_app.config['UPLOADED_IMAGES_DEST']
     for pic_type in pic_types:
         if pic_type in request.files:

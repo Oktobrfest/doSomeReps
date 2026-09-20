@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
+import { CATEGORIES_CHANGED_EVENT } from "../lib/categories";
 
 let cachedCategories: string[] | null = null;
-
-/** Dispatched on document when a category is created outside React. */
-export const CATEGORIES_CHANGED_EVENT = "repz:categories-changed";
 
 export function useCategories(): string[] {
   const [categories, setCategories] = useState<string[]>(cachedCategories ?? []);

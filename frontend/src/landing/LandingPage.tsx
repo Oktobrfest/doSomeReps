@@ -67,9 +67,6 @@ export function LandingPage() {
         </a>
       </MediaSection>
 
-
-      </p>
-
       {charts.map((chart) => (
         <figure className={styles.chart} key={chart.key}>
           {chart.title && (

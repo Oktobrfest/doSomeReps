@@ -251,6 +251,12 @@
   --rep-btn-radius-md: 12px;
   --rep-btn-icon-size-md: 1.25rem;
 
+  /* Extra small: a badge-sized control that rides on a thumbnail. */
+  --rep-btn-height-xs: 22px;
+  --rep-btn-padding-x-xs: 6px;
+  --rep-btn-font-size-xs: 0.75rem;
+  --rep-btn-min-width-xs: 0;
+
   --rep-btn-height-sm: 34px;
   --rep-btn-padding-x-sm: 14px;
   --rep-btn-font-size-sm: 0.875rem;

@@ -1,7 +1,6 @@
 import re
 import os
 
-from wtforms import ValidationError
 from flask import current_app
 
 
@@ -36,21 +35,6 @@ def validate_filename(filename):
         return False, "Filename must have a valid extension."
 
     return True, None
-
-
-def wtforms_filename_validator(form, field):
-    """
-    WTForms adapter for validate_filename.
-
-    Delegating keeps one copy of the rules: the form and the upload handler
-    can never disagree about which filenames are acceptable.
-    """
-    if not field.data:
-        return
-
-    ok, error = validate_filename(field.data.filename)
-    if not ok:
-        raise ValidationError(error)
 
 
 def allowed_file(filename):

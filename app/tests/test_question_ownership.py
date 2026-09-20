@@ -107,7 +107,7 @@ class TestSaveqOwnership(unittest.TestCase):
         fake_session = FakeSession(result)
 
         with self.app.test_request_context(
-            method='POST', data={'updated_question': json.dumps(payload)}
+            method='POST', data={'question': json.dumps(payload)}
         ):
             with patch.object(module, 'session', fake_session), \
                  patch.object(module, 'current_user', SimpleNamespace(id=7)), \

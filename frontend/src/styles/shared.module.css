@@ -300,6 +300,13 @@
 
 /* Size modifiers rebind the semantic aliases and nothing else. */
 
+.buttonXs {
+  --rep-btn-height: var(--rep-btn-height-xs);
+  --rep-btn-padding-x: var(--rep-btn-padding-x-xs);
+  --rep-btn-font-size: var(--rep-btn-font-size-xs);
+  --rep-btn-min-width: var(--rep-btn-min-width-xs);
+}
+
 .buttonSm {
   --rep-btn-height: var(--rep-btn-height-sm);
   --rep-btn-padding-x: var(--rep-btn-padding-x-sm);

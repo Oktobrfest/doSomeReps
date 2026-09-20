@@ -6,7 +6,7 @@ from flask import flash, request, jsonify, current_app
 from flask_login import current_user, login_required
 from flask import g, make_response
 from sqlalchemy import or_, select
-from sqlalchemy.orm import joinedload, Query
+from sqlalchemy.orm import joinedload
 
 from repz.s3_ext import get_s3
 from ...models import q_pic, users, question, quizq, category, rating, audio, flag, FlagCategory
@@ -14,56 +14,39 @@ from repz.extensions import cache
 from ...database import session
 from repz.routes import quest_ajx
 from repz.services.quiz_service import invalidate_quiz_queue_cache
-from ...bluehelpers import (clean_for_html, delete_pic, flag_payload,
-                            get_all_db_categories, get_user, remove_underscore)
+from ...bluehelpers import (delete_pic, flag_payload, get_all_db_categories,
+                            get_user, remove_underscore)
 
-from ...home.form_helpers import save_pictures
+from ...home.form_helpers import PIC_PART_BY_TYPE, save_pictures
+from repz.services.question_service import (
+    QuestionDraft,
+    QuestionValidationError,
+    apply_draft,
+    create_question,
+)
 
 
 # adds a new category
 @quest_ajx.route("/addcat", methods=["POST"], endpoint="addcat")
 @login_required
 def addcat():
-    newCategory = request.form.get("add_category_field", type=str)
+    """Create a category. Answers with the name the picker should select."""
+    name = (request.form.get("add_category_field") or "").strip()
 
-    # validation
-    er = False
-    htl = ""
-    data = ""
-    try:
-        if newCategory is None or len(newCategory) < 3:
-            data = "too short bro!"
-            flash(data, category="error")
-            er = True
-        else:
-            query = Query([category])
-            result = query.with_session(session)  # type: ignore[arg-type]
-            for c in result:
-                if newCategory == c.category_name:
-                    data = "category already exists"
-                    flash(data)
-                    er = True
+    if len(name) < 3:
+        return jsonify({"error": "A category name needs at least 3 characters."}), 400
 
-        if not er:
-            new_cat = category(category_name=newCategory)
-            session.add(new_cat)
-            session.commit()
-            flash("Category created!", category="success")
-            category_list = get_all_db_categories()
-            cache.set('category_list', category_list, timeout=60*60*24) # a day
-            # clean up the string
-            data = newCategory
-            htl = clean_for_html(newCategory)  # type: ignore[arg-type]
-        else:
-            htl = "error"
-            print("Error occured while trying to create a new category! ",
-                  data)
-        return jsonify({'data': data, 'htl': htl})
+    existing = session.execute(
+        select(category).where(category.category_name == name)
+    ).first()
+    if existing is not None:
+        return jsonify({"error": "That category already exists."}), 409
 
-    except Exception as e:
-        print("Error occured creating a new category! ", data)
-        return jsonify({'data': 'error', 'htl': data + str(e), 'error':  # type: ignore[operator]
-            True}), 500
+    session.add(category(category_name=name))
+    session.commit()
+    cache.set("category_list", get_all_db_categories(), timeout=60 * 60 * 24)
+
+    return jsonify({"name": name})
 
 
 def _owned_question(question_id, *options):
@@ -82,72 +65,72 @@ def _owned_question(question_id, *options):
     ).first()
 
 
-#save question changes within edit questions page
+def _question_payload(req):
+    """Read the question JSON out of the multipart body both editors post."""
+    raw = req.form.get("question")
+    if not raw:
+        raise QuestionValidationError("Missing question payload.")
+    try:
+        return json.loads(raw)
+    except ValueError:
+        raise QuestionValidationError("Malformed question payload.") from None
+
+
+# create a question - the add-content page and the AI question generator both
+# post here, so a question is born exactly one way whoever wrote it
+@quest_ajx.route("/addq", methods=["POST"], endpoint="addq")
+@login_required
+def addq():
+    try:
+        payload = _question_payload(request)
+        new_question = create_question(
+            QuestionDraft.from_payload(payload),
+            created_by=current_user.id,
+            files_request=request,
+        )
+    except ValueError as err:
+        # Covers a rejected draft and a rejected upload filename alike.
+        return jsonify({"error": str(err)}), 400
+
+    return jsonify({"id": new_question.question_id})
+
+
+# save question changes within the edit question page
 @quest_ajx.route("/saveq", methods=["POST"], endpoint="saveq")
 @login_required
 def saveq():
-    # retrieve the updated question data
-    updated_question_json = request.form['updated_question']
+    try:
+        payload = _question_payload(request)
+    except QuestionValidationError as err:
+        return jsonify({"error": str(err)}), 400
 
-    # convert the JSON string to a Python object
-    updated_question = json.loads(updated_question_json)
-
-    question_text = updated_question.get('question_text', '')
-    hint = updated_question.get('hint', '')
-    answer = updated_question.get('answer', '')
-
-    if question_text and len(question_text) > 1500:
-        return "Question text cannot exceed 1500 characters.", 400
-    if hint and len(hint) > 2000:
-        return "Hint cannot exceed 2000 characters.", 400
-    if answer and len(answer) > 4000:
-        return "Answer cannot exceed 4000 characters.", 400
-
-    # loop through the database pics and see if they match the ones in the request
-    q = _owned_question(updated_question['id'])
+    q = _owned_question(payload.get("id"))
     if q is None:
         return jsonify({"error": "Question not found."}), 404
 
-    # Check if any existing images need to be deleted
-    for pic in q.pics:
-        if pic.pic_type == "hint_image":
-            if pic.pic_string not in set(updated_question['pics_by_type']['hint']):
-                delete_pic(pic)
-        elif pic.pic_type == "answer_pics":
-            if pic.pic_string not in set(updated_question["pics_by_type"]["answer"]):
-               delete_pic(pic)
-        elif pic.pic_type == "question_image":
-            if pic.pic_string not in set(updated_question["pics_by_type"]["question"]):
-                delete_pic(pic)
+    # Nothing is destroyed until the draft is known to be writable.
+    try:
+        apply_draft(q, QuestionDraft.from_payload(payload))
+    except QuestionValidationError as err:
+        return jsonify({"error": str(err)}), 400
 
-    save_pictures(q, request)
+    # Images the editor dropped are the ones it did not send back.
+    kept = payload.get("pics_by_type") or {}
+    for pic in list(q.pics):
+        part = PIC_PART_BY_TYPE.get(pic.pic_type)
+        if part and pic.pic_string not in set(kept.get(part) or []):
+            delete_pic(pic)
 
-    privacy = updated_question['privacy']
+    try:
+        save_pictures(q, request)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
 
-    session.query(question).filter(question.question_id == updated_question['id']).update(
-        {
-            "question_text": updated_question['question_text'],
-            "hint": updated_question['hint'],
-            "answer": updated_question['answer'],
-            "privacy": privacy,
-        },
-        synchronize_session='fetch',
-    )
-
-    # update question categories
-    selected_cats = session.query(category).filter(category.category_name.in_(updated_question['categories'])).all()
-
-    # update the categories associated with the question
-    q.categories = selected_cats
-
-    # commit the changes to the database
     session.commit()
 
     invalidate_quiz_queue_cache(current_user.id)
 
-    msg = "Question Saved"
-    flash(msg, category="success")
-    return msg
+    return jsonify({"id": q.question_id})
 
 # not quemore search button
 @quest_ajx.route("/searchq", methods=["POST"], endpoint="searchq")
@@ -256,18 +239,13 @@ def getq():
         .first()
     )
 
-    pics_by_type = {"hint": [], "answer": [], "question": []}
-    if question_obj.pics:
-        pic_type_map = {
-            "hint_image": "hint",
-            "answer_pics": "answer",
-            "question_image": "question",
-        }
-        for pic_type, type_name in pic_type_map.items():
-            pics = [pic for pic in question_obj.pics if pic.pic_type == pic_type]
-            pics_by_type[type_name] = [
-                {"pic_string": pic.pic_string, "pic_id": pic.pic_id} for pic in pics
-            ]
+    pics_by_type = {part: [] for part in PIC_PART_BY_TYPE.values()}
+    for pic in question_obj.pics:
+        part = PIC_PART_BY_TYPE.get(pic.pic_type)
+        if part:
+            pics_by_type[part].append(
+                {"pic_string": pic.pic_string, "pic_id": pic.pic_id}
+            )
 
     audio_files = []
     # Query audio records directly to avoid relationship loading/stale cache issues

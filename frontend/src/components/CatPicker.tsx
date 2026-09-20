@@ -1,326 +1,209 @@
-import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useCategories } from "../hooks/useCategories";
+import { byName, createCategory } from "../lib/categories";
+import { CategoryChoices } from "./CategoryChoices";
+import { QuizModal } from "./QuizModal";
+import sharedStyles from "../styles/shared.module.css";
+import styles from "./CatPicker.module.css";
 
 interface CatPickerProps {
   selectedCategories: string[];
   onChange: (categories: string[]) => void;
 }
 
+/**
+ * The picker every page uses to tag or filter by category.
+ *
+ * Typing searches; a name that matches nothing offers to create itself, so the
+ * one thing a writer wants mid-thought - a category that does not exist yet -
+ * does not mean leaving the form. "See All" opens the full list.
+ */
 export function CatPicker({ selectedCategories, onChange }: CatPickerProps) {
   const allCategories = useCategories();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [modalSearch, setModalSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [suggesting, setSuggesting] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [creating, setCreating] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Close dropdown on click outside
+  const searchId = useId();
+
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowDropdown(false);
+    const onPointerDown = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setSuggesting(false);
       }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
     };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
 
-  // Filter available categories based on search query and what's not yet selected, sorted alphabetically
-  const suggestions = allCategories
-    .filter((cat) => {
-      const matchesSearch = cat.toLowerCase().includes(searchQuery.toLowerCase());
-      const notSelected = !selectedCategories.includes(cat);
-      return matchesSearch && notSelected;
-    })
-    .sort((a, b) => a.localeCompare(b));
+  const trimmed = query.trim();
 
-  const handleSelectCategory = (cat: string) => {
-    if (!selectedCategories.includes(cat)) {
-      const updated = [...selectedCategories, cat];
-      onChange(updated);
+  const suggestions = useMemo(
+    () =>
+      allCategories
+        .filter(
+          (cat) =>
+            !selectedCategories.includes(cat) &&
+            cat.toLowerCase().includes(trimmed.toLowerCase())
+        )
+        .sort(byName),
+    [allCategories, selectedCategories, trimmed]
+  );
+
+  const filtered = useMemo(
+    () =>
+      allCategories.filter((cat) =>
+        cat.toLowerCase().includes(filter.toLowerCase())
+      ),
+    [allCategories, filter]
+  );
+
+  /** Only offer to create a name that is not already a category. */
+  const creatable =
+    trimmed.length > 0 &&
+    !allCategories.some((cat) => cat.toLowerCase() === trimmed.toLowerCase());
+
+  const toggle = (category: string) =>
+    onChange(
+      selectedCategories.includes(category)
+        ? selectedCategories.filter((item) => item !== category)
+        : [...selectedCategories, category]
+    );
+
+  const select = (category: string) => {
+    if (!selectedCategories.includes(category)) {
+      onChange([...selectedCategories, category]);
     }
-    setSearchQuery("");
-    setShowDropdown(false);
+    setQuery("");
+    setSuggesting(false);
   };
 
-  const handleToggleCheckbox = (cat: string) => {
-    let updated: string[];
-    if (selectedCategories.includes(cat)) {
-      updated = selectedCategories.filter((item) => item !== cat);
-    } else {
-      updated = [...selectedCategories, cat];
+  const create = async () => {
+    if (!creatable || creating) return;
+
+    setCreating(true);
+    try {
+      const created = await createCategory(trimmed);
+      select(created);
+      toast.success(`Category "${created}" created.`);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not create that category."
+      );
+    } finally {
+      setCreating(false);
     }
-    onChange(updated);
   };
 
   return (
-    <div className="card border-secondary mb-4" ref={containerRef}>
-      <div className="card-header bg-secondary text-white font-weight-bold py-2 d-flex justify-content-between align-items-center">
+    <div className={styles.picker} ref={containerRef}>
+      <header className={styles.header}>
         <span>Category Selection</span>
         <button
           type="button"
-          className="btn btn-sm btn-light"
-          onClick={() => setShowModal(true)}
+          className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
+          onClick={() => setShowAll(true)}
         >
           See All
         </button>
-      </div>
-      <div className="card-body">
-        {/* Text Entry Field with Autocomplete */}
-        <div className="position-relative mb-3">
-          <label htmlFor="cat-search-input" className="font-weight-bold text-dark small mb-1 d-block">
-            Search Categories
-          </label>
+      </header>
+
+      <div className={styles.body}>
+        <label className={styles.label} htmlFor={searchId}>
+          Search Categories
+        </label>
+
+        <div className={styles.search}>
           <input
-            id="cat-search-input"
+            id={searchId}
             type="text"
-            className="form-control"
-            placeholder="Type category name to search..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setShowDropdown(true);
+            className={styles.input}
+            placeholder="Type a category name to search or add..."
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setSuggesting(true);
             }}
-            onFocus={() => setShowDropdown(true)}
-            style={{ color: "#000000" }}
+            onFocus={() => setSuggesting(true)}
+            onKeyDown={(event) => {
+              // This input can sit inside a form; Enter must not submit it.
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              if (suggestions.length > 0) select(suggestions[0]);
+              else void create();
+            }}
           />
 
-          {/* Autocomplete Dropdown */}
-          {showDropdown && suggestions.length > 0 && (
-            <ul
-              className="list-group position-absolute w-100 shadow"
-              style={{
-                zIndex: 1000,
-                maxHeight: "200px",
-                overflowY: "auto",
-                backgroundColor: "#ffffff",
-                border: "1px solid #ced4da",
-                borderRadius: "0.25rem",
-                marginTop: "2px",
-                padding: "0",
-              }}
-            >
+          {suggesting && (suggestions.length > 0 || creatable) && (
+            <ul className={styles.suggestions}>
               {suggestions.map((cat) => (
-                <li
-                  key={cat}
-                  className="list-group-item list-group-item-action py-2 px-3 text-dark"
-                  style={{ cursor: "pointer", border: "none" }}
-                  onClick={() => handleSelectCategory(cat)}
-                >
-                  {cat}
+                <li key={cat}>
+                  <button
+                    type="button"
+                    className={styles.suggestion}
+                    onClick={() => select(cat)}
+                  >
+                    {cat}
+                  </button>
                 </li>
               ))}
+
+              {creatable && (
+                <li>
+                  <button
+                    type="button"
+                    className={`${styles.suggestion} ${styles.create}`}
+                    onClick={() => void create()}
+                    disabled={creating}
+                  >
+                    <Plus size={16} />
+                    <span>
+                      {creating ? "Adding..." : `Create "${trimmed}"`}
+                    </span>
+                  </button>
+                </li>
+              )}
             </ul>
           )}
         </div>
 
-        {/* Expanded Series of Categories with Checkboxes */}
-        <div className="mt-2">
-          <span className="font-weight-bold text-dark small mb-2 d-block">
-            Selected Categories:
-          </span>
-          {selectedCategories.length === 0 ? (
-            <p className="text-muted small mb-0">No categories selected yet. Use the search input above to add categories.</p>
-          ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-                gap: "8px",
-              }}
-            >
-              {selectedCategories.map((cat) => (
-                <div
-                  key={cat}
-                  className="d-flex align-items-center p-2 border rounded bg-light shadow-sm"
-                  style={{
-                    backgroundColor: "#ffa500",
-                    borderColor: "#ffa500",
-                    color: "#000000",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    id={`cat-checkbox-${cat}`}
-                    checked={true}
-                    onChange={() => handleToggleCheckbox(cat)}
-                    style={{ marginRight: "6px", cursor: "pointer" }}
-                  />
-                  <span
-                    className="mb-0 text-truncate font-weight-bold"
-                    style={{
-                      cursor: "pointer",
-                      fontSize: "0.8rem",
-                      userSelect: "none",
-                      flexGrow: 1,
-                    }}
-                    title={cat}
-                    onClick={() => handleToggleCheckbox(cat)}
-                  >
-                    {cat}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <span className={styles.label}>Selected Categories</span>
+        <CategoryChoices
+          categories={selectedCategories}
+          selected={selectedCategories}
+          onToggle={toggle}
+          emptyMessage="Nothing selected yet. Search above to add a category."
+        />
       </div>
 
-      {/* "See All" Modal */}
-      {showModal && typeof document !== "undefined" &&
-        createPortal(
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-              zIndex: 1050,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onClick={() => setShowModal(false)}
-          >
-            <div
-              style={{
-                backgroundColor: "#ffffff",
-                borderRadius: "8px",
-                width: "90%",
-                maxWidth: "800px",
-                maxHeight: "80vh",
-                display: "flex",
-                flexDirection: "column",
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "12px 16px",
-                  borderBottom: "1px solid #dee2e6",
-                }}
-              >
-                <h5 style={{ margin: 0, fontWeight: "bold" }}>All Categories</h5>
-                <button
-                  type="button"
-                  className="close"
-                  style={{ fontSize: "1.5rem", lineHeight: 1, background: "none", border: "none", cursor: "pointer" }}
-                  onClick={() => setShowModal(false)}
-                  aria-label="Close"
-                >
-                  &times;
-                </button>
-              </div>
+      {showAll && (
+        <QuizModal title="All Categories" onClose={() => setShowAll(false)}>
+          <div className={styles.body}>
+            <input
+              type="text"
+              className={styles.input}
+              placeholder="Filter categories..."
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+            />
 
-              {/* Modal Search */}
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid #dee2e6" }}>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Filter categories..."
-                  value={modalSearch}
-                  onChange={(e) => setModalSearch(e.target.value)}
-                  style={{ color: "#000000" }}
-                />
-              </div>
+            <CategoryChoices
+              categories={filtered}
+              selected={selectedCategories}
+              onToggle={toggle}
+              emptyMessage="No matching categories found."
+            />
 
-              {/* Modal Body - Category Grid */}
-              <div style={{ padding: "16px", overflowY: "auto", flex: 1 }}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-                    gap: "8px",
-                  }}
-                >
-                  {allCategories
-                    .filter((cat) =>
-                      cat.toLowerCase().includes(modalSearch.toLowerCase())
-                    )
-                    .sort((a, b) => a.localeCompare(b))
-                    .map((cat) => {
-                      const isSelected = selectedCategories.includes(cat);
-                      return (
-                        <div
-                          key={cat}
-                          className="d-flex align-items-center p-2 border rounded shadow-sm"
-                          style={{
-                            backgroundColor: isSelected ? "#ff8c00" : "#ffa500",
-                            borderColor: isSelected ? "#ff8c00" : "#ffa500",
-                            color: "#000000",
-                            cursor: "pointer",
-                          }}
-                          onClick={() => handleToggleCheckbox(cat)}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleToggleCheckbox(cat)}
-                            style={{ marginRight: "6px", cursor: "pointer" }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <span
-                            className="mb-0 text-truncate"
-                            style={{
-                              cursor: "pointer",
-                              fontSize: "0.8rem",
-                              fontWeight: isSelected ? 700 : 500,
-                              userSelect: "none",
-                              flexGrow: 1,
-                              color: "#000000",
-                            }}
-                            title={cat}
-                          >
-                            {cat}
-                          </span>
-                        </div>
-                      );
-                    })}
-                </div>
-                {allCategories.filter((cat) =>
-                  cat.toLowerCase().includes(modalSearch.toLowerCase())
-                ).length === 0 && (
-                  <p className="text-muted text-center small mt-3">
-                    No matching categories found.
-                  </p>
-                )}
-              </div>
-
-              {/* Modal Footer */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "12px 16px",
-                  borderTop: "1px solid #dee2e6",
-                }}
-              >
-                <small className="text-muted">
-                  {selectedCategories.length} of {allCategories.length} categories selected
-                </small>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowModal(false)}
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+            <span className={styles.count}>
+              {selectedCategories.length} of {allCategories.length} selected
+            </span>
+          </div>
+        </QuizModal>
+      )}
     </div>
   );
 }
