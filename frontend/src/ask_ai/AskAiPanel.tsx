@@ -7,9 +7,10 @@ import type { AskAiState } from './types';
 
 interface AskAiPanelProps {
   state: AskAiState;
+  bottomPadding?: number;
 }
 
-export function AskAiPanel({ state }: AskAiPanelProps) {
+export function AskAiPanel({ state, bottomPadding }: AskAiPanelProps) {
   const {
     isRecording,
     phase,
@@ -27,7 +28,10 @@ export function AskAiPanel({ state }: AskAiPanelProps) {
   if (!hasContent) return null;
 
   return (
-    <div className={styles.askAiPanel}>
+    <div
+      className={styles.askAiPanel}
+      style={bottomPadding ? { paddingBottom: `${bottomPadding}px` } : undefined}
+    >
       {availableImageCount > 0 && (
         <label className={styles.askAiImageToggle}>
           <input

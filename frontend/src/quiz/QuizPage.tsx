@@ -111,6 +111,9 @@ export function QuizPage(props: QuizPageProps) {
   const commandSystemRef = useRef<AudioCommandSystemHandle>(null);
   const slideOutRef = useRef<SlideOutButtonsHandle>(null);
 
+  const [panelMetrics, setPanelMetrics] = useState<Metrics | null>(null);
+  const onMetricsChange = useCallback((metrics: Metrics) => setPanelMetrics(metrics), []);
+
   const askAiContext = useMemo<AskAiContext | null>(() => {
     const q = quiz.currentQuestion;
     if (!q) return null;
@@ -131,6 +134,11 @@ export function QuizPage(props: QuizPageProps) {
       commandSystemRef.current?.resumeListening();
     }, []),
   });
+
+  const askAiPadding =
+    quiz.answerRevealed && panelMetrics && askAi.isActive
+      ? panelMetrics[quiz.panelSnap] + PANEL_CLEARANCE
+      : 0;
 
   const commandHandlers = useMemo(
     () => ({
@@ -236,6 +244,9 @@ export function QuizPage(props: QuizPageProps) {
       selectedCategories={selectedCategories}
       slideOutRef={slideOutRef}
       onAskAi={askAi.actions.start}
+      panelMetrics={panelMetrics}
+      onMetricsChange={onMetricsChange}
+      askAiActive={askAi.isActive}
     />
   ) : quiz.queueExhausted ? (
     <QuizEmpty
@@ -285,7 +296,7 @@ export function QuizPage(props: QuizPageProps) {
 
       {/* Ask AI conversation UI rendered at the bottom of the quiz page. */}
       <div id="ask-ai-conversation-root" className={styles.askAiConversationRoot}>
-        <AskAiPanel state={askAi} />
+        <AskAiPanel state={askAi} bottomPadding={askAiPadding} />
       </div>
     </div>
   );
@@ -303,6 +314,9 @@ interface QuizBodyProps {
   slideOutRef: RefObject<SlideOutButtonsHandle>;
   /** Starts an Ask AI session with the wake-word path's own "was listening" flag. */
   onAskAi: () => void;
+  panelMetrics: Metrics | null;
+  onMetricsChange: (metrics: Metrics) => void;
+  askAiActive: boolean;
 }
 
 /** The secondary panels a question can open, one at a time. */
@@ -318,6 +332,9 @@ function QuizBody({
   selectedCategories,
   slideOutRef,
   onAskAi,
+  panelMetrics,
+  onMetricsChange,
+  askAiActive,
 }: QuizBodyProps) {
   const currentQuestion = quiz.currentQuestion!; // guarded by the shell
   const answerRef = useRef<HTMLDivElement>(null);
@@ -338,14 +355,11 @@ function QuizBody({
 
   const closeDialog = useCallback(() => setDialog(null), []);
 
-  const [panelMetrics, setPanelMetrics] = useState<Metrics | null>(null);
-  const onMetricsChange = useCallback((metrics: Metrics) => setPanelMetrics(metrics), []);
-
   // Clear the panel by exactly what it currently measures. The panel is both
   // taller on a phone and shorter once the touch tiers collapse, so a hand-tuned
   // number would be wrong on one of the two.
   const answerPadding =
-    quiz.answerRevealed && panelMetrics
+    quiz.answerRevealed && panelMetrics && !askAiActive
       ? panelMetrics[quiz.panelSnap] + PANEL_CLEARANCE
       : 0;
 
