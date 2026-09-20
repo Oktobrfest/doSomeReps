@@ -27,6 +27,10 @@ export function AskAiPanel({ state, bottomPadding }: AskAiPanelProps) {
 
   if (!hasContent) return null;
 
+  const showFollowUp = !isRecording && !phase;
+  const showCancelSession = history.length > 0 || (!isRecording && !phase);
+  const showSessionActions = showFollowUp || showCancelSession;
+
   return (
     <div
       className={styles.askAiPanel}
@@ -95,7 +99,12 @@ export function AskAiPanel({ state, bottomPadding }: AskAiPanelProps) {
           <div className={styles.askAiActions}>
             <button
               type="button"
-              className={cx(sharedStyles.actionButton, sharedStyles.btnRed)}
+              className={cx(
+                sharedStyles.actionButton,
+                sharedStyles.buttonTouchMd,
+                sharedStyles.buttonWrap,
+                sharedStyles.btnRed,
+              )}
               onClick={actions.stopAndSend}
               disabled={!!phase}
             >
@@ -103,7 +112,12 @@ export function AskAiPanel({ state, bottomPadding }: AskAiPanelProps) {
             </button>
             <button
               type="button"
-              className={cx(sharedStyles.actionButton, sharedStyles.btnSlate)}
+              className={cx(
+                sharedStyles.actionButton,
+                sharedStyles.buttonTouchMd,
+                sharedStyles.buttonWrap,
+                sharedStyles.btnSlate,
+              )}
               onClick={actions.cancel}
             >
               Cancel
@@ -136,7 +150,12 @@ export function AskAiPanel({ state, bottomPadding }: AskAiPanelProps) {
           <div className={styles.askAiActions}>
             <button
               type="button"
-              className={cx(sharedStyles.actionButton, sharedStyles.btnSlate)}
+              className={cx(
+                sharedStyles.actionButton,
+                sharedStyles.buttonTouchMd,
+                sharedStyles.buttonWrap,
+                sharedStyles.btnSlate,
+              )}
               onClick={actions.cancel}
             >
               Cancel
@@ -147,25 +166,39 @@ export function AskAiPanel({ state, bottomPadding }: AskAiPanelProps) {
 
       {error && <div className={styles.errorMessage}>Ask AI Error: {error}</div>}
 
-      <div className={styles.askAiSessionActions}>
-        {!isRecording && !phase && (
-          <button
-            type="button"
-            className={cx(sharedStyles.actionButton, sharedStyles.btnBlue)}
-            onClick={() => actions.start(false)}
-          >
-            <Mic className={sharedStyles.buttonIcon} />
-            <span>Ask Follow Up</span>
-          </button>
-        )}
-        <button
-          type="button"
-          className={cx(sharedStyles.actionButton, sharedStyles.btnSlate)}
-          onClick={actions.cancelSession}
-        >
-          Cancel Session
-        </button>
-      </div>
+      {showSessionActions && (
+        <div className={styles.askAiSessionActions}>
+          {showFollowUp && (
+            <button
+              type="button"
+              className={cx(
+                sharedStyles.actionButton,
+                sharedStyles.buttonTouchMd,
+                sharedStyles.buttonWrap,
+                sharedStyles.btnBlue,
+              )}
+              onClick={() => actions.start(false)}
+            >
+              <Mic className={sharedStyles.buttonIcon} />
+              <span>Ask Follow Up</span>
+            </button>
+          )}
+          {showCancelSession && (
+            <button
+              type="button"
+              className={cx(
+                sharedStyles.actionButton,
+                sharedStyles.buttonTouchMd,
+                sharedStyles.buttonWrap,
+                sharedStyles.btnSlate,
+              )}
+              onClick={actions.cancelSession}
+            >
+              Cancel Session
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

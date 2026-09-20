@@ -365,7 +365,7 @@ export function useQuizController({
 
   useEffect(() => {
     const stopMe = () => {
-      dispatch({ type: 'STOP_AUDIO' });
+      dispatch({ type: 'PAUSE_AUDIO' });
     };
 
     if (!window.__audioStopCallbacks) {

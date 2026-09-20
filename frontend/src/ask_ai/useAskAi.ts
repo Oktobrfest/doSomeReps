@@ -80,9 +80,21 @@ export function useAskAi({
 
   useEffect(() => revokeAll, [revokeAll]);
 
+  const silenceOtherAudio = useCallback(() => {
+    window.__audioStopCallbacks?.forEach((cb) => {
+      try { cb?.(); } catch { /* ignore */ }
+    });
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('audio').forEach((el) => {
+        try { el.pause(); } catch { /* ignore */ }
+      });
+    }
+  }, []);
+
   const start = useCallback(
     async (wasListening: boolean = false) => {
       wasListeningRef.current = wasListening;
+      silenceOtherAudio();
       setIsRecording(true);
       setTranscript(null);
       setError(null);
@@ -113,7 +125,7 @@ export function useAskAi({
         resumeIfNeeded();
       }
     },
-    [resumeIfNeeded],
+    [resumeIfNeeded, silenceOtherAudio],
   );
 
   const cancel = useCallback(() => {
@@ -215,9 +227,7 @@ export function useAskAi({
           const blobUrl = URL.createObjectURL(base64ToBlob(audioB64, contentType));
           blobUrlsRef.current.add(blobUrl);
 
-          window.__audioStopCallbacks?.forEach((cb) => {
-            try { cb?.(); } catch { /* ignore */ }
-          });
+          silenceOtherAudio();
           
           playbackActiveRef.current = true;
 
@@ -253,7 +263,7 @@ export function useAskAi({
         if (!playbackActiveRef.current) resumeIfNeeded();
       }
     },
-    [resumeIfNeeded],
+    [resumeIfNeeded, silenceOtherAudio],
   );
 
   const stopAndSend = useCallback(() => {
@@ -324,15 +334,13 @@ export function useAskAi({
         if (turn.id !== id) return { ...turn, audioPlaying: false };
         const nextPlaying = !turn.audioPlaying;
         if (nextPlaying) {
-          window.__audioStopCallbacks?.forEach((cb) => {
-            try { cb?.(); } catch { /* ignore */ }
-          });
+          silenceOtherAudio();
           playbackActiveRef.current = true;
         }
         return { ...turn, audioPlaying: nextPlaying };
       }),
     );
-  }, []);
+  }, [silenceOtherAudio]);
 
   const historyPlaybackEnded = useCallback(
     (id: string) => {
