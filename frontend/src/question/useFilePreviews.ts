@@ -12,8 +12,8 @@ function readAsDataUrl(file: File): Promise<string> {
 /**
  * Data URLs for images picked in the browser, in the order they were picked.
  *
- * Data rather than object URLs because these previews are also what the AI
- * tutor is shown for a question that has no server-side images yet: an object
+ * Data rather than object URLs because these previews are also what the Ask AI
+ * feature is shown for a question that has no server-side images yet: an object
  * URL means nothing outside this tab. Empty until the reads finish, so callers
  * index defensively.
  */

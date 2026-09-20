@@ -1,8 +1,11 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Toaster, toast } from "sonner";
-import { AskAiLauncher } from "../ask_ai/AskAiLauncher";
-import { ExtendButton } from "../question/ExtendButton";
+import { AskAiPanel } from "../ask_ai/AskAiPanel";
+import { useAskAi } from "../ask_ai/useAskAi";
+import type { AskAiContext } from "../ask_ai/types";
+import { QuestionDraftActions } from "../question/QuestionDraftActions";
 import { QuestionFields } from "../question/QuestionFields";
+import { QuestionPreview } from "../question/QuestionPreview";
 import { createQuestion } from "../question/question_api";
 import {
   draftError,
@@ -10,21 +13,34 @@ import {
   type QuestionDraft,
 } from "../question/question_types";
 import { useFilePreviews } from "../question/useFilePreviews";
-import sharedStyles from "../styles/shared.module.css";
 import styles from "./AddContent.module.css";
+import sharedStyles from "../styles/shared.module.css";
 
 export function AddContentPage() {
   const [draft, setDraft] = useState<QuestionDraft>(emptyDraft);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(true);
 
-  // The tutor can only be shown a question that has no stored images yet as the
+  // The AI can only be shown a question that has no stored images yet as the
   // pictures themselves.
   const questionImages = useFilePreviews(draft.files.question);
   const answerImages = useFilePreviews(draft.files.answer);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const askAiContext = useMemo<AskAiContext>(
+    () => ({
+      questionId: "new",
+      questionText: draft.text.question,
+      answerText: draft.text.answer,
+      categories: draft.categories,
+      questionImageUrls: questionImages,
+      answerImageUrls: answerImages,
+    }),
+    [draft.text.question, draft.text.answer, draft.categories, questionImages, answerImages]
+  );
 
+  const askAi = useAskAi({ context: askAiContext, answerRevealed: true });
+
+  const handleSave = async () => {
     const problem = draftError(draft);
     if (problem) {
       toast.error(problem);
@@ -45,39 +61,52 @@ export function AddContentPage() {
     }
   };
 
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void handleSave();
+  };
+
   return (
     <div className={styles.page}>
       <Toaster richColors position="top-right" />
 
-      <h1 className={styles.pageTitle}>New Question</h1>
-
       <form onSubmit={handleSubmit}>
-        <QuestionFields value={draft} onChange={setDraft} />
+        <div className={styles.header}>
+          <h1 className={styles.pageTitle}>New Question</h1>
 
-        <div className={sharedStyles.actionRow}>
           {/* Nothing is saved yet, so the extended answer comes straight back
               into the draft rather than being kept anywhere. */}
-          <ExtendButton target={{}} draft={draft} onExtended={setDraft} />
+          <QuestionDraftActions
+            draft={draft}
+            extendTarget={{}}
+            onExtended={setDraft}
+            onAskAi={() => askAi.actions.start()}
+            askAiDisabled={askAi.isActive}
+            saveLabel="Save Question"
+            saving={saving}
+            previewOpen={previewOpen}
+            onTogglePreview={() => setPreviewOpen((prev) => !prev)}
+          />
+        </div>
 
-          <button
-            type="submit"
-            className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
-            disabled={saving}
-          >
-            {saving ? "Saving..." : "Submit"}
-          </button>
+        <div className={sharedStyles.splitLayout}>
+          <div className={sharedStyles.formPane}>
+            <QuestionFields value={draft} onChange={setDraft} />
+          </div>
+
+          {previewOpen && (
+            <QuestionPreview
+              draft={draft}
+              onHide={() => setPreviewOpen(false)}
+              className={sharedStyles.previewPane}
+            />
+          )}
         </div>
       </form>
 
-      <AskAiLauncher
-        questionId="new"
-        questionText={draft.text.question}
-        answerText={draft.text.answer}
-        answerRevealed={true}
-        categories={draft.categories}
-        questionImageUrls={questionImages}
-        answerImageUrls={answerImages}
-      />
+      <div id="ask-ai-conversation-root" className={styles.askAiRoot}>
+        <AskAiPanel state={askAi} />
+      </div>
     </div>
   );
 }

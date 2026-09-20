@@ -3,7 +3,7 @@ import { AudioCommandSystemComponent } from './AudioCommandSystem';
 import type { AudioCommandSystemHandle } from './AudioCommandSystem';
 import { ImageCarousel } from './ImageCarousel';
 import { ImageModal } from './ImageModal';
-import { BookOpen, Ban, Edit, Lightbulb, PenLine, Star } from 'lucide-react';
+import { BookOpen, Ban, Edit, Lightbulb, PenLine, Sparkles, Star } from 'lucide-react';
 import type { QuizPageProps } from './types';
 import styles from './QuizPage.module.css';
 import sharedStyles from '../styles/shared.module.css';
@@ -235,6 +235,7 @@ export function QuizPage(props: QuizPageProps) {
       categoryList={categoryList}
       selectedCategories={selectedCategories}
       slideOutRef={slideOutRef}
+      onAskAi={askAi.actions.start}
     />
   ) : quiz.queueExhausted ? (
     <QuizEmpty
@@ -300,6 +301,8 @@ interface QuizBodyProps {
   categoryList?: string[];
   selectedCategories?: string[];
   slideOutRef: RefObject<SlideOutButtonsHandle>;
+  /** Starts an Ask AI session with the wake-word path's own "was listening" flag. */
+  onAskAi: () => void;
 }
 
 /** The secondary panels a question can open, one at a time. */
@@ -314,6 +317,7 @@ function QuizBody({
   categoryList,
   selectedCategories,
   slideOutRef,
+  onAskAi,
 }: QuizBodyProps) {
   const currentQuestion = quiz.currentQuestion!; // guarded by the shell
   const answerRef = useRef<HTMLDivElement>(null);
@@ -385,6 +389,13 @@ function QuizBody({
   const extraActions = useMemo((): ExtraAction[] => {
     const actions: ExtraAction[] = [
       {
+        key: 'askAi',
+        label: 'Ask AI',
+        icon: <Sparkles className={sharedStyles.buttonIcon} />,
+        variant: 'edit',
+        onClick: onAskAi,
+      },
+      {
         key: 'exclude',
         label: 'Exclude',
         icon: <Ban className={sharedStyles.buttonIcon} />,
@@ -404,7 +415,7 @@ function QuizBody({
     }
 
     return actions;
-  }, [currentQuestion, isOwnQuestion, editQuestionUrl, quiz.actions.exclude]);
+  }, [currentQuestion, isOwnQuestion, editQuestionUrl, onAskAi, quiz.actions.exclude]);
 
   /*
    * A full-sized page gives every secondary control a home of its own — the

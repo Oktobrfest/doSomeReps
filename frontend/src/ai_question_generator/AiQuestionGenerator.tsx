@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 
+import { AskAiPanel } from "../ask_ai/AskAiPanel";
+import { useAskAi } from "../ask_ai/useAskAi";
+import type { AskAiContext } from "../ask_ai/types";
 import { CatPicker } from "../components/CatPicker";
 import { LoadingState } from "../components/LoadingState";
-import { ExtendButton } from "../question/ExtendButton";
+import { QuestionDraftActions } from "../question/QuestionDraftActions";
 import { QuestionFields } from "../question/QuestionFields";
+import { QuestionPreview } from "../question/QuestionPreview";
 import { createQuestion, extendQuestion } from "../question/question_api";
 import type { QuestionDraft } from "../question/question_types";
 import {
@@ -40,37 +44,60 @@ function GeneratedCard({
   onSave,
   onDelete,
 }: GeneratedCardProps) {
+  const [previewOpen, setPreviewOpen] = useState(true);
+
+  const askAiContext = useMemo<AskAiContext>(
+    () => ({
+      questionId: `gen-${index}`,
+      questionText: draft.text.question,
+      answerText: draft.text.answer,
+      categories: draft.categories,
+      questionImageUrls: draft.pics.question.map((p) => p.pic_string),
+      answerImageUrls: draft.pics.answer.map((p) => p.pic_string),
+    }),
+    [index, draft]
+  );
+
+  const askAi = useAskAi({ context: askAiContext, answerRevealed: true });
+
   return (
     <section className={styles.questionGroup}>
-      <h3 className={styles.questionGroupHeader}>Question #{index + 1}</h3>
-
-      <QuestionFields value={draft} onChange={onChange} />
-
-      <div className={sharedStyles.actionCluster}>
-        <button
-          type="button"
-          className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnGreen}`}
-          onClick={onSave}
-          disabled={busy}
-        >
-          Save
-        </button>
-        <button
-          type="button"
-          className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnRed}`}
-          onClick={onDelete}
-          disabled={busy}
-        >
-          Delete
-        </button>
+      <div className={styles.cardHeader}>
+        <h3 className={styles.questionGroupHeader}>Question #{index + 1}</h3>
 
         {/* The extended answer is kept in the working list, not the database. */}
-        <ExtendButton
-          target={{ index }}
+        <QuestionDraftActions
           draft={draft}
+          extendTarget={{ index }}
           onExtended={onChange}
-          disabled={busy}
+          onAskAi={() => askAi.actions.start()}
+          askAiDisabled={askAi.isActive}
+          saveLabel="Save Question"
+          onSave={onSave}
+          onDelete={onDelete}
+          deleteLabel="Delete Question"
+          busy={busy}
+          previewOpen={previewOpen}
+          onTogglePreview={() => setPreviewOpen((prev) => !prev)}
         />
+      </div>
+
+      <div className={sharedStyles.splitLayout}>
+        <div className={sharedStyles.formPane}>
+          <QuestionFields value={draft} onChange={onChange} />
+        </div>
+
+        {previewOpen && (
+          <QuestionPreview
+            draft={draft}
+            onHide={() => setPreviewOpen(false)}
+            className={sharedStyles.previewPane}
+          />
+        )}
+      </div>
+
+      <div className={styles.askAiRoot}>
+        <AskAiPanel state={askAi} />
       </div>
     </section>
   );

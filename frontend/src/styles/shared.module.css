@@ -135,6 +135,21 @@
   color: var(--rep-color-text-muted);
 }
 
+/* A chip for a category or a part label. */
+.badge {
+  display: inline-block;
+  padding: 0.25em 0.4em;
+  color: var(--rep-color-on-action);
+  font-size: 75%;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  background-color: var(--rep-color-text-muted);
+  border-radius: var(--rep-radius-small);
+}
+
 /* Generic Regular-sized Form/Action Button styles */
 .actionButton {
   box-sizing: border-box;
@@ -399,4 +414,36 @@
 
 .actionCluster > * {
   flex: 1 1 var(--rep-btn-cluster-basis);
+}
+
+/* Split Pane Layout for Question Editing and Live Preview */
+.splitLayout {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.formPane {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.previewPane {
+  width: 400px;
+  min-width: 320px;
+  position: sticky;
+  top: 20px;
+}
+
+@media (max-width: 991px) {
+  .splitLayout {
+    flex-direction: column;
+  }
+
+  .previewPane {
+    width: 100%;
+    min-width: 0;
+    position: static;
+  }
 }

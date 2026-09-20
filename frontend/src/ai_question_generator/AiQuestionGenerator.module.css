@@ -172,8 +172,19 @@
 .questionGroupHeader {
   font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: 15px;
+  margin-bottom: 0;
   color: var(--rep-color-text-primary);
   border-bottom: 1px solid var(--rep-color-surface-secondary);
   padding-bottom: 8px;
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.askAiRoot {
+  margin-top: 20px;
 }

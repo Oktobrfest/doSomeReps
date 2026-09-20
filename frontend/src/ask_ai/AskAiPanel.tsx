@@ -62,7 +62,7 @@ export function AskAiPanel({ state }: AskAiPanelProps) {
           </div>
 
           <div className={styles.askAiAnswerBox}>
-            <div className={styles.askAiTranscriptTitle}>AI Tutor Answer:</div>
+            <div className={styles.askAiTranscriptTitle}>AI Answer:</div>
             <div className={styles.askAiAnswerText}>
               <MarkdownContent content={turn.answer} />
             </div>

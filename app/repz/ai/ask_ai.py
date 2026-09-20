@@ -200,7 +200,7 @@ def _build_ask_ai_prompt(
     transcript, question_text, answer_text, categories, language,
     history=None, image_urls=None,
 ):
-    """Build the tutor-style LLM messages for an Ask AI request.
+    """Build the AI-style LLM messages for an Ask AI request.
 
     Images are attached to the FIRST user message as OpenAI-style content blocks
     (LiteLLM normalises this across providers), so a multi-turn conversation does
@@ -257,7 +257,7 @@ def _build_ask_ai_prompt(
 @ai.route("/api/ask-ai", methods=["POST"])
 @login_required
 def ask_ai():
-    """Phase 2 step 1: turn a transcribed Ask AI question into a tutor text answer.
+    """Phase 2 step 1: turn a transcribed Ask AI question into an AI text answer.
 
     This endpoint only calls the LLM. Synthesis of the spoken audio is a separate
     step (/api/ask-ai/speak) so the frontend can show distinct progress phases
@@ -273,7 +273,7 @@ def ask_ai():
 
     Returns JSON:
       - ok: bool
-      - answer_text: the LLM tutor response (plain text)
+      - answer_text: the LLM text response (plain text)
       - language: the language used (for the follow-up speak request)
 
     Nothing here persists to S3 or the `audio` table; Ask AI conversations are
@@ -349,7 +349,7 @@ def ask_ai():
     )
     logger.debug("ask_ai _build_ask_ai_prompt=%.3fs", time.perf_counter() - t_prompt)
 
-    # Get the tutor-style text answer from the LLM.
+    # Get the AI-style text answer from the LLM.
     try:
         t_llm = time.perf_counter()
         resp = completion_for_user(user_obj, messages=messages, modality=modality, temperature=0.4)

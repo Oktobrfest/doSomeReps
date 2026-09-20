@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { Sparkles } from "lucide-react";
 import { LoadingState } from "../components/LoadingState";
-import { MarkdownContent } from "../components/MarkdownContent";
-import { ExtendButton } from "../question/ExtendButton";
+import { QuestionDraftActions } from "../question/QuestionDraftActions";
 import { QuestionFields } from "../question/QuestionFields";
+import { QuestionPreview } from "../question/QuestionPreview";
 import { AskAiPanel } from "../ask_ai/AskAiPanel";
 import { useAskAi } from "../ask_ai/useAskAi";
 import type { AskAiContext } from "../ask_ai/types";
@@ -71,56 +70,24 @@ export function QuestionEditor({
             )}
           </div>
 
-          <div className={sharedStyles.actionRow}>
-            <button
-              type="button"
-              className={`${sharedStyles.actionButton} ${sharedStyles.btnCyan}`}
-              onClick={() => askAi.actions.start()}
-              disabled={askAi.isActive}
-            >
-              <Sparkles size={18} />
-              Ask AI Tutor
-            </button>
-
-            {/* An extend belongs to the question it was started from: moving
-                to another question drops the request rather than applying it. */}
-            <ExtendButton
-              key={questionId}
-              target={{ questionId }}
-              draft={draft}
-              onExtended={editor.setDraft}
-            />
-
-            {!previewOpen && (
-              <button
-                type="button"
-                className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
-                onClick={() => setPreviewOpen(true)}
-                title="Show Preview"
-              >
-                <i className="fa fa-eye"></i>
-                Show Preview
-              </button>
-            )}
-
-            <button
-              type="button"
-              className={`${sharedStyles.actionButton} ${sharedStyles.btnRed}`}
-              onClick={editor.handleDelete}
-              disabled={editor.deleting}
-            >
-              {editor.deleting ? "Deleting..." : "Delete Question"}
-            </button>
-
-            <button
-              type="button"
-              className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
-              onClick={editor.handleSave}
-              disabled={editor.saving}
-            >
-              {editor.saving ? "Saving..." : "Save Question"}
-            </button>
-          </div>
+          {/* An extend belongs to the question it was started from: moving
+              to another question drops the request rather than applying it. */}
+          <QuestionDraftActions
+            key={questionId}
+            draft={draft}
+            extendTarget={{ questionId }}
+            onExtended={editor.setDraft}
+            onAskAi={() => askAi.actions.start()}
+            askAiDisabled={askAi.isActive}
+            saveLabel="Save Question"
+            onSave={editor.handleSave}
+            saving={editor.saving}
+            onDelete={editor.handleDelete}
+            deleting={editor.deleting}
+            deleteLabel="Delete Question"
+            previewOpen={previewOpen}
+            onTogglePreview={() => setPreviewOpen((prev) => !prev)}
+          />
         </div>
 
         <div className={styles.cardBody}>
@@ -160,7 +127,7 @@ export function QuestionEditor({
                               <td
                                 className={`${sharedStyles.tableCell} ${sharedStyles.capitalize}`}
                               >
-                                <span className={styles.badge}>{audio.part}</span>
+                                <span className={sharedStyles.badge}>{audio.part}</span>
                               </td>
                               <td
                                 className={`${sharedStyles.tableCell} ${sharedStyles.uppercase}`}
@@ -212,58 +179,11 @@ export function QuestionEditor({
             </div>
 
             {previewOpen && (
-              <div className={styles.previewPane}>
-                <div className={styles.previewPaneHeader}>
-                  <h5 className={styles.previewPaneTitle}>
-                    <i className="fa fa-eye"></i> Live Preview
-                  </h5>
-                  <button
-                    type="button"
-                    className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnQuiet}`}
-                    onClick={() => setPreviewOpen(false)}
-                    title="Collapse Preview"
-                  >
-                    Hide
-                  </button>
-                </div>
-
-                <div className={styles.previewMetaRow}>
-                  <strong>Preview View</strong>
-                  {draft.categories.map((cat) => (
-                    <span key={cat} className={styles.badge}>
-                      {cat}
-                    </span>
-                  ))}
-                </div>
-
-                <div className={styles.previewTextBlock}>
-                  <MarkdownContent
-                    content={draft.text.question || "*No question text yet.*"}
-                  />
-                </div>
-
-                {draft.text.hint && (
-                  <div className={styles.previewHintCard}>
-                    <div className={styles.previewHintHeader}>
-                      <i className="fa fa-question-circle"></i> Hint
-                    </div>
-                    <div className={styles.previewHintContent}>
-                      <MarkdownContent content={draft.text.hint} />
-                    </div>
-                  </div>
-                )}
-
-                <div className={styles.previewAnswerCard}>
-                  <div className={styles.previewAnswerHeader}>
-                    <i className="fa fa-book"></i> The Answer
-                  </div>
-                  <div className={styles.previewAnswerContent}>
-                    <MarkdownContent
-                      content={draft.text.answer || "*No answer text yet.*"}
-                    />
-                  </div>
-                </div>
-              </div>
+              <QuestionPreview
+                draft={draft}
+                onHide={() => setPreviewOpen(false)}
+                className={styles.previewPane}
+              />
             )}
           </div>
 
