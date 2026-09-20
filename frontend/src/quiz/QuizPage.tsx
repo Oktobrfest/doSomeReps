@@ -285,7 +285,14 @@ export function QuizPage(props: QuizPageProps) {
             {body}
           </div>
 
-          <AudioPlane quiz={quiz} mode={mode}>{commandSystem}</AudioPlane>
+          <AudioPlane
+            quiz={quiz}
+            mode={mode}
+            onAskAi={askAi.actions.start}
+            askAiDisabled={askAi.isActive}
+          >
+            {commandSystem}
+          </AudioPlane>
         </div>
       ) : (
         <>
