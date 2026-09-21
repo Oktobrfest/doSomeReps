@@ -1,7 +1,7 @@
 import { useId, type ChangeEvent } from "react";
 import { toast } from "sonner";
 import { AutoResizeTextarea } from "../components/AutoResizeTextarea";
-import { CategoryPicker } from "../components/CategoryPicker"; // # CHANGED THIS - use the unified category picker; CatPicker no longer exists.
+import { CategoryPicker } from "../components/CategoryPicker";
 import { useFilePreviews } from "./useFilePreviews";
 import {
   QUESTION_PARTS,
@@ -173,10 +173,10 @@ export function QuestionFields({
         <PartField key={part} part={part} draft={value} onChange={onChange} />
       ))}
 
-      {/* # CHANGED THIS - question editing keeps the existing search/create/modal behavior through the unified picker. */}
       <CategoryPicker
         selectedCategories={value.categories}
         onChange={(categories) => onChange({ ...value, categories })}
+        allowCreate
       />
 
       <div className={styles.options}>

@@ -17,15 +17,15 @@ import {
 import type { SlideOutButtonsHandle } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { FlagButton } from '../components/FlagButton';
+import { CategoryChips } from '../components/CategoryChip';
 import { useQuizController, type QuizController } from './useQuizController';
 import { useQuizMode, type QuizMode } from './useQuizMode';
-import { useFullSizedPage } from './useFullSizedPage';
+import { useFullSizedPage } from '../hooks/useFullSizedPage';
 import { AnswerPlayer, GetAnswerButton, ReadQuestionControl } from './AudioControls';
 import { AudioPlane } from './AudioPlane';
 import { CategoriesSection } from './CategoriesSection';
 import { QuestionToolbar } from './QuestionToolbar';
 import { AnswerDraftModal } from './modals/AnswerDraftModal';
-import { CategoriesModal } from './modals/CategoriesModal';
 import { HintModal } from './modals/HintModal';
 import { RateModal } from './modals/RateModal';
 import { useAskAi } from '../ask_ai/useAskAi';
@@ -54,11 +54,6 @@ function QuizEmpty({
 }: QuizEmptyProps) {
   const [picking, setPicking] = useState(false);
 
-  const selectedNormalized = (selectedCategories ?? []).map((c) => c.replace(/_/g, ' '));
-  const unselected = (categoryList ?? []).filter(
-    (cat) => !selectedNormalized.includes(cat),
-  );
-
   return (
     <div className={styles.emptyContainer}>
       <p className={styles.emptyMessage}>{message}</p>
@@ -70,23 +65,23 @@ function QuizEmpty({
         >
           Que More Questions
         </a>
-        {unselected.length > 0 && (
-          <button
-            type="button"
-            className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
-            onClick={() => setPicking(true)}
-          >
-            Select More Categories
-          </button>
-        )}
+        <button
+          type="button"
+          className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
+          aria-expanded={picking}
+          onClick={() => setPicking(!picking)}
+        >
+          {picking ? 'Hide Categories' : 'Select More Categories'}
+        </button>
       </div>
 
+      {/* An empty queue has no panel and no disclosure to hold the picker, so it
+          opens here - the same section, not a second way of choosing. */}
       {picking && (
-        <CategoriesModal
+        <CategoriesSection
           categoryList={categoryList}
-          selectedCategories={selectedCategories}
+          initialSelectedCategories={selectedCategories}
           onApply={onApplyCategories}
-          onClose={() => setPicking(false)}
         />
       )}
     </div>
@@ -547,9 +542,10 @@ function QuizBody({
         >
           <div className={styles.metaRow}>
             <strong>Level {currentQuestion.level_no}</strong>
-            {currentQuestion.categories.map((cat) => (
-              <span key={cat} className={styles.badge}>{cat}</span>
-            ))}
+            <CategoryChips
+              names={currentQuestion.categories}
+              className={styles.metaChips}
+            />
 
             {fullSized ? (
               <QuestionToolbar

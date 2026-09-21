@@ -7,24 +7,27 @@ interface QuizModalProps {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /** Give the dialog the whole screen, for work that wants every pixel of it. */
+  fullScreen?: boolean;
 }
 
 /**
- * Dialog shell for the quiz's secondary actions.
+ * Dialog shell for the app's secondary surfaces.
  *
- * These actions live in modals so the question itself keeps the whole screen:
- * the slide-out panel only has room for the buttons that open them.
+ * They live in modals so the page itself keeps the whole screen: a phone only
+ * has room for the button that opens them.
  */
-export function QuizModal({ title, onClose, children }: QuizModalProps) {
+export function QuizModal({ title, onClose, children, fullScreen = false }: QuizModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
 
-  // # CHANGED THIS - keep the latest close callback without re-running the mount focus effect on every parent render.
+  // Keep the latest close callback without re-running the mount focus effect.
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  // # CHANGED THIS - focus the dialog only when it mounts; filter-input keystrokes must never bounce focus back to the panel.
+  // Focus the dialog only when it mounts: keystrokes in a field inside it must
+  // never bounce focus back out to the panel.
   useEffect(() => {
     panelRef.current?.focus({ preventScroll: true });
 
@@ -37,10 +40,13 @@ export function QuizModal({ title, onClose, children }: QuizModalProps) {
   }, []);
 
   return createPortal(
-    <div className={styles.backdrop} onClick={onClose}>
+    <div
+      className={`${styles.backdrop} ${fullScreen ? styles.backdropFull : ""}`}
+      onClick={onClose}
+    >
       <div
         ref={panelRef}
-        className={styles.panel}
+        className={`${styles.panel} ${fullScreen ? styles.panelFull : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}

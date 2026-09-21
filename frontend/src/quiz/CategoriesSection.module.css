@@ -18,7 +18,7 @@
 }
 
 .applyButton:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--rep-cp-item-bg-active) 84%, #000000);
+  background: var(--rep-cp-item-bg-active-hover);
 }
 
 /* # CHANGED THIS - mobile keeps one reliable thumb target; desktop gets a compact filter action. */

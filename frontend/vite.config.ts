@@ -30,7 +30,6 @@ export default defineConfig({
         quiz: "src/entrypoints/Quiz.entry.tsx",
         add_content: "src/entrypoints/AddContent.entry.tsx",
         ai_question_generator: "src/entrypoints/AiQuestionGenerator.entry.tsx",
-        categories_core: "src/entrypoints/CategoriesCore.entry.tsx",
         home: "src/entrypoints/Home.entry.tsx",
         quemore: "src/entrypoints/QueMore.entry.tsx",
         about: "src/entrypoints/About.entry.tsx",

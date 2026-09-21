@@ -89,15 +89,10 @@
   font-size: clamp(0.8em, 1rem + 1.4vw, 2rem);
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 11px 3px 11px;
-  background: var(--rep-intent-amber-bg);
-  color: var(--rep-intent-amber-fg);
-  border-radius: 999px;
-  font-size: clamp(0.8em, 1rem + 1.4vw, 2rem);
-  font-weight: 600;
+/* The reading view is read at arm's length, so its chips take the same scale
+   as the level beside them. Rebinding the alias is all it takes. */
+.metaChips {
+  --rep-cat-chip-font-size: var(--rep-cat-chip-font-size-lg);
 }
 
 .textBlock {
@@ -221,16 +216,18 @@
   box-shadow: var(--rep-shadow-card);
 }
 
+/* Orange is what categories look like everywhere else in the app, closed or
+   open, so the bar that holds them is not the one white exception. */
 .categoriesSummary {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 11px 13px;
   list-style: none;
-  color: var(--rep-color-text-primary);
+  color: var(--rep-cp-item-text-active);
   font-size: 0.95rem;
   font-weight: 700;
-  background: var(--rep-color-surface);
+  background: var(--rep-cp-item-bg-active);
   cursor: pointer;
   user-select: none;
   transition: background-color var(--rep-transition-fast), color var(--rep-transition-fast);
@@ -250,26 +247,23 @@
   width: 7px;
   height: 7px;
   margin-left: auto;
-  border-right: 2px solid var(--rep-color-category-chip-text);
-  border-bottom: 2px solid var(--rep-color-category-chip-text);
+  border-right: 2px solid var(--rep-cp-item-text-active);
+  border-bottom: 2px solid var(--rep-cp-item-text-active);
   transform: translateY(-2px) rotate(45deg);
   transition: transform var(--rep-transition-fast);
 }
 
 .categoriesSummary:hover {
-  color: var(--rep-color-category-chip-text);
-  background: color-mix(in srgb, var(--rep-cp-item-bg) 8%, var(--rep-color-surface));
+  background: var(--rep-cp-item-bg-active-hover);
 }
 
 .categoriesSummary:focus-visible {
-  outline: 2px solid var(--rep-cp-item-border-active);
+  outline: 2px solid var(--rep-cp-item-text-active);
   outline-offset: -3px;
 }
 
 .categoriesDisclosure[open] > .categoriesSummary {
-  color: var(--rep-color-category-chip-text);
-  background: color-mix(in srgb, var(--rep-cp-item-bg) 7%, var(--rep-color-surface));
-  border-bottom: 1px solid var(--rep-color-border);
+  border-bottom: 1px solid var(--rep-cp-item-bg-active-hover);
 }
 
 .categoriesDisclosure[open] > .categoriesSummary::after {

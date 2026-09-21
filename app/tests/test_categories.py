@@ -5,33 +5,6 @@ import os
 # Add the parent directory of 'repz' to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-class TestCategoriesFullTemplate(unittest.TestCase):
-    """categories.html mounts the full picker via the same Vite entrypoint."""
-
-    def _read_template(self, name):
-        path = os.path.join(
-            os.path.dirname(__file__), '..', 'repz', 'templates', name
-        )
-        with open(path, 'r') as f:
-            return f.read()
-
-    def test_full_mounts_vite_entrypoint(self):
-        content = self._read_template('categories.html')
-        self.assertIn('react-categories-root', content)
-        self.assertIn(
-            'vite_asset("src/entrypoints/CategoriesCore.entry.tsx")', content
-        )
-
-    def test_full_passes_mode_flags(self):
-        content = self._read_template('categories.html')
-        self.assertIn('hideSavedLists', content)
-        self.assertIn('hideHeader', content)
-
-    def test_full_has_no_cdn_react(self):
-        content = self._read_template('categories.html')
-        self.assertNotIn('unpkg.com', content)
-        self.assertNotIn('document.write', content)
-
 class TestAddcontentIsReact(unittest.TestCase):
     """addcontent.html mounts the whole page in React; the picker moved inside it."""
 

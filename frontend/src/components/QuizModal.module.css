@@ -59,7 +59,25 @@
 }
 
 .body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px;
   overscroll-behavior: contain;
+}
+
+/* Every pixel of the screen, insets included, and no backdrop left showing to
+   tap through to by accident. */
+.backdropFull {
+  padding: 0;
+}
+
+.panelFull {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  border-radius: 0;
 }

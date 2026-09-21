@@ -1,292 +1,123 @@
-/* # CHANGED THIS - category chrome is neutral; orange is reserved for identity, focus, and selected state. */
+/* The picker brings no surface of its own: it fills whatever panel, disclosure
+   or sheet it is mounted in, so on a phone the categories get the screen. */
 .picker {
-  overflow: visible;
-  background: var(--rep-color-surface);
-  border: 1px solid var(--rep-color-border);
-  border-top: 3px solid var(--rep-cp-item-border-active);
-  border-radius: var(--rep-radius-dialog);
-  box-shadow: var(--rep-shadow-card);
-}
-
-/* # CHANGED THIS - grid consumers use the same restrained spacing without a second visual frame. */
-.gridPicker {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
-/* # CHANGED THIS - remove the redundant full-width title bar and let search/browse form the useful top row. */
-.body,
-.modalBody {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px;
-  background: var(--rep-color-surface);
+/* On a full-sized page the saved lists are set off from the categories by a
+   hairline. A phone has no room to spend on separating anything. */
+.savedLists {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rep-color-border);
 }
 
-.modalBody {
-  padding: 2px 0 0;
+/* The one control a phone shows in place of the whole picker. */
+.openSheet {
+  composes: actionButton buttonSm btnAmber from '../styles/shared.module.css';
+
+  --rep-btn-min-width: 100%;
 }
 
-/* # CHANGED THIS - labels are hierarchy cues, not competing headings. */
-.labelRow,
-.selectedRow {
+.filterRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 6px;
 }
 
-.label {
-  color: var(--rep-color-text-primary);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+.field {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.selectedCount {
-  color: var(--rep-color-text-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-/* # CHANGED THIS - inputs look active and conventional, with orange appearing only on focus. */
-.input,
-.toolbarInput,
-.select {
+.input {
   box-sizing: border-box;
-  font-family: inherit;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 34px 6px 10px;
   color: var(--rep-color-text-primary);
+  font-family: inherit;
+  font-size: 0.88rem;
   background: var(--rep-color-surface);
   border: 1px solid var(--rep-color-border-strong);
   border-radius: var(--rep-radius-control);
   transition: border-color var(--rep-transition-fast), box-shadow var(--rep-transition-fast);
 }
 
-.input {
-  width: 100%;
-  min-height: 40px;
-  padding: 8px 11px;
-  font-size: 0.94rem;
-}
-
-.toolbarInput,
-.select {
-  height: 34px;
-  min-width: 0;
-  flex: 1 1 210px;
-  max-width: 360px;
-  padding: 0 10px;
-  font-size: 0.86rem;
-}
-
-.input:hover,
-.toolbarInput:hover,
-.select:hover {
-  border-color: color-mix(in srgb, var(--rep-cp-item-border-active) 55%, var(--rep-color-border-strong));
-}
-
-.input:focus,
-.toolbarInput:focus,
-.select:focus {
+.input:focus {
   outline: none;
   border-color: var(--rep-cp-item-border-active);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--rep-cp-item-bg-active) 18%, transparent);
 }
 
-.search {
-  position: relative;
-}
-
-/* # CHANGED THIS - autocomplete is a clean floating menu, not another orange block. */
-.suggestions {
+/* Inside the field, where whatever was typed is: emptying it is one reach. */
+.clear {
   position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  left: 0;
-  z-index: 20;
-  max-height: 220px;
-  margin: 0;
-  padding: 4px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  list-style: none;
-  background: var(--rep-color-surface);
-  border: 1px solid var(--rep-color-border);
-  border-radius: var(--rep-radius-control);
-  box-shadow: var(--rep-shadow-card-raised);
-}
-
-.suggestion {
+  top: 50%;
+  right: 5px;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 34px;
-  padding: 7px 9px;
-  color: var(--rep-color-text-primary);
-  font-family: inherit;
-  font-size: 0.88rem;
-  text-align: left;
+  padding: 3px;
+  color: var(--rep-color-text-muted);
   background: transparent;
   border: 0;
-  border-radius: calc(var(--rep-radius-control) - 2px);
+  border-radius: var(--rep-radius-circle);
+  transform: translateY(-50%);
   cursor: pointer;
 }
 
-.suggestion:hover:not(:disabled),
-.suggestion:focus-visible {
-  outline: none;
-  background: color-mix(in srgb, var(--rep-cp-item-bg) 12%, var(--rep-color-surface));
-}
-
-.create {
-  color: var(--rep-color-category-chip-text);
-  font-weight: 700;
-}
-
-/* # CHANGED THIS - saved lists read as a utility row, not a nested card. */
-.toolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 7px;
-  padding: 8px;
-  background: var(--rep-color-surface-subtle);
-  border: 1px solid var(--rep-color-border);
-  border-radius: var(--rep-radius-control);
-}
-
-/* # CHANGED THIS - category actions use one coherent family: orange primary/outline plus restrained semantic exceptions. */
-.btn,
-.btnPrimary,
-.btnSecondary,
-.btnSuccess,
-.btnDefault,
-.btnCancel,
-.btnDanger {
-  composes: actionButton buttonSm from '../styles/shared.module.css';
-  border: 1px solid transparent;
-  box-shadow: none;
-}
-
-.btn,
-.btnPrimary {
-  color: var(--rep-cp-item-text-active);
-  background: var(--rep-cp-item-bg-active);
-  border-color: var(--rep-cp-item-border-active);
-}
-
-.btn:hover:not(:disabled),
-.btnPrimary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--rep-cp-item-bg-active) 84%, #000000);
-}
-
-.btnSecondary {
-  color: var(--rep-color-category-chip-text);
-  background: var(--rep-color-surface);
-  border-color: color-mix(in srgb, var(--rep-cp-item-border-active) 62%, var(--rep-color-border));
-}
-
-.btnSecondary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--rep-cp-item-bg) 10%, var(--rep-color-surface));
-  border-color: var(--rep-cp-item-border-active);
-}
-
-.btnSuccess {
-  color: var(--rep-intent-green-fg);
-  background: color-mix(in srgb, var(--rep-intent-green-bg) 18%, var(--rep-color-surface));
-  border-color: color-mix(in srgb, var(--rep-intent-green-bg) 58%, var(--rep-color-border));
-}
-
-.btnSuccess:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--rep-intent-green-bg) 27%, var(--rep-color-surface));
-}
-
-.btnDefault {
-  color: var(--rep-intent-amber-fg);
-  background: color-mix(in srgb, var(--rep-intent-amber-bg) 18%, var(--rep-color-surface));
-  border-color: color-mix(in srgb, var(--rep-intent-amber-bg) 58%, var(--rep-color-border));
-}
-
-.btnDefault:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--rep-intent-amber-bg) 28%, var(--rep-color-surface));
-}
-
-.btnCancel {
+.clear:hover {
   color: var(--rep-color-text-primary);
-  background: var(--rep-color-surface);
-  border-color: var(--rep-color-border-strong);
-}
-
-.btnCancel:hover:not(:disabled) {
   background: var(--rep-color-surface-secondary);
 }
 
-.btnDanger {
-  color: var(--rep-color-error-text-strong);
-  background: color-mix(in srgb, var(--rep-intent-red-bg) 14%, var(--rep-color-surface));
-  border-color: color-mix(in srgb, var(--rep-intent-red-bg) 48%, var(--rep-color-border));
+.clearIcon {
+  width: 16px;
+  height: 16px;
 }
 
-.btnDanger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--rep-intent-red-bg) 23%, var(--rep-color-surface));
+.create {
+  composes: actionButton buttonSm btnAmber from '../styles/shared.module.css';
+
+  flex: 0 0 auto;
 }
 
-/* # CHANGED THIS - footer actions stay on the modal's own white surface and no longer inherit site footer chrome. */
-.footer,
-.modalFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
+.createIcon {
+  composes: buttonIcon from '../styles/shared.module.css';
 }
 
-.modalFooter {
-  margin-top: 2px;
-  padding: 12px 0 2px;
-  border-top: 1px solid var(--rep-color-border);
-}
-
-.footerActions {
+.empty {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.count {
-  margin-left: auto;
-  color: var(--rep-color-text-muted);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.error {
   margin: 0;
   padding: 8px 10px;
-  color: var(--rep-color-error-text-strong);
+  color: var(--rep-color-text-muted);
   font-size: 0.82rem;
-  font-weight: 600;
-  background: var(--rep-color-error-surface-subtle);
-  border: 1px solid var(--rep-color-error-border-subtle);
+  background: var(--rep-color-surface-subtle);
+  border: 1px dashed var(--rep-color-border-strong);
   border-radius: var(--rep-radius-control);
 }
 
-/* # CHANGED THIS - small screens stack management controls naturally without creating giant desktop controls. */
-@media (max-width: 640px) {
-  .body {
-    padding: 12px;
+.emptyAction {
+  composes: actionButton buttonSm btnSlate from '../styles/shared.module.css';
+}
+
+/* A phone spends its space on categories, not on the gaps between them. */
+@media (max-width: 899px) {
+  .picker {
+    gap: 5px;
   }
 
-  .toolbarInput,
-  .select {
-    max-width: none;
+  .savedLists {
+    padding-bottom: 0;
+    border-bottom: 0;
   }
 
-  .toolbar > .select {
-    flex-basis: 100%;
+  .empty {
+    padding: 6px 8px;
   }
 }

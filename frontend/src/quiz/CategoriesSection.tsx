@@ -24,14 +24,12 @@ export function CategoriesSection({
   onApply,
   disabled = false,
 }: CategoriesSectionProps) {
-  // # CHANGED THIS - use the shared normalizer instead of maintaining quiz-only slug/name conversion logic.
   const [selected, setSelected] = useState<string[]>(() =>
     resolveCategoryNames(initialSelectedCategories, categoryList),
   );
 
   return (
     <div className={styles.categoriesSection}>
-      {/* # CHANGED THIS - restore saved lists on /quiz while preserving the existing search/create/modal picker UI. */}
       <CategoryPicker
         selectedCategories={selected}
         onChange={setSelected}
@@ -39,7 +37,6 @@ export function CategoriesSection({
         selectAll
       />
 
-      {/* # CHANGED THIS - Apply is category-orange, full-width only for mobile touch use, and compact on desktop. */}
       <div className={`${sharedStyles.actionCluster} ${styles.applyRow}`}>
         <button
           type="button"

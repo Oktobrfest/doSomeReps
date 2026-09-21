@@ -1,0 +1,63 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  color: var(--rep-color-text-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.count {
+  color: var(--rep-color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.bulk {
+  composes: actionButton buttonSm btnSlate from '../styles/shared.module.css';
+
+  margin-left: auto;
+}
+
+/* Columns, not rows: a reader looking for "Biology" reads down the first
+   column rather than scanning left to right across the whole list. */
+.chips {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  columns: var(--rep-cat-column-width) auto;
+  column-gap: 6px;
+}
+
+.chips > li {
+  padding-bottom: 4px;
+  break-inside: avoid;
+}
+
+@media (max-width: 899px) {
+  .section {
+    gap: 2px;
+  }
+
+  .chips {
+    --rep-cat-column-width: 140px;
+
+    column-gap: 4px;
+  }
+
+  .chips > li {
+    padding-bottom: 2px;
+  }
+}

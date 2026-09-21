@@ -1,3 +1,4 @@
+import { CategoryChips } from "../components/CategoryChip";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { useFilePreviews } from "./useFilePreviews";
 import type { QuestionDraft, QuestionPart } from "./question_types";
@@ -75,11 +76,7 @@ export function QuestionPreview({
 
       <div className={styles.previewMetaRow}>
         <strong>Preview View</strong>
-        {draft.categories.map((cat) => (
-          <span key={cat} className={sharedStyles.badge}>
-            {cat}
-          </span>
-        ))}
+        <CategoryChips names={draft.categories} />
       </div>
 
       <div className={styles.previewTextBlock}>

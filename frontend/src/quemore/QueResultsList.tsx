@@ -1,4 +1,5 @@
 import { Ban, ListPlus, UserX } from "lucide-react";
+import { CategoryChips } from "../components/CategoryChip";
 import { RatingStars } from "../quiz/RatingStars";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./QueMore.module.css";
@@ -45,15 +46,7 @@ export function QueResultsList({
           <li key={result.question_id} className={`${styles.card} ${state}`}>
             <p className={styles.cardQuestion}>{result.question_text}</p>
 
-            {result.categories.length > 0 && (
-              <div className={styles.categoryRow}>
-                {result.categories.map((category) => (
-                  <span key={category} className={styles.categoryChip}>
-                    {category}
-                  </span>
-                ))}
-              </div>
-            )}
+            <CategoryChips names={result.categories} />
 
             <div className={styles.cardMeta}>
               {result.rating === null ? (

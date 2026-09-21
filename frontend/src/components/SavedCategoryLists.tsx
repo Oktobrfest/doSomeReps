@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { resolveCategoryNames, toSlug } from "../lib/categories";
 import { csrfHeaders, jsonHeaders } from "../lib/http";
-import styles from "./CategoryPicker.module.css";
+import styles from "./SavedCategoryLists.module.css";
 
-// # CHANGED THIS - saved-list persistence is one focused component, not a second picker or a hook/controller/component stack.
 interface CategoryList {
   id: number;
   name: string;
@@ -47,9 +46,13 @@ export function SavedCategoryLists({
     [activeId, lists]
   );
   const dirty = Boolean(active && !sameSelection(active.categories, selected));
+  /* Saving a list identical to the one already showing would just make a copy
+     of it, so the offer is only there when there is something new to keep. */
+  const worthSaving = selected.length > 0 && (!active || dirty);
   const resolve = (values: string[]) => categories.length > 0 ? resolveCategoryNames(values, categories) : values;
 
-  // # CHANGED THIS - only initial hydration can auto-apply the default, and only when the caller supplied no selection.
+  // Only initial hydration may auto-apply the default, and only when the caller
+  // supplied no selection of its own.
   useEffect(() => {
     let cancelled = false;
     void requestJson<CategoryList[]>("/api/category-lists")
@@ -140,8 +143,8 @@ export function SavedCategoryLists({
     setActiveId("");
   });
 
-  // # CHANGED THIS - every action operates on the caller's live selection; there is no duplicate selection state to drift out of sync.
-  // # CHANGED THIS - saved-list actions stay visually subordinate: orange for create, soft semantic treatments for save/default/delete, neutral cancel.
+  // Every action operates on the caller's live selection; there is no second
+  // copy of it here to drift out of sync.
   return (
     <>
       {error && <p className={styles.error}>{error}</p>}
@@ -149,7 +152,7 @@ export function SavedCategoryLists({
         {creating ? (
           <>
             <input
-              className={styles.toolbarInput}
+              className={styles.input}
               value={name}
               placeholder="Save selection as..."
               autoFocus
@@ -164,10 +167,10 @@ export function SavedCategoryLists({
                 }
               }}
             />
-            <button type="button" className={styles.btnSuccess} disabled={busy || !name.trim() || selected.length === 0} onClick={() => void create()}>
+            <button type="button" className={styles.save} disabled={busy || !name.trim() || selected.length === 0} onClick={() => void create()}>
               Save list
             </button>
-            <button type="button" className={styles.btnCancel} disabled={busy} onClick={() => { setCreating(false); setName(""); }}>
+            <button type="button" className={styles.cancel} disabled={busy} onClick={() => { setCreating(false); setName(""); }}>
               Cancel
             </button>
           </>
@@ -179,10 +182,13 @@ export function SavedCategoryLists({
                 <option key={list.id} value={String(list.id)}>{list.name}{list.is_default ? " (Default)" : ""}</option>
               ))}
             </select>
-            {dirty && <button type="button" className={styles.btnSuccess} disabled={busy} onClick={() => void save()}>Save changes</button>}
-            {active && !active.is_default && <button type="button" className={styles.btnDefault} disabled={busy} onClick={() => void makeDefault()}>Default</button>}
-            {active && <button type="button" className={styles.btnDanger} disabled={busy} onClick={() => void remove()}>Delete</button>}
-            <button type="button" className={styles.btn} disabled={busy} onClick={() => setCreating(true)}>New list</button>
+            {/* One row, however many of these a list's state calls for. */}
+            <div className={styles.actions}>
+              {dirty && <button type="button" className={styles.save} disabled={busy} onClick={() => void save()}>Save</button>}
+              {active && !active.is_default && <button type="button" className={styles.makeDefault} disabled={busy} onClick={() => void makeDefault()}>Default</button>}
+              {active && <button type="button" className={styles.remove} disabled={busy} onClick={() => void remove()}>Delete</button>}
+              {worthSaving && <button type="button" className={styles.newList} disabled={busy} onClick={() => setCreating(true)}>New list</button>}
+            </div>
           </>
         )}
       </div>

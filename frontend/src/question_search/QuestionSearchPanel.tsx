@@ -119,9 +119,7 @@ export function QuestionSearchPanel({
 
           <div className={styles.filterGroup}>
             <span className={styles.filterLabel}>Categories</span>
-            {/* # CHANGED THIS - the unified grid picker owns saved lists and select-all instead of duplicating that logic in this page. */}
             <CategoryPicker
-              mode="grid"
               selectedCategories={filters.categories}
               onChange={(categories) => patch({ categories })}
               savedLists

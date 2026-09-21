@@ -424,21 +424,6 @@
   overflow-wrap: anywhere;
 }
 
-.catChipRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.catChip {
-  padding: 2px 8px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--rep-color-category-chip-text);
-  background-color: var(--rep-color-category-chip-bg);
-  border-radius: 999px;
-}
-
 .flagChip {
   display: inline-flex;
   align-items: center;
