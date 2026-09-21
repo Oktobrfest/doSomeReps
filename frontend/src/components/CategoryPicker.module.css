@@ -1,120 +1,205 @@
+/* # CHANGED THIS - the unified picker now carries the category system's orange identity instead of slate-on-gray chrome. */
 .picker {
+  overflow: hidden;
+  background: var(--rep-color-surface);
+  border: 1px solid var(--rep-cp-item-border-active);
+  border-radius: var(--rep-radius-dialog);
+  box-shadow: var(--rep-shadow-card);
+}
+
+.gridPicker {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* ---------- Optional header ---------- */
-
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
+  padding: 9px 12px;
+  color: var(--rep-cp-item-text-active);
+  font-weight: 800;
+  background: var(--rep-cp-item-bg-active);
+  border-bottom: 1px solid var(--rep-cp-item-border-active);
 }
 
-.title {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--rep-color-text-primary);
+/* # CHANGED THIS - See All is a crisp light action on the orange header, not a gray button on a gray surface. */
+.header > button {
+  color: var(--rep-color-category-chip-text);
+  background: var(--rep-color-surface);
 }
 
-/* ---------- Saved-list toolbar ---------- */
+.header > button:hover:not(:disabled) {
+  background: var(--rep-color-category-chip-bg);
+}
 
-.toolbar {
+.body,
+.modalBody {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
-  background-color: var(--rep-color-surface-subtle);
-  border: 1px solid var(--rep-color-border);
-  border-radius: var(--rep-radius-control);
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px;
+  background: var(--rep-color-surface);
 }
 
-.select,
-.input {
-  height: 30px;
-  min-width: 0;
-  flex: 1 1 170px;
-  max-width: 260px;
-  padding: 0 8px;
+.label {
+  color: var(--rep-color-category-chip-text);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.input,
+.toolbarInput,
+.select {
   font-family: inherit;
-  font-size: 0.82rem;
   color: var(--rep-color-text-primary);
-  background-color: var(--rep-color-surface);
+  background: var(--rep-color-surface);
   border: 1px solid var(--rep-color-border-strong);
   border-radius: var(--rep-radius-control);
 }
 
-.select:focus,
-.input:focus {
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+}
+
+.toolbarInput,
+.select {
+  height: 34px;
+  min-width: 0;
+  flex: 1 1 190px;
+  max-width: 320px;
+  padding: 0 9px;
+  font-size: 0.86rem;
+}
+
+.input:focus,
+.toolbarInput:focus,
+.select:focus {
   outline: none;
-  border-color: var(--rep-color-focus);
-  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
+  border-color: var(--rep-cp-item-border-active);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rep-cp-item-bg-active) 20%, transparent);
 }
 
-.divider {
-  width: 1px;
-  height: 20px;
-  margin: 0 2px;
-  background-color: var(--rep-color-border);
+.search {
+  position: relative;
 }
 
-.spacer {
-  flex: 1 1 auto;
+.suggestions {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  left: 0;
+  z-index: 10;
+  max-height: 200px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  background: var(--rep-color-surface);
+  border: 1px solid var(--rep-cp-item-border);
+  border-radius: var(--rep-radius-control);
+  box-shadow: var(--rep-shadow-card-raised);
 }
 
-/* ---------- Buttons ---------- */
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  color: var(--rep-color-text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.suggestion:hover:not(:disabled),
+.suggestion:focus-visible {
+  background: var(--rep-color-category-chip-bg);
+}
+
+.create {
+  color: var(--rep-color-category-chip-text);
+  font-weight: 800;
+}
+
+/* # CHANGED THIS - saved-list controls sit on a warm category surface and use semantic action colours. */
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 8px;
+  background: var(--rep-color-category-chip-bg);
+  border: 1px solid var(--rep-cp-item-border);
+  border-radius: var(--rep-radius-control);
+}
 
 .btn {
-  composes: actionButton buttonSm btnSlate from '../styles/shared.module.css';
+  composes: actionButton buttonSm btnBlue from '../styles/shared.module.css';
 }
 
-@container (min-width: 1000px) {
-  .select,
-  .input {
-    height: 34px;
-    font-size: 0.9rem;
-    padding: 0 11px;
-  }
+.btnPrimary {
+  composes: actionButton buttonSm btnBlue from '../styles/shared.module.css';
+}
 
-  .btnIcon {
-    width: 16px;
-    height: 16px;
-  }
+.btnSuccess {
+  composes: actionButton buttonSm btnGreen from '../styles/shared.module.css';
+}
+
+.btnDefault {
+  composes: actionButton buttonSm btnAmber from '../styles/shared.module.css';
+}
+
+.btnCancel {
+  composes: actionButton buttonSm btnCyan from '../styles/shared.module.css';
 }
 
 .btnDanger {
   composes: actionButton buttonSm btnRed from '../styles/shared.module.css';
 }
 
-.btnIcon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-/* ---------- Footer ---------- */
-
-.footer {
+.footer,
+.modalFooter {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
+.modalFooter {
+  padding-top: 2px;
+}
+
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .count {
-  font-size: 0.8rem;
+  margin-left: auto;
   color: var(--rep-color-text-muted);
+  font-size: 0.8rem;
 }
 
 .error {
   margin: 0;
   padding: 8px 10px;
-  font-size: 0.82rem;
   color: var(--rep-color-error-text-strong);
-  background-color: var(--rep-color-error-surface-subtle);
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--rep-color-error-surface-subtle);
   border: 1px solid var(--rep-color-error-border-subtle);
   border-radius: var(--rep-radius-control);
 }

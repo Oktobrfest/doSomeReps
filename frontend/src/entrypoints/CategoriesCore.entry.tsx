@@ -15,18 +15,14 @@ interface CategoriesCoreData {
 
 interface CategoriesWrapperProps {
   initialSelected: string[];
-  showSavedLists: boolean;
-  showSelectAll: boolean;
-  showApplyButton: boolean;
+  savedLists: boolean;
   collapsible: boolean;
   defaultCollapsed: boolean;
 }
 
 function CategoriesWrapper({
   initialSelected,
-  showSavedLists,
-  showSelectAll,
-  showApplyButton,
+  savedLists,
   collapsible,
   defaultCollapsed,
 }: CategoriesWrapperProps) {
@@ -45,15 +41,16 @@ function CategoriesWrapper({
           {collapsed ? "Show filters" : "Hide filters"}
         </button>
       )}
+
+      {/* # CHANGED THIS - server-backed category forms use the same grid mode instead of a separate picker implementation. */}
       <CategoryPicker
+        mode="grid"
         selectedCategories={selected}
         onChange={setSelected}
-        showSavedLists={showSavedLists}
-        showSelectAll={showSelectAll}
-        showApplyButton={showApplyButton}
+        savedLists={savedLists}
+        selectAll
         collapsed={collapsed}
-        checkboxName="category_name"
-        checkboxValueFn={toSlug}
+        form={{ name: "category_name", value: toSlug, apply: true }}
       />
     </>
   );
@@ -69,14 +66,15 @@ function mount() {
     const data: CategoriesCoreData = JSON.parse(dataEl.textContent || "{}");
     const categoryList = data.categoryList ?? [];
 
-    const initialSelectedSlugs = Array.isArray(data.selectedCategories)
+    const initialSelected = Array.isArray(data.selectedCategories)
       ? data.selectedCategories
       : typeof data.selectedCategories === "string" && data.selectedCategories
         ? [data.selectedCategories]
         : [];
 
+    // # CHANGED THIS - resolveCategoryNames now accepts names or slugs directly, so normalization is done once without pre-converting every value.
     const normalizedSelected = resolveCategoryNames(
-      Array.from(new Set([...initialSelectedSlugs, ...(data.catsDue ?? [])])),
+      Array.from(new Set([...initialSelected, ...(data.catsDue ?? [])])),
       categoryList
     );
 
@@ -85,9 +83,7 @@ function mount() {
     createRoot(fullRoot).render(
       <CategoriesWrapper
         initialSelected={normalizedSelected}
-        showSavedLists={!(data.hideSavedLists ?? false)}
-        showSelectAll={true}
-        showApplyButton={true}
+        savedLists={!(data.hideSavedLists ?? false)}
         collapsible={collapsible}
         defaultCollapsed={collapsible && normalizedSelected.length > 0}
       />

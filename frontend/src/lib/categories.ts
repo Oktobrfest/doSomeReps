@@ -23,13 +23,13 @@ export const byName = (a: string, b: string) =>
  * A slug with no match falls back to its spaced form, so a category that has
  * been renamed or removed still shows the user something readable.
  */
+// # CHANGED THIS - accept either slugs or display names so every consumer can use one canonical normalization path.
 export function resolveCategoryNames(
-  slugs: string[],
+  values: string[],
   categoryList: string[]
 ): string[] {
-  return slugs.map(
-    (slug) => categoryList.find((cat) => toSlug(cat) === slug) ?? fromSlug(slug)
-  );
+  const namesBySlug = new Map(categoryList.map((category) => [toSlug(category), category]));
+  return values.map((value) => namesBySlug.get(toSlug(value)) ?? fromSlug(value));
 }
 
 /** Create a category and tell every mounted picker to refetch. */

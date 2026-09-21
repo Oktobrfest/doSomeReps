@@ -1,23 +1,8 @@
 import { useState } from 'react';
-import { CatPicker } from '../components/CatPicker';
+import { CategoryPicker } from '../components/CategoryPicker';
+import { resolveCategoryNames } from '../lib/categories';
 import sharedStyles from '../styles/shared.module.css';
 import styles from './CategoriesSection.module.css';
-
-/** Categories arrive from the server as slugs or as display names. */
-function normaliseCategories(initial?: string[], all?: string[]) {
-  if (!initial) return [];
-
-  const known = new Set(all ?? []);
-
-  return initial.map((raw) => {
-    if (known.has(raw)) return raw;
-
-    const decoded = raw.replace(/_/g, ' ');
-    if (known.has(decoded)) return decoded;
-
-    return decoded;
-  });
-}
 
 interface CategoriesSectionProps {
   categoryList?: string[];
@@ -34,23 +19,31 @@ interface CategoriesSectionProps {
  * is mounted and hands it over only when the reader applies it.
  */
 export function CategoriesSection({
-  categoryList,
-  initialSelectedCategories,
+  categoryList = [],
+  initialSelectedCategories = [],
   onApply,
   disabled = false,
 }: CategoriesSectionProps) {
+  // # CHANGED THIS - use the shared normalizer instead of maintaining quiz-only slug/name conversion logic.
   const [selected, setSelected] = useState<string[]>(() =>
-    normaliseCategories(initialSelectedCategories, categoryList),
+    resolveCategoryNames(initialSelectedCategories, categoryList),
   );
 
   return (
     <div className={styles.categoriesSection}>
-      <CatPicker selectedCategories={selected} onChange={setSelected} />
+      {/* # CHANGED THIS - restore saved lists on /quiz while preserving the existing search/create/modal picker UI. */}
+      <CategoryPicker
+        selectedCategories={selected}
+        onChange={setSelected}
+        savedLists
+        selectAll
+      />
 
+      {/* # CHANGED THIS - preserve the large mobile touch target while allowing desktop to size this as a compact action. */}
       <div className={`${sharedStyles.actionCluster} ${styles.applyRow}`}>
         <button
           type="button"
-          className={`${sharedStyles.actionButton} ${sharedStyles.buttonTouchSm} ${sharedStyles.buttonWrap} ${sharedStyles.btnBlue}`}
+          className={`${sharedStyles.actionButton} ${sharedStyles.buttonTouchSm} ${sharedStyles.buttonWrap} ${sharedStyles.btnBlue} ${styles.applyButton}`}
           disabled={disabled}
           onClick={() => onApply?.(selected)}
         >

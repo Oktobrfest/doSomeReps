@@ -210,18 +210,65 @@
   min-width: 0;
 }
 
+/* # CHANGED THIS - make the desktop category disclosure look like intentional category UI instead of a native details row. */
 .categoriesDisclosure {
   margin-bottom: var(--rep-quiz-gap);
-  padding: 0 var(--rep-quiz-gap);
-  background: var(--rep-color-surface-subtle);
-  border: 1px solid var(--rep-color-border);
+  overflow: hidden;
+  background: var(--rep-color-surface);
+  border: 1px solid var(--rep-cp-item-border-active);
   border-radius: var(--rep-radius-dialog);
+  box-shadow: var(--rep-shadow-card);
 }
 
 .categoriesSummary {
-  padding: 10px 0;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  list-style: none;
+  color: var(--rep-color-category-chip-text);
+  font-weight: 800;
+  background: var(--rep-color-category-chip-bg);
   cursor: pointer;
+  user-select: none;
+  transition: background-color var(--rep-transition-fast);
+}
+
+.categoriesSummary::marker {
+  content: "";
+}
+
+.categoriesSummary::-webkit-details-marker {
+  display: none;
+}
+
+/* # CHANGED THIS - replace the browser's mismatched disclosure marker with a small, aligned chevron. */
+.categoriesSummary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--rep-transition-fast);
+}
+
+.categoriesSummary:hover {
+  background: color-mix(in srgb, var(--rep-cp-item-bg) 28%, var(--rep-color-category-chip-bg));
+}
+
+.categoriesSummary:focus-visible {
+  outline: 2px solid var(--rep-cp-item-border-active);
+  outline-offset: -3px;
+}
+
+.categoriesDisclosure[open] > .categoriesSummary {
+  border-bottom: 1px solid var(--rep-cp-item-border);
+}
+
+.categoriesDisclosure[open] > .categoriesSummary::after {
+  transform: rotate(225deg);
 }
 
 /* Where the reader writes their answer before revealing the real one. */

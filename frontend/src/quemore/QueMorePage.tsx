@@ -198,11 +198,13 @@ export function QueMorePage() {
 
       <h1 className={styles.pageTitle}>Que More Questions</h1>
 
+      {/* # CHANGED THIS - Que More uses the unified full-grid mode with saved lists and select-all. */}
       <CategoryPicker
+        mode="grid"
         selectedCategories={categories}
         onChange={setCategories}
-        showSavedLists={true}
-        showSelectAll={true}
+        savedLists
+        selectAll
       />
 
       <section className={styles.searchPanel}>

@@ -17,17 +17,24 @@ interface QuizModalProps {
  */
 export function QuizModal({ title, onClose, children }: QuizModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
 
+  // # CHANGED THIS - keep the latest close callback without re-running the mount focus effect on every parent render.
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // # CHANGED THIS - focus the dialog only when it mounts; filter-input keystrokes must never bounce focus back to the panel.
   useEffect(() => {
     panelRef.current?.focus({ preventScroll: true });
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onCloseRef.current();
     };
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  }, []);
 
   return createPortal(
     <div className={styles.backdrop} onClick={onClose}>

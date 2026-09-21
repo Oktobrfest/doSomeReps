@@ -1,34 +1,28 @@
-/*
- * The category picker's frame. Flow and chrome only: the Apply control composes
- * the shared button base, so no button geometry or colour is written down here.
- */
-
+/* # CHANGED THIS - the picker owns its own chrome; this wrapper now only spaces the picker and its apply action. */
 .categoriesSection {
+  box-sizing: border-box;
   flex-shrink: 0;
   width: 100%;
-  padding-top: var(--rep-panel-padding);
-  border-top: 1px solid var(--rep-color-border);
-}
-
-.categoriesSection :global(.card) {
-  margin-bottom: 0;
-  background: transparent;
-  border: none;
-  color: inherit;
-}
-
-.categoriesSection :global(.card-header) {
-  padding-right: 0;
-  padding-left: 0;
-  background: transparent;
-  color: inherit;
-}
-
-.categoriesSection :global(.card-body) {
-  padding-right: 0;
-  padding-left: 0;
+  padding: var(--rep-panel-padding);
 }
 
 .applyRow {
   margin-top: var(--rep-panel-gap);
+}
+
+/* # CHANGED THIS - keep the full-width touch target in the mobile drawer, but make desktop Apply a normal compact action. */
+@media (min-width: 900px) {
+  .applyRow {
+    justify-content: flex-end;
+  }
+
+  .applyRow > .applyButton {
+    --rep-btn-height: var(--rep-btn-height-sm);
+    --rep-btn-padding-x: var(--rep-btn-padding-x-sm);
+    --rep-btn-font-size: var(--rep-btn-font-size-sm);
+    --rep-btn-min-width: 0;
+    --rep-btn-radius: var(--rep-radius-control);
+
+    flex: 0 0 auto;
+  }
 }

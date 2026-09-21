@@ -5,7 +5,7 @@ import { Toaster, toast } from "sonner";
 import { AskAiPanel } from "../ask_ai/AskAiPanel";
 import { useAskAi } from "../ask_ai/useAskAi";
 import type { AskAiContext } from "../ask_ai/types";
-import { CatPicker } from "../components/CatPicker";
+import { CategoryPicker } from "../components/CategoryPicker"; // # CHANGED THIS - use the unified picker without adding saved-list UI to the AI workflow.
 import { LoadingState } from "../components/LoadingState";
 import { QuestionDraftActions } from "../question/QuestionDraftActions";
 import { QuestionFields } from "../question/QuestionFields";
@@ -300,7 +300,8 @@ export function AiQuestionGenerator() {
         </p>
 
         <div className={styles.formGroup}>
-          <CatPicker selectedCategories={categories} onChange={setCategories} />
+          {/* # CHANGED THIS - preserve the existing AI category UX through the unified search-mode picker. */}
+          <CategoryPicker selectedCategories={categories} onChange={setCategories} />
         </div>
 
         <div className={styles.formGroup}>

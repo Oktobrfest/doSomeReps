@@ -1,389 +1,208 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Plus, Star, Trash2, X } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useCategories } from "../hooks/useCategories";
-import { byName, toSlug } from "../lib/categories";
+import { byName, createCategory } from "../lib/categories";
+import sharedStyles from "../styles/shared.module.css";
 import { CategoryChoices } from "./CategoryChoices";
-import { csrfHeaders, jsonHeaders } from "../lib/http";
+import { QuizModal } from "./QuizModal";
+import { SavedCategoryLists } from "./SavedCategoryLists";
 import styles from "./CategoryPicker.module.css";
 
-interface CategoryList {
-  id: number;
-  name: string;
-  is_default: boolean;
-  categories: string[];
-}
-
-interface CategoryPickerProps {
+// # CHANGED THIS - one picker owns the two real presentation modes instead of duplicating category behavior across CatPicker and CategoryPicker.
+export interface CategoryPickerProps {
   selectedCategories: string[];
   onChange: (categories: string[]) => void;
-  /** Saved-list dropdown plus create/rename/delete/set-default actions. */
-  showSavedLists?: boolean;
-  /** Select All / Deselect All toggle and the selection counter. */
-  showSelectAll?: boolean;
-  /** Optional heading. Omit when the parent already labels the section. */
-  title?: string;
-  /** Input name attribute. Required for server-rendered form submission. */
-  checkboxName?: string;
-  /** Maps a category name onto the value the server expects. */
-  checkboxValueFn?: (category: string) => string;
-  /** Submit button that posts apply-categories=Apply with the surrounding form. */
-  showApplyButton?: boolean;
-  /** Hides the picker without unmounting, so checked inputs still submit. */
+  mode?: "search" | "grid";
+  savedLists?: boolean;
+  selectAll?: boolean;
   collapsed?: boolean;
+  form?: { name: string; value?: (category: string) => string; apply?: boolean };
 }
-
-const sameSelection = (a: string[], b: string[]): boolean => {
-  if (a.length !== b.length) return false;
-  const left = new Set(a.map(toSlug));
-  return b.every((item) => left.has(toSlug(item)));
-};
 
 export function CategoryPicker({
   selectedCategories,
   onChange,
-  showSavedLists = true,
-  showSelectAll = true,
-  title,
-  checkboxName,
-  checkboxValueFn,
-  showApplyButton = false,
-  collapsed,
+  mode = "search",
+  savedLists = false,
+  selectAll = false,
+  collapsed = false,
+  form,
 }: CategoryPickerProps) {
   const allCategories = useCategories();
+  const categories = useMemo(() => [...allCategories].sort(byName), [allCategories]);
+  const [query, setQuery] = useState("");
+  const [suggesting, setSuggesting] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [creating, setCreating] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchId = useId();
 
-  const [savedLists, setSavedLists] = useState<CategoryList[]>([]);
-  const [selectedListId, setSelectedListId] = useState("");
-  const [isCreateMode, setIsCreateMode] = useState(false);
-  const [newListName, setNewListName] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const sorted = useMemo(() => [...allCategories].sort(byName), [allCategories]);
-
-  const selectedList = useMemo(
-    () => savedLists.find((list) => list.id.toString() === selectedListId),
-    [savedLists, selectedListId]
-  );
-
-  const hasUnsavedChanges = useMemo(
-    () =>
-      Boolean(selectedList) &&
-      !sameSelection(selectedList!.categories, selectedCategories),
-    [selectedList, selectedCategories]
-  );
-
-  // Saved-list category names come back from the API; map them onto the canonical
-  // names in the category table so selection comparisons stay consistent.
-  const resolveNames = useCallback(
-    (names: string[]): string[] =>
-      names.map(
-        (name) => sorted.find((cat) => toSlug(cat) === toSlug(name)) ?? name
-      ),
-    [sorted]
-  );
-
+  // # CHANGED THIS - search behavior stays local because no other component needs a second search state/controller abstraction.
   useEffect(() => {
-    if (!showSavedLists) return;
-    let cancelled = false;
-
-    fetch("/api/category-lists")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load saved lists.");
-        return res.json() as Promise<CategoryList[]>;
-      })
-      .then((data) => {
-        if (cancelled || !Array.isArray(data)) return;
-        setSavedLists(data);
-
-        const match = data.find((list) =>
-          sameSelection(list.categories, selectedCategories)
-        );
-        if (match) {
-          setSelectedListId(match.id.toString());
-          return;
-        }
-
-        const fallback = data.find((list) => list.is_default);
-        if (fallback && selectedCategories.length === 0) {
-          setSelectedListId(fallback.id.toString());
-          onChange(resolveNames(fallback.categories));
-        }
-      })
-      .catch((err: Error) => {
-        if (!cancelled) setError(err.message);
-      });
-
-    return () => {
-      cancelled = true;
+    if (mode !== "search") return;
+    const closeSuggestions = (event: MouseEvent) => {
+      if (!searchRef.current?.contains(event.target as Node)) setSuggesting(false);
     };
-    // Runs once: this is initial hydration, not a subscription to the selection.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSavedLists]);
+    document.addEventListener("mousedown", closeSuggestions);
+    return () => document.removeEventListener("mousedown", closeSuggestions);
+  }, [mode]);
 
   const toggle = (category: string) =>
-    onChange(
-      selectedCategories.includes(category)
-        ? selectedCategories.filter((item) => item !== category)
-        : [...selectedCategories, category]
-    );
+    onChange(selectedCategories.includes(category)
+      ? selectedCategories.filter((item) => item !== category)
+      : [...selectedCategories, category]);
 
-  const toggleAll = () =>
-    onChange(selectedCategories.length === sorted.length ? [] : [...sorted]);
+  const allSelected = categories.length > 0 && categories.every((category) => selectedCategories.includes(category));
+  const toggleAll = () => onChange(allSelected ? [] : [...categories]);
+  const trimmed = query.trim();
+  const suggestions = useMemo(
+    () => categories.filter((category) =>
+      !selectedCategories.includes(category) && category.toLowerCase().includes(trimmed.toLowerCase())),
+    [categories, selectedCategories, trimmed]
+  );
+  const filtered = useMemo(() => {
+    const needle = filter.trim().toLowerCase();
+    return needle ? categories.filter((category) => category.toLowerCase().includes(needle)) : categories;
+  }, [categories, filter]);
+  const creatable = trimmed.length > 0 && !categories.some((category) => category.toLowerCase() === trimmed.toLowerCase());
 
-  const handleListChange = (listId: string) => {
-    setSelectedListId(listId);
-    const list = savedLists.find((item) => item.id.toString() === listId);
-    onChange(list ? resolveNames(list.categories) : []);
+  const select = (category: string) => {
+    if (!selectedCategories.includes(category)) onChange([...selectedCategories, category]);
+    setQuery("");
+    setSuggesting(false);
   };
 
-  const handleCreate = () => {
-    const name = newListName.trim();
-    if (!name) return;
-
-    if (savedLists.some((list) => list.name.trim().toLowerCase() === name.toLowerCase())) {
-      setError("A list with that name already exists.");
-      return;
+  const create = async () => {
+    if (!creatable || creating) return;
+    setCreating(true);
+    try {
+      const category = await createCategory(trimmed);
+      select(category);
+      toast.success(`Category "${category}" created.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create that category.");
+    } finally {
+      setCreating(false);
     }
-
-    setError(null);
-    setIsSaving(true);
-
-    fetch("/api/category-lists", {
-      method: "POST",
-      headers: jsonHeaders(),
-      body: JSON.stringify({
-        name,
-        categories: selectedCategories,
-        is_default: savedLists.length === 0,
-      }),
-    })
-      .then((res) => res.json())
-      .then((created: CategoryList & { error?: string }) => {
-        if (created.error) throw new Error(created.error);
-        setSavedLists((prev) =>
-          created.is_default
-            ? [...prev.map((l) => ({ ...l, is_default: false })), created]
-            : [...prev, created]
-        );
-        setSelectedListId(created.id.toString());
-        setNewListName("");
-        setIsCreateMode(false);
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setIsSaving(false));
   };
 
-  const handleSaveChanges = () => {
-    if (!selectedListId) return;
-    setError(null);
-    setIsSaving(true);
+  // # CHANGED THIS - collapsed server forms stay mounted so checked category inputs continue to submit.
+  if (collapsed) {
+    return (
+      <div hidden>
+        <CategoryChoices
+          categories={categories}
+          selected={selectedCategories}
+          onToggle={toggle}
+          checkboxName={form?.name}
+          checkboxValueFn={form?.value}
+        />
+      </div>
+    );
+  }
 
-    fetch(`/api/category-lists/${selectedListId}`, {
-      method: "PUT",
-      headers: jsonHeaders(),
-      body: JSON.stringify({ categories: selectedCategories }),
-    })
-      .then((res) => res.json())
-      .then((updated: CategoryList & { error?: string }) => {
-        if (updated.error) throw new Error(updated.error);
-        setSavedLists((prev) =>
-          prev.map((list) => (list.id === updated.id ? updated : list))
-        );
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setIsSaving(false));
-  };
+  const listControls = savedLists ? (
+    <SavedCategoryLists categories={categories} selected={selectedCategories} onChange={onChange} />
+  ) : null;
 
-  const handleDelete = () => {
-    if (!selectedListId) return;
-    setError(null);
+  // # CHANGED THIS - grid consumers get only the controls they actually need; search/create/modal code is not duplicated here.
+  if (mode === "grid") {
+    return (
+      <div className={styles.gridPicker}>
+        {listControls}
+        <CategoryChoices
+          categories={categories}
+          selected={selectedCategories}
+          onToggle={toggle}
+          checkboxName={form?.name}
+          checkboxValueFn={form?.value}
+        />
+        {(selectAll || form?.apply) && (
+          <footer className={styles.footer}>
+            <div className={styles.footerActions}>
+              {selectAll && <button type="button" className={styles.btn} onClick={toggleAll}>{allSelected ? "Deselect all" : "Select all"}</button>}
+              {form?.apply && <button type="submit" name="apply-categories" value="Apply" className={styles.btnPrimary}>Apply</button>}
+            </div>
+            <span className={styles.count}>{selectedCategories.length} of {categories.length} selected</span>
+          </footer>
+        )}
+      </div>
+    );
+  }
 
-    fetch(`/api/category-lists/${selectedListId}`, {
-      method: "DELETE",
-      headers: csrfHeaders(),
-    })
-      .then((res) => res.json())
-      .then((data: { success?: boolean; error?: string }) => {
-        if (!data.success) throw new Error(data.error ?? "Failed to delete list.");
-        setSavedLists((prev) =>
-          prev.filter((list) => list.id.toString() !== selectedListId)
-        );
-        setSelectedListId("");
-      })
-      .catch((err: Error) => setError(err.message));
-  };
-
-  const handleSetDefault = () => {
-    if (!selectedListId) return;
-    setError(null);
-
-    fetch(`/api/category-lists/${selectedListId}/set-default`, {
-      method: "POST",
-      headers: csrfHeaders(),
-    })
-      .then((res) => res.json())
-      .then((data: { success?: boolean; error?: string }) => {
-        if (!data.success) throw new Error(data.error ?? "Failed to set default.");
-        setSavedLists((prev) =>
-          prev.map((list) => ({
-            ...list,
-            is_default: list.id.toString() === selectedListId,
-          }))
-        );
-      })
-      .catch((err: Error) => setError(err.message));
-  };
-
-  const allSelected = sorted.length > 0 && selectedCategories.length === sorted.length;
-
+  // # CHANGED THIS - search mode preserves the existing /quiz and question-editing UI while sharing saved lists with grid mode.
   return (
-    <div hidden={collapsed} className={styles.picker}>
-      {title && (
-        <header className={styles.header}>
-          <h3 className={styles.title}>{title}</h3>
-        </header>
-      )}
+    <div className={styles.picker} ref={searchRef}>
+      <header className={styles.header}>
+        <span>Category Selection</span>
+        <button
+          type="button"
+          className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
+          onClick={() => setShowAll(true)}
+        >
+          See All
+        </button>
+      </header>
 
-      {error && <p className={styles.error}>{error}</p>}
-
-      {showSavedLists && (
-        <div className={styles.toolbar}>
-          {isCreateMode ? (
-            <>
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="Save selection as..."
-                value={newListName}
-                autoFocus
-                onChange={(event) => setNewListName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") handleCreate();
-                  if (event.key === "Escape") setIsCreateMode(false);
-                }}
-              />
-              <button
-                type="button"
-                className={styles.btn}
-                onClick={handleCreate}
-                disabled={isSaving || !newListName.trim() || selectedCategories.length === 0}
-              >
-                <Check className={styles.btnIcon} />
-                <span>Save list</span>
-              </button>
-              <button
-                type="button"
-                className={styles.btn}
-                onClick={() => {
-                  setIsCreateMode(false);
-                  setNewListName("");
-                }}
-              >
-                <X className={styles.btnIcon} />
-                <span>Cancel</span>
-              </button>
-            </>
-          ) : (
-            <>
-              <select
-                className={styles.select}
-                value={selectedListId}
-                onChange={(event) => handleListChange(event.target.value)}
-                aria-label="Saved category list"
-              >
-                <option value="">— Saved lists —</option>
-                {savedLists.map((list) => (
-                  <option key={list.id} value={list.id.toString()}>
-                    {list.name}
-                    {list.is_default ? " ★" : ""}
-                  </option>
-                ))}
-              </select>
-
-              {selectedListId && hasUnsavedChanges && (
-                <button
-                  type="button"
-                  className={styles.btn}
-                  onClick={handleSaveChanges}
-                  disabled={isSaving}
-                  title="Save the current selection to this list"
-                >
-                  <Check className={styles.btnIcon} />
-                  <span>Save changes</span>
-                </button>
-              )}
-
-              {selectedListId && (
-                <>
-                  <button
-                    type="button"
-                    className={styles.btn}
-                    onClick={handleSetDefault}
-                    title="Set as default list"
-                  >
-                    <Star className={styles.btnIcon} />
-                    <span>Default</span>
+      <div className={styles.body}>
+        {listControls}
+        <label className={styles.label} htmlFor={searchId}>Search Categories</label>
+        <div className={styles.search}>
+          <input
+            id={searchId}
+            type="text"
+            className={styles.input}
+            placeholder="Type a category name to search or add..."
+            value={query}
+            onChange={(event) => { setQuery(event.target.value); setSuggesting(true); }}
+            onFocus={() => setSuggesting(true)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              if (suggestions.length > 0) select(suggestions[0]);
+              else void create();
+            }}
+          />
+          {suggesting && (suggestions.length > 0 || creatable) && (
+            <ul className={styles.suggestions}>
+              {suggestions.map((category) => (
+                <li key={category}>
+                  <button type="button" className={styles.suggestion} onClick={() => select(category)}>{category}</button>
+                </li>
+              ))}
+              {creatable && (
+                <li>
+                  <button type="button" className={`${styles.suggestion} ${styles.create}`} onClick={() => void create()} disabled={creating}>
+                    <Plus size={16} />
+                    <span>{creating ? "Adding..." : `Create "${trimmed}"`}</span>
                   </button>
-                  <button
-                    type="button"
-                    className={styles.btnDanger}
-                    onClick={handleDelete}
-                    title="Delete this list"
-                  >
-                    <Trash2 className={styles.btnIcon} />
-                    <span>Delete</span>
-                  </button>
-                </>
+                </li>
               )}
-
-              <span className={styles.divider} />
-
-              <button
-                type="button"
-                className={styles.btn}
-                onClick={() => setIsCreateMode(true)}
-              >
-                <Plus className={styles.btnIcon} />
-                <span>New list</span>
-              </button>
-            </>
+            </ul>
           )}
         </div>
-      )}
+        <span className={styles.label}>Selected Categories</span>
+        <CategoryChoices
+          categories={selectedCategories}
+          selected={selectedCategories}
+          onToggle={toggle}
+          emptyMessage="Nothing selected yet. Search above to add a category."
+        />
+      </div>
 
-      <CategoryChoices
-        categories={sorted}
-        selected={selectedCategories}
-        onToggle={toggle}
-        checkboxName={checkboxName}
-        checkboxValueFn={checkboxValueFn}
-      />
-
-      {(showSelectAll || showApplyButton) && (
-        <div className={styles.footer}>
-          {showSelectAll ? (
-            <button type="button" className={styles.btn} onClick={toggleAll}>
-              {allSelected ? "Deselect all" : "Select all"}
-            </button>
-          ) : (
-            <span className={styles.spacer} />
-          )}
-
-          {showApplyButton && (
-            <button
-              type="submit"
-              name="apply-categories"
-              value="Apply"
-              className={styles.btn}
-            >
-              Apply
-            </button>
-          )}
-
-          <span className={styles.count}>
-            {selectedCategories.length} of {sorted.length} selected
-          </span>
-        </div>
+      {showAll && (
+        <QuizModal title="All Categories" onClose={() => setShowAll(false)}>
+          <div className={styles.modalBody}>
+            <input type="text" className={styles.input} placeholder="Filter categories..." value={filter} onChange={(event) => setFilter(event.target.value)} />
+            <CategoryChoices categories={filtered} selected={selectedCategories} onToggle={toggle} emptyMessage="No matching categories found." />
+            <footer className={styles.modalFooter}>
+              {selectAll && <button type="button" className={styles.btn} onClick={toggleAll}>{allSelected ? "Deselect all" : "Select all"}</button>}
+              <span className={styles.count}>{selectedCategories.length} of {categories.length} selected</span>
+            </footer>
+          </div>
+        </QuizModal>
       )}
     </div>
   );
