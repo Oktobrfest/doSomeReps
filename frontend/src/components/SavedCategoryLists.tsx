@@ -141,7 +141,7 @@ export function SavedCategoryLists({
   });
 
   // # CHANGED THIS - every action operates on the caller's live selection; there is no duplicate selection state to drift out of sync.
-  // # CHANGED THIS - saved-list actions now use semantic colours: save=green, default=amber, delete=red, create=blue, cancel=cyan.
+  // # CHANGED THIS - saved-list actions stay visually subordinate: orange for create, soft semantic treatments for save/default/delete, neutral cancel.
   return (
     <>
       {error && <p className={styles.error}>{error}</p>}

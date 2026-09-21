@@ -1,86 +1,148 @@
+/* # CHANGED THIS - the category grid is a neutral canvas; individual selection state carries the orange identity. */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 6px;
-
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 8px;
   margin: 0;
-  padding: 6px;
-  list-style: none;
-
-  max-height: 232px;
+  padding: 8px;
+  max-height: 252px;
   overflow-y: auto;
   overscroll-behavior: contain;
-
-  background-color: var(--rep-color-surface-subtle);
+  list-style: none;
+  background: var(--rep-color-surface-subtle);
   border: 1px solid var(--rep-color-border);
   border-radius: var(--rep-radius-control);
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--rep-cp-item-bg-active) 55%, var(--rep-color-border-strong)) transparent;
 }
 
+/* # CHANGED THIS - keep the scrollbar quiet and category-coloured instead of raw browser chrome. */
+.grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.grid::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--rep-cp-item-bg-active) 42%, var(--rep-color-border-strong));
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+/* # CHANGED THIS - unselected categories are neutral, so checked categories are obvious at a glance. */
 .item {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 9px;
   min-width: 0;
-  padding: 5px 8px;
-
-  background-color: var(--rep-cp-item-bg);
-  border: 1px solid var(--rep-cp-item-border);
-  border-radius: var(--rep-radius-control);
-
+  min-height: 38px;
+  padding: 6px 9px;
+  background: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color var(--rep-transition-fast),
-    border-color var(--rep-transition-fast);
+  transition: background-color var(--rep-transition-fast), border-color var(--rep-transition-fast), box-shadow var(--rep-transition-fast), transform var(--rep-transition-fast);
 }
 
 .item:hover {
+  background: color-mix(in srgb, var(--rep-cp-item-bg) 9%, var(--rep-color-surface));
+  border-color: color-mix(in srgb, var(--rep-cp-item-border-active) 55%, var(--rep-color-border));
+}
+
+.item:focus-within {
   border-color: var(--rep-cp-item-border-active);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rep-cp-item-bg-active) 15%, transparent);
 }
 
 .itemChecked {
-  background-color: var(--rep-cp-item-bg-active);
+  background: color-mix(in srgb, var(--rep-cp-item-bg) 18%, var(--rep-color-surface));
   border-color: var(--rep-cp-item-border-active);
 }
 
-.checkbox {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-  cursor: pointer;
-  accent-color: var(--rep-cp-item-border-active);
+.itemChecked:hover {
+  background: color-mix(in srgb, var(--rep-cp-item-bg) 24%, var(--rep-color-surface));
 }
 
+/* # CHANGED THIS - use a purpose-built compact check control rather than the browser's mismatched checkbox chrome. */
+.checkbox {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin: 0;
+  background: var(--rep-color-surface);
+  border: 1.5px solid var(--rep-color-border-strong);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color var(--rep-transition-fast), border-color var(--rep-transition-fast), box-shadow var(--rep-transition-fast);
+}
+
+.checkbox::before {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border-bottom: 2px solid var(--rep-cp-item-text-active);
+  border-left: 2px solid var(--rep-cp-item-text-active);
+  transform: translateY(-1px) rotate(-45deg) scale(0);
+  transform-origin: center;
+  transition: transform var(--rep-transition-fast);
+}
+
+.checkbox:checked {
+  background: var(--rep-cp-item-bg-active);
+  border-color: var(--rep-cp-item-border-active);
+}
+
+.checkbox:checked::before {
+  transform: translateY(-1px) rotate(-45deg) scale(1);
+}
+
+.checkbox:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rep-cp-item-bg-active) 20%, transparent);
+}
+
+/* # CHANGED THIS - labels use normal hierarchy; bold is reserved for selected state. */
 .itemLabel {
   flex: 1;
   min-width: 0;
   margin: 0;
-
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--rep-cp-item-text);
-
+  color: var(--rep-color-text-primary);
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-
   cursor: pointer;
   user-select: none;
-  transition: color var(--rep-transition-fast);
 }
 
 .itemLabelChecked {
+  color: var(--rep-color-category-chip-text);
   font-weight: 700;
-  color: var(--rep-cp-item-text-active);
 }
 
 .empty {
   margin: 0;
   padding: 20px 12px;
-
-  text-align: center;
-  font-size: 0.85rem;
   color: var(--rep-color-text-muted);
-
-  background-color: var(--rep-color-surface-subtle);
-  border: 1px solid var(--rep-color-border);
+  font-size: 0.85rem;
+  text-align: center;
+  background: var(--rep-color-surface-subtle);
+  border: 1px dashed var(--rep-color-border-strong);
   border-radius: var(--rep-radius-control);
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 7px;
+    padding: 7px;
+  }
 }

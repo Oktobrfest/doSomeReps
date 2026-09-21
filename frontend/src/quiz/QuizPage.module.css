@@ -210,12 +210,13 @@
   min-width: 0;
 }
 
-/* # CHANGED THIS - make the desktop category disclosure look like intentional category UI instead of a native details row. */
+/* # CHANGED THIS - the desktop disclosure is a lightweight neutral section with one orange identity accent, not another orange card. */
 .categoriesDisclosure {
   margin-bottom: var(--rep-quiz-gap);
   overflow: hidden;
   background: var(--rep-color-surface);
-  border: 1px solid var(--rep-cp-item-border-active);
+  border: 1px solid var(--rep-color-border);
+  border-left: 3px solid var(--rep-cp-item-border-active);
   border-radius: var(--rep-radius-dialog);
   box-shadow: var(--rep-shadow-card);
 }
@@ -224,14 +225,15 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 14px;
+  padding: 11px 13px;
   list-style: none;
-  color: var(--rep-color-category-chip-text);
-  font-weight: 800;
-  background: var(--rep-color-category-chip-bg);
+  color: var(--rep-color-text-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: var(--rep-color-surface);
   cursor: pointer;
   user-select: none;
-  transition: background-color var(--rep-transition-fast);
+  transition: background-color var(--rep-transition-fast), color var(--rep-transition-fast);
 }
 
 .categoriesSummary::marker {
@@ -242,20 +244,21 @@
   display: none;
 }
 
-/* # CHANGED THIS - replace the browser's mismatched disclosure marker with a small, aligned chevron. */
+/* # CHANGED THIS - the chevron is aligned, quiet, and rotates predictably with disclosure state. */
 .categoriesSummary::after {
   content: "";
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   margin-left: auto;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(45deg);
+  border-right: 2px solid var(--rep-color-category-chip-text);
+  border-bottom: 2px solid var(--rep-color-category-chip-text);
+  transform: translateY(-2px) rotate(45deg);
   transition: transform var(--rep-transition-fast);
 }
 
 .categoriesSummary:hover {
-  background: color-mix(in srgb, var(--rep-cp-item-bg) 28%, var(--rep-color-category-chip-bg));
+  color: var(--rep-color-category-chip-text);
+  background: color-mix(in srgb, var(--rep-cp-item-bg) 8%, var(--rep-color-surface));
 }
 
 .categoriesSummary:focus-visible {
@@ -264,11 +267,13 @@
 }
 
 .categoriesDisclosure[open] > .categoriesSummary {
-  border-bottom: 1px solid var(--rep-cp-item-border);
+  color: var(--rep-color-category-chip-text);
+  background: color-mix(in srgb, var(--rep-cp-item-bg) 7%, var(--rep-color-surface));
+  border-bottom: 1px solid var(--rep-color-border);
 }
 
 .categoriesDisclosure[open] > .categoriesSummary::after {
-  transform: rotate(225deg);
+  transform: translateY(2px) rotate(225deg);
 }
 
 /* Where the reader writes their answer before revealing the real one. */

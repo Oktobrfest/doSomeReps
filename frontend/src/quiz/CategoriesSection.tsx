@@ -39,11 +39,11 @@ export function CategoriesSection({
         selectAll
       />
 
-      {/* # CHANGED THIS - preserve the large mobile touch target while allowing desktop to size this as a compact action. */}
+      {/* # CHANGED THIS - Apply is category-orange, full-width only for mobile touch use, and compact on desktop. */}
       <div className={`${sharedStyles.actionCluster} ${styles.applyRow}`}>
         <button
           type="button"
-          className={`${sharedStyles.actionButton} ${sharedStyles.buttonTouchSm} ${sharedStyles.buttonWrap} ${sharedStyles.btnBlue} ${styles.applyButton}`}
+          className={`${sharedStyles.actionButton} ${sharedStyles.buttonTouchSm} ${sharedStyles.buttonWrap} ${styles.applyButton}`}
           disabled={disabled}
           onClick={() => onApply?.(selected)}
         >

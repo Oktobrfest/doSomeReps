@@ -1,80 +1,90 @@
-/* # CHANGED THIS - the unified picker now carries the category system's orange identity instead of slate-on-gray chrome. */
+/* # CHANGED THIS - category chrome is neutral; orange is reserved for identity, focus, and selected state. */
 .picker {
-  overflow: hidden;
+  overflow: visible;
   background: var(--rep-color-surface);
-  border: 1px solid var(--rep-cp-item-border-active);
+  border: 1px solid var(--rep-color-border);
+  border-top: 3px solid var(--rep-cp-item-border-active);
   border-radius: var(--rep-radius-dialog);
   box-shadow: var(--rep-shadow-card);
 }
 
+/* # CHANGED THIS - grid consumers use the same restrained spacing without a second visual frame. */
 .gridPicker {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 9px 12px;
-  color: var(--rep-cp-item-text-active);
-  font-weight: 800;
-  background: var(--rep-cp-item-bg-active);
-  border-bottom: 1px solid var(--rep-cp-item-border-active);
 }
 
-/* # CHANGED THIS - See All is a crisp light action on the orange header, not a gray button on a gray surface. */
-.header > button {
-  color: var(--rep-color-category-chip-text);
-  background: var(--rep-color-surface);
-}
-
-.header > button:hover:not(:disabled) {
-  background: var(--rep-color-category-chip-bg);
-}
-
+/* # CHANGED THIS - remove the redundant full-width title bar and let search/browse form the useful top row. */
 .body,
 .modalBody {
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  padding: 12px;
+  gap: 12px;
+  padding: 14px;
   background: var(--rep-color-surface);
 }
 
-.label {
-  color: var(--rep-color-category-chip-text);
-  font-size: 0.85rem;
-  font-weight: 800;
+.modalBody {
+  padding: 2px 0 0;
 }
 
+/* # CHANGED THIS - labels are hierarchy cues, not competing headings. */
+.labelRow,
+.selectedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.label {
+  color: var(--rep-color-text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.selectedCount {
+  color: var(--rep-color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* # CHANGED THIS - inputs look active and conventional, with orange appearing only on focus. */
 .input,
 .toolbarInput,
 .select {
+  box-sizing: border-box;
   font-family: inherit;
   color: var(--rep-color-text-primary);
   background: var(--rep-color-surface);
   border: 1px solid var(--rep-color-border-strong);
   border-radius: var(--rep-radius-control);
+  transition: border-color var(--rep-transition-fast), box-shadow var(--rep-transition-fast);
 }
 
 .input {
-  box-sizing: border-box;
   width: 100%;
-  padding: 8px 12px;
-  font-size: 0.95rem;
+  min-height: 40px;
+  padding: 8px 11px;
+  font-size: 0.94rem;
 }
 
 .toolbarInput,
 .select {
   height: 34px;
   min-width: 0;
-  flex: 1 1 190px;
-  max-width: 320px;
-  padding: 0 9px;
+  flex: 1 1 210px;
+  max-width: 360px;
+  padding: 0 10px;
   font-size: 0.86rem;
+}
+
+.input:hover,
+.toolbarInput:hover,
+.select:hover {
+  border-color: color-mix(in srgb, var(--rep-cp-item-border-active) 55%, var(--rep-color-border-strong));
 }
 
 .input:focus,
@@ -82,27 +92,28 @@
 .select:focus {
   outline: none;
   border-color: var(--rep-cp-item-border-active);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rep-cp-item-bg-active) 20%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rep-cp-item-bg-active) 18%, transparent);
 }
 
 .search {
   position: relative;
 }
 
+/* # CHANGED THIS - autocomplete is a clean floating menu, not another orange block. */
 .suggestions {
   position: absolute;
-  top: calc(100% + 2px);
+  top: calc(100% + 4px);
   right: 0;
   left: 0;
-  z-index: 10;
-  max-height: 200px;
+  z-index: 20;
+  max-height: 220px;
   margin: 0;
-  padding: 0;
+  padding: 4px;
   overflow-y: auto;
   overscroll-behavior: contain;
   list-style: none;
   background: var(--rep-color-surface);
-  border: 1px solid var(--rep-cp-item-border);
+  border: 1px solid var(--rep-color-border);
   border-radius: var(--rep-radius-control);
   box-shadow: var(--rep-shadow-card-raised);
 }
@@ -112,62 +123,118 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 8px 12px;
+  min-height: 34px;
+  padding: 7px 9px;
   color: var(--rep-color-text-primary);
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   text-align: left;
-  background: none;
-  border: none;
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--rep-radius-control) - 2px);
   cursor: pointer;
 }
 
 .suggestion:hover:not(:disabled),
 .suggestion:focus-visible {
-  background: var(--rep-color-category-chip-bg);
+  outline: none;
+  background: color-mix(in srgb, var(--rep-cp-item-bg) 12%, var(--rep-color-surface));
 }
 
 .create {
   color: var(--rep-color-category-chip-text);
-  font-weight: 800;
+  font-weight: 700;
 }
 
-/* # CHANGED THIS - saved-list controls sit on a warm category surface and use semantic action colours. */
+/* # CHANGED THIS - saved lists read as a utility row, not a nested card. */
 .toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 7px;
   padding: 8px;
-  background: var(--rep-color-category-chip-bg);
-  border: 1px solid var(--rep-cp-item-border);
+  background: var(--rep-color-surface-subtle);
+  border: 1px solid var(--rep-color-border);
   border-radius: var(--rep-radius-control);
 }
 
-.btn {
-  composes: actionButton buttonSm btnBlue from '../styles/shared.module.css';
+/* # CHANGED THIS - category actions use one coherent family: orange primary/outline plus restrained semantic exceptions. */
+.btn,
+.btnPrimary,
+.btnSecondary,
+.btnSuccess,
+.btnDefault,
+.btnCancel,
+.btnDanger {
+  composes: actionButton buttonSm from '../styles/shared.module.css';
+  border: 1px solid transparent;
+  box-shadow: none;
 }
 
+.btn,
 .btnPrimary {
-  composes: actionButton buttonSm btnBlue from '../styles/shared.module.css';
+  color: var(--rep-cp-item-text-active);
+  background: var(--rep-cp-item-bg-active);
+  border-color: var(--rep-cp-item-border-active);
+}
+
+.btn:hover:not(:disabled),
+.btnPrimary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--rep-cp-item-bg-active) 84%, #000000);
+}
+
+.btnSecondary {
+  color: var(--rep-color-category-chip-text);
+  background: var(--rep-color-surface);
+  border-color: color-mix(in srgb, var(--rep-cp-item-border-active) 62%, var(--rep-color-border));
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--rep-cp-item-bg) 10%, var(--rep-color-surface));
+  border-color: var(--rep-cp-item-border-active);
 }
 
 .btnSuccess {
-  composes: actionButton buttonSm btnGreen from '../styles/shared.module.css';
+  color: var(--rep-intent-green-fg);
+  background: color-mix(in srgb, var(--rep-intent-green-bg) 18%, var(--rep-color-surface));
+  border-color: color-mix(in srgb, var(--rep-intent-green-bg) 58%, var(--rep-color-border));
+}
+
+.btnSuccess:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--rep-intent-green-bg) 27%, var(--rep-color-surface));
 }
 
 .btnDefault {
-  composes: actionButton buttonSm btnAmber from '../styles/shared.module.css';
+  color: var(--rep-intent-amber-fg);
+  background: color-mix(in srgb, var(--rep-intent-amber-bg) 18%, var(--rep-color-surface));
+  border-color: color-mix(in srgb, var(--rep-intent-amber-bg) 58%, var(--rep-color-border));
+}
+
+.btnDefault:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--rep-intent-amber-bg) 28%, var(--rep-color-surface));
 }
 
 .btnCancel {
-  composes: actionButton buttonSm btnCyan from '../styles/shared.module.css';
+  color: var(--rep-color-text-primary);
+  background: var(--rep-color-surface);
+  border-color: var(--rep-color-border-strong);
+}
+
+.btnCancel:hover:not(:disabled) {
+  background: var(--rep-color-surface-secondary);
 }
 
 .btnDanger {
-  composes: actionButton buttonSm btnRed from '../styles/shared.module.css';
+  color: var(--rep-color-error-text-strong);
+  background: color-mix(in srgb, var(--rep-intent-red-bg) 14%, var(--rep-color-surface));
+  border-color: color-mix(in srgb, var(--rep-intent-red-bg) 48%, var(--rep-color-border));
 }
 
+.btnDanger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--rep-intent-red-bg) 23%, var(--rep-color-surface));
+}
+
+/* # CHANGED THIS - footer actions stay on the modal's own white surface and no longer inherit site footer chrome. */
 .footer,
 .modalFooter {
   display: flex;
@@ -178,12 +245,15 @@
 }
 
 .modalFooter {
-  padding-top: 2px;
+  margin-top: 2px;
+  padding: 12px 0 2px;
+  border-top: 1px solid var(--rep-color-border);
 }
 
 .footerActions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -191,6 +261,7 @@
   margin-left: auto;
   color: var(--rep-color-text-muted);
   font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .error {
@@ -202,4 +273,20 @@
   background: var(--rep-color-error-surface-subtle);
   border: 1px solid var(--rep-color-error-border-subtle);
   border-radius: var(--rep-radius-control);
+}
+
+/* # CHANGED THIS - small screens stack management controls naturally without creating giant desktop controls. */
+@media (max-width: 640px) {
+  .body {
+    padding: 12px;
+  }
+
+  .toolbarInput,
+  .select {
+    max-width: none;
+  }
+
+  .toolbar > .select {
+    flex-basis: 100%;
+  }
 }

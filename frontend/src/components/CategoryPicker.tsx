@@ -3,7 +3,6 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useCategories } from "../hooks/useCategories";
 import { byName, createCategory } from "../lib/categories";
-import sharedStyles from "../styles/shared.module.css";
 import { CategoryChoices } from "./CategoryChoices";
 import { QuizModal } from "./QuizModal";
 import { SavedCategoryLists } from "./SavedCategoryLists";
@@ -120,35 +119,34 @@ export function CategoryPicker({
           checkboxValueFn={form?.value}
         />
         {(selectAll || form?.apply) && (
-          <footer className={styles.footer}>
+          <div className={styles.footer}>
+            {/* # CHANGED THIS - use a local action row instead of the site-wide footer element styling. */}
             <div className={styles.footerActions}>
-              {selectAll && <button type="button" className={styles.btn} onClick={toggleAll}>{allSelected ? "Deselect all" : "Select all"}</button>}
+              {selectAll && <button type="button" className={styles.btnSecondary} onClick={toggleAll}>{allSelected ? "Deselect all" : "Select all"}</button>}
               {form?.apply && <button type="submit" name="apply-categories" value="Apply" className={styles.btnPrimary}>Apply</button>}
             </div>
             <span className={styles.count}>{selectedCategories.length} of {categories.length} selected</span>
-          </footer>
+          </div>
         )}
       </div>
     );
   }
 
-  // # CHANGED THIS - search mode preserves the existing /quiz and question-editing UI while sharing saved lists with grid mode.
+  // # CHANGED THIS - search mode uses one calm surface; Browse all lives beside the search label instead of in a redundant title bar.
   return (
     <div className={styles.picker} ref={searchRef}>
-      <header className={styles.header}>
-        <span>Category Selection</span>
-        <button
-          type="button"
-          className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
-          onClick={() => setShowAll(true)}
-        >
-          See All
-        </button>
-      </header>
-
       <div className={styles.body}>
         {listControls}
-        <label className={styles.label} htmlFor={searchId}>Search Categories</label>
+        <div className={styles.labelRow}>
+          <label className={styles.label} htmlFor={searchId}>Search categories</label>
+          <button
+            type="button"
+            className={styles.btnSecondary}
+            onClick={() => setShowAll(true)}
+          >
+            Browse all
+          </button>
+        </div>
         <div className={styles.search}>
           <input
             id={searchId}
@@ -183,7 +181,11 @@ export function CategoryPicker({
             </ul>
           )}
         </div>
-        <span className={styles.label}>Selected Categories</span>
+        {/* # CHANGED THIS - show selection count beside the section label instead of hiding it in a heavy footer. */}
+        <div className={styles.selectedRow}>
+          <span className={styles.label}>Selected</span>
+          <span className={styles.selectedCount}>{selectedCategories.length} selected</span>
+        </div>
         <CategoryChoices
           categories={selectedCategories}
           selected={selectedCategories}
@@ -197,10 +199,11 @@ export function CategoryPicker({
           <div className={styles.modalBody}>
             <input type="text" className={styles.input} placeholder="Filter categories..." value={filter} onChange={(event) => setFilter(event.target.value)} />
             <CategoryChoices categories={filtered} selected={selectedCategories} onToggle={toggle} emptyMessage="No matching categories found." />
-            <footer className={styles.modalFooter}>
-              {selectAll && <button type="button" className={styles.btn} onClick={toggleAll}>{allSelected ? "Deselect all" : "Select all"}</button>}
+            {/* # CHANGED THIS - keep modal actions on the modal surface; no global footer chrome or unrelated blue action. */}
+            <div className={styles.modalFooter}>
+              {selectAll && <button type="button" className={styles.btnSecondary} onClick={toggleAll}>{allSelected ? "Deselect all" : "Select all"}</button>}
               <span className={styles.count}>{selectedCategories.length} of {categories.length} selected</span>
-            </footer>
+            </div>
           </div>
         </QuizModal>
       )}

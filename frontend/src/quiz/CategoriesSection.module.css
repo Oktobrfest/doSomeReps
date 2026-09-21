@@ -1,4 +1,4 @@
-/* # CHANGED THIS - the picker owns its own chrome; this wrapper now only spaces the picker and its apply action. */
+/* # CHANGED THIS - this wrapper only spaces category UI; the picker owns its own surface. */
 .categoriesSection {
   box-sizing: border-box;
   flex-shrink: 0;
@@ -10,7 +10,24 @@
   margin-top: var(--rep-panel-gap);
 }
 
-/* # CHANGED THIS - keep the full-width touch target in the mobile drawer, but make desktop Apply a normal compact action. */
+/* # CHANGED THIS - Apply belongs to the orange category system instead of introducing an unrelated blue primary action. */
+.applyButton {
+  color: var(--rep-cp-item-text-active);
+  background: var(--rep-cp-item-bg-active);
+  border: 1px solid var(--rep-cp-item-border-active);
+}
+
+.applyButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--rep-cp-item-bg-active) 84%, #000000);
+}
+
+/* # CHANGED THIS - mobile keeps one reliable thumb target; desktop gets a compact filter action. */
+@media (max-width: 899px) {
+  .applyRow > .applyButton {
+    width: 100%;
+  }
+}
+
 @media (min-width: 900px) {
   .applyRow {
     justify-content: flex-end;
@@ -24,5 +41,6 @@
     --rep-btn-radius: var(--rep-radius-control);
 
     flex: 0 0 auto;
+    width: auto;
   }
 }
