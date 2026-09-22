@@ -131,7 +131,6 @@ export function QuestionSearchPanel({
           </div>
 
           <div className={styles.filterActions}>
-            {/* # CHANGED THIS - keep only page-specific filter clearing here; category-wide actions live with the category picker. */}
             <button
               type="button"
               className={styles.secondaryBtn}

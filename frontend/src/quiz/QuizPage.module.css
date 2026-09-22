@@ -205,9 +205,6 @@
   min-width: 0;
 }
 
-/* # CHANGED THIS - the desktop disclosure is a lightweight neutral section with one orange identity accent, not another orange card. */
-/* Where the reader writes their answer before revealing the real one. */
-
 .answerDraft {
   display: flex;
   flex-direction: column;

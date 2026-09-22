@@ -1,4 +1,3 @@
-/* # CHANGED THIS - this wrapper only spaces category UI; the picker owns its own surface. */
 .categoriesSection {
   box-sizing: border-box;
   flex-shrink: 0;
@@ -10,7 +9,6 @@
   margin-top: var(--rep-panel-gap);
 }
 
-/* # CHANGED THIS - Apply belongs to the orange category system instead of introducing an unrelated blue primary action. */
 .applyButton {
   color: var(--rep-cp-item-text-active);
   background: var(--rep-cp-item-bg-active);
@@ -21,7 +19,6 @@
   background: var(--rep-cp-item-bg-active-hover);
 }
 
-/* # CHANGED THIS - mobile keeps one reliable thumb target; desktop gets a compact filter action. */
 @media (max-width: 899px) {
   .applyRow > .applyButton {
     width: 100%;
