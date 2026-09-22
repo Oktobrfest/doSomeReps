@@ -119,11 +119,14 @@ export function QuestionSearchPanel({
 
           <div className={styles.filterGroup}>
             <span className={styles.filterLabel}>Categories</span>
+            {/* Already behind the filter panel's own toggle, and the one place
+                this page sets categories, so it opens with the panel. */}
             <CategoryPicker
               selectedCategories={filters.categories}
               onChange={(categories) => patch({ categories })}
               savedLists
               selectAll
+              defaultExpanded
             />
           </div>
 

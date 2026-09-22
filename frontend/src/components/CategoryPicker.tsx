@@ -21,6 +21,13 @@ export interface CategoryPickerProps {
   allowCreate?: boolean;
   /** Select all: only where wanting every category is a real thing to want. */
   selectAll?: boolean;
+  /**
+   * Whether the disclosure starts open on a full-sized page. A page that has
+   * somewhere else to set categories leaves this closed; a page where picking
+   * one is the next thing a writer does opens it. A phone ignores it: there
+   * the picker is a sheet, and opening it unasked would cover the page.
+   */
+  defaultExpanded?: boolean;
 }
 
 /**
@@ -30,8 +37,9 @@ export interface CategoryPickerProps {
  * the half a reader is choosing from, and what a page does not need it does
  * not get: no page grows a picker of its own.
  *
- * A phone has no room to hold this beside anything else, so there it is one
- * button that opens the same picker with the whole screen to itself.
+ * It costs a lot of room, so it is gated either way: a full-sized page keeps
+ * it behind one bar, and a phone, which has no room to hold it beside anything
+ * else, keeps it behind one button that gives it the whole screen.
  */
 export function CategoryPicker({
   selectedCategories,
@@ -39,6 +47,7 @@ export function CategoryPicker({
   savedLists = false,
   allowCreate = false,
   selectAll = false,
+  defaultExpanded = false,
 }: CategoryPickerProps) {
   const known = useCategories();
   const fullSized = useFullSizedPage();
@@ -162,6 +171,7 @@ export function CategoryPicker({
         title="Unselected categories"
         items={unselected}
         onToggle={toggle}
+        highlight={wanted}
         bulk={selectAll ? { label: "Select all", onClick: () => applyBulk(categories) } : undefined}
         empty={
           everythingChosen ? (
@@ -181,18 +191,28 @@ export function CategoryPicker({
         title="Selected categories"
         items={selected}
         onToggle={toggle}
+        highlight={wanted}
         bulk={{ label: "Clear all selected", onClick: () => applyBulk([]) }}
         empty={<p className={styles.empty}>Nothing selected yet. Tick a category above.</p>}
       />
     </div>
   );
 
-  if (fullSized) return picker;
+  const tally = selectedCategories.length > 0 ? ` (${selectedCategories.length})` : "";
+
+  if (fullSized) {
+    return (
+      <details className={styles.disclosure} open={defaultExpanded}>
+        <summary className={styles.summary}>Categories{tally}</summary>
+        {picker}
+      </details>
+    );
+  }
 
   return (
     <>
       <button type="button" className={styles.openSheet} onClick={() => setSheetOpen(true)}>
-        Select Categories{selectedCategories.length > 0 ? ` (${selectedCategories.length})` : ""}
+        Select Categories{tally}
       </button>
 
       {sheetOpen && (

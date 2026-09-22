@@ -300,7 +300,14 @@ export function AiQuestionGenerator() {
         </p>
 
         <div className={styles.formGroup}>
-          <CategoryPicker selectedCategories={categories} onChange={setCategories} allowCreate />
+          {/* The master set: every generated question is tagged from it, so it is
+              the one categories section on this page that opens by default. */}
+          <CategoryPicker
+            selectedCategories={categories}
+            onChange={setCategories}
+            allowCreate
+            defaultExpanded
+          />
         </div>
 
         <div className={styles.formGroup}>

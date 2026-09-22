@@ -151,6 +151,8 @@ interface QuestionFieldsProps {
   onChange: (next: QuestionDraft) => void;
   /** An existing question is not queued from the editor; /quemore does that. */
   showAutoQue?: boolean;
+  /** Open the categories to begin with, where picking one is the next thing to do. */
+  categoriesExpanded?: boolean;
 }
 
 /**
@@ -164,6 +166,7 @@ export function QuestionFields({
   value,
   onChange,
   showAutoQue = true,
+  categoriesExpanded = false,
 }: QuestionFieldsProps) {
   const baseId = useId();
 
@@ -177,6 +180,7 @@ export function QuestionFields({
         selectedCategories={value.categories}
         onChange={(categories) => onChange({ ...value, categories })}
         allowCreate
+        defaultExpanded={categoriesExpanded}
       />
 
       <div className={styles.options}>

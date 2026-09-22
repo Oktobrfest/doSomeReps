@@ -5,12 +5,12 @@
   align-items: center;
   gap: 0.45em;
   max-width: 100%;
-  padding: 0.25em 0.7em;
+  padding: 0.4em 0.7em;
   color: var(--rep-color-category-chip-text);
   font-family: inherit;
   font-size: var(--rep-cat-chip-font-size);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.25;
   background: var(--rep-color-category-chip-bg);
   border: 1px solid transparent;
   border-radius: 999px;
@@ -69,6 +69,15 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   user-select: none;
+}
+
+/* Solid, so the marked letters read on a plain chip and on a ticked one that
+   is already wearing the category colour. */
+.match {
+  padding: 0;
+  color: var(--rep-cp-item-text-active);
+  background: var(--rep-cp-item-bg-active);
+  border-radius: 2px;
 }
 
 .box {

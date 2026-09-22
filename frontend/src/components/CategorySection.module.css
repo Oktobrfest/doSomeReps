@@ -41,8 +41,10 @@
   column-gap: 6px;
 }
 
+/* A hairline, not a gutter: the height the rows used to spend on white space
+   now belongs to the badges, so a list of the same length is the same height. */
 .chips > li {
-  padding-bottom: 4px;
+  padding-bottom: 1px;
   break-inside: avoid;
 }
 
@@ -58,6 +60,6 @@
   }
 
   .chips > li {
-    padding-bottom: 2px;
+    padding-bottom: 0;
   }
 }

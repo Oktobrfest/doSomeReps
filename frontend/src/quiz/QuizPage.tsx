@@ -267,15 +267,12 @@ export function QuizPage(props: QuizPageProps) {
       {fullSized ? (
         <div className={styles.pageLayout}>
           <div className={styles.readingColumn}>
-            <details className={styles.categoriesDisclosure}>
-              <summary className={styles.categoriesSummary}>Categories</summary>
-              <CategoriesSection
-                categoryList={categoryList}
-                initialSelectedCategories={selectedCategories}
-                onApply={quiz.actions.applyCategories}
-                disabled={quiz.isSubmitting}
-              />
-            </details>
+            <CategoriesSection
+              categoryList={categoryList}
+              initialSelectedCategories={selectedCategories}
+              onApply={quiz.actions.applyCategories}
+              disabled={quiz.isSubmitting}
+            />
 
             {body}
           </div>

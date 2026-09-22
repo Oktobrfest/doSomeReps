@@ -13,6 +13,73 @@
   border-bottom: 1px solid var(--rep-color-border);
 }
 
+/* The one bar a full-sized page shows in place of the whole picker. Orange is
+   what categories look like everywhere else, so the bar that holds them is not
+   the one neutral exception. */
+.disclosure {
+  overflow: hidden;
+  background: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-dialog);
+  box-shadow: var(--rep-shadow-card);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  list-style: none;
+  color: var(--rep-cp-item-text-active);
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: var(--rep-cp-item-bg-active);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--rep-transition-fast);
+}
+
+.summary::marker {
+  content: "";
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border-right: 2px solid var(--rep-cp-item-text-active);
+  border-bottom: 2px solid var(--rep-cp-item-text-active);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--rep-transition-fast);
+}
+
+.summary:hover {
+  background: var(--rep-cp-item-bg-active-hover);
+}
+
+.summary:focus-visible {
+  outline: 2px solid var(--rep-cp-item-text-active);
+  outline-offset: -3px;
+}
+
+.disclosure[open] > .summary {
+  border-bottom: 1px solid var(--rep-cp-item-bg-active-hover);
+}
+
+.disclosure[open] > .summary::after {
+  transform: translateY(2px) rotate(225deg);
+}
+
+/* Open, the picker needs its own breathing room off the bar around it. */
+.disclosure > .picker {
+  padding: 10px;
+}
+
 /* The one control a phone shows in place of the whole picker. */
 .openSheet {
   composes: actionButton buttonSm btnAmber from '../styles/shared.module.css';

@@ -18,6 +18,8 @@ interface CategorySectionProps {
   bulk?: { label: string; onClick: () => void };
   /** What stands in for the chips when there are none. */
   empty: ReactNode;
+  /** What the reader is filtering on, marked in every chip that contains it. */
+  highlight?: string;
 }
 
 /**
@@ -26,7 +28,14 @@ interface CategorySectionProps {
  * Selected and unselected are the same section with different ticks and a
  * different bulk action, so the two halves of the picker cannot drift apart.
  */
-export function CategorySection({ title, items, onToggle, bulk, empty }: CategorySectionProps) {
+export function CategorySection({
+  title,
+  items,
+  onToggle,
+  bulk,
+  empty,
+  highlight,
+}: CategorySectionProps) {
   return (
     <section className={styles.section}>
       <header className={styles.header}>
@@ -43,7 +52,7 @@ export function CategorySection({ title, items, onToggle, bulk, empty }: Categor
         <ul className={styles.chips}>
           {items.map((item) => (
             <li key={item.name}>
-              <CategoryChip {...item} onToggle={onToggle} />
+              <CategoryChip {...item} onToggle={onToggle} highlight={highlight} />
             </li>
           ))}
         </ul>

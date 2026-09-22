@@ -91,7 +91,7 @@ export function AddContentPage() {
 
         <div className={sharedStyles.splitLayout}>
           <div className={sharedStyles.formPane}>
-            <QuestionFields value={draft} onChange={setDraft} />
+            <QuestionFields value={draft} onChange={setDraft} categoriesExpanded />
           </div>
 
           {previewOpen && (
