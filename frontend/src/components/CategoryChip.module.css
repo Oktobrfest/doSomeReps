@@ -25,7 +25,6 @@
 /* A chip that can be ticked wears the page's own surface until it is ticked,
    so the categories in play are the only coloured thing in the list. */
 .pickable {
-  width: 100%;
   color: var(--rep-color-text-primary);
   background: var(--rep-color-surface);
   border-color: var(--rep-color-border);

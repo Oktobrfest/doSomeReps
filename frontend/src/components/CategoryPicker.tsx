@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { useCategories } from "../hooks/useCategories";
 import { useFullSizedPage } from "../hooks/useFullSizedPage";
 import { byName, createCategory } from "../lib/categories";
+import { CategoryChip } from "./CategoryChip";
 import { CategorySection, type CategoryItem } from "./CategorySection";
 import { QuizModal } from "./QuizModal";
 import { SavedCategoryLists } from "./SavedCategoryLists";
@@ -11,6 +12,36 @@ import styles from "./CategoryPicker.module.css";
 
 /** How long a chip wears its new tick before it moves to the other section. */
 const MOVE_MS = 300;
+
+/**
+ * Whether `content` still fits the width `host` has for it.
+ *
+ * `content` is laid out at its max-content width whichever answer comes back,
+ * so the measurement never depends on the answer and cannot oscillate between
+ * the two of them.
+ */
+function useFitsInline(
+  host: RefObject<HTMLElement>,
+  content: RefObject<HTMLElement>,
+  key: string
+): boolean {
+  const [fits, setFits] = useState(true);
+
+  useLayoutEffect(() => {
+    const hostEl = host.current;
+    const contentEl = content.current;
+    if (!hostEl || !contentEl) return;
+
+    const measure = () => setFits(contentEl.offsetWidth <= hostEl.clientWidth);
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(hostEl);
+    return () => observer.disconnect();
+  }, [host, content, key]);
+
+  return fits;
+}
 
 export interface CategoryPickerProps {
   selectedCategories: string[];
@@ -55,6 +86,7 @@ export function CategoryPicker({
   const [moving, setMoving] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   useEffect(() => {
     if (!moving) return;
@@ -202,10 +234,26 @@ export function CategoryPicker({
 
   if (fullSized) {
     return (
-      <details className={styles.disclosure} open={defaultExpanded}>
-        <summary className={styles.summary}>Categories{tally}</summary>
-        {picker}
-      </details>
+      <div className={styles.disclosure}>
+        <div className={styles.summary}>
+          <button
+            type="button"
+            className={`${styles.toggle} ${expanded ? styles.toggleOpen : ""}`}
+            aria-expanded={expanded}
+            onClick={() => setExpanded(!expanded)}
+          >
+            Categories{tally}
+          </button>
+
+          {/* Closed, the bar still says which ones: as chips a reader can untick
+              where they fit, and as a plain list where they do not. */}
+          {!expanded && selected.length > 0 && (
+            <Preview items={selected} onToggle={toggle} />
+          )}
+        </div>
+
+        {expanded && <div className={styles.disclosureBody}>{picker}</div>}
+      </div>
     );
   }
 
@@ -221,5 +269,39 @@ export function CategoryPicker({
         </QuizModal>
       )}
     </>
+  );
+}
+
+interface PreviewProps {
+  items: CategoryItem[];
+  onToggle: (name: string) => void;
+}
+
+/** What is picked, shown in whichever form the bar has room for. */
+function Preview({ items, onToggle }: PreviewProps) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const chipsRef = useRef<HTMLSpanElement>(null);
+  const names = items.map((item) => item.name);
+  const fits = useFitsInline(hostRef, chipsRef, names.join("\u0000"));
+
+  return (
+    <div className={styles.preview} ref={hostRef}>
+      <span
+        ref={chipsRef}
+        className={`${styles.previewChips} ${fits ? "" : styles.offstage}`}
+      >
+        {items.map((item) => (
+          <CategoryChip key={item.name} {...item} onToggle={onToggle} />
+        ))}
+      </span>
+
+      {!fits && (
+        <span className={styles.previewText}>
+          (
+          <span className={styles.previewNames}>{names.join(", ")}</span>
+          )
+        </span>
+      )}
+    </div>
   );
 }

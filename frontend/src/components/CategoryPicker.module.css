@@ -28,56 +28,100 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
-  list-style: none;
+  padding: 7px 12px;
   color: var(--rep-cp-item-text-active);
+  background: var(--rep-cp-item-bg-active);
+}
+
+/* Only this opens the bar. The chips beside it are controls of their own, so
+   nothing interactive is nested inside anything else interactive. */
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-left: -7px;
+  padding: 3px 7px;
+  color: inherit;
+  font-family: inherit;
   font-size: 0.9rem;
   font-weight: 700;
-  background: var(--rep-cp-item-bg-active);
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  border-radius: var(--rep-radius-control);
   cursor: pointer;
   user-select: none;
-  transition: background-color var(--rep-transition-fast);
 }
 
-.summary::marker {
-  content: "";
-}
-
-.summary::-webkit-details-marker {
-  display: none;
-}
-
-.summary::after {
+.toggle::before {
   content: "";
   width: 7px;
   height: 7px;
-  margin-left: auto;
-  border-right: 2px solid var(--rep-cp-item-text-active);
-  border-bottom: 2px solid var(--rep-cp-item-text-active);
-  transform: translateY(-2px) rotate(45deg);
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translate(1px, -2px) rotate(-45deg);
   transition: transform var(--rep-transition-fast);
 }
 
-.summary:hover {
+.toggleOpen::before {
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.toggle:hover {
   background: var(--rep-cp-item-bg-active-hover);
 }
 
-.summary:focus-visible {
+.toggle:focus-visible {
   outline: 2px solid var(--rep-cp-item-text-active);
-  outline-offset: -3px;
+  outline-offset: 1px;
 }
 
-.disclosure[open] > .summary {
-  border-bottom: 1px solid var(--rep-cp-item-bg-active-hover);
-}
-
-.disclosure[open] > .summary::after {
-  transform: translateY(2px) rotate(225deg);
-}
-
-/* Open, the picker needs its own breathing room off the bar around it. */
-.disclosure > .picker {
+.disclosureBody {
   padding: 10px;
+}
+
+/* ---- what is picked, on the closed bar ---- */
+
+.preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Laid out at its natural width in either state, so the width the fit is
+   judged on is the same number whichever way the judgement goes. */
+.previewChips {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  width: max-content;
+}
+
+/* Measurable, but painting nothing and out of the tab order. */
+.offstage {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.previewText {
+  display: flex;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* The browser puts the ellipsis exactly where the room runs out, and the
+   closing bracket stays outside it. */
+.previewNames {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* The one control a phone shows in place of the whole picker. */

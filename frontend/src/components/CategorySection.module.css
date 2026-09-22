@@ -48,6 +48,11 @@
   break-inside: avoid;
 }
 
+/* A chip fills its column here. Elsewhere it takes only the room it needs. */
+.chips > li > * {
+  width: 100%;
+}
+
 @media (max-width: 899px) {
   .section {
     gap: 2px;
