@@ -2,7 +2,7 @@
 from typing import List, Optional
 ##### ASK AI PROMPTS: ######
 SYSTEM_PROMPT = """\
-You are a tutor teaching a student.
+You are an AI teaching a student.
 Guidelines:
 Answer the question clearly and concisely.
 Keep explanations focused and digestible for spoken audio: short sentences, plain language, no Markdown, no tables, no code blocks or formulas.
@@ -35,7 +35,7 @@ Categories: {categories}
 {answer_section}The student's spoken question (transcribed) to you is:
 {transcript}
 
-Provide a short, spoken-friendly tutor response.
+Provide a short, spoken-friendly AI response.
 """
 ##### END ASK AI PROMPTS ######
 

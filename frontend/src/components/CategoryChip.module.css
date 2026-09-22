@@ -1,0 +1,136 @@
+/* One chip, whether a category is being picked or merely shown. Everything is
+   sized in em off the font-size alias, so a host rebinds one token to rescale. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  max-width: 100%;
+  padding: 0.4em 0.7em;
+  color: var(--rep-color-category-chip-text);
+  font-family: inherit;
+  font-size: var(--rep-cat-chip-font-size);
+  font-weight: 600;
+  line-height: 1.25;
+  background: var(--rep-color-category-chip-bg);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em;
+}
+
+/* A chip that can be ticked wears the page's own surface until it is ticked,
+   so the categories in play are the only coloured thing in the list. */
+.pickable {
+  color: var(--rep-color-text-primary);
+  background: var(--rep-color-surface);
+  border-color: var(--rep-color-border);
+  cursor: pointer;
+  animation: catChipEnter var(--rep-cat-move-duration) ease;
+}
+
+.pickable:hover {
+  background: color-mix(in srgb, var(--rep-cp-item-bg) 12%, var(--rep-color-surface));
+  border-color: var(--rep-cp-item-border-active);
+}
+
+.pickable:focus-within {
+  border-color: var(--rep-cp-item-border-active);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rep-cp-item-bg-active) 18%, transparent);
+}
+
+.checked {
+  color: var(--rep-color-category-chip-text);
+  background: var(--rep-color-category-chip-bg);
+  border-color: var(--rep-cp-item-border-active);
+}
+
+/* Both halves are the same chip, so both answer the pointer. A ticked one is
+   already carrying the category colour, so it deepens instead of taking it on. */
+.checked:hover {
+  background: color-mix(in srgb, var(--rep-cp-item-bg-active) 34%, var(--rep-color-surface));
+  border-color: var(--rep-cp-item-bg-active-hover);
+}
+
+/* The tick lands first and the chip leaves after, so the reader sees which
+   category they just moved rather than watching the list jump. */
+.moving {
+  animation: catChipLeave var(--rep-cat-move-duration) ease forwards;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
+/* Solid, so the marked letters read on a plain chip and on a ticked one that
+   is already wearing the category colour. */
+.match {
+  padding: 0;
+  color: var(--rep-cp-item-text-active);
+  background: var(--rep-cp-item-bg-active);
+  border-radius: 2px;
+}
+
+.box {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+  margin: 0;
+  background: var(--rep-color-surface);
+  border: 1.5px solid var(--rep-color-border-strong);
+  border-radius: 0.3em;
+  cursor: pointer;
+  transition: background-color var(--rep-transition-fast), border-color var(--rep-transition-fast);
+}
+
+.box::before {
+  content: "";
+  width: 0.5em;
+  height: 0.25em;
+  border-bottom: 2px solid var(--rep-cp-item-text-active);
+  border-left: 2px solid var(--rep-cp-item-text-active);
+  transform: translateY(-0.07em) rotate(-45deg) scale(0);
+  transform-origin: center;
+  transition: transform var(--rep-transition-fast);
+}
+
+.box:checked {
+  background: var(--rep-cp-item-bg-active);
+  border-color: var(--rep-cp-item-border-active);
+}
+
+.box:checked::before {
+  transform: translateY(-0.07em) rotate(-45deg) scale(1);
+}
+
+@keyframes catChipEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35em) scale(0.94);
+  }
+}
+
+@keyframes catChipLeave {
+  to {
+    opacity: 0;
+    transform: translateY(-0.35em) scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pickable,
+  .moving {
+    animation: none;
+  }
+}

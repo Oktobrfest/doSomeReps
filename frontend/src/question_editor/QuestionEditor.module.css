@@ -80,182 +80,6 @@
   }
 }
 
-/* Form Sections themed after the original css files */
-.formSection {
-  border-radius: var(--rep-radius-card);
-  padding: 8px 4px;
-  margin-bottom: 12px;
-  border: 1px solid var(--rep-color-border-faint);
-  transition: all 150ms ease;
-}
-
-@media (min-width: 576px) {
-  .formSection {
-    border-radius: var(--rep-panel-radius);
-    padding: 5px;
-    margin-bottom: 20px;
-  }
-}
-
-/* The Green Question Section */
-.questionSection {
-  background-color: var(--rep-part-question-surface);
-  border: 1.5px solid var(--rep-part-question-border);
-}
-
-/* The Cyan Hint Section */
-.hintSection {
-  background-color: var(--rep-part-hint-surface);
-  border: 1.5px solid var(--rep-part-hint-border);
-}
-
-/* The Pink/Magenta Answer Section */
-.answerSection {
-  background-color: var(--rep-part-answer-surface);
-  border: 1.5px solid var(--rep-part-answer-border);
-}
-
-/* Label styling */
-.label {
-  font-weight: 700;
-  font-size: 1.1rem;
-  margin-bottom: 8px;
-  display: block;
-  color: var(--rep-color-text-primary);
-}
-
-/* Textarea styling */
-.textarea {
-  width: 100%;
-  border: 2px solid var(--rep-color-border-input);
-  border-radius: var(--rep-radius-card);
-  padding: 2px;
-  font-size: 1rem;
-  font-family: inherit;
-  line-height: 1.5;
-  background-color: var(--rep-color-surface);
-  transition: border-color 150ms ease, box-shadow 150ms ease;
-  resize: none;
-  overflow: hidden;
-}
-
-.textarea:focus {
-  border-color: var(--rep-color-text-secondary);
-  outline: none;
-  box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
-}
-
-/* Image Container Styles */
-.imageContainer {
-  position: relative;
-  display: inline-block;
-  width: 80px;
-  height: 80px;
-  margin: 4px;
-}
-
-.previewContainer {
-  position: relative;
-  display: inline-block;
-  width: 60px;
-  height: 60px;
-  margin: 4px;
-}
-
-.image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--rep-radius-dialog);
-  border: 2px solid var(--rep-color-surface);
-  box-shadow: var(--rep-shadow-card-raised);
-}
-
-.deleteImageBtn {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 22px;
-  height: 22px;
-  border-radius: var(--rep-radius-circle);
-  background-color: var(--rep-intent-red-bg);
-  color: var(--rep-color-on-action);
-  border: 1.5px solid var(--rep-color-surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 800;
-  padding: 0;
-  box-shadow: var(--rep-shadow-knob);
-  line-height: 1;
-}
-
-.deleteImageBtn:hover {
-  background-color: var(--rep-intent-red-bg-hover);
-}
-
-.removeFileBtn {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 20px;
-  height: 20px;
-  border-radius: var(--rep-radius-circle);
-  background-color: var(--rep-intent-amber-bg);
-  color: var(--rep-color-on-action);
-  border: 1.5px solid var(--rep-color-surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 0;
-  box-shadow: var(--rep-shadow-knob);
-  line-height: 1;
-}
-
-.removeFileBtn:hover {
-  background-color: var(--rep-intent-amber-bg-hover);
-}
-
-/* Custom file input styling */
-.customFileWrapper {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-}
-
-.customFileInput {
-  position: absolute;
-  left: 0;
-  top: 0;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-}
-
-.customFileLabel {
-  display: block;
-  background-color: var(--rep-color-surface);
-  border: 2px dashed var(--rep-color-border-strong);
-  border-radius: var(--rep-radius-card);
-  padding: 12px;
-  text-align: center;
-  color: var(--rep-color-text-secondary);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
-
-.customFileLabel:hover {
-  border-color: var(--rep-color-text-subtle);
-  background-color: var(--rep-color-surface-subtle);
-}
-
 /* Audio Section Table styling */
 .audioCard {
   border: 1.5px solid var(--rep-intent-cyan-bg);
@@ -287,31 +111,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* Privacy Checkbox Group */
-.privacyGroup {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background-color: var(--rep-color-surface-secondary);
-  padding: 14px;
-  border-radius: var(--rep-radius-card);
-  margin-top: 24px;
-}
-
-.privacyCheckbox {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-}
-
-.privacyLabel {
-  font-weight: 700;
-  cursor: pointer;
-  user-select: none;
-  margin: 0;
-  color: var(--rep-color-text-primary);
 }
 
 /* Ask AI conversation root, rendered below the editor body */
@@ -358,44 +157,6 @@
   text-align: center;
 }
 
-.formRow {
-  display: flex;
-  flex-wrap: wrap;
-  width: 100%;
-}
-
-.formColumn {
-  width: 100%;
-}
-
-.mediaSection {
-  margin-top: 0.2rem;
-}
-
-.existingMediaSection {
-  margin-bottom: 0.5rem;
-}
-
-.existingMediaLabel {
-  color: var(--rep-color-text-muted);
-  font-size: 0.875rem;
-  font-weight: 700;
-}
-
-.mediaGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-}
-
-.previewGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
 .emptyAudioText {
   margin: 0;
   color: var(--rep-color-text-muted);
@@ -424,20 +185,6 @@
   background-color: var(--rep-color-surface-stripe);
 }
 
-.badge {
-  display: inline-block;
-  padding: 0.25em 0.4em;
-  color: var(--rep-color-on-action);
-  font-size: 75%;
-  font-weight: 700;
-  line-height: 1;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: baseline;
-  background-color: var(--rep-color-text-muted);
-  border-radius: var(--rep-radius-small);
-}
-
 /* Split Pane Layout for Live Preview */
 .splitLayout {
   display: flex;
@@ -458,26 +205,12 @@
   transition: all 0.3s ease;
 }
 
+/* Sizing only: the preview's look lives with the shared QuestionPreview. */
 .previewPane {
   width: 400px;
   min-width: 320px;
-  background-color: var(--rep-color-surface-subtle);
-  border: 1px solid var(--rep-color-border);
-  border-radius: var(--rep-panel-radius);
-  padding: 20px 20px 60px 20px;
   height: 100%;
   overflow-y: auto;
-  box-shadow: var(--rep-shadow-card-raised);
-  display: block;
-  transition: all 0.3s ease;
-}
-
-.previewPane > * {
-  margin-bottom: 16px;
-}
-
-.previewPane > *:last-child {
-  margin-bottom: 0;
 }
 
 @media (max-width: 991px) {
@@ -497,107 +230,4 @@
     height: auto;
     overflow-y: visible;
   }
-}
-
-.previewPaneHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px solid var(--rep-color-border-strong);
-  padding-bottom: 8px;
-  margin-bottom: 4px;
-}
-
-.previewPaneTitle {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: var(--rep-color-text-strong);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.previewCloseBtn {
-  background: none;
-  border: none;
-  color: var(--rep-color-text-subtle);
-  cursor: pointer;
-  padding: 4px 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border-radius: var(--rep-radius-small);
-}
-
-.previewCloseBtn:hover {
-  background-color: var(--rep-color-surface-secondary-hover);
-  color: var(--rep-color-text-strong);
-}
-
-/* Styled Live Preview Box mimicking AudioQuiz view */
-.previewMetaRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  margin-bottom: 12px;
-  font-size: 0.85rem;
-}
-
-.previewTextBlock {
-  background: var(--rep-color-surface);
-  border: 1px solid var(--rep-color-border);
-  border-radius: var(--rep-radius-card);
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: var(--rep-shadow-card);
-}
-
-.previewAnswerCard {
-  background: var(--rep-color-surface);
-  border: 1px solid var(--rep-part-answer-border-strong);
-  border-radius: var(--rep-radius-card);
-  overflow: hidden;
-  box-shadow: var(--rep-shadow-card);
-}
-
-.previewAnswerHeader {
-  background-color: var(--rep-part-answer-surface-strong);
-  border-bottom: 1px solid var(--rep-part-answer-border-strong);
-  color: var(--rep-part-answer-text);
-  padding: 10px 14px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.previewAnswerContent {
-  padding: 16px;
-}
-
-.previewHintCard {
-  background: var(--rep-color-surface);
-  border: 1px solid var(--rep-part-hint-border-strong);
-  border-radius: var(--rep-radius-card);
-  overflow: hidden;
-  margin-bottom: 16px;
-  box-shadow: var(--rep-shadow-card);
-}
-
-.previewHintHeader {
-  background-color: var(--rep-part-hint-surface-strong);
-  border-bottom: 1px solid var(--rep-part-hint-border-strong);
-  color: var(--rep-part-hint-text);
-  padding: 8px 12px;
-  font-weight: 700;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.previewHintContent {
-  padding: 12px;
 }

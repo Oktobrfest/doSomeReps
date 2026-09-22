@@ -1,27 +1,38 @@
-// doSomeReps/frontend/src/components/ExtendButton.tsx
 import { useEffect, useId, useRef, useState } from "react";
 import { Loader2, Settings } from "lucide-react";
+import { toast } from "sonner";
+import { extendQuestion, type ExtendTarget } from "./question_api";
+import type { QuestionDraft } from "./question_types";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./ExtendButton.module.css";
 
 const OPTIONS_TIMEOUT_MS = 20_000;
 
-export interface ExtendOption {
+interface ExtendOption {
   key: string;
   label: string;
 }
 
-export interface ExtendPayload {
-  customInstructions: string;
-  selectedOptions: string[];
-}
-
 interface ExtendButtonProps {
-  onExtend: (payload: ExtendPayload, signal: AbortSignal) => Promise<void>;
+  /** Where the extended answer is kept; see `ExtendTarget`. */
+  target: ExtendTarget;
+  draft: QuestionDraft;
+  onExtended: (next: QuestionDraft) => void;
   disabled?: boolean;
 }
 
-export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) {
+/**
+ * Hand a question's answer to the AI to be expanded.
+ *
+ * The button owns the whole round trip - the options dialog, the request, the
+ * cancel - so a page that wants extending adds one element and nothing else.
+ */
+export function ExtendButton({
+  target,
+  draft,
+  onExtended,
+  disabled = false,
+}: ExtendButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [customInstructions, setCustomInstructions] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
@@ -93,15 +104,22 @@ export function ExtendButton({ onExtend, disabled = false }: ExtendButtonProps) 
     setIsOpen(false);
 
     try {
-      await onExtend(
-        {
-          customInstructions: customInstructions.trim(),
-          selectedOptions,
-        },
+      const { answer, hint } = await extendQuestion(
+        target,
+        draft,
+        customInstructions.trim(),
+        selectedOptions,
         controller.signal
       );
-    } catch {
-      // The page that owns the request reports the failure.
+      controller.signal.throwIfAborted();
+
+      onExtended({ ...draft, text: { ...draft.text, answer, hint } });
+      toast.success("Answer extended with AI.");
+    } catch (err) {
+      // The user cancelled: drop whatever came back instead of applying it.
+      if (!controller.signal.aborted) {
+        toast.error(err instanceof Error ? err.message : "Extend failed");
+      }
     } finally {
       extendAbortRef.current = null;
       setIsExtending(false);

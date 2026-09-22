@@ -75,6 +75,7 @@
   margin-top: 6px;
   padding-top: 4px;
   border-top: 1px solid var(--rep-color-border);
+  transition: padding-bottom 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .metaRow {
@@ -88,15 +89,10 @@
   font-size: clamp(0.8em, 1rem + 1.4vw, 2rem);
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 11px 3px 11px;
-  background: var(--rep-intent-amber-bg);
-  color: var(--rep-intent-amber-fg);
-  border-radius: 999px;
-  font-size: clamp(0.8em, 1rem + 1.4vw, 2rem);
-  font-weight: 600;
+/* The reading view is read at arm's length, so its chips take the same scale
+   as the level beside them. Rebinding the alias is all it takes. */
+.metaChips {
+  --rep-cat-chip-font-size: var(--rep-cat-chip-font-size-lg);
 }
 
 .textBlock {
@@ -208,22 +204,6 @@
 .readingColumn {
   min-width: 0;
 }
-
-.categoriesDisclosure {
-  margin-bottom: var(--rep-quiz-gap);
-  padding: 0 var(--rep-quiz-gap);
-  background: var(--rep-color-surface-subtle);
-  border: 1px solid var(--rep-color-border);
-  border-radius: var(--rep-radius-dialog);
-}
-
-.categoriesSummary {
-  padding: 10px 0;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* Where the reader writes their answer before revealing the real one. */
 
 .answerDraft {
   display: flex;

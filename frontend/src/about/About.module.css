@@ -7,6 +7,27 @@
   box-sizing: border-box;
 }
 
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  padding: 0.5rem;
+}
+
+.pageTitle {
+  margin: 0;
+  text-align: center;
+  color: var(--rep-color-text-primary);
+}
+
+.pageIntro {
+  margin: 0 auto;
+  max-width: 42rem;
+  text-align: center;
+  color: var(--rep-color-text-secondary);
+}
+
 .intervalList {
   display: flex;
   flex-direction: column;

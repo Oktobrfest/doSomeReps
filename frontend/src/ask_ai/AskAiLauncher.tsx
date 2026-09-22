@@ -59,7 +59,7 @@ export function AskAiLauncher({
         onClick={() => askAi.actions.start()}
       >
         <Sparkles size={18} />
-        Ask AI Tutor
+        Ask AI
       </button>
     );
   }
@@ -72,7 +72,7 @@ export function AskAiLauncher({
         onClick={() => askAi.actions.start()}
       >
         <Sparkles size={18} />
-        Ask AI Tutor
+        Ask AI
       </button>
     </div>
   );

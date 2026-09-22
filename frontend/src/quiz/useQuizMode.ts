@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { matchesFullSizedPage } from './useFullSizedPage';
+import { matchesFullSizedPage } from '../hooks/useFullSizedPage';
 
 /**
  * How the reader wants to take the quiz.

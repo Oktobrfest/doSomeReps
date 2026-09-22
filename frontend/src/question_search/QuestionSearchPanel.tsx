@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Search, SlidersHorizontal } from "lucide-react";
 import { CategoryPicker } from "../components/CategoryPicker";
-import { useCategories } from "../hooks/useCategories";
 import { FlagFilterChips } from "./FlagFilterChips";
 import { EMPTY_FILTERS, type SearchFilters } from "./question_search_types";
 import styles from "./QuestionSearch.module.css";
@@ -26,8 +25,6 @@ export function QuestionSearchPanel({
   loading,
 }: QuestionSearchPanelProps) {
   const [expanded, setExpanded] = useState(false);
-  const allCategories = useCategories();
-
   const patch = (partial: Partial<SearchFilters>) =>
     onChange({ ...filters, ...partial });
 
@@ -37,12 +34,6 @@ export function QuestionSearchPanel({
         ? filters.within.filter((item) => item !== value)
         : [...filters.within, value],
     });
-
-  const allCategoriesSelected =
-    allCategories.length > 0 && filters.categories.length === allCategories.length;
-
-  const toggleAllCategories = () =>
-    patch({ categories: allCategoriesSelected ? [] : [...allCategories] });
 
   const activeCount =
     filters.within.length +
@@ -128,21 +119,18 @@ export function QuestionSearchPanel({
 
           <div className={styles.filterGroup}>
             <span className={styles.filterLabel}>Categories</span>
+            {/* Already behind the filter panel's own toggle, and the one place
+                this page sets categories, so it opens with the panel. */}
             <CategoryPicker
               selectedCategories={filters.categories}
               onChange={(categories) => patch({ categories })}
-              showSelectAll={false}
+              savedLists
+              selectAll
+              defaultExpanded
             />
           </div>
 
           <div className={styles.filterActions}>
-            <button
-              type="button"
-              className={styles.primaryBtn}
-              onClick={toggleAllCategories}
-            >
-              {allCategoriesSelected ? "Deselect all" : "Select all"}
-            </button>
             <button
               type="button"
               className={styles.secondaryBtn}

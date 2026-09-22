@@ -1,6 +1,7 @@
 import React from "react";
 import { FLAG_METADATA } from "../components/FlagConstants";
 import { MarkdownContent } from "../components/MarkdownContent";
+import { CategoryChips } from "../components/CategoryChip";
 import type { SearchResultItem } from "./question_search_types";
 import styles from "./QuestionSearch.module.css";
 
@@ -49,15 +50,7 @@ export function QuestionResultRow({
           <MarkdownContent content={item.question_text} />
         </span>
 
-        {item.categories.length > 0 && (
-          <span className={styles.catChipRow}>
-            {item.categories.map((cat) => (
-              <span key={cat} className={styles.catChip}>
-                {cat}
-              </span>
-            ))}
-          </span>
-        )}
+        <CategoryChips names={item.categories} />
       </button>
 
       {showUnexclude && (

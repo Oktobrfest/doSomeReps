@@ -1,390 +1,348 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
+import { Toaster, toast } from "sonner";
 
+import { AskAiPanel } from "../ask_ai/AskAiPanel";
+import { useAskAi } from "../ask_ai/useAskAi";
+import type { AskAiContext } from "../ask_ai/types";
+import { CategoryPicker } from "../components/CategoryPicker";
+import { LoadingState } from "../components/LoadingState";
+import { QuestionDraftActions } from "../question/QuestionDraftActions";
+import { QuestionFields } from "../question/QuestionFields";
+import { QuestionPreview } from "../question/QuestionPreview";
+import { createQuestion, extendQuestion } from "../question/question_api";
+import { emptyDraft, type QuestionDraft } from "../question/question_types";
 import {
-  deleteAllQuestions,
-  deleteQuestion,
-  extendQuestion,
+  clearGenerated,
   generateQuestions,
   getGeneratorState,
-  saveAllQuestions,
-  saveQuestion,
+  removeGenerated,
 } from "./ai_question_generator_api";
-import type { GeneratedQuestion } from "./ai_question_generator_types";
 import styles from "./AiQuestionGenerator.module.css";
 import sharedStyles from "../styles/shared.module.css";
-import { LoadingState } from "../components/LoadingState";
-import { ExtendButton, ExtendPayload } from "@/components/ExtendButton";
-import { CatPicker } from "@/components/CatPicker";
+
+const MAX_QUESTIONS = 50;
+
+const errorMessage = (err: unknown, fallback: string) =>
+  err instanceof Error ? err.message : fallback;
+
+interface GeneratedCardProps {
+  index: number;
+  draft: QuestionDraft;
+  busy: boolean;
+  onChange: (next: QuestionDraft) => void;
+  onSave: () => void;
+  onDelete: () => void;
+}
+
+/** One generated question, editable with the same fields as any other. */
+function GeneratedCard({
+  index,
+  draft,
+  busy,
+  onChange,
+  onSave,
+  onDelete,
+}: GeneratedCardProps) {
+  const [previewOpen, setPreviewOpen] = useState(true);
+
+  const askAiContext = useMemo<AskAiContext>(
+    () => ({
+      questionId: `gen-${index}`,
+      questionText: draft.text.question,
+      answerText: draft.text.answer,
+      categories: draft.categories,
+      questionImageUrls: draft.pics.question.map((p) => p.pic_string),
+      answerImageUrls: draft.pics.answer.map((p) => p.pic_string),
+    }),
+    [index, draft]
+  );
+
+  const askAi = useAskAi({ context: askAiContext, answerRevealed: true });
+
+  return (
+    <section className={styles.questionGroup}>
+      <div className={styles.cardHeader}>
+        <h3 className={styles.questionGroupHeader}>Question #{index + 1}</h3>
+
+        {/* The extended answer is kept in the working list, not the database. */}
+        <QuestionDraftActions
+          draft={draft}
+          extendTarget={draft.isLocal ? {} : { index }}
+          onExtended={onChange}
+          onAskAi={() => askAi.actions.start()}
+          askAiDisabled={askAi.isActive}
+          saveLabel="Save Question"
+          onSave={onSave}
+          onDelete={onDelete}
+          deleteLabel="Delete Question"
+          busy={busy}
+          previewOpen={previewOpen}
+          onTogglePreview={() => setPreviewOpen((prev) => !prev)}
+        />
+      </div>
+
+      <div className={sharedStyles.splitLayout}>
+        <div className={sharedStyles.formPane}>
+          <QuestionFields value={draft} onChange={onChange} />
+        </div>
+
+        {previewOpen && (
+          <QuestionPreview
+            draft={draft}
+            onHide={() => setPreviewOpen(false)}
+            className={sharedStyles.previewPane}
+          />
+        )}
+      </div>
+
+      <div className={styles.askAiRoot}>
+        <AskAiPanel state={askAi} />
+      </div>
+    </section>
+  );
+}
 
 export function AiQuestionGenerator() {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  const [quizContent, setQuizContent] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [drafts, setDrafts] = useState<QuestionDraft[]>([]);
+
+  const [quizContent, setQuizContent] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [selectedCats, setSelectedCats] = useState<string[]>([]);
-  const [qtyFrom, setQtyFrom] = useState<number>(5);
-  const [qtyTo, setQtyTo] = useState<number>(10);
-  const [tryProvideHints, setTryProvideHints] = useState<boolean>(false);
-  const [avoidDuplicates, setAvoidDuplicates] = useState<boolean>(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [qtyFrom, setQtyFrom] = useState(5);
+  const [qtyTo, setQtyTo] = useState(10);
+  const [tryProvideHints, setTryProvideHints] = useState(false);
+  const [avoidDuplicates, setAvoidDuplicates] = useState(false);
+  // The browser owns a file input's value; clearing state alone leaves the
+  // filename on screen.
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
-  // Load initial state (generated questions and categories)
   useEffect(() => {
     getGeneratorState()
-      .then((data) => {
-        setGeneratedQuestions(
-          (data.generated_questions || []).map((q) => ({
-            ...q,
-            privacy: !!q.privacy,
-            auto_que: !!q.auto_que,
-          }))
-        );
-        if (Array.isArray(data.selected_categories)) {
-          setSelectedCats(data.selected_categories);
-        }
-        setLoading(false);
+      .then((state) => {
+        setDrafts(state.drafts);
+        setCategories(state.categories);
       })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Error loading state");
-        setLoading(false);
-      });
+      .catch((err) => toast.error(errorMessage(err, "Error loading state")))
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleGenerate = (e: React.FormEvent) => {
-    e.preventDefault();
+  const replaceAt = (index: number, next: QuestionDraft) =>
+    setDrafts((prev) => prev.map((draft, at) => (at === index ? next : draft)));
+
+  const dropAt = (index: number) =>
+    setDrafts((prev) => prev.filter((_, at) => at !== index));
+
+  const handleGenerate = async (event: FormEvent) => {
+    event.preventDefault();
+
     if (!quizContent.trim() && !file) {
-      setError("Quiz content or a document file is required.");
+      toast.error("Quiz content or a document file is required.");
       return;
     }
-    if (selectedCats.length === 0) {
-      setError("Please select at least one category - the AI uses these to tag every generated question.");
+    if (categories.length === 0) {
+      toast.error(
+        "Pick at least one category - the AI tags every generated question with them."
+      );
       return;
     }
 
-    setSubmitting(true);
-    setError(null);
-    setSuccess(null);
-
-    generateQuestions({
-      quizContent,
-      file,
-      selectedCats,
-      qtyFrom,
-      qtyTo,
-      tryProvideHints,
-      avoidDuplicates,
-    })
-      .then((data) => {
-        if (!data.success) {
-          throw new Error(data.error || "Generation failed");
-        }
-        setGeneratedQuestions(
-          (data.generated_questions || []).map((q) => ({
-            ...q,
-            privacy: !!q.privacy,
-            auto_que: !!q.auto_que,
-          }))
-        );
-        setSuccess(`Successfully generated ${data.generated_questions?.length || 0} question(s).`);
-        setQuizContent(""); // Clear text after success
-        setFile(null); // Clear file after success
-        const fileInput = document.getElementById("file_upload") as HTMLInputElement | null;
-        if (fileInput) {
-          fileInput.value = "";
-        }
-        setSubmitting(false);
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Generation failed");
-        setSubmitting(false);
-      });
-  };
-
-  const handleQuestionChange = (index: number, field: keyof GeneratedQuestion, value: any) => {
-    setGeneratedQuestions((prev) => {
-      const updated = [...prev];
-      updated[index] = {
-        ...updated[index],
-        [field]: value,
-      };
-      return updated;
-    });
-  };
-
-  const handleSaveOne = (index: number) => {
-    setError(null);
-    setSuccess(null);
-    const item = generatedQuestions[index];
-
-    saveQuestion(index, item)
-      .then((data) => {
-        if (!data.success) {
-          throw new Error(data.error || "Save failed");
-        }
-        setGeneratedQuestions(
-          (data.generated_questions || []).map((q, i) => {
-            const oldIndex = i < index ? i : i + 1;
-            const oldItem = generatedQuestions[oldIndex];
-            return {
-              ...q,
-              privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
-              auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
-            };
-          })
-        );
-        setSuccess("Question saved.");
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Save failed");
-      });
-  };
-
-  const handleDeleteOne = (index: number) => {
-    setError(null);
-    setSuccess(null);
-
-    deleteQuestion(index)
-      .then((data) => {
-        if (!data.success) {
-          throw new Error(data.error || "Delete failed");
-        }
-        setGeneratedQuestions(
-          (data.generated_questions || []).map((q, i) => {
-            const oldIndex = i < index ? i : i + 1;
-            const oldItem = generatedQuestions[oldIndex];
-            return {
-              ...q,
-              privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
-              auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
-            };
-          })
-        );
-        setSuccess("Question removed.");
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Delete failed");
-      });
-  };
-
-  const handleExtendOne = async (
-    index: number,
-    payload: ExtendPayload,
-    signal: AbortSignal
-  ): Promise<void> => {
-    setError(null);
-    setSuccess(null);
-    const item = generatedQuestions[index];
-
+    setBusy(true);
     try {
-      const data = await extendQuestion(
-        index,
-        item,
-        payload.customInstructions,
-        payload.selectedOptions,
-        signal
-      );
-      signal.throwIfAborted();
-
-      if (!data.success) {
-        throw new Error(data.error || "Extend failed");
-      }
-
-      setGeneratedQuestions(
-        (data.generated_questions || []).map((q, i) => {
-          const oldItem = generatedQuestions[i];
-          return {
-            ...q,
-            privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
-            auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
-          };
-        })
-      );
-      setSuccess("Answer extended.");
+      const generated = await generateQuestions({
+        quizContent,
+        file,
+        categories,
+        qtyFrom,
+        qtyTo,
+        tryProvideHints,
+        avoidDuplicates,
+      });
+      setDrafts(generated);
+      setQuizContent("");
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      toast.success(`Generated ${generated.length} question(s).`);
     } catch (err) {
-      // The user cancelled: drop whatever came back instead of applying it.
-      if (signal.aborted) return;
-
-      const msg = err instanceof Error ? err.message : "Extend failed";
-      setError(msg);
-      throw err;
+      toast.error(errorMessage(err, "Generation failed"));
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleSaveAll = () => {
-    setError(null);
-    setSuccess(null);
-
-    saveAllQuestions(generatedQuestions)
-      .then((data) => {
-        if (!data.success) {
-          throw new Error(data.error || "Save all failed");
-        }
-        setGeneratedQuestions(
-          (data.generated_questions || []).map((q) => {
-            const oldItem = generatedQuestions.find((oldQ) => oldQ.question === q.question);
-            return {
-              ...q,
-              privacy: oldItem ? !!oldItem.privacy : !!q.privacy,
-              auto_que: oldItem ? !!oldItem.auto_que : !!q.auto_que,
-            };
-          })
-        );
-        if (data.saved_count && data.saved_count > 0) {
-          setSuccess(`Saved ${data.saved_count} question(s) to the database.`);
-        } else {
-          setError("Failed to save questions.");
-        }
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Save all failed");
-      });
+  /** Write one generated question, then drop it from the working list. */
+  const saveOne = async (index: number) => {
+    await createQuestion(drafts[index]);
+    if (!drafts[index].isLocal) {
+      await removeGenerated(index);
+    }
+    dropAt(index);
   };
 
-  const handleDeleteAll = () => {
-    if (!window.confirm("Delete all generated questions? This will not remove anything from the database.")) {
+  const handleSaveOne = async (index: number) => {
+    setBusy(true);
+    try {
+      await saveOne(index);
+      toast.success("Question saved.");
+    } catch (err) {
+      toast.error(errorMessage(err, "Save failed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteOne = async (index: number) => {
+    setBusy(true);
+    try {
+      if (!drafts[index].isLocal) {
+        await removeGenerated(index);
+      }
+      dropAt(index);
+    } catch (err) {
+      toast.error(errorMessage(err, "Delete failed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Back to front, so removing one never shifts an index still to come. */
+  const handleSaveAll = async () => {
+    setBusy(true);
+    let saved = 0;
+    const failures: string[] = [];
+
+    for (let index = drafts.length - 1; index >= 0; index--) {
+      try {
+        await saveOne(index);
+        saved += 1;
+      } catch (err) {
+        failures.push(`#${index + 1}: ${errorMessage(err, "Save failed")}`);
+      }
+    }
+
+    setBusy(false);
+    if (saved > 0) toast.success(`Saved ${saved} question(s).`);
+    if (failures.length > 0) toast.error(failures.join("; "));
+  };
+
+  const handleDeleteAll = async () => {
+    if (
+      !window.confirm(
+        "Delete all generated questions? This will not remove anything from the database."
+      )
+    ) {
       return;
     }
-    setError(null);
-    setSuccess(null);
 
-    deleteAllQuestions()
-      .then((data) => {
-        if (!data.success) {
-          throw new Error(data.error || "Delete all failed");
-        }
-        setGeneratedQuestions([]);
-        setSuccess("Cleared all generated questions.");
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Delete all failed");
-      });
+    setBusy(true);
+    try {
+      await clearGenerated();
+      setDrafts([]);
+    } catch (err) {
+      toast.error(errorMessage(err, "Delete all failed"));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleExtendAll = async () => {
-    setError(null);
-    setSuccess(null);
-    setSubmitting(true);
+    setBusy(true);
+    const controller = new AbortController();
+    let extended = 0;
+    const failures: string[] = [];
 
-    let extendedCount = 0;
-    let failureCount = 0;
-    const errorsList: string[] = [];
-
-    // Make a copy of current questions state so we can mutate and update sequentially
-    const updatedQuestions = [...generatedQuestions];
-
-    for (let i = 0; i < updatedQuestions.length; i++) {
-      const item = updatedQuestions[i];
+    for (const [index, draft] of drafts.entries()) {
       try {
-        const data = await extendQuestion(i, item, "", []);
-
-        if (!data.success) {
-          throw new Error(data.error || "Extend failed");
-        }
-
-        // The endpoint returns the entire generated_questions array.
-        // We extract the newly extended question at index i.
-        if (data.generated_questions && data.generated_questions[i]) {
-          const newQuestionData = data.generated_questions[i];
-          updatedQuestions[i] = {
-            ...newQuestionData,
-            privacy: !!item.privacy,
-            auto_que: !!item.auto_que,
-          };
-          // Update the list state in real-time as each question completes
-          setGeneratedQuestions([...updatedQuestions]);
-        }
-        extendedCount++;
+        const { answer, hint } = await extendQuestion(
+          draft.isLocal ? {} : { index },
+          draft,
+          "",
+          [],
+          controller.signal
+        );
+        replaceAt(index, { ...draft, text: { ...draft.text, answer, hint } });
+        extended += 1;
       } catch (err) {
-        failureCount++;
-        const msg = err instanceof Error ? err.message : "Extend failed";
-        errorsList.push(`Question #${i + 1}: ${msg}`);
+        failures.push(`#${index + 1}: ${errorMessage(err, "Extend failed")}`);
       }
     }
 
-    setSubmitting(false);
-
-    if (extendedCount > 0) {
-      setSuccess(`Successfully extended ${extendedCount} answer(s).`);
-    }
-    if (failureCount > 0) {
-      setError(`Failed to extend ${failureCount} answer(s): ${errorsList.join("; ")}`);
-    }
+    setBusy(false);
+    if (extended > 0) toast.success(`Extended ${extended} answer(s).`);
+    if (failures.length > 0) toast.error(failures.join("; "));
   };
 
-  const handleMasterToggleChange = (field: "auto_que" | "privacy", checked: boolean) => {
-    setGeneratedQuestions((prev) =>
-      prev.map((q) => ({
-        ...q,
-        [field]: checked,
-      }))
-    );
-  };
+  const applyToAll = (patch: Partial<QuestionDraft>) =>
+    setDrafts((prev) => prev.map((draft) => ({ ...draft, ...patch })));
+
   if (loading) {
-    return (
-      <LoadingState message="Loading AI Question Generator..." />
-    );
+    return <LoadingState message="Loading AI Question Generator..." />;
   }
 
-  // Check if every item is checked for auto_que / privacy to sync master toggle states
-  const allAutoQueChecked = generatedQuestions.length > 0 && generatedQuestions.every((q) => q.auto_que);
-  const allPrivacyChecked = generatedQuestions.length > 0 && generatedQuestions.every((q) => q.privacy);
+  const allQueued = drafts.length > 0 && drafts.every((d) => d.autoQue);
+  const allPrivate = drafts.length > 0 && drafts.every((d) => d.privacy);
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>AI Question Generator</h1>
-      <p className={styles.description}>Have AI generate quiz questions from your material.</p>
+      <Toaster richColors position="top-right" />
 
-      {error && (
-        <div className={`${sharedStyles.alert} ${sharedStyles.alertError}`} role="alert">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className={`${sharedStyles.alert} ${sharedStyles.alertSuccess}`} role="alert">
-          {success}
-        </div>
-      )}
+      <h1 className={styles.title}>AI Question Generator</h1>
+      <p className={styles.description}>
+        Have AI generate quiz questions from your material.
+      </p>
 
       <form onSubmit={handleGenerate} className={styles.card}>
-        <p className={styles.subLabel} style={{ textAlign: "center", marginBottom: "16px" }}>
-          <strong>Categories are required.</strong> Pick one or more below — the AI will tag each generated question with the relevant ones.
+        <p className={styles.subLabel}>
+          <strong>Categories are required.</strong> The AI tags every generated
+          question with the ones you pick.
         </p>
 
         <div className={styles.formGroup}>
-          <CatPicker selectedCategories={selectedCats} onChange={setSelectedCats} />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="file_upload" className={styles.label}>Upload Document (Optional)</label>
-          <span className={styles.subLabel}>
-            Upload a PDF or an image (PNG, JPG, JPEG) to generate questions from.
-          </span>
-          <input
-            id="file_upload"
-            type="file"
-            accept=".pdf,image/*"
-            className={styles.fileInput}
-            onChange={(e) => {
-              const selectedFile = e.target.files?.[0] || null;
-              setFile(selectedFile);
-            }}
+          {/* The master set: every generated question is tagged from it, so it is
+              the one categories section on this page that opens by default. */}
+          <CategoryPicker
+            selectedCategories={categories}
+            onChange={setCategories}
+            allowCreate
+            defaultExpanded
           />
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="quiz_content" className={styles.label}>Quiz Content {file ? "(Optional)" : ""}</label>
+          <label htmlFor="file_upload" className={styles.label}>
+            Upload Document (Optional)
+          </label>
           <span className={styles.subLabel}>
-            Have AI create questions for you regarding the following material.
+            A PDF or an image (PNG, JPG, JPEG) to generate questions from.
+          </span>
+          <input
+            id="file_upload"
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,image/*"
+            className={styles.input}
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="quiz_content" className={styles.label}>
+            Quiz Content {file ? "(Optional)" : ""}
+          </label>
+          <span className={styles.subLabel}>
+            The material you would like questions generated from.
           </span>
           <textarea
             id="quiz_content"
             className={styles.textarea}
             rows={10}
-            placeholder={file ? "Optional when a document is uploaded..." : "Paste or type the source material you'd like questions generated from..."}
+            placeholder={
+              file
+                ? "Optional when a document is uploaded..."
+                : "Paste or type the source material..."
+            }
             value={quizContent}
             onChange={(e) => setQuizContent(e.target.value)}
             required={!file}
@@ -394,42 +352,43 @@ export function AiQuestionGenerator() {
         <fieldset className={styles.fieldset}>
           <legend className={styles.legend}>Qty. of Questions to create</legend>
           <p className={styles.subLabel}>
-            Tell the AI to create <strong>between this many questions</strong> (a minimum and a maximum). Each value must be 0–50.
+            Generate <strong>between this many questions</strong>. Each value
+            must be 0&ndash;{MAX_QUESTIONS}.
           </p>
           <div className={styles.row}>
             <div className={styles.col}>
-              <label htmlFor="qty_from" className={styles.label}>From</label>
+              <label htmlFor="qty_from" className={styles.label}>
+                From
+              </label>
               <input
                 id="qty_from"
                 type="number"
                 className={styles.input}
                 min={0}
-                max={50}
+                max={MAX_QUESTIONS}
                 value={qtyFrom}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || 0;
-                  setQtyFrom(val);
-                  if (qtyTo < val + 1) {
-                    setQtyTo(val + 1);
-                  }
+                  const value = parseInt(e.target.value, 10) || 0;
+                  setQtyFrom(value);
+                  if (qtyTo < value + 1) setQtyTo(value + 1);
                 }}
               />
               <span className={styles.subLabel}>at least this many</span>
             </div>
-            <div style={{ fontSize: "1.5rem", fontWeight: "bold", padding: "0 8px" }}>–</div>
             <div className={styles.col}>
-              <label htmlFor="qty_to" className={styles.label}>To</label>
+              <label htmlFor="qty_to" className={styles.label}>
+                To
+              </label>
               <input
                 id="qty_to"
                 type="number"
                 className={styles.input}
                 min={Math.max(1, qtyFrom + 1)}
-                max={50}
+                max={MAX_QUESTIONS}
                 value={qtyTo}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || 0;
-                  const minTo = Math.max(1, qtyFrom + 1);
-                  setQtyTo(Math.max(val, minTo));
+                  const value = parseInt(e.target.value, 10) || 0;
+                  setQtyTo(Math.max(value, Math.max(1, qtyFrom + 1)));
                 }}
               />
               <span className={styles.subLabel}>up to this many</span>
@@ -444,12 +403,13 @@ export function AiQuestionGenerator() {
             checked={tryProvideHints}
             onChange={(e) => setTryProvideHints(e.target.checked)}
           />
-          <div>
+          <span>
             <span className={styles.checkboxLabel}>Try to use hints</span>
-            <span className={styles.subLabel} style={{ marginTop: "4px" }}>
-              If checked, a separate AI call will be made to generate hints for the questions it considers difficult enough to warrant one. Easy questions won't get a hint.
+            <span className={styles.subLabel}>
+              A separate AI call generates hints for the questions it considers
+              difficult enough to warrant one.
             </span>
-          </div>
+          </span>
         </label>
 
         <label className={styles.checkboxContainer}>
@@ -459,26 +419,27 @@ export function AiQuestionGenerator() {
             checked={avoidDuplicates}
             onChange={(e) => setAvoidDuplicates(e.target.checked)}
           />
-          <div>
+          <span>
             <span className={styles.checkboxLabel}>Avoid duplicates</span>
-            <span className={styles.subLabel} style={{ marginTop: "4px" }}>
-              If checked, existing questions under these categories will be queried and passed to the AI to prevent generating duplicate questions.
+            <span className={styles.subLabel}>
+              Existing questions under these categories are passed to the AI so
+              it does not generate them again.
             </span>
-          </div>
+          </span>
         </label>
 
-        <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-          <button
-            type="submit"
-            className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
-            disabled={submitting}
-          >
-            {submitting && (
-              <Loader2 className={`${sharedStyles.buttonIcon} ${sharedStyles.spinIcon}`} />
-            )}
-            {submitting ? "Generating Questions..." : "Get AI Questions!"}
-          </button>
-        </div>
+        <button
+          type="submit"
+          className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
+          disabled={busy}
+        >
+          {busy && (
+            <Loader2
+              className={`${sharedStyles.buttonIcon} ${sharedStyles.spinIcon}`}
+            />
+          )}
+          {busy ? "Working..." : "Get AI Questions!"}
+        </button>
       </form>
 
       <hr className={styles.divider} />
@@ -486,14 +447,27 @@ export function AiQuestionGenerator() {
       <section id="ai-generated-questions">
         <h2 className={styles.sectionTitle}>Generated Questions</h2>
 
-        {generatedQuestions.length > 0 ? (
-          <div>
-            {/* Top bulk actions */}
-            <div className={styles.bulkActions}>
+        <div className={sharedStyles.actionCluster}>
+          <button
+            type="button"
+            className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnTeal}`}
+            onClick={() =>
+              setDrafts((prev) => [
+                ...prev,
+                { ...emptyDraft(), categories, isLocal: true },
+              ])
+            }
+            disabled={busy}
+          >
+            Add Question
+          </button>
+          {drafts.length > 0 && (
+            <>
               <button
                 type="button"
                 className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnGreen}`}
                 onClick={handleSaveAll}
+                disabled={busy}
               >
                 Save All
               </button>
@@ -501,6 +475,7 @@ export function AiQuestionGenerator() {
                 type="button"
                 className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnRed}`}
                 onClick={handleDeleteAll}
+                disabled={busy}
               >
                 Delete All
               </button>
@@ -508,147 +483,55 @@ export function AiQuestionGenerator() {
                 type="button"
                 className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnTeal}`}
                 onClick={handleExtendAll}
+                disabled={busy}
               >
                 Extend All
               </button>
-            </div>
+            </>
+          )}
+        </div>
 
-            {/* Master toggles */}
+        {drafts.length === 0 ? (
+          <p className={styles.subLabel}>
+            Generated questions will appear here once you click "Get AI
+            Questions!" above, or you can add one manually.
+          </p>
+        ) : (
+          <>
             <div className={styles.masterToggles}>
               <span className={styles.masterTogglesTitle}>Apply to all:</span>
-              <label className={styles.checkboxContainer} style={{ margin: 0 }}>
+              <label className={styles.checkboxContainer}>
                 <input
                   type="checkbox"
                   className={styles.checkbox}
-                  checked={allAutoQueChecked}
-                  onChange={(e) => handleMasterToggleChange("auto_que", e.target.checked)}
+                  checked={allQueued}
+                  onChange={(e) => applyToAll({ autoQue: e.target.checked })}
                 />
                 <span className={styles.checkboxLabel}>Add all to Que</span>
               </label>
-              <label className={styles.checkboxContainer} style={{ margin: 0 }}>
+              <label className={styles.checkboxContainer}>
                 <input
                   type="checkbox"
                   className={styles.checkbox}
-                  checked={allPrivacyChecked}
-                  onChange={(e) => handleMasterToggleChange("privacy", e.target.checked)}
+                  checked={allPrivate}
+                  onChange={(e) => applyToAll({ privacy: e.target.checked })}
                 />
                 <span className={styles.checkboxLabel}>Mark all Private</span>
               </label>
-              <span className={styles.subLabel} style={{ margin: 0 }}>
-                Check / uncheck to flip every matching checkbox below.
-              </span>
             </div>
 
-            {/* Question Group List */}
-            {generatedQuestions.map((gq, i) => (
-              <div key={i} className={styles.questionGroup}>
-                <div className={styles.questionGroupHeader}>Question #{i + 1}</div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor={`gen_question_${i}`} className={styles.label}>Question</label>
-                  <textarea
-                    id={`gen_question_${i}`}
-                    className={styles.textarea}
-                    rows={2}
-                    maxLength={1499}
-                    value={gq.question}
-                    onChange={(e) => handleQuestionChange(i, "question", e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor={`gen_hint_${i}`} className={styles.label}>Hint</label>
-                  <textarea
-                    id={`gen_hint_${i}`}
-                    className={styles.textarea}
-                    rows={2}
-                    maxLength={1999}
-                    placeholder="(no hint)"
-                    value={gq.hint || ""}
-                    onChange={(e) => handleQuestionChange(i, "hint", e.target.value)}
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor={`gen_answer_${i}`} className={styles.label}>Answer</label>
-                  <textarea
-                    id={`gen_answer_${i}`}
-                    className={styles.textarea}
-                    rows={4}
-                    maxLength={3999}
-                    value={gq.answer}
-                    onChange={(e) => handleQuestionChange(i, "answer", e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <span className={styles.label}>Categories</span>
-                  <CatPicker
-                    selectedCategories={gq.categories}
-                    onChange={(cats) => handleQuestionChange(i, "categories", cats)}
-                  />
-                </div>
-
-                <div className={styles.questionOptions}>
-                  <div className={styles.optionBox}>
-                    <input
-                      type="checkbox"
-                      id={`gen-auto-que-${i}`}
-                      className={styles.checkbox}
-                      style={{ margin: 0 }}
-                      checked={!!gq.auto_que}
-                      onChange={(e) => handleQuestionChange(i, "auto_que", e.target.checked)}
-                    />
-                    <label htmlFor={`gen-auto-que-${i}`} className={styles.checkboxLabel} style={{ fontSize: "0.875rem" }}>
-                      Add Question to Que
-                    </label>
-                  </div>
-                  <div className={styles.optionBox}>
-                    <input
-                      type="checkbox"
-                      id={`gen-privacy-${i}`}
-                      className={styles.checkbox}
-                      style={{ margin: 0 }}
-                      checked={!!gq.privacy}
-                      onChange={(e) => handleQuestionChange(i, "privacy", e.target.checked)}
-                    />
-                    <label htmlFor={`gen-privacy-${i}`} className={styles.checkboxLabel} style={{ fontSize: "0.875rem" }}>
-                      Private only
-                    </label>
-                  </div>
-                </div>
-
-                <div className={sharedStyles.actionCluster}>
-                  <button
-                    type="button"
-                    className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnGreen}`}
-                    onClick={() => handleSaveOne(i)}
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnRed}`}
-                    onClick={() => handleDeleteOne(i)}
-                  >
-                    Delete
-                  </button>
-
-                  <ExtendButton
-                    onExtend={(payload, signal) =>
-                      handleExtendOne(i, payload, signal)
-                    }
-                  />
-                </div>
-              </div>
+            {drafts.map((draft, index) => (
+              <GeneratedCard
+                key={index}
+                index={index}
+                draft={draft}
+                busy={busy}
+                onChange={(next) => replaceAt(index, next)}
+                onSave={() => void handleSaveOne(index)}
+                onDelete={() => void handleDeleteOne(index)}
+              />
             ))}
-          </div>
-        ) : (
-          <p className={styles.subLabel} style={{ fontStyle: "italic", marginTop: "20px" }}>
-            Generated questions will appear here once you click "Get AI Questions!" above.
-          </p>
+          </>
         )}
       </section>
     </div>

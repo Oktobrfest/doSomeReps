@@ -3,7 +3,7 @@ import { AudioCommandSystemComponent } from './AudioCommandSystem';
 import type { AudioCommandSystemHandle } from './AudioCommandSystem';
 import { ImageCarousel } from './ImageCarousel';
 import { ImageModal } from './ImageModal';
-import { BookOpen, Ban, Edit, Lightbulb, PenLine, Star } from 'lucide-react';
+import { BookOpen, Ban, Edit, Lightbulb, PenLine, Sparkles, Star } from 'lucide-react';
 import type { QuizPageProps } from './types';
 import styles from './QuizPage.module.css';
 import sharedStyles from '../styles/shared.module.css';
@@ -17,15 +17,15 @@ import {
 import type { SlideOutButtonsHandle } from './SlideOutButtons';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { FlagButton } from '../components/FlagButton';
+import { CategoryChips } from '../components/CategoryChip';
 import { useQuizController, type QuizController } from './useQuizController';
 import { useQuizMode, type QuizMode } from './useQuizMode';
-import { useFullSizedPage } from './useFullSizedPage';
+import { useFullSizedPage } from '../hooks/useFullSizedPage';
 import { AnswerPlayer, GetAnswerButton, ReadQuestionControl } from './AudioControls';
 import { AudioPlane } from './AudioPlane';
 import { CategoriesSection } from './CategoriesSection';
 import { QuestionToolbar } from './QuestionToolbar';
 import { AnswerDraftModal } from './modals/AnswerDraftModal';
-import { CategoriesModal } from './modals/CategoriesModal';
 import { HintModal } from './modals/HintModal';
 import { RateModal } from './modals/RateModal';
 import { useAskAi } from '../ask_ai/useAskAi';
@@ -54,11 +54,6 @@ function QuizEmpty({
 }: QuizEmptyProps) {
   const [picking, setPicking] = useState(false);
 
-  const selectedNormalized = (selectedCategories ?? []).map((c) => c.replace(/_/g, ' '));
-  const unselected = (categoryList ?? []).filter(
-    (cat) => !selectedNormalized.includes(cat),
-  );
-
   return (
     <div className={styles.emptyContainer}>
       <p className={styles.emptyMessage}>{message}</p>
@@ -70,23 +65,23 @@ function QuizEmpty({
         >
           Que More Questions
         </a>
-        {unselected.length > 0 && (
-          <button
-            type="button"
-            className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
-            onClick={() => setPicking(true)}
-          >
-            Select More Categories
-          </button>
-        )}
+        <button
+          type="button"
+          className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
+          aria-expanded={picking}
+          onClick={() => setPicking(!picking)}
+        >
+          {picking ? 'Hide Categories' : 'Select More Categories'}
+        </button>
       </div>
 
+      {/* An empty queue has no panel and no disclosure to hold the picker, so it
+          opens here - the same section, not a second way of choosing. */}
       {picking && (
-        <CategoriesModal
+        <CategoriesSection
           categoryList={categoryList}
-          selectedCategories={selectedCategories}
+          initialSelectedCategories={selectedCategories}
           onApply={onApplyCategories}
-          onClose={() => setPicking(false)}
         />
       )}
     </div>
@@ -111,6 +106,9 @@ export function QuizPage(props: QuizPageProps) {
   const commandSystemRef = useRef<AudioCommandSystemHandle>(null);
   const slideOutRef = useRef<SlideOutButtonsHandle>(null);
 
+  const [panelMetrics, setPanelMetrics] = useState<Metrics | null>(null);
+  const onMetricsChange = useCallback((metrics: Metrics) => setPanelMetrics(metrics), []);
+
   const askAiContext = useMemo<AskAiContext | null>(() => {
     const q = quiz.currentQuestion;
     if (!q) return null;
@@ -131,6 +129,11 @@ export function QuizPage(props: QuizPageProps) {
       commandSystemRef.current?.resumeListening();
     }, []),
   });
+
+  const askAiPadding =
+    quiz.answerRevealed && panelMetrics && askAi.isActive
+      ? panelMetrics[quiz.panelSnap] + PANEL_CLEARANCE
+      : 0;
 
   const commandHandlers = useMemo(
     () => ({
@@ -235,6 +238,10 @@ export function QuizPage(props: QuizPageProps) {
       categoryList={categoryList}
       selectedCategories={selectedCategories}
       slideOutRef={slideOutRef}
+      onAskAi={askAi.actions.start}
+      panelMetrics={panelMetrics}
+      onMetricsChange={onMetricsChange}
+      askAiActive={askAi.isActive}
     />
   ) : quiz.queueExhausted ? (
     <QuizEmpty
@@ -260,20 +267,24 @@ export function QuizPage(props: QuizPageProps) {
       {fullSized ? (
         <div className={styles.pageLayout}>
           <div className={styles.readingColumn}>
-            <details className={styles.categoriesDisclosure}>
-              <summary className={styles.categoriesSummary}>Categories</summary>
-              <CategoriesSection
-                categoryList={categoryList}
-                initialSelectedCategories={selectedCategories}
-                onApply={quiz.actions.applyCategories}
-                disabled={quiz.isSubmitting}
-              />
-            </details>
+            <CategoriesSection
+              categoryList={categoryList}
+              initialSelectedCategories={selectedCategories}
+              onApply={quiz.actions.applyCategories}
+              disabled={quiz.isSubmitting}
+            />
 
             {body}
           </div>
 
-          <AudioPlane quiz={quiz} mode={mode}>{commandSystem}</AudioPlane>
+          <AudioPlane
+            quiz={quiz}
+            mode={mode}
+            onAskAi={askAi.actions.start}
+            askAiDisabled={askAi.isActive}
+          >
+            {commandSystem}
+          </AudioPlane>
         </div>
       ) : (
         <>
@@ -284,7 +295,7 @@ export function QuizPage(props: QuizPageProps) {
 
       {/* Ask AI conversation UI rendered at the bottom of the quiz page. */}
       <div id="ask-ai-conversation-root" className={styles.askAiConversationRoot}>
-        <AskAiPanel state={askAi} />
+        <AskAiPanel state={askAi} bottomPadding={askAiPadding} />
       </div>
     </div>
   );
@@ -300,6 +311,11 @@ interface QuizBodyProps {
   categoryList?: string[];
   selectedCategories?: string[];
   slideOutRef: RefObject<SlideOutButtonsHandle>;
+  /** Starts an Ask AI session with the wake-word path's own "was listening" flag. */
+  onAskAi: () => void;
+  panelMetrics: Metrics | null;
+  onMetricsChange: (metrics: Metrics) => void;
+  askAiActive: boolean;
 }
 
 /** The secondary panels a question can open, one at a time. */
@@ -314,6 +330,10 @@ function QuizBody({
   categoryList,
   selectedCategories,
   slideOutRef,
+  onAskAi,
+  panelMetrics,
+  onMetricsChange,
+  askAiActive,
 }: QuizBodyProps) {
   const currentQuestion = quiz.currentQuestion!; // guarded by the shell
   const answerRef = useRef<HTMLDivElement>(null);
@@ -334,14 +354,11 @@ function QuizBody({
 
   const closeDialog = useCallback(() => setDialog(null), []);
 
-  const [panelMetrics, setPanelMetrics] = useState<Metrics | null>(null);
-  const onMetricsChange = useCallback((metrics: Metrics) => setPanelMetrics(metrics), []);
-
   // Clear the panel by exactly what it currently measures. The panel is both
   // taller on a phone and shorter once the touch tiers collapse, so a hand-tuned
   // number would be wrong on one of the two.
   const answerPadding =
-    quiz.answerRevealed && panelMetrics
+    quiz.answerRevealed && panelMetrics && !askAiActive
       ? panelMetrics[quiz.panelSnap] + PANEL_CLEARANCE
       : 0;
 
@@ -385,6 +402,13 @@ function QuizBody({
   const extraActions = useMemo((): ExtraAction[] => {
     const actions: ExtraAction[] = [
       {
+        key: 'askAi',
+        label: 'Ask AI',
+        icon: <Sparkles className={sharedStyles.buttonIcon} />,
+        variant: 'edit',
+        onClick: onAskAi,
+      },
+      {
         key: 'exclude',
         label: 'Exclude',
         icon: <Ban className={sharedStyles.buttonIcon} />,
@@ -404,7 +428,7 @@ function QuizBody({
     }
 
     return actions;
-  }, [currentQuestion, isOwnQuestion, editQuestionUrl, quiz.actions.exclude]);
+  }, [currentQuestion, isOwnQuestion, editQuestionUrl, onAskAi, quiz.actions.exclude]);
 
   /*
    * A full-sized page gives every secondary control a home of its own — the
@@ -515,9 +539,10 @@ function QuizBody({
         >
           <div className={styles.metaRow}>
             <strong>Level {currentQuestion.level_no}</strong>
-            {currentQuestion.categories.map((cat) => (
-              <span key={cat} className={styles.badge}>{cat}</span>
-            ))}
+            <CategoryChips
+              names={currentQuestion.categories}
+              className={styles.metaChips}
+            />
 
             {fullSized ? (
               <QuestionToolbar

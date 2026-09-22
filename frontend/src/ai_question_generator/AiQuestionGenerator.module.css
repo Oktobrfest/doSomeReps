@@ -50,12 +50,14 @@
 
 .subLabel {
   font-size: 0.85rem;
+  line-height: 1.4;
   color: var(--rep-color-text-subtle);
   margin-bottom: 8px;
   display: block;
 }
 
-.textarea {
+.input {
+  display: block;
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--rep-color-border-strong);
@@ -63,9 +65,15 @@
   font-size: 1rem;
   font-family: inherit;
   box-sizing: border-box;
+  background-color: var(--rep-color-surface);
   transition: border-color var(--rep-transition-fast);
 }
 
+.textarea {
+  composes: input;
+}
+
+.input:focus,
 .textarea:focus {
   outline: none;
   border-color: var(--rep-color-focus);
@@ -99,15 +107,6 @@
   min-width: 120px;
 }
 
-.input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid var(--rep-color-border-strong);
-  border-radius: var(--rep-radius-control);
-  font-size: 1rem;
-  box-sizing: border-box;
-}
-
 .checkboxContainer {
   display: flex;
   align-items: flex-start;
@@ -139,13 +138,6 @@
   margin: 40px 0;
 }
 
-.bulkActions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-
 .masterToggles {
   background-color: var(--rep-color-surface-subtle);
   border: 1px solid var(--rep-color-border);
@@ -156,6 +148,11 @@
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
+}
+
+/* In a row of toggles the stacked spacing would push them out of line. */
+.masterToggles .checkboxContainer {
+  margin-bottom: 0;
 }
 
 .masterTogglesTitle {
@@ -175,63 +172,19 @@
 .questionGroupHeader {
   font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: 15px;
+  margin-bottom: 0;
   color: var(--rep-color-text-primary);
   border-bottom: 1px solid var(--rep-color-surface-secondary);
   padding-bottom: 8px;
 }
 
-.badge {
-  display: inline-block;
-  padding: 4px 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border-radius: var(--rep-radius-small);
-  background-color: var(--rep-color-border);
-  color: var(--rep-color-text-secondary);
-  margin-right: 6px;
-  margin-bottom: 6px;
-}
-
-.badgeContainer {
+.cardHeader {
   display: flex;
-  flex-wrap: wrap;
-  margin-top: 6px;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.questionOptions {
-  display: flex;
-  gap: 16px;
-  margin-top: 15px;
-  flex-wrap: wrap;
-}
-
-.optionBox {
-  border: 1px solid var(--rep-color-border);
-  border-radius: var(--rep-radius-control);
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: var(--rep-color-surface-subtle);
-}
-
-.extendInput {
-  flex: 1;
-  min-width: 200px;
-  padding: 8px 12px;
-  border: 1px solid var(--rep-color-border-strong);
-  border-radius: var(--rep-radius-control);
-  font-size: 0.875rem;
-}
-
-.fileInput {
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid var(--rep-color-border-strong);
-  border-radius: var(--rep-radius-control);
-  font-size: 1rem;
-  box-sizing: border-box;
-  background-color: var(--rep-color-surface);
+.askAiRoot {
+  margin-top: 20px;
 }

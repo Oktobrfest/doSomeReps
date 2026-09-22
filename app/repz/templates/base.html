@@ -23,9 +23,7 @@
 
 <body tabindex="1">
 
-  {# CHANGED THIS - include was between </head> and <body>, which is invalid HTML;
-     the parser was silently relocating it #}
-  {% include 'navigation.html' %}
+    {% include 'navigation.html' %}
 
 <div id="my-message-area">
   {% with messages = get_flashed_messages(with_categories=true) %}

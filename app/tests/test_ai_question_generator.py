@@ -36,12 +36,9 @@ ctx.push()
 from repz.ai.question_generator import (
     ai_qgen_state,
     ai_qgen_generate,
-    ai_qgen_save_one,
-    ai_qgen_save_all,
     ai_qgen_delete_one,
     ai_qgen_delete_all,
-    ai_qgen_extend_one,
-    ai_qgen_extend_all,
+    ai_qgen_extend,
 )
 
 
@@ -53,12 +50,9 @@ class TestAIQuestionGeneratorAPIs(unittest.TestCase):
         try:
             self.app.add_url_rule("/ai_question_generator/api/state", "state", ai_qgen_state, methods=["GET"])
             self.app.add_url_rule("/ai_question_generator/api/generate", "generate", ai_qgen_generate, methods=["POST"])
-            self.app.add_url_rule("/ai_question_generator/api/save", "save", ai_qgen_save_one, methods=["POST"])
-            self.app.add_url_rule("/ai_question_generator/api/save_all", "save_all", ai_qgen_save_all, methods=["POST"])
             self.app.add_url_rule("/ai_question_generator/api/delete", "delete", ai_qgen_delete_one, methods=["POST"])
             self.app.add_url_rule("/ai_question_generator/api/delete_all", "delete_all", ai_qgen_delete_all, methods=["POST"])
-            self.app.add_url_rule("/ai_question_generator/api/extend", "extend", ai_qgen_extend_one, methods=["POST"])
-            self.app.add_url_rule("/ai_question_generator/api/extend_all", "extend_all", ai_qgen_extend_all, methods=["POST"])
+            self.app.add_url_rule("/ai_question_generator/api/extend", "extend", ai_qgen_extend, methods=["POST"])
         except AssertionError:
             # Already added, ignore
             pass
@@ -87,7 +81,7 @@ class TestAIQuestionGeneratorAPIs(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
         self.assertEqual(len(data["generated_questions"]), 1)
-        self.assertEqual(data["generated_questions"][0]["question"], "Q1")
+        self.assertEqual(data["generated_questions"][0]["question_text"], "Q1")
         self.assertEqual(data["selected_categories"], ["Math", "Science"])
 
     @patch("repz.ai.question_generator.current_user")
@@ -137,7 +131,7 @@ class TestAIQuestionGeneratorAPIs(unittest.TestCase):
         data = response.get_json()
         self.assertTrue(data["success"])
         self.assertEqual(len(data["generated_questions"]), 1)
-        self.assertEqual(data["generated_questions"][0]["question"], "Gen Q")
+        self.assertEqual(data["generated_questions"][0]["question_text"], "Gen Q")
 
     @patch("repz.ai.question_generator.current_user")
     def test_delete_and_delete_all_endpoints(self, mock_current_user):
@@ -157,7 +151,7 @@ class TestAIQuestionGeneratorAPIs(unittest.TestCase):
         data = response.get_json()
         self.assertTrue(data["success"])
         self.assertEqual(len(data["generated_questions"]), 1)
-        self.assertEqual(data["generated_questions"][0]["question"], "Q2")
+        self.assertEqual(data["generated_questions"][0]["question_text"], "Q2")
 
         # Delete all
         response = self.client.post("/ai_question_generator/api/delete_all")
@@ -201,7 +195,7 @@ class TestAIQuestionGeneratorAPIs(unittest.TestCase):
         res_data = response.get_json()
         self.assertTrue(res_data["success"])
         self.assertEqual(len(res_data["generated_questions"]), 1)
-        self.assertEqual(res_data["generated_questions"][0]["question"], "Doc Q")
+        self.assertEqual(res_data["generated_questions"][0]["question_text"], "Doc Q")
         mock_trigger_doc.assert_called_once()
         # Verify S3 upload was called
         self.assertTrue(mock_s3_client.upload_file_to_s3.called)
@@ -246,7 +240,7 @@ class TestAIQuestionGeneratorAPIs(unittest.TestCase):
         res_data = response.get_json()
         self.assertTrue(res_data["success"])
         self.assertEqual(len(res_data["generated_questions"]), 1)
-        self.assertEqual(res_data["generated_questions"][0]["question"], "Image Q")
+        self.assertEqual(res_data["generated_questions"][0]["question_text"], "Image Q")
         mock_trigger_doc.assert_called_once()
         # Verify S3 upload was called
         self.assertTrue(mock_s3_client.upload_file_to_s3.called)

@@ -29,7 +29,6 @@ from sqlalchemy import (
     update
 )
 from sqlalchemy.orm import (
-    Query,
     aliased,
     contains_eager,
     joinedload,
@@ -52,13 +51,10 @@ from repz.services.quiz_service import get_selected_categories
 
 from ..bluehelpers import (
     cat_questions_count,
-    clean_for_html,
     get_all_categories,
     get_quizes,
     get_session,
     get_user,
-    create_brand_new_quizq,
-    remove_underscore,
     set_session,
     split_dict,
     tally_que_catz
@@ -75,8 +71,8 @@ from ..models import (
     rating,
     users
 )
-from .form_helpers import save_pictures
-from .homeforms import QuestionForm
+# Imported for its side effect: configuring the image UploadSet.
+from . import homeforms  # noqa: F401
 
 
 @home.route("/favicon.ico")
@@ -169,109 +165,20 @@ def homepage():
 
 
 # creates a new question
-@home.route("/addcontent", methods=["GET", "POST"], endpoint="addcontent")
+@home.route("/addcontent", methods=["GET"], endpoint="addcontent")
 @login_required
 def addcontent():
-    UID = g._login_user.id
-    form = QuestionForm()
-    category_list = get_all_categories()
-    # cleaned_cat_list = list(map(lambda x: clean_for_html(x), category_list))
-    if request.method == "GET":
-        return render_template(
-            "addcontent.html",
-            title="Add content",
-            description=".",
-            user=current_user,
-            category_list=category_list,
-            form=form,
-        )
+    """Shell for the add-content SPA.
 
-    question_text = request.form.get("question_text")
-    hint = request.form.get("hint")
-    answer = request.form.get("answer")
-    privacy_chkbox = request.form.get("privacy-checkbox")
-    if privacy_chkbox == "on":
-        privacy = True
-    else:
-        privacy = False
-
-    selected_categories = request.form.getlist("category_name")
-
-    #remove the html versions underscores
-    spaced_cats = list(map(lambda x: remove_underscore(x), selected_categories))
-
-    #  TEESTING MULTIPLE IMAGE UPLOADS
-    if form.validate_on_submit():
-        fail = False
-        if len(question_text) < 3 or len(answer) < 1:
-            flash("Question text is too short!", category="error")
-            fail = True
-        existing_q_text = session.execute(
-            select(question).where(question.question_text == question_text)
-        ).first()
-        if existing_q_text is not None:
-            flash("question already exists!", category="error")
-            fail = True
-        if len(selected_categories) < 1:
-            fail = True
-            flash("You must select at least one category!", category="error")
-        # if fail == True:
-        #     return redirect(url_for("home.addcontent"))
-
-        if len(answer) > 3999:
-            # THROW/LOG error here because client isn't validating form lenght properly!
-            answer = answer[:3999]
-
-        if fail:
-            flash("Failed Validation!", category="error")
-            return render_template(
-                "addcontent.html",
-                title="Add content",
-                description=".",
-                user=current_user,
-                category_list=category_list,
-                selected_categories=selected_categories,
-                form=form, # possibly replace this with QuestionForm()
-            )
-
-        # create new question!
-        new_question = question(
-            question_text=question_text,
-            hint=hint,
-            created_on=func.now(),
-            answer=answer,
-            created_by=UID,
-            privacy=privacy
-        )
-        # append categories so it dont glitch
-        for cat_name in spaced_cats:
-            query = Query([category]).filter(category.category_name == cat_name)
-            cat = query.with_session(session).first()
-            new_question.categories.append(cat)
-
-        # pictures
-        save_pictures(new_question, request)
-
-        session.add(new_question)
-        session.commit()
-
-        auto_que = request.form.get("automatically-que-created-question")
-
-        if auto_que == "on":
-            question_ids = [new_question.question_id]
-            create_brand_new_quizq(question_ids, current_user.id)
-
-        flash("New question created!", category="success")
-
-
+    The page is a React island: it picks its categories from /api/categories and
+    posts the finished question to quest_ajx.addq, the one route that writes a
+    new question, so nothing about the form lives here.
+    """
     return render_template(
         "addcontent.html",
         title="Add content",
         description=".",
         user=current_user,
-        category_list=category_list,
-        selected_categories=selected_categories,
-        form=form,
     )
 
 

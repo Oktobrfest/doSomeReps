@@ -1,0 +1,86 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.select,
+.input {
+  box-sizing: border-box;
+  flex: 1 1 200px;
+  min-width: 0;
+  max-width: 340px;
+  height: 34px;
+  padding: 0 10px;
+  color: var(--rep-color-text-primary);
+  font-family: inherit;
+  font-size: 0.86rem;
+  background: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-control);
+  transition: border-color var(--rep-transition-fast), box-shadow var(--rep-transition-fast);
+}
+
+.select:focus,
+.input:focus {
+  outline: none;
+  border-color: var(--rep-cp-item-border-active);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rep-cp-item-bg-active) 18%, transparent);
+}
+
+/* However many actions a list's state calls for, they share one row: a phone
+   has no space for a fourth button orphaned on a line of its own. */
+.actions {
+  display: flex;
+  flex: 1 1 260px;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Four of these have to fit a phone's width, so they trade the tier's
+   horizontal padding for the room flex-grow gives back. */
+.actions > * {
+  --rep-btn-padding-x: var(--rep-btn-padding-x-xs);
+
+  flex: 1 1 auto;
+}
+
+.save {
+  composes: actionButton buttonSm btnGreen from '../styles/shared.module.css';
+}
+
+.makeDefault {
+  composes: actionButton buttonSm btnAmber from '../styles/shared.module.css';
+}
+
+.remove {
+  composes: actionButton buttonSm btnRed from '../styles/shared.module.css';
+}
+
+.cancel {
+  composes: actionButton buttonSm btnQuiet from '../styles/shared.module.css';
+}
+
+.newList {
+  composes: actionButton buttonSm btnSlate from '../styles/shared.module.css';
+}
+
+.error {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--rep-color-error-text-strong);
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--rep-color-error-surface-subtle);
+  border: 1px solid var(--rep-color-error-border-subtle);
+  border-radius: var(--rep-radius-control);
+}
+
+@media (max-width: 640px) {
+  .select,
+  .input {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}

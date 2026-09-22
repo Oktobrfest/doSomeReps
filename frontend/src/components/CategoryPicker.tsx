@@ -1,422 +1,306 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Plus, Star, Trash2, X } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Plus, X } from "lucide-react";
+import { toast } from "sonner";
 import { useCategories } from "../hooks/useCategories";
-import { toSlug } from "../lib/categories";
-import { csrfHeaders, jsonHeaders } from "../lib/http";
+import { useFullSizedPage } from "../hooks/useFullSizedPage";
+import { byName, createCategory } from "../lib/categories";
+import { CategoryChip } from "./CategoryChip";
+import { CategorySection, type CategoryItem } from "./CategorySection";
+import { QuizModal } from "./QuizModal";
+import { SavedCategoryLists } from "./SavedCategoryLists";
 import styles from "./CategoryPicker.module.css";
 
-interface CategoryList {
-  id: number;
-  name: string;
-  is_default: boolean;
-  categories: string[];
+/** How long a chip wears its new tick before it moves to the other section. */
+const MOVE_MS = 300;
+
+/**
+ * Whether `content` still fits the width `host` has for it.
+ *
+ * `content` is laid out at its max-content width whichever answer comes back,
+ * so the measurement never depends on the answer and cannot oscillate between
+ * the two of them.
+ */
+function useFitsInline(
+  host: RefObject<HTMLElement>,
+  content: RefObject<HTMLElement>,
+  key: string
+): boolean {
+  const [fits, setFits] = useState(true);
+
+  useLayoutEffect(() => {
+    const hostEl = host.current;
+    const contentEl = content.current;
+    if (!hostEl || !contentEl) return;
+
+    const measure = () => setFits(contentEl.offsetWidth <= hostEl.clientWidth);
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(hostEl);
+    return () => observer.disconnect();
+  }, [host, content, key]);
+
+  return fits;
 }
 
-interface CategoryPickerProps {
+export interface CategoryPickerProps {
   selectedCategories: string[];
   onChange: (categories: string[]) => void;
-  /** Saved-list dropdown plus create/rename/delete/set-default actions. */
-  showSavedLists?: boolean;
-  /** Select All / Deselect All toggle and the selection counter. */
-  showSelectAll?: boolean;
-  /** Optional heading. Omit when the parent already labels the section. */
-  title?: string;
-  /** Input name attribute. Required for server-rendered form submission. */
-  checkboxName?: string;
-  /** Maps a category name onto the value the server expects. */
-  checkboxValueFn?: (category: string) => string;
-  /** Submit button that posts apply-categories=Apply with the surrounding form. */
-  showApplyButton?: boolean;
-  /** Hides the picker without unmounting, so checked inputs still submit. */
-  collapsed?: boolean;
+  /** Saved lists: for the many categories a quiz or a search is drawn from. */
+  savedLists?: boolean;
+  /** Creating a category: only where new questions are written. */
+  allowCreate?: boolean;
+  /** Select all: only where wanting every category is a real thing to want. */
+  selectAll?: boolean;
+  /**
+   * Whether the disclosure starts open on a full-sized page. A page that has
+   * somewhere else to set categories leaves this closed; a page where picking
+   * one is the next thing a writer does opens it. A phone ignores it: there
+   * the picker is a sheet, and opening it unasked would cover the page.
+   */
+  defaultExpanded?: boolean;
 }
 
-const sameSelection = (a: string[], b: string[]): boolean => {
-  if (a.length !== b.length) return false;
-  const left = new Set(a.map(toSlug));
-  return b.every((item) => left.has(toSlug(item)));
-};
-
+/**
+ * Every category, split into the ones picked and the ones not.
+ *
+ * The two halves are the same section rendered twice, the filter narrows only
+ * the half a reader is choosing from, and what a page does not need it does
+ * not get: no page grows a picker of its own.
+ *
+ * It costs a lot of room, so it is gated either way: a full-sized page keeps
+ * it behind one bar, and a phone, which has no room to hold it beside anything
+ * else, keeps it behind one button that gives it the whole screen.
+ */
 export function CategoryPicker({
   selectedCategories,
   onChange,
-  showSavedLists = true,
-  showSelectAll = true,
-  title,
-  checkboxName,
-  checkboxValueFn,
-  showApplyButton = false,
-  collapsed,
+  savedLists = false,
+  allowCreate = false,
+  selectAll = false,
+  defaultExpanded = false,
 }: CategoryPickerProps) {
-  const allCategories = useCategories();
-
-  const [savedLists, setSavedLists] = useState<CategoryList[]>([]);
-  const [selectedListId, setSelectedListId] = useState("");
-  const [isCreateMode, setIsCreateMode] = useState(false);
-  const [newListName, setNewListName] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const sorted = useMemo(
-    () =>
-      [...allCategories].sort((a, b) =>
-        a.localeCompare(b, undefined, { sensitivity: "base", numeric: true })
-      ),
-    [allCategories]
-  );
-
-  const selectedSet = useMemo(
-    () => new Set(selectedCategories),
-    [selectedCategories]
-  );
-
-  const selectedList = useMemo(
-    () => savedLists.find((list) => list.id.toString() === selectedListId),
-    [savedLists, selectedListId]
-  );
-
-  const hasUnsavedChanges = useMemo(
-    () =>
-      Boolean(selectedList) &&
-      !sameSelection(selectedList!.categories, selectedCategories),
-    [selectedList, selectedCategories]
-  );
-
-  // Saved-list category names come back from the API; map them onto the canonical
-  // names in the category table so selection comparisons stay consistent.
-  const resolveNames = useCallback(
-    (names: string[]): string[] =>
-      names.map(
-        (name) => sorted.find((cat) => toSlug(cat) === toSlug(name)) ?? name
-      ),
-    [sorted]
-  );
+  const known = useCategories();
+  const fullSized = useFullSizedPage();
+  const [filter, setFilter] = useState("");
+  const [moving, setMoving] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   useEffect(() => {
-    if (!showSavedLists) return;
-    let cancelled = false;
+    if (!moving) return;
+    const timer = window.setTimeout(() => setMoving(null), MOVE_MS);
+    return () => window.clearTimeout(timer);
+  }, [moving]);
 
-    fetch("/api/category-lists")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load saved lists.");
-        return res.json() as Promise<CategoryList[]>;
-      })
-      .then((data) => {
-        if (cancelled || !Array.isArray(data)) return;
-        setSavedLists(data);
+  /* A selection can name a category the table no longer has, after a rename or
+     a delete. It stays in the list so a reader can still untick it. */
+  const categories = useMemo(
+    () => [...new Set([...known, ...selectedCategories])].sort(byName),
+    [known, selectedCategories]
+  );
+  const chosen = useMemo(() => new Set(selectedCategories), [selectedCategories]);
 
-        const match = data.find((list) =>
-          sameSelection(list.categories, selectedCategories)
-        );
-        if (match) {
-          setSelectedListId(match.id.toString());
-          return;
-        }
+  /* The moving chip holds the section it came from until its tick has landed. */
+  const isSelected = (name: string) => (name === moving ? !chosen.has(name) : chosen.has(name));
+  const item = (name: string): CategoryItem => ({
+    name,
+    checked: chosen.has(name),
+    moving: name === moving,
+  });
 
-        const fallback = data.find((list) => list.is_default);
-        if (fallback && selectedCategories.length === 0) {
-          setSelectedListId(fallback.id.toString());
-          onChange(resolveNames(fallback.categories));
-        }
-      })
-      .catch((err: Error) => {
-        if (!cancelled) setError(err.message);
-      });
+  const needle = filter.trim().toLowerCase();
+  const selected = categories.filter(isSelected).map(item);
+  const unselected = categories
+    .filter((name) => !isSelected(name) && name.toLowerCase().includes(needle))
+    .map(item);
+  const everythingChosen = categories.length > 0 && categories.every(isSelected);
 
-    return () => {
-      cancelled = true;
-    };
-    // Runs once: this is initial hydration, not a subscription to the selection.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSavedLists]);
-
-  const toggle = (category: string) =>
-    onChange(
-      selectedSet.has(category)
-        ? selectedCategories.filter((item) => item !== category)
-        : [...selectedCategories, category]
-    );
-
-  const toggleAll = () =>
-    onChange(selectedCategories.length === sorted.length ? [] : [...sorted]);
-
-  const handleListChange = (listId: string) => {
-    setSelectedListId(listId);
-    const list = savedLists.find((item) => item.id.toString() === listId);
-    onChange(list ? resolveNames(list.categories) : []);
+  const toggle = (name: string) => {
+    setMoving(name);
+    onChange(chosen.has(name) ? selectedCategories.filter((c) => c !== name) : [...selectedCategories, name]);
   };
 
-  const handleCreate = () => {
-    const name = newListName.trim();
-    if (!name) return;
+  /* A wholesale action answers the whole list, so it leaves no filter behind
+     narrowing what comes back. */
+  const applyBulk = (next: string[]) => {
+    setMoving(null);
+    setFilter("");
+    onChange(next);
+  };
 
-    if (savedLists.some((list) => list.name.trim().toLowerCase() === name.toLowerCase())) {
-      setError("A list with that name already exists.");
-      return;
+  const wanted = filter.trim();
+  const creatable =
+    allowCreate && wanted.length > 0 && !categories.some((name) => name.toLowerCase() === needle);
+
+  const create = async () => {
+    if (!creatable || creating) return;
+    setCreating(true);
+    try {
+      const name = await createCategory(wanted);
+      if (!chosen.has(name)) onChange([...selectedCategories, name]);
+      setFilter("");
+      toast.success(`Category "${name}" created.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create that category.");
+    } finally {
+      setCreating(false);
     }
-
-    setError(null);
-    setIsSaving(true);
-
-    fetch("/api/category-lists", {
-      method: "POST",
-      headers: jsonHeaders(),
-      body: JSON.stringify({
-        name,
-        categories: selectedCategories,
-        is_default: savedLists.length === 0,
-      }),
-    })
-      .then((res) => res.json())
-      .then((created: CategoryList & { error?: string }) => {
-        if (created.error) throw new Error(created.error);
-        setSavedLists((prev) =>
-          created.is_default
-            ? [...prev.map((l) => ({ ...l, is_default: false })), created]
-            : [...prev, created]
-        );
-        setSelectedListId(created.id.toString());
-        setNewListName("");
-        setIsCreateMode(false);
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setIsSaving(false));
   };
 
-  const handleSaveChanges = () => {
-    if (!selectedListId) return;
-    setError(null);
-    setIsSaving(true);
+  const picker = (
+    <div className={styles.picker}>
+      {savedLists && (
+        <div className={styles.savedLists}>
+          <SavedCategoryLists
+            categories={categories}
+            selected={selectedCategories}
+            onChange={onChange}
+          />
+        </div>
+      )}
 
-    fetch(`/api/category-lists/${selectedListId}`, {
-      method: "PUT",
-      headers: jsonHeaders(),
-      body: JSON.stringify({ categories: selectedCategories }),
-    })
-      .then((res) => res.json())
-      .then((updated: CategoryList & { error?: string }) => {
-        if (updated.error) throw new Error(updated.error);
-        setSavedLists((prev) =>
-          prev.map((list) => (list.id === updated.id ? updated : list))
-        );
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setIsSaving(false));
-  };
+      {/* With nothing left to choose from there is nothing left to narrow. */}
+      {!everythingChosen && (
+        <div className={styles.filterRow}>
+          <div className={styles.field}>
+            <input
+              type="text"
+              className={styles.input}
+              aria-label="Filter categories"
+              placeholder={allowCreate ? "Filter categories, or name a new one..." : "Filter categories..."}
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                void create();
+              }}
+            />
+            {filter !== "" && (
+              <button
+                type="button"
+                className={styles.clear}
+                aria-label="Clear filter"
+                onClick={() => setFilter("")}
+              >
+                <X className={styles.clearIcon} />
+              </button>
+            )}
+          </div>
 
-  const handleDelete = () => {
-    if (!selectedListId) return;
-    setError(null);
+          {creatable && (
+            <button type="button" className={styles.create} disabled={creating} onClick={() => void create()}>
+              <Plus className={styles.createIcon} />
+              <span>{creating ? "Adding..." : `Create "${wanted}"`}</span>
+            </button>
+          )}
+        </div>
+      )}
 
-    fetch(`/api/category-lists/${selectedListId}`, {
-      method: "DELETE",
-      headers: csrfHeaders(),
-    })
-      .then((res) => res.json())
-      .then((data: { success?: boolean; error?: string }) => {
-        if (!data.success) throw new Error(data.error ?? "Failed to delete list.");
-        setSavedLists((prev) =>
-          prev.filter((list) => list.id.toString() !== selectedListId)
-        );
-        setSelectedListId("");
-      })
-      .catch((err: Error) => setError(err.message));
-  };
+      <CategorySection
+        title="Unselected categories"
+        items={unselected}
+        onToggle={toggle}
+        highlight={wanted}
+        bulk={selectAll ? { label: "Select all", onClick: () => applyBulk(categories) } : undefined}
+        empty={
+          everythingChosen ? (
+            <p className={styles.empty}>Every category is selected.</p>
+          ) : (
+            <p className={styles.empty}>
+              <span>No unselected category matches “{wanted}”.</span>
+              <button type="button" className={styles.emptyAction} onClick={() => setFilter("")}>
+                Clear search filter
+              </button>
+            </p>
+          )
+        }
+      />
 
-  const handleSetDefault = () => {
-    if (!selectedListId) return;
-    setError(null);
+      <CategorySection
+        title="Selected categories"
+        items={selected}
+        onToggle={toggle}
+        highlight={wanted}
+        bulk={{ label: "Clear all selected", onClick: () => applyBulk([]) }}
+        empty={<p className={styles.empty}>Nothing selected yet. Tick a category above.</p>}
+      />
+    </div>
+  );
 
-    fetch(`/api/category-lists/${selectedListId}/set-default`, {
-      method: "POST",
-      headers: csrfHeaders(),
-    })
-      .then((res) => res.json())
-      .then((data: { success?: boolean; error?: string }) => {
-        if (!data.success) throw new Error(data.error ?? "Failed to set default.");
-        setSavedLists((prev) =>
-          prev.map((list) => ({
-            ...list,
-            is_default: list.id.toString() === selectedListId,
-          }))
-        );
-      })
-      .catch((err: Error) => setError(err.message));
-  };
+  const tally = selectedCategories.length > 0 ? ` (${selectedCategories.length})` : "";
 
-  const allSelected = sorted.length > 0 && selectedCategories.length === sorted.length;
+  if (fullSized) {
+    return (
+      <div className={styles.disclosure}>
+        <div className={styles.summary}>
+          <button
+            type="button"
+            className={`${styles.toggle} ${expanded ? styles.toggleOpen : ""}`}
+            aria-expanded={expanded}
+            onClick={() => setExpanded(!expanded)}
+          >
+            Categories{tally}
+          </button>
+
+          {/* Closed, the bar still says which ones: as chips a reader can untick
+              where they fit, and as a plain list where they do not. */}
+          {!expanded && selected.length > 0 && (
+            <Preview items={selected} onToggle={toggle} />
+          )}
+        </div>
+
+        {expanded && <div className={styles.disclosureBody}>{picker}</div>}
+      </div>
+    );
+  }
 
   return (
-    <div hidden={collapsed} className={styles.picker}>
-      {title && (
-        <header className={styles.header}>
-          <h3 className={styles.title}>{title}</h3>
-        </header>
+    <>
+      <button type="button" className={styles.openSheet} onClick={() => setSheetOpen(true)}>
+        Select Categories{tally}
+      </button>
+
+      {sheetOpen && (
+        <QuizModal title="Categories" fullScreen onClose={() => setSheetOpen(false)}>
+          {picker}
+        </QuizModal>
       )}
+    </>
+  );
+}
 
-      {error && <p className={styles.error}>{error}</p>}
+interface PreviewProps {
+  items: CategoryItem[];
+  onToggle: (name: string) => void;
+}
 
-      {showSavedLists && (
-        <div className={styles.toolbar}>
-          {isCreateMode ? (
-            <>
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="Save selection as..."
-                value={newListName}
-                autoFocus
-                onChange={(event) => setNewListName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") handleCreate();
-                  if (event.key === "Escape") setIsCreateMode(false);
-                }}
-              />
-              <button
-                type="button"
-                className={styles.btn}
-                onClick={handleCreate}
-                disabled={isSaving || !newListName.trim() || selectedCategories.length === 0}
-              >
-                <Check className={styles.btnIcon} />
-                <span>Save list</span>
-              </button>
-              <button
-                type="button"
-                className={styles.btn}
-                onClick={() => {
-                  setIsCreateMode(false);
-                  setNewListName("");
-                }}
-              >
-                <X className={styles.btnIcon} />
-                <span>Cancel</span>
-              </button>
-            </>
-          ) : (
-            <>
-              <select
-                className={styles.select}
-                value={selectedListId}
-                onChange={(event) => handleListChange(event.target.value)}
-                aria-label="Saved category list"
-              >
-                <option value="">— Saved lists —</option>
-                {savedLists.map((list) => (
-                  <option key={list.id} value={list.id.toString()}>
-                    {list.name}
-                    {list.is_default ? " ★" : ""}
-                  </option>
-                ))}
-              </select>
+/** What is picked, shown in whichever form the bar has room for. */
+function Preview({ items, onToggle }: PreviewProps) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const chipsRef = useRef<HTMLSpanElement>(null);
+  const names = items.map((item) => item.name);
+  const fits = useFitsInline(hostRef, chipsRef, names.join("\u0000"));
 
-              {selectedListId && hasUnsavedChanges && (
-                <button
-                  type="button"
-                  className={styles.btn}
-                  onClick={handleSaveChanges}
-                  disabled={isSaving}
-                  title="Save the current selection to this list"
-                >
-                  <Check className={styles.btnIcon} />
-                  <span>Save changes</span>
-                </button>
-              )}
+  return (
+    <div className={styles.preview} ref={hostRef}>
+      <span
+        ref={chipsRef}
+        className={`${styles.previewChips} ${fits ? "" : styles.offstage}`}
+      >
+        {items.map((item) => (
+          <CategoryChip key={item.name} {...item} onToggle={onToggle} />
+        ))}
+      </span>
 
-              {selectedListId && (
-                <>
-                  <button
-                    type="button"
-                    className={styles.btn}
-                    onClick={handleSetDefault}
-                    title="Set as default list"
-                  >
-                    <Star className={styles.btnIcon} />
-                    <span>Default</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.btnDanger}
-                    onClick={handleDelete}
-                    title="Delete this list"
-                  >
-                    <Trash2 className={styles.btnIcon} />
-                    <span>Delete</span>
-                  </button>
-                </>
-              )}
-
-              <span className={styles.divider} />
-
-              <button
-                type="button"
-                className={styles.btn}
-                onClick={() => setIsCreateMode(true)}
-              >
-                <Plus className={styles.btnIcon} />
-                <span>New list</span>
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
-      <ul className={styles.grid}>
-        {sorted.length === 0 && <p className={styles.empty}>No categories yet.</p>}
-        {sorted.map((category) => {
-          const checked = selectedSet.has(category);
-          return (
-            <li
-              key={category}
-              className={`${styles.item} ${checked ? styles.itemChecked : ""}`}
-              onClick={() => toggle(category)}
-            >
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={checked}
-                onChange={() => toggle(category)}
-                onClick={(event) => event.stopPropagation()}
-                aria-label={category}
-                name={checkboxName}
-                value={checkboxValueFn ? checkboxValueFn(category) : category}
-              />
-              <span
-                className={`${styles.itemLabel} ${checked ? styles.itemLabelChecked : ""}`}
-                title={category}
-              >
-                {category}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-
-      {(showSelectAll || showApplyButton) && (
-        <div className={styles.footer}>
-          {showSelectAll ? (
-            <button type="button" className={styles.btn} onClick={toggleAll}>
-              {allSelected ? "Deselect all" : "Select all"}
-            </button>
-          ) : (
-            <span className={styles.spacer} />
-          )}
-
-          {showApplyButton && (
-            <button
-              type="submit"
-              name="apply-categories"
-              value="Apply"
-              className={styles.btn}
-            >
-              Apply
-            </button>
-          )}
-
-          <span className={styles.count}>
-            {selectedCategories.length} of {sorted.length} selected
-          </span>
-        </div>
+      {!fits && (
+        <span className={styles.previewText}>
+          (
+          <span className={styles.previewNames}>{names.join(", ")}</span>
+          )
+        </span>
       )}
     </div>
   );

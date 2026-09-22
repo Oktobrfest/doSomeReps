@@ -201,8 +201,8 @@ export function QueMorePage() {
       <CategoryPicker
         selectedCategories={categories}
         onChange={setCategories}
-        showSavedLists={true}
-        showSelectAll={true}
+        savedLists
+        selectAll
       />
 
       <section className={styles.searchPanel}>

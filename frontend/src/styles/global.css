@@ -127,17 +127,26 @@
   --rep-editor-header-bg: #ff99ff;
   --rep-editor-header-border: #ff66ff;
 
-  /* The chip a question's category is named in, on the search results list. */
+  /* The chip a category is named in, wherever it is picked or merely shown. */
   --rep-color-category-chip-bg: #ffe6bf;
   --rep-color-category-chip-text: #7a4a00;
 
   /* Category Picker Design Tokens */
   --rep-cp-item-bg: #ffa500;
   --rep-cp-item-bg-active: #ff8c00;
-  --rep-cp-item-border: #ffa500;
+  --rep-cp-item-bg-active-hover: #d67600;
   --rep-cp-item-border-active: #ff8c00;
-  --rep-cp-item-text: #000000;
   --rep-cp-item-text-active: #000000;
+
+  /* A chip scales as one piece off its font size, so a reading view that wants
+     bigger chips rebinds the alias and nothing else. */
+  --rep-cat-chip-font-size-md: 0.78rem;
+  --rep-cat-chip-font-size-lg: clamp(0.8em, 1rem + 1.4vw, 2rem);
+  --rep-cat-chip-font-size: var(--rep-cat-chip-font-size-md);
+
+  /* Categories read down a column before they wrap across to the next. */
+  --rep-cat-column-width: 170px;
+  --rep-cat-move-duration: 0.3s;
 
 
   /* ---- Intent palette ----
@@ -250,6 +259,12 @@
   --rep-btn-min-width-md: 180px;
   --rep-btn-radius-md: 12px;
   --rep-btn-icon-size-md: 1.25rem;
+
+  /* Extra small: a badge-sized control that rides on a thumbnail. */
+  --rep-btn-height-xs: 22px;
+  --rep-btn-padding-x-xs: 6px;
+  --rep-btn-font-size-xs: 0.75rem;
+  --rep-btn-min-width-xs: 0;
 
   --rep-btn-height-sm: 34px;
   --rep-btn-padding-x-sm: 14px;

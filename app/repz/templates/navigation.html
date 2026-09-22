@@ -4,8 +4,6 @@
   <div id="react-navbar-root"></div>
 </header>
 
-{# CHANGED THIS - user may be Undefined on pages outside a login context; Undefined
-   is not JSON-serialisable and crashed tojson with a 500 #}
 {% set nav_is_auth = true if user is defined and user.is_authenticated else false %}
 <script id="navbar-data" type="application/json">
 {{ {

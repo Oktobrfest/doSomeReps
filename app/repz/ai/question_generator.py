@@ -4,7 +4,8 @@ Lets a user paste source material ("quiz content"), pick a desired
 question-count range, and have the AI generate a batch of basic
 question/answer pairs about it. Generated questions are rendered as
 editable form-groups; the user can tweak them in place and then Save
-(persist to DB) or Delete (drop from the working list).
+(through `quest_ajx.addq`, the one route that writes a new question) or
+Delete (drop from the working list).
 
 A second, optional AI call generates hints for difficult questions
 when the user ticks "Try to provide hints".
@@ -15,17 +16,12 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from flask import (
-    flash,
     jsonify,
-    redirect,
     render_template,
     request,
     session as local_session,
-    url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy import select
-from sqlalchemy.sql import func
 
 from repz.ai.prompts import (
     BASE_EXTEND_PROMPT,
@@ -34,15 +30,9 @@ from repz.ai.prompts import (
 )
 from repz.routes import ai
 
-from ..bluehelpers import (
-    create_brand_new_quizq,
-    get_all_categories,
-    get_session,
-    remove_underscore,
-    set_session,
-)
+from ..bluehelpers import get_session, set_session
 from ..database import session as db_session
-from ..models import category, question
+from ..models import question
 from .litellm_client import AIConfigError, completion_for_user
 from .qgen_service import ExtendedAnswer, _parse_extended_answer
 
@@ -54,27 +44,50 @@ SESSION_KEY_GENERATED = "ai_qgen_generated_questions"
 
 
 
+def _as_draft(item: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalise one question onto the shape every editor in the app speaks.
+
+    The generator's own schema calls the prompt "question"; everywhere else in
+    the app - the add-content page, the editor, `question_service` - it is
+    `question_text`. Translating once, here at the session boundary, keeps that
+    one spelling from leaking into the React pages.
+    """
+    return {
+        "question_text": (item.get("question_text") or item.get("question") or "").strip(),
+        "hint": (item.get("hint") or "").strip() or None,
+        "answer": (item.get("answer") or "").strip(),
+        "categories": list(item.get("categories") or []),
+        "privacy": bool(item.get("privacy")),
+        "auto_que": bool(item.get("auto_que")),
+    }
+
+
+def _generated() -> List[Dict[str, Any]]:
+    """The working list, in the shape the editors speak."""
+    return [_as_draft(item) for item in local_session.get(SESSION_KEY_GENERATED, [])]
+
+
 def _extend_one(
-    item: Dict[str, Any],
+    draft: Dict[str, Any],
     custom_instructions: str = "",
     selected_options: Optional[List[str]] = None,
-) -> None:
-    """Call the AI to extend a single question item in place.
+) -> Dict[str, Any]:
+    """Return `draft` with its answer extended by the AI.
 
-    Updates `item["answer"]` with a SHORT ANSWER / LONG ANSWER layout,
-    and overwrites `item["hint"]` only when the model produces one.
-    Raises any underlying AI / parsing error to the caller.
+    The answer comes back in the strict SHORT ANSWER / LONG ANSWER layout so the
+    editable answer field picks it up verbatim; the hint is overwritten only
+    when the model produced one. Any underlying AI / parsing error is raised to
+    the caller.
     """
-    cats = item.get("categories") or []
-    cats_str = ", ".join(cats) if cats else "(general)"
-
-    instr_block = build_extend_instructions(custom_instructions, selected_options)
+    cats = draft.get("categories") or []
 
     prompt = BASE_EXTEND_PROMPT.format(
-        categories=cats_str,
-        question=item.get("question", "") or "",
-        current_answer=item.get("answer", "") or "",
-        user_instructions_block=instr_block,
+        categories=", ".join(cats) if cats else "(general)",
+        question=draft.get("question_text") or "",
+        current_answer=draft.get("answer") or "",
+        user_instructions_block=build_extend_instructions(
+            custom_instructions, selected_options
+        ),
     )
 
     resp = completion_for_user(
@@ -84,105 +97,16 @@ def _extend_one(
     )
     parsed = _parse_extended_answer(resp)
 
-    # Re-emit the answer in the strict SHORT ANSWER / LONG ANSWER
-    # layout so the editable answer textarea picks it up verbatim.
-    item["answer"] = (
-        "SHORT ANSWER:\n"
-        + parsed.short_answer.strip()
-        + "\n\nLONG ANSWER:\n"
-        + parsed.long_answer.strip()
-    )
-    if parsed.hint:
-        item["hint"] = parsed.hint.strip()
-
-
-def _save_one_to_db(
-    question_text: str,
-    hint: Optional[str],
-    answer: str,
-    cat_names: List[str],
-    uid: int,
-    privacy: bool = False,
-    auto_que: bool = False,
-) -> bool:
-    """Persist a single generated question to the DB.
-
-    Returns True on success. Flashes an error and returns False on any
-    validation problem (mirrors the rules used by `home.addcontent`).
-    """
-    question_text = (question_text or "").strip()
-    answer = (answer or "").strip()
-    hint = (hint or "").strip() or None
-
-    if len(question_text) < 3:
-        flash(
-            f"Question text too short, skipped: {question_text[:30]!r}",
-            category="error",
-        )
-        return False
-    if len(answer) < 1:
-        flash(
-            f"Answer is required, skipped: {question_text[:30]!r}",
-            category="error",
-        )
-        return False
-    if not cat_names:
-        flash(
-            f"At least one category is required, skipped: {question_text[:30]!r}",
-            category="error",
-        )
-        return False
-
-    # Match `addcontent`'s length truncation rules.
-    if len(question_text) > 1499:
-        question_text = question_text[:1499]
-    if hint and len(hint) > 1999:
-        hint = hint[:1999]
-    if len(answer) > 3999:
-        answer = answer[:3999]
-
-    # Skip duplicates (same as `addcontent`).
-    existing = db_session.execute(
-        select(question).where(question.question_text == question_text)
-    ).first()
-    if existing is not None:
-        flash(
-            f"Already exists, skipped: {question_text[:30]!r}",
-            category="error",
-        )
-        return False
-
-    new_q = question(
-        question_text=question_text,
-        hint=hint,
-        answer=answer,
-        created_on=func.now(),
-        created_by=uid,
-        privacy=privacy,
-    )
-
-    # The AI was given underscored category names from the form, so it
-    # may return them in either underscored or spaced form. The DB
-    # stores spaced names, so normalize to spaced before lookup.
-    spaced_cats = [remove_underscore(c).strip() for c in cat_names]
-    for cat_name in spaced_cats:
-        cat_obj = db_session.execute(
-            select(category).where(category.category_name == cat_name)
-        ).scalar_one_or_none()
-        if cat_obj is None:
-            logging.warning(
-                "AI Question Generator: unknown category %r, skipped tag", cat_name
-            )
-            continue
-        new_q.categories.append(cat_obj)
-
-    db_session.add(new_q)
-    db_session.commit()
-
-    if auto_que:
-        create_brand_new_quizq([new_q.question_id], uid)
-
-    return True
+    return {
+        **draft,
+        "answer": (
+            "SHORT ANSWER:\n"
+            + parsed.short_answer.strip()
+            + "\n\nLONG ANSWER:\n"
+            + parsed.long_answer.strip()
+        ),
+        "hint": parsed.hint.strip() if parsed.hint else draft.get("hint"),
+    }
 
 
 # --- Route -----------------------------------------------------------
@@ -207,7 +131,7 @@ def question_generator():
 @login_required
 def ai_qgen_state():
     """Get the current state (generated questions and selected categories)."""
-    generated_questions = list(local_session.get(SESSION_KEY_GENERATED, []))
+    generated_questions = _generated()
     selected_categories = get_session("ai_qgen_category_names")
     if selected_categories == "Not set":
         selected_categories = []
@@ -330,10 +254,11 @@ def ai_qgen_generate():
                 avoid_duplicates=avoid_duplicates,
             )
 
-        local_session[SESSION_KEY_GENERATED] = generated
+        drafts = [_as_draft(item) for item in generated]
+        local_session[SESSION_KEY_GENERATED] = drafts
         return jsonify({
             "success": True,
-            "generated_questions": generated,
+            "generated_questions": drafts,
             "selected_categories": selected_categories
         })
     except AIConfigError as e:
@@ -341,102 +266,6 @@ def ai_qgen_generate():
     except Exception as e:
         logging.exception("AI question generation failed")
         return jsonify({"success": False, "error": f"AI request failed: {e}"}), 500
-
-
-@ai.route("/ai_question_generator/api/save", methods=["POST"])
-@login_required
-def ai_qgen_save_one():
-    """Save a single generated question."""
-    data = request.get_json() or {}
-    try:
-        idx = int(data.get("index"))
-    except (TypeError, ValueError):
-        return jsonify({"success": False, "error": "Invalid index."}), 400
-
-    existing = list(local_session.get(SESSION_KEY_GENERATED, []))
-    if not (0 <= idx < len(existing)):
-        return jsonify({"success": False, "error": "Question not found."}), 404
-
-    item = data.get("question") or {}
-    q_text = (item.get("question") or "").strip()
-    hint = (item.get("hint") or "").strip() or None
-    answer = (item.get("answer") or "").strip()
-    categories = item.get("categories") or []
-    privacy = bool(item.get("privacy", False))
-    auto_que = bool(item.get("auto_que", False))
-
-    if not q_text or not answer:
-        return jsonify({"success": False, "error": "Question and answer text are required."}), 400
-
-    UID = current_user.id
-    if _save_one_to_db(
-        q_text,
-        hint,
-        answer,
-        categories,
-        UID,
-        privacy=privacy,
-        auto_que=auto_que,
-    ):
-        existing.pop(idx)
-        local_session[SESSION_KEY_GENERATED] = existing
-        return jsonify({
-            "success": True,
-            "generated_questions": existing
-        })
-    else:
-        return jsonify({"success": False, "error": "Failed to save question to database."}), 500
-
-
-@ai.route("/ai_question_generator/api/save_all", methods=["POST"])
-@login_required
-def ai_qgen_save_all():
-    """Save all generated questions."""
-    data = request.get_json() or {}
-    items = data.get("questions") or []
-
-    existing = list(local_session.get(SESSION_KEY_GENERATED, []))
-    if not existing:
-        return jsonify({"success": False, "error": "No questions to save."}), 400
-
-    UID = current_user.id
-    saved = 0
-    kept = []
-
-    for i, item in enumerate(items):
-        if i >= len(existing):
-            break
-        q_text = (item.get("question") or "").strip()
-        hint = (item.get("hint") or "").strip() or None
-        answer = (item.get("answer") or "").strip()
-        categories = item.get("categories") or []
-        privacy = bool(item.get("privacy", False))
-        auto_que = bool(item.get("auto_que", False))
-
-        if q_text and answer and _save_one_to_db(
-            q_text,
-            hint,
-            answer,
-            categories,
-            UID,
-            privacy=privacy,
-            auto_que=auto_que,
-        ):
-            saved += 1
-        else:
-            kept.append({
-                "question": q_text,
-                "hint": hint,
-                "answer": answer,
-                "categories": categories,
-            })
-
-    local_session[SESSION_KEY_GENERATED] = kept
-    return jsonify({
-        "success": True,
-        "saved_count": saved,
-        "generated_questions": kept
-    })
 
 
 @ai.route("/ai_question_generator/api/delete", methods=["POST"])
@@ -449,7 +278,7 @@ def ai_qgen_delete_one():
     except (TypeError, ValueError):
         return jsonify({"success": False, "error": "Invalid index."}), 400
 
-    existing = list(local_session.get(SESSION_KEY_GENERATED, []))
+    existing = _generated()
     if 0 <= idx < len(existing):
         existing.pop(idx)
         local_session[SESSION_KEY_GENERATED] = existing
@@ -467,92 +296,51 @@ def ai_qgen_delete_all():
 
 @ai.route("/ai_question_generator/api/extend", methods=["POST"])
 @login_required
-def ai_qgen_extend_one():
-    """Extend a single generated or saved question's answer using AI."""
+def ai_qgen_extend():
+    """Extend one question's answer with the AI.
+
+    The question being extended may be a generated one still in the working list
+    (`index`), one already in the database (`question_id`), or one being written
+    and not yet saved (neither). Only where the result is kept differs, so all
+    three answer with the extended draft under `question`.
+    """
     data = request.get_json() or {}
+    incoming = _as_draft(data.get("question") or {})
+    custom_instructions = (data.get("custom_instructions") or "").strip()
+    options = data.get("options") if isinstance(data.get("options"), list) else []
+
+    index = data.get("index")
+    question_id = data.get("question_id")
+
+    generated = _generated()
+    if index is not None and not (
+        isinstance(index, int) and 0 <= index < len(generated)
+    ):
+        return jsonify({"success": False, "error": "Question not found."}), 404
+
+    saved = None
+    if question_id is not None:
+        saved = db_session.query(question).filter_by(question_id=question_id).first()
+        if saved is None:
+            return jsonify({"success": False, "error": "Question not found."}), 404
 
     try:
-        idx = int(data["index"]) if data.get("index") is not None else None
-    except (TypeError, ValueError):
-        idx = None
+        extended = _extend_one(incoming, custom_instructions, options)
+    except AIConfigError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logging.exception("Extend failed")
+        return jsonify({"success": False, "error": f"Extend failed: {e}"}), 500
 
-    question_id_raw = data.get("question_id")
-    question_id = None
-    if isinstance(question_id_raw, int):
-        question_id = question_id_raw
-    elif isinstance(question_id_raw, str) and question_id_raw.isdigit():
-        question_id = int(question_id_raw)
-
-    custom_instructions = (
-        data.get("custom_instructions") or data.get("extend_text") or ""
-    ).strip()
-    selected_options = (
-        data.get("options") if isinstance(data.get("options"), list) else []
-    )
-
-    if idx is not None:
-        existing = list(local_session.get(SESSION_KEY_GENERATED, []))
-        if not (0 <= idx < len(existing)):
-            return jsonify({"success": False, "error": "Question not found."}), 404
-
-        # Fetch updated question details from user's edit
-        item = data.get("question") or {}
-        existing[idx]["question"] = (item.get("question") or "").strip()
-        existing[idx]["hint"] = (item.get("hint") or "").strip() or None
-        existing[idx]["answer"] = (item.get("answer") or "").strip()
-        existing[idx]["categories"] = item.get("categories") or []
-        existing[idx]["privacy"] = bool(item.get("privacy", False))
-        existing[idx]["auto_que"] = bool(item.get("auto_que", False))
-
-        try:
-            _extend_one(existing[idx], custom_instructions, selected_options)
-            local_session[SESSION_KEY_GENERATED] = existing
-            return jsonify({"success": True, "generated_questions": existing})
-        except AIConfigError as e:
-            return jsonify({"success": False, "error": str(e)}), 400
-        except Exception as e:
-            logging.exception("Extend failed")
-            return jsonify({"success": False, "error": f"Extend failed: {e}"}), 500
-
-    if question_id is not None:
-        q = db_session.query(question).filter_by(question_id=question_id).first()
-        if not q:
-            return jsonify({"success": False, "error": "Question not found."}), 404
-
-        incoming = data.get("question") or {}
-        working = {
-            "question": (incoming.get("question") or "").strip() or q.question_text,
-            "answer": (incoming.get("answer") or "").strip() or q.answer,
-            "hint": (incoming.get("hint") or "").strip() or q.hint,
-            "categories": incoming.get("categories")
-            or [c.category_name for c in q.categories],
-        }
-
-        try:
-            _extend_one(working, custom_instructions, selected_options)
-        except AIConfigError as e:
-            return jsonify({"success": False, "error": str(e)}), 400
-        except Exception as e:
-            logging.exception("Extend failed")
-            return jsonify({"success": False, "error": f"Extend failed: {e}"}), 500
-
-        q.answer = working["answer"]
-        q.hint = working["hint"] or None
+    if index is not None:
+        generated[index] = extended
+        local_session[SESSION_KEY_GENERATED] = generated
+    elif saved is not None:
+        saved.answer = extended["answer"]
+        saved.hint = extended["hint"] or None
         db_session.commit()
 
-        return jsonify({
-            "success": True,
-            "question": {
-                "id": q.question_id,
-                "question_text": q.question_text,
-                "answer": q.answer,
-                "hint": q.hint,
-                "categories": [c.category_name for c in q.categories],
-                "privacy": q.privacy,
-            },
-        })
-
-    return jsonify({"success": False, "error": "Invalid request: provide 'index' or 'question_id'."}), 400
+    return jsonify({"success": True, "question": extended})
 
 
 @ai.route("/ai_question_generator/api/extend-options", methods=["GET"])
@@ -562,50 +350,4 @@ def ai_qgen_extend_options():
     return jsonify({
         "success": True,
         "options": [{"key": o["key"], "label": o["label"]} for o in EXTEND_OPTIONS],
-    })
-
-
-@ai.route("/ai_question_generator/api/extend_all", methods=["POST"])
-@login_required
-def ai_qgen_extend_all():
-    """Extend all generated questions' answers using AI."""
-    data = request.get_json() or {}
-    items = data.get("questions") or []
-
-    existing = list(local_session.get(SESSION_KEY_GENERATED, []))
-    if not existing:
-        return jsonify({"success": False, "error": "No questions to extend."}), 400
-
-    extended = 0
-    errors = []
-
-    for i, item in enumerate(items):
-        if i >= len(existing):
-            break
-
-        # Pull latest edited values from frontend
-        existing[i]["question"] = (item.get("question") or "").strip()
-        existing[i]["hint"] = (item.get("hint") or "").strip() or None
-        existing[i]["answer"] = (item.get("answer") or "").strip()
-        existing[i]["categories"] = item.get("categories") or []
-        existing[i]["privacy"] = bool(item.get("privacy", False))
-        existing[i]["auto_que"] = bool(item.get("auto_que", False))
-
-        instr = (item.get("extend_text") or "").strip()
-        try:
-            _extend_one(existing[i], instr)
-            extended += 1
-        except AIConfigError as e:
-            errors.append(f"Config error: {e}")
-            break  # config error affects all, bail out
-        except Exception as e:
-            logging.exception("Extend-all failed on item %d", i)
-            errors.append(f"Extend failed for question #{i + 1}: {e}")
-
-    local_session[SESSION_KEY_GENERATED] = existing
-    return jsonify({
-        "success": len(errors) == 0,
-        "extended_count": extended,
-        "generated_questions": existing,
-        "errors": errors
     })

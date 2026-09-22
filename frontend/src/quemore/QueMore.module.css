@@ -203,23 +203,6 @@
   overflow-wrap: anywhere;
 }
 
-.categoryRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-
-.categoryChip {
-  padding: 0.15rem 0.5rem;
-
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--rep-color-category-chip-text);
-
-  background-color: var(--rep-color-category-chip-bg);
-  border-radius: 999px;
-}
-
 /* Pushed to the foot of the card so that cards sharing a row line their
    ratings and their buttons up, however long the questions above them run. */
 .cardMeta {

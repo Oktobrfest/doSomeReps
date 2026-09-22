@@ -6,14 +6,5 @@ Add Content
 
 <div id="add-content-root"></div>
 
-<script id="add-content-data" type="application/json">
-{{ {
-  'csrfToken': csrf_token(),
-  'categoryList': category_list,
-  'selectedCategories': selected_categories if selected_categories is defined else [],
-  'addCategoryUrl': url_for('quest_ajx.addcat')
-} | tojson }}
-</script>
-
 {{ vite_asset("src/entrypoints/AddContent.entry.tsx") }}
 {% endblock content %}

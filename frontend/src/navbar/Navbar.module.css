@@ -44,8 +44,6 @@
   color: var(--rep-color-navbar-accent);
 }
 
-/* CHANGED THIS - 6px duplicated --rep-radius-control; toggler is navigation
-   chrome, deliberately outside the button scale (see AGENTS.md) */
 .togglerBtn {
   display: none;
   background-color: var(--rep-color-navbar-accent);
@@ -152,9 +150,6 @@
   }
 }
 
-/* CHANGED THIS - !important was cargo from the old global stylesheet fighting
-   inline styles; the two media queries are mutually exclusive so source order
-   already resolves these */
 @media (min-width: 992px) {
   .togglerBtn {
     display: none;
