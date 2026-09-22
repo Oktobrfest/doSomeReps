@@ -6,7 +6,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 class TestAddcontentIsReact(unittest.TestCase):
-    """addcontent.html mounts the whole page in React; the picker moved inside it."""
+    """addcontent.html mounts the whole page as one React entrypoint."""
 
     def _read_template(self, path_parts):
         path = os.path.join(os.path.dirname(__file__), '..', *path_parts)
@@ -23,7 +23,7 @@ class TestAddcontentIsReact(unittest.TestCase):
         )
 
     def test_addcontent_no_longer_includes_jinja_partials(self):
-        """The picker, question form and new-category form are React-owned now."""
+        """The picker, question form and new-category form are React-owned."""
         content = self._read_template(
             ['repz', 'home', 'templates', 'addcontent.html']
         )
@@ -33,7 +33,7 @@ class TestAddcontentIsReact(unittest.TestCase):
 
 
 class TestPagesUsingFullCategories(unittest.TestCase):
-    """Verify all pages that need full features still include categories.html."""
+    """Pages that offer categories hand them to React as bootstrap JSON."""
 
     def _read_template(self, path_parts):
         path = os.path.join(os.path.dirname(__file__), '..', *path_parts)
@@ -41,7 +41,7 @@ class TestPagesUsingFullCategories(unittest.TestCase):
             return f.read()
 
     def test_quiz_passes_categories_to_react(self):
-        """quiz.html hands the picker its data via bootstrap JSON, not an include."""
+        """quiz.html hands the picker its data via bootstrap JSON."""
         content = self._read_template(
             ['repz', 'home', 'templates', 'quiz.html']
         )
@@ -51,7 +51,7 @@ class TestPagesUsingFullCategories(unittest.TestCase):
         self.assertIn('vite_asset("src/entrypoints/Quiz.entry.tsx")', content)
 
     def test_quemore_passes_categories_to_react(self):
-        """quemore.html mounts the picker inside QueMorePage, not via an include."""
+        """quemore.html mounts the picker inside QueMorePage."""
         content = self._read_template(
             ['repz', 'home', 'templates', 'quemore.html']
         )

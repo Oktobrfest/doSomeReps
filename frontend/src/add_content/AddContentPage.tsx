@@ -21,8 +21,6 @@ export function AddContentPage() {
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(true);
 
-  // The AI can only be shown a question that has no stored images yet as the
-  // pictures themselves.
   const questionImages = useFilePreviews(draft.files.question);
   const answerImages = useFilePreviews(draft.files.answer);
 

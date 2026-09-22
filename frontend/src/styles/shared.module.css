@@ -416,7 +416,6 @@
   flex: 1 1 var(--rep-btn-cluster-basis);
 }
 
-/* Split Pane Layout for Question Editing and Live Preview */
 .splitLayout {
   display: flex;
   gap: 20px;

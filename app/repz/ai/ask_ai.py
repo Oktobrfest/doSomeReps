@@ -200,7 +200,7 @@ def _build_ask_ai_prompt(
     transcript, question_text, answer_text, categories, language,
     history=None, image_urls=None,
 ):
-    """Build the AI-style LLM messages for an Ask AI request.
+    """Build the LLM messages for an Ask AI request.
 
     Images are attached to the FIRST user message as OpenAI-style content blocks
     (LiteLLM normalises this across providers), so a multi-turn conversation does
@@ -257,7 +257,7 @@ def _build_ask_ai_prompt(
 @ai.route("/api/ask-ai", methods=["POST"])
 @login_required
 def ask_ai():
-    """Phase 2 step 1: turn a transcribed Ask AI question into an AI text answer.
+    """Step 1 of Ask AI: turn a transcribed question into a text answer.
 
     This endpoint only calls the LLM. Synthesis of the spoken audio is a separate
     step (/api/ask-ai/speak) so the frontend can show distinct progress phases
@@ -269,7 +269,7 @@ def ask_ai():
       - question_id (required): the current quiz question id (kept for context/logging)
       - answer_text (optional): the current answer text, only if already revealed
       - categories (optional): list of category names
-      - image_urls / image_ids (optional): stubbed in Phase 2
+      - image_urls (optional): images attached to the question
 
     Returns JSON:
       - ok: bool
@@ -349,7 +349,6 @@ def ask_ai():
     )
     logger.debug("ask_ai _build_ask_ai_prompt=%.3fs", time.perf_counter() - t_prompt)
 
-    # Get the AI-style text answer from the LLM.
     try:
         t_llm = time.perf_counter()
         resp = completion_for_user(user_obj, messages=messages, modality=modality, temperature=0.4)
@@ -383,7 +382,7 @@ def ask_ai():
 @ai.route("/api/ask-ai/speak", methods=["POST"])
 @login_required
 def ask_ai_speak():
-    """Phase 2 step 2: synthesize (ephemeral) spoken audio for an Ask AI answer.
+    """Step 2 of Ask AI: synthesize (ephemeral) spoken audio for an answer.
 
     Accepts JSON:
       - text (required): the text to speak (the LLM answer from /api/ask-ai)

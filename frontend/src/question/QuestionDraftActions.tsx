@@ -30,7 +30,7 @@ interface QuestionDraftActionsProps {
  * The one row of buttons every question draft page pairs its fields with:
  * Ask AI, AI extend, preview toggle, delete, save. The add-content
  * page, the AI question generator and the question editor all render this, so
- * the three can never grow divergent action rows again.
+ * the three cannot offer different actions for the same work.
  */
 export function QuestionDraftActions({
   draft,
