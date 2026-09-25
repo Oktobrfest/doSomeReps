@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { QuizPage } from '../quiz/QuizPage';
 import type { QuizPageProps } from '../quiz/types';
+import "../lib/toast";
 import "../styles/global.css";
 
 // Jinja passes data via:

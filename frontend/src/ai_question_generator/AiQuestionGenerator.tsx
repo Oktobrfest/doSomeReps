@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { Toaster, toast } from "sonner";
+import "../lib/toast";
 
 import { AskAiPanel } from "../ask_ai/AskAiPanel";
 import { useAskAi } from "../ask_ai/useAskAi";
