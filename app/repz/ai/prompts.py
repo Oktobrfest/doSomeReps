@@ -143,6 +143,10 @@ The topic categories are {categories}.
 Keep spacing TIGHT between paragraphs. 
 The user has requested an AI-assisted change to this study question.
 Ensure to stay focused on the question and within its topic categories!
+If you for some reason need to tell the user something - for example that a requested
+change cannot be made, or that the question or the request does not make
+sense and you cannot comply with their request or some other problem arisses - put it in `message_to_editor`. Never write such notes into the
+question, answer or hint. Typically, you should avoid putting content in message_to_editor unless you trully find it paramount to tell the user something but it just doesn't belong in the other sections; avoid using this in typical or normal situations.
 
 Use the appropriate Markdown for each kind of content to make the answer more readable and
 professional, but don't force it if it's not needed:
@@ -167,14 +171,14 @@ Write a more detailed, explanatory answer for the question above.
 Stick to the question and the topic; do not wander outside that
 category.
 
-Format your output EXACTLY in the following layout. Keep spacing
+Format the answer EXACTLY in the following layout. Keep spacing
 TIGHT between paragraphs within a section. Use the literal
 labels shown below:
 
-# SHORT ANSWER:
+## SHORT ANSWER:
 [A concise summary answer. One to two sentences.]
 
-# LONG ANSWER:
+## LONG ANSWER:
 [A more detailed, explanatory answer. Multiple paragraphs are fine;
 keep paragraph spacing tight. Use a blank line only between distinct
 sub-sections within the long answer.]
@@ -199,7 +203,7 @@ EXTEND_OPTIONS: List[dict] = [
     {
         "key": "reformat",
         "label": "Re-format this question.",
-        "prompt": "Re-format this answer content so it is clear, well-structured, and easy to read while preserving the original meaning.",
+        "prompt": "Re-format the question text so it is clear, well-structured, and easy to read while preserving the original meaning.",
     },
     {
         "key": "focus_question",
@@ -317,10 +321,11 @@ Original {part}:
 {source_text}
 
 Rules:
-1. Return only the final spoken text.
+1. Return only the final spoken text. DO NOT include any of your thoughts or comments like "here is the text ready to be spoken out loud" 
+or things to that effect!
 2. Do not return JSON.
 3. Do not use Markdown.
-4. Do not include labels like "Question:", "Answer:", "Hint:", "Short answer:", or "ANSWER:".
+4. Do not include labels like "Question:", "Answer:", "Hint:", "SHORT ANSWER:", or "ANSWER:".
 5. Preserve the meaning and facts.
 6. Make the text natural and easy to understand when spoken aloud.
 7. Expand abbreviations that may be pronounced incorrectly.
@@ -328,12 +333,9 @@ Rules:
 9. If the target language is not en_US, translate the text into the target language.
 10. If the target language is Spanish, the output must be Spanish, not English.
 11. If formulas are present then omit them unless you find it impossible to convey
-the meaning of the overall concept without a very short formula, in that case
+the meaning of the overall concept without a very short formula, or the question directly asks for a formula, in that case
 then explain it in plain words instead of reading symbols.
-11. If formulas are present then omit them unless you find it impossible to convey
-the meaning of the overall concept without a very short formula, in that case
-then explain it in plain words instead of reading symbols.
-Ultimately, Avoid formulas whenever possible because they are hard to understand in spoken audio.
+Ultimately, Avoid formulas whenever practical because they are hard to understand in spoken audio.
 When you asbolutely must include a formula make sure you write them out so it can be comprehended when spoken.
 So E=Mc2 would be energy is equal to the mass times the speed of light squared; x_i or x_..i.._ would become x sub i
 """

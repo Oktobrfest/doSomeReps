@@ -104,7 +104,7 @@ export function ExtendButton({
     setIsOpen(false);
 
     try {
-      const { answer, hint } = await extendQuestion(
+      const { text, messageToEditor } = await extendQuestion(
         target,
         draft,
         customInstructions.trim(),
@@ -113,8 +113,9 @@ export function ExtendButton({
       );
       controller.signal.throwIfAborted();
 
-      onExtended({ ...draft, text: { ...draft.text, answer, hint } });
+      onExtended({ ...draft, text });
       toast.success("Answer extended with AI.");
+      if (messageToEditor) toast.info(messageToEditor);
     } catch (err) {
       // The user cancelled: drop whatever came back instead of applying it.
       if (!controller.signal.aborted) {

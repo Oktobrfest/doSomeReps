@@ -256,14 +256,15 @@ export function AiQuestionGenerator() {
 
     for (const [index, draft] of drafts.entries()) {
       try {
-        const { answer, hint } = await extendQuestion(
+        const { text, messageToEditor } = await extendQuestion(
           draft.isLocal ? {} : { index },
           draft,
           "",
           [],
           controller.signal
         );
-        replaceAt(index, { ...draft, text: { ...draft.text, answer, hint } });
+        replaceAt(index, { ...draft, text });
+        if (messageToEditor) toast.info(`#${index + 1}: ${messageToEditor}`);
         extended += 1;
       } catch (err) {
         failures.push(`#${index + 1}: ${errorMessage(err, "Extend failed")}`);

@@ -36,14 +36,17 @@ class GeneratedHintSet(BaseModel):
 
 class ExtendedAnswer(BaseModel):
     """Structured response for a single "Extend" call."""
-    short_answer: str = Field(
-        ..., description="A concise summary answer (1-2 sentences)."
-    )
-    long_answer: str = Field(
+    question: str = Field(
         ...,
         description=(
-            "A detailed, explanatory answer. Multiple paragraphs allowed; "
-            "keep on-topic and within the question's category."
+            "The question text - rephrase if unclear, contradictory, poorly written, needs formula markup, or contains misspellings, otherwise leave it as is."
+        ),
+    )
+    answer: str = Field(
+        ...,
+        description=(
+            "The complete answer text, laid out as the instructions ask - "
+            "returned exactly as given when they tell you to focus on the question, unless it no longer makes sence post question edit."
         ),
     )
     hint: Optional[str] = Field(
@@ -51,6 +54,13 @@ class ExtendedAnswer(BaseModel):
         description=(
             "Optional hint - only set when a hint would materially help "
             "a learner approach the question. Null otherwise."
+        ),
+    )
+    message_to_editor: Optional[str] = Field(
+        default=None,
+        description=(
+            "A note to the person editing this question, shown to them as "
+            "a pop-up message. Null when there is nothing to tell them. Used very sparingly and only when you need to tell the there's some contradictions in their request or have problems or concerns with any of the content"
         ),
     )
 
@@ -94,25 +104,7 @@ def _parse_hint_set(resp: Any) -> GeneratedHintSet:
 
 def _parse_extended_answer(resp: Any) -> ExtendedAnswer:
     raw = _strip_json_fence(_extract_message_content(resp))
-    try:
-        return ExtendedAnswer.model_validate_json(raw)
-    except Exception:
-        # Fallback: model returned SHORT ANSWER / LONG ANSWER text format.
-        m = re.match(
-            r"^SHORT ANSWER:\s*\n(.*?)\n+\nLONG ANSWER:\s*\n(.*)",
-            raw.strip(),
-            re.DOTALL,
-        )
-        if m:
-            short = m.group(1).strip()
-            long = m.group(2).strip()
-            hint = None
-            hint_match = re.search(r"\nHINT:\s*\n(.*)", long, re.DOTALL)
-            if hint_match:
-                long = long[: hint_match.start()].strip()
-                hint = hint_match.group(1).strip()
-            return ExtendedAnswer(short_answer=short, long_answer=long, hint=hint)
-        raise ValueError(f"Could not parse extended answer: {raw[:200]!r}")
+    return ExtendedAnswer.model_validate_json(raw)
 
 
 def _get_user_by_id(user_id: int):

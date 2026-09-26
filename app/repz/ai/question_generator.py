@@ -13,7 +13,7 @@ when the user ticks "Try to provide hints".
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from flask import (
     jsonify,
@@ -71,13 +71,13 @@ def _extend_one(
     draft: Dict[str, Any],
     custom_instructions: str = "",
     selected_options: Optional[List[str]] = None,
-) -> Dict[str, Any]:
-    """Return `draft` with its answer extended by the AI.
+) -> Tuple[Dict[str, Any], Optional[str]]:
+    """Return `draft` as the AI left it, and the AI's note to the editor.
 
-    The answer comes back in the strict SHORT ANSWER / LONG ANSWER layout so the
-    editable answer field picks it up verbatim; the hint is overwritten only
-    when the model produced one. Any underlying AI / parsing error is raised to
-    the caller.
+    The question and answer are taken verbatim, laid out as the selected
+    options asked; the hint is overwritten only when the model produced one.
+    The note is None when the AI had nothing to say. Any underlying AI /
+    parsing error is raised to the caller.
     """
     cats = draft.get("categories") or []
 
@@ -97,16 +97,13 @@ def _extend_one(
     )
     parsed = _parse_extended_answer(resp)
 
-    return {
+    extended = {
         **draft,
-        "answer": (
-            "SHORT ANSWER:\n"
-            + parsed.short_answer.strip()
-            + "\n\nLONG ANSWER:\n"
-            + parsed.long_answer.strip()
-        ),
+        "question_text": parsed.question.strip(),
+        "answer": parsed.answer.strip(),
         "hint": parsed.hint.strip() if parsed.hint else draft.get("hint"),
     }
+    return extended, (parsed.message_to_editor or "").strip() or None
 
 
 # --- Route -----------------------------------------------------------
@@ -297,12 +294,13 @@ def ai_qgen_delete_all():
 @ai.route("/ai_question_generator/api/extend", methods=["POST"])
 @login_required
 def ai_qgen_extend():
-    """Extend one question's answer with the AI.
+    """Extend one question with the AI.
 
     The question being extended may be a generated one still in the working list
     (`index`), one already in the database (`question_id`), or one being written
     and not yet saved (neither). Only where the result is kept differs, so all
-    three answer with the extended draft under `question`.
+    three answer with the extended draft under `question`, and the AI's note to
+    the editor, if any, under `message_to_editor`.
     """
     data = request.get_json() or {}
     incoming = _as_draft(data.get("question") or {})
@@ -325,7 +323,9 @@ def ai_qgen_extend():
             return jsonify({"success": False, "error": "Question not found."}), 404
 
     try:
-        extended = _extend_one(incoming, custom_instructions, options)
+        extended, message_to_editor = _extend_one(
+            incoming, custom_instructions, options
+        )
     except AIConfigError as e:
         return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
@@ -336,11 +336,16 @@ def ai_qgen_extend():
         generated[index] = extended
         local_session[SESSION_KEY_GENERATED] = generated
     elif saved is not None:
+        saved.question_text = extended["question_text"]
         saved.answer = extended["answer"]
         saved.hint = extended["hint"] or None
         db_session.commit()
 
-    return jsonify({"success": True, "question": extended})
+    return jsonify({
+        "success": True,
+        "question": extended,
+        "message_to_editor": message_to_editor,
+    })
 
 
 @ai.route("/ai_question_generator/api/extend-options", methods=["GET"])

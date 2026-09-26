@@ -174,8 +174,10 @@ export type ExtendTarget =
   | Record<string, never>;
 
 export interface ExtendedQuestion {
-  answer: string;
-  hint: string;
+  /** The question's text as the AI left it. */
+  text: QuestionDraft["text"];
+  /** The AI's note to whoever is editing, or null when it has none. */
+  messageToEditor: string | null;
 }
 
 export async function extendQuestion(
@@ -206,8 +208,12 @@ export async function extendQuestion(
   });
 
   const data = (await expectOk(response, "Extend failed")) as {
-    question: { answer: string; hint: string | null };
+    question: QuestionPayload;
+    message_to_editor: string | null;
   };
 
-  return { answer: data.question.answer, hint: data.question.hint ?? "" };
+  return {
+    text: draftFromPayload(data.question).text,
+    messageToEditor: data.message_to_editor,
+  };
 }
