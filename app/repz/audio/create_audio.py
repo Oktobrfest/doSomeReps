@@ -6,10 +6,8 @@ converts it to MP3 with ffmpeg.
 
 from __future__ import annotations
 
-import contextlib
 import hashlib
 import logging
-import os
 import shutil
 import subprocess
 import tempfile
@@ -152,32 +150,30 @@ class create_audio:
 
         try:
             # Generate WAV audio using Piper
-            with open(os.devnull, "w") as devnull:
-                with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
-                    with wave.open(str(temp_wav_path), "wb") as wav_file:
-                        if silence_sec and silence_sec > 0:
-                            # 16-bit samples for silence
-                            silence_int16_bytes = bytes(
-                                int(piper_voice.config.sample_rate * silence_sec * 2)
-                            )
-                            wav_params_set = False
-                            for i, audio_chunk in enumerate(piper_voice.synthesize(clean_text, syn_config)):
-                                if not wav_params_set:
-                                    wav_file.setframerate(audio_chunk.sample_rate)
-                                    wav_file.setsampwidth(audio_chunk.sample_width)
-                                    wav_file.setnchannels(audio_chunk.sample_channels)
-                                    wav_params_set = True
+            with wave.open(str(temp_wav_path), "wb") as wav_file:
+                if silence_sec and silence_sec > 0:
+                    # 16-bit samples for silence
+                    silence_int16_bytes = bytes(
+                        int(piper_voice.config.sample_rate * silence_sec * 2)
+                    )
+                    wav_params_set = False
+                    for i, audio_chunk in enumerate(piper_voice.synthesize(clean_text, syn_config)):
+                        if not wav_params_set:
+                            wav_file.setframerate(audio_chunk.sample_rate)
+                            wav_file.setsampwidth(audio_chunk.sample_width)
+                            wav_file.setnchannels(audio_chunk.sample_channels)
+                            wav_params_set = True
 
-                                if i > 0:
-                                    wav_file.writeframes(silence_int16_bytes)
+                        if i > 0:
+                            wav_file.writeframes(silence_int16_bytes)
 
-                                wav_file.writeframes(audio_chunk.audio_int16_bytes)
-                        else:
-                            piper_voice.synthesize_wav(
-                                clean_text,
-                                wav_file,
-                                syn_config=syn_config,
-                            )
+                        wav_file.writeframes(audio_chunk.audio_int16_bytes)
+                else:
+                    piper_voice.synthesize_wav(
+                        clean_text,
+                        wav_file,
+                        syn_config=syn_config,
+                    )
 
             # Convert WAV to MP3
             self._convert_wav_to_mp3(temp_wav_path, temp_mp3_path)
