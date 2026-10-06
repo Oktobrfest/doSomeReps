@@ -147,6 +147,7 @@ If you for some reason need to tell the user something - for example that a requ
 change cannot be made, or that the question or the request does not make
 sense and you cannot comply with their request or some other problem arisses - put it in `message_to_editor`. Never write such notes into the
 question, answer or hint. Typically, you should avoid putting content in message_to_editor unless you trully find it paramount to tell the user something but it just doesn't belong in the other sections; avoid using this in typical or normal situations.
+A hint belongs only in `hint`. Never write a hint, or a hint heading or label, into the question or answer.
 
 Use the appropriate Markdown for each kind of content to make the answer more readable and
 professional, but don't force it if it's not needed:
@@ -183,8 +184,9 @@ labels shown below:
 keep paragraph spacing tight. Use a blank line only between distinct
 sub-sections within the long answer.]
 
+The layout above is for `answer` only; it has no hint section.
 Optionally, if a hint would meaningfully help a learner approach
-this question, include one - otherwise leave the hint empty, however do not
+this question, put it in `hint` - otherwise leave `hint` null, however do not
 give the answer away in the hint!
 """
 
@@ -223,7 +225,7 @@ EXTEND_OPTIONS: List[dict] = [
     {
         "key": "fact_check",
         "label": "Fact-check this question.",
-        "prompt": "Carefully fact-check the answer (or question if innacurate) and correct any and all inaccuracies. If extranious non-answer related content is wrong then you can simply remove that content, so long as it doesn't leave the question without a complete answer to the direct question",
+        "prompt": "Carefully fact-check the answer (or question if innacurate or misleading) and correct any and all inaccuracies whether in the question, hint, or answer section. If you find there is extranious non-answer related content that is wrong then you can simply remove that content, so long as it doesn't leave the question without a complete answer to the direct question. Additionally: output the conclusion to your findings to the user in the user_instructions_block; letting them know if there were inaccuracies or not and what they were and what you changed, added, or removed, or perhaps some parts were overstated or exagerated slightly but not quite wrong, let them know in either case your conclusions regardless of whether you had to change something or not in the user_instructions_block.",
     },
     {
         "key": "shorten",
