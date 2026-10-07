@@ -19,6 +19,7 @@ export function useAskAi({
   onResumeListening,
 }: UseAskAiOptions): AskAiState {
   const [isRecording, setIsRecording] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [phase, setPhase] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +97,7 @@ export function useAskAi({
       wasListeningRef.current = wasListening;
       silenceOtherAudio();
       setIsRecording(true);
+      setIsTyping(false);
       setTranscript(null);
       setError(null);
       setPhase(null);
@@ -128,12 +130,7 @@ export function useAskAi({
     [resumeIfNeeded, silenceOtherAudio],
   );
 
-  const cancel = useCallback(() => {
-    if (abortRef.current) {
-      try { abortRef.current.abort(); } catch { /* ignore */ }
-      abortRef.current = null;
-    }
-
+  const discardRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state !== 'inactive') {
       recorder.onstop = () => {
@@ -145,14 +142,24 @@ export function useAskAi({
       stopTracks(recorder);
       mediaRecorderRef.current = null;
     }
+  }, [stopTracks]);
+
+  const cancel = useCallback(() => {
+    if (abortRef.current) {
+      try { abortRef.current.abort(); } catch { /* ignore */ }
+      abortRef.current = null;
+    }
+
+    discardRecording();
 
     playbackActiveRef.current = false;
     setIsRecording(false);
+    setIsTyping(false);
     setPhase(null);
     setTranscript(null);
     setError(null);
     resumeIfNeeded();
-  }, [resumeIfNeeded, stopTracks]);
+  }, [resumeIfNeeded, discardRecording]);
 
   const requestAnswer = useCallback(
     async (transcriptText: string) => {
@@ -316,6 +323,25 @@ export function useAskAi({
     recorder.stop();
   }, [stopTracks, requestAnswer]);
 
+  // Leaves wasListeningRef alone, so voice listening still resumes once the
+  // typed question is answered or cancelled.
+  const startTyping = useCallback(() => {
+    discardRecording();
+    setIsRecording(false);
+    setIsTyping(true);
+    setTranscript(null);
+    setError(null);
+  }, [discardRecording]);
+
+  const sendTyped = useCallback(
+    (question: string) => {
+      setIsTyping(false);
+      setTranscript(question);
+      void requestAnswer(question);
+    },
+    [requestAnswer],
+  );
+
   const cancelSession = useCallback(() => {
     cancel();
     clearHistory();
@@ -380,12 +406,14 @@ export function useAskAi({
   }, []);
 
   const isActive =
-    isRecording || phase !== null || transcript !== null || error !== null || history.length > 0;
+    isRecording || isTyping || phase !== null || transcript !== null || error !== null || history.length > 0;
 
   const actions = useMemo(
     () => ({
       start,
       stopAndSend,
+      startTyping,
+      sendTyped,
       cancel,
       cancelSession,
       toggleHistoryAudio,
@@ -393,12 +421,23 @@ export function useAskAi({
       discardTurn,
       setIncludeImages,
     }),
-    [start, stopAndSend, cancel, cancelSession, toggleHistoryAudio, historyPlaybackEnded, discardTurn],
+    [
+      start,
+      stopAndSend,
+      startTyping,
+      sendTyped,
+      cancel,
+      cancelSession,
+      toggleHistoryAudio,
+      historyPlaybackEnded,
+      discardTurn,
+    ],
   );
 
   return {
     isActive,
     isRecording,
+    isTyping,
     phase,
     transcript,
     error,

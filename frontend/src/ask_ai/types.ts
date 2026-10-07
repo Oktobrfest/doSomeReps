@@ -22,6 +22,7 @@ export interface AskAiTurn {
 export interface AskAiState {
   isActive: boolean;
   isRecording: boolean;
+  isTyping: boolean;
   phase: string | null;
   transcript: string | null;
   error: string | null;
@@ -31,6 +32,8 @@ export interface AskAiState {
   actions: {
     start: (wasListening?: boolean) => Promise<void>;
     stopAndSend: () => void;
+    startTyping: () => void;
+    sendTyped: (question: string) => void;
     cancel: () => void;
     cancelSession: () => void;
     toggleHistoryAudio: (id: string) => void;

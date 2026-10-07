@@ -30,7 +30,7 @@ const AVAILABLE_COMMANDS = [
   'READ QUESTION',
   'ANSWER',
   'CORRECT',
-  'WRONG',
+  'WRONG ANSWER',
   'PAUSE',
   'RESUME',
   'RELOAD',

@@ -124,6 +124,12 @@
   }
 }
 
+/* Free text reads left-aligned, even inside the centred container. */
+.askAiQuestionInput {
+  composes: textarea from '../quiz/modals/modalContent.module.css';
+  text-align: left;
+}
+
 .askAiTranscriptBox {
   margin-top: 1rem;
   padding: 0.75rem;

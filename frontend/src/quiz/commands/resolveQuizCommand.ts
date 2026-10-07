@@ -14,7 +14,9 @@ export function resolveQuizCommandHandler(
     case 'CORRECT':
       return handlers.correct;
 
-    case 'WRONG':
+    case 'WRONG ANSWER':
+    case 'WRONG INCORRECT':
+    case 'INCORRECT WRONG':
     case 'INCORRECT':
       return handlers.wrong;
 
