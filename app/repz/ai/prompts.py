@@ -96,6 +96,12 @@ Each question should:
 - Be short, clear, and self-contained. The person answering these
   questions will NOT have access to the source material, so every
   question must stand entirely on its own.
+- Be written for a reader who has never seen the material, doesn't
+  know it exists, and never will. If that reader could fairly reply
+  "discussed where?", "which ones?" or "what example?", the question
+  is invalid.
+- Make complete sense when shown alone, months later, mixed in at
+  random with thousands of unrelated questions on other subjects.
 - NEVER reference the source material itself. Do not use phrases like
   "According to the text", "Based on the provided material", "In the
   article", "As shown in the document", or any similar wording.
