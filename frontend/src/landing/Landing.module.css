@@ -4,12 +4,15 @@
   gap: 1rem;
 
   width: 100%;
+  max-width: 60rem;
+  margin-inline: auto;
   box-sizing: border-box;
 }
 
 .headline {
   margin: 0;
   text-align: center;
+  text-wrap: balance;
   font-size: 1.5rem;
   color: var(--rep-color-text-primary);
 }
