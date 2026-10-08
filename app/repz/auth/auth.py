@@ -14,6 +14,7 @@ from urllib.parse import urlencode
 from ..database import session as dbsession
 from ..models import users as Users
 from ..configs.oidc import OIDCConfig
+from ..services.quiz_service import start_guide_for_new_user
 
 # Use the shared OAuth extension that the factory initialized.
 from .oidc import oauth
@@ -107,9 +108,10 @@ def sso_callback():
         user_obj = existing
 
     login_user(user_obj)
+    landing = "home.quiz" if start_guide_for_new_user(user_obj.id) else "home.homepage"
     flash("Logged in via SSO", category="success")
     # Optionally: honor ?next=
-    next_url = request.args.get("next") or url_for("home.homepage")
+    next_url = request.args.get("next") or url_for(landing)
     return redirect(next_url)
 
 

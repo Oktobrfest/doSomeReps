@@ -58,7 +58,7 @@ export function AudioPlane({
         <>
           <ToggleButton
             on={mode.autoPlay}
-            label="Auto-Play"
+            label="Auto-Play Question"
             disabled={quiz.isSubmitting}
             onClick={mode.toggleAutoPlay}
           />

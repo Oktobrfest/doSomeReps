@@ -22,8 +22,8 @@ export interface QuizMode {
 const AUDIO_ENABLED_KEY = 'quiz_audio_enabled';
 const AUTO_PLAY_KEY = 'quiz_auto_play';
 
-/** Audio is on out of the box, so an untouched install behaves like audio mode. */
-const DEFAULT_AUDIO_ENABLED = true;
+/** Audio is off out of the box; a reader opts in, and that choice persists. */
+const DEFAULT_AUDIO_ENABLED = false;
 
 /**
  * A phone quiz is usually taken hands-free, so it reads the question by itself.

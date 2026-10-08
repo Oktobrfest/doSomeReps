@@ -329,10 +329,10 @@ Original {part}:
 {source_text}
 
 Rules:
-1. Return only the final spoken text. DO NOT include any of your thoughts or comments like "here is the text ready to be spoken out loud" 
-or things to that effect!
+1. Return only the content itself, exactly as the listener should hear it. Every word you output is read aloud,
+so never add anything about the text, its purpose, its format, or this task (no introductions, framing, or commentary).
 2. Do not return JSON.
-3. Do not use Markdown.
+3. Output plain text only. Strip all Markdown and LaTeX syntax (e.g. *, **, #, _, `, $, \\) so none of it appears in the output.
 4. Do not include labels like "Question:", "Answer:", "Hint:", "SHORT ANSWER:", or "ANSWER:".
 5. Preserve the meaning and facts.
 6. Make the text natural and easy to understand when spoken aloud.

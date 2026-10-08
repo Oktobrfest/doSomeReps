@@ -11,9 +11,10 @@ from sqlalchemy.sql import func
 from repz.extensions import cache
 from repz.cache_helper import CacheHelper
 from repz.database import session
-from repz.models import level, question, quizq
+from repz.models import category, level, question, quizq, users
 from repz.services.audio_asset_service import audio_object_key, default_tts_texts
 from repz.bluehelpers import (
+    create_brand_new_quizq,
     flag_payload,
     get_quizes,
     get_session,
@@ -156,6 +157,85 @@ def get_selected_categories() -> list[str] | str:
 def set_selected_categories(category_slugs: list[str]) -> None:
     """Persist the user's category selection for subsequent quiz requests."""
     set_session("quiz_category_names", category_slugs)
+
+
+GUIDE_USERNAME = "guide"
+
+
+def _written_by_guide():
+    """Matches the questions the guide user wrote, which make up the site guide."""
+    return question.created_by.in_(
+        select(users.id).where(func.lower(users.username) == GUIDE_USERNAME)
+    )
+
+
+def _queue_guide_question_after(user_id: int, question_id: int = 0) -> bool:
+    """
+    Queue the guide question that follows `question_id` in the order the guide
+    user wrote them, unless the reader has had it queued before. Returns
+    whether one was queued.
+
+    Only ever queuing the next one keeps the guide in order however the queue
+    is sampled, and makes a repeated call harmless.
+    """
+    next_id = session.execute(
+        select(question.question_id)
+        .where(_written_by_guide(), question.question_id > question_id)
+        .order_by(question.question_id)
+        .limit(1)
+    ).scalars().first()
+    if next_id is None:
+        return False
+
+    already_queued = session.execute(
+        select(quizq.quizq_id)
+        .where(quizq.user_id == user_id, quizq.question_id == next_id)
+        .limit(1)
+    ).first()
+    if already_queued:
+        return False
+
+    create_brand_new_quizq([next_id], user_id)
+    return True
+
+
+def start_guide_for_new_user(user_id: int) -> bool:
+    """
+    Queue the first guide question for a reader who has never queued a
+    question, and point their quiz at the guide.
+
+    Returns whether the guide was started, so a login can land the reader on
+    it. A database without guide questions leaves every reader untouched.
+    """
+    has_quiz_history = session.execute(
+        select(quizq.quizq_id).where(quizq.user_id == user_id).limit(1)
+    ).first()
+    if has_quiz_history or not _queue_guide_question_after(user_id):
+        return False
+
+    guide_categories = session.execute(
+        select(category.category_name)
+        .join(category.questions)
+        .where(_written_by_guide())
+        .distinct()
+    ).scalars().all()
+    set_selected_categories([name.replace(" ", "_") for name in guide_categories])
+    return True
+
+
+def continue_guide(user_id: int, quizq_id: int) -> None:
+    """Queue the next guide question once the reader has finished one."""
+    finished_question_id = session.execute(
+        select(quizq.question_id)
+        .join(quizq.referenced_question)
+        .where(quizq.quizq_id == quizq_id, quizq.user_id == user_id)
+        .where(_written_by_guide())
+    ).scalars().first()
+
+    if finished_question_id is not None and _queue_guide_question_after(
+        user_id, finished_question_id
+    ):
+        invalidate_quiz_queue_cache(user_id)
 
 
 def invalidate_quiz_queue_cache(user_id: int) -> None:

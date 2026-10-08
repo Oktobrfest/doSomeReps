@@ -16,6 +16,7 @@ from repz.services.quiz_service import (
     AnswerVerdict,
     build_audio_assets,
     build_quiz_items,
+    continue_guide,
     get_quiz_queue,
     get_selected_categories,
     set_selected_categories,
@@ -185,6 +186,7 @@ def quiz_action():
             que_list=que_list,
             que_cache_key=que_cache_key,
         )
+        continue_guide(current_user.id, quizq_id)
         return jsonify({"ok": True, "action": "exclude", "quizqId": quizq_id})
 
     if action == "submit":
@@ -203,6 +205,8 @@ def quiz_action():
             que_list=que_list,
             que_cache_key=que_cache_key,
         )
+        if verdict.is_correct:
+            continue_guide(current_user.id, quizq_id)
 
         return jsonify({
             "ok": True,

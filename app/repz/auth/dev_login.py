@@ -25,6 +25,7 @@ from sqlalchemy import select
 
 from ..database import session as dbsession
 from ..models import users as Users
+from ..services.quiz_service import start_guide_for_new_user
 
 dev_auth = Blueprint(
     "dev_auth",
@@ -125,6 +126,7 @@ def dev_login_as(user_id):
     dbsession.commit()
 
     login_user(user_obj)
+    landing = "home.quiz" if start_guide_for_new_user(user_obj.id) else "home.homepage"
     current_app.logger.warning(
         "[DEV-LOGIN] Logged in as id=%s username=%s role=%s",
         user_obj.id,
@@ -132,7 +134,7 @@ def dev_login_as(user_id):
         user_obj.role,
     )
     flash(f"DEV: logged in as {user_obj.username}", category="success")
-    return redirect(url_for("home.homepage"))
+    return redirect(url_for(landing))
 
 
 @dev_auth.route("/dev-logout")

@@ -31,7 +31,8 @@ class TestQuizSubmissions(unittest.TestCase):
                  patch.object(quiz_api, 'get_selected_categories') as mock_categories, \
                  patch.object(quiz_api, 'CacheHelper') as mock_cache_helper, \
                  patch.object(quiz_api, 'submit_quiz_answer') as mock_submit, \
-                 patch.object(quiz_api, 'exclude_quiz_question') as mock_exclude:
+                 patch.object(quiz_api, 'exclude_quiz_question') as mock_exclude, \
+                 patch.object(quiz_api, 'continue_guide') as mock_continue_guide:
 
                 mock_categories.return_value = ["Python"]
 
@@ -47,6 +48,7 @@ class TestQuizSubmissions(unittest.TestCase):
                     "response": response,
                     "submit": mock_submit,
                     "exclude": mock_exclude,
+                    "continue_guide": mock_continue_guide,
                     "que_list": que_list,
                     "AnswerVerdict": AnswerVerdict,
                 }
@@ -67,6 +69,7 @@ class TestQuizSubmissions(unittest.TestCase):
             que_list=result["que_list"],
             que_cache_key="test_cache_key",
         )
+        result["continue_guide"].assert_called_once_with(1, 123)
 
     def test_wrong_submission(self):
         result = self._post_action({
@@ -84,6 +87,7 @@ class TestQuizSubmissions(unittest.TestCase):
             que_list=result["que_list"],
             que_cache_key="test_cache_key",
         )
+        result["continue_guide"].assert_not_called()
 
     def test_slightly_wrong_submission(self):
         result = self._post_action({
@@ -112,6 +116,7 @@ class TestQuizSubmissions(unittest.TestCase):
             que_cache_key="test_cache_key",
         )
         result["submit"].assert_not_called()
+        result["continue_guide"].assert_called_once_with(1, 123)
 
     def test_unknown_verdict_is_rejected(self):
         result = self._post_action({
