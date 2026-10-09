@@ -1,5 +1,6 @@
 import React from "react";
 import { toast } from "sonner";
+import "../styles/toast.css";
 
 // Error messages must never timeout under any situation.
 const origError = toast.error;

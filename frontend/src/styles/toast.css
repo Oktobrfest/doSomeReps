@@ -1,0 +1,18 @@
+/* doSomeReps/frontend/src/styles/toast.css */
+
+/* Sonner hangs its dismiss button off the toast's top-left corner. This moves
+   it to the top-right and sizes it from the touch tier. Sonner injects its CSS
+   after every stylesheet, so the `[data-sonner-toaster]` ancestor is what lets
+   these rules outrank its own. */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
+  left: auto;
+  right: 0;
+  transform: translate(35%, -35%);
+  width: var(--rep-toast-close-size-touch);
+  height: var(--rep-toast-close-size-touch);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] svg {
+  width: var(--rep-toast-close-icon-size-touch);
+  height: var(--rep-toast-close-icon-size-touch);
+}

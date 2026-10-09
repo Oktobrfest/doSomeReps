@@ -324,6 +324,15 @@
     opacity 120ms ease,
     box-shadow 120ms ease,
     background-color 120ms ease;
+
+  /* ---- Toast close button scale ----
+     `md` is sonner's own pointer-sized dismiss; `touch` is sized for a thumb
+     and collapses onto `md` with the button touch tiers below. The touch icon
+     is the glyph's native 24px viewBox, so its stroke renders unscaled. */
+  --rep-toast-close-size-md: 20px;
+  --rep-toast-close-icon-size-md: 12px;
+  --rep-toast-close-size-touch: 44px;
+  --rep-toast-close-icon-size-touch: 24px;
 }
 
 /* Above this width the quiz is driven by a pointer on a page that is no longer
@@ -349,5 +358,8 @@
     --rep-btn-font-size-touch-lg: var(--rep-btn-font-size-md);
     --rep-btn-radius-touch-lg: var(--rep-btn-radius-md);
     --rep-btn-icon-size-touch-lg: var(--rep-btn-icon-size-md);
+
+    --rep-toast-close-size-touch: var(--rep-toast-close-size-md);
+    --rep-toast-close-icon-size-touch: var(--rep-toast-close-icon-size-md);
   }
 }

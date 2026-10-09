@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Query
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from urllib.parse import urlencode
 
 from ..database import session as dbsession
@@ -67,11 +68,11 @@ def sso_callback():
             "OIDC state mismatch during callback; likely stale/old login callback URL"
         )
         flash("Your login session expired or was stale. Please try logging in again.", category="error")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("home.homepage"))
     except OAuthError as e:
         current_app.logger.warning("OIDC callback failed: %s", e)
         flash("Login failed. Please try again.", category="error")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("home.homepage"))
 
     if not token:
         abort(401)
@@ -98,7 +99,13 @@ def sso_callback():
             email_verified=True,
         )
         dbsession.add(new_user)
-        dbsession.commit()
+        try:
+            dbsession.commit()
+        except IntegrityError:
+            dbsession.rollback()
+            current_app.logger.warning("SSO login refused for %s: email already belongs to another account", username)
+            flash("An account with this email already exists. Log out and sign in with that account instead.", category="error")
+            return redirect(url_for("home.homepage"))
         user_obj = new_user
     else:
         # Keep local role in sync with Authentik groups
