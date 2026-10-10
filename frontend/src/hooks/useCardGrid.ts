@@ -8,7 +8,7 @@ const CARD_MIN_WIDTH_REM = 20;
  * `auto-fill`: a card spanning more columns than the grid has would add columns
  * of its own, and the grid would read them back as room it really has.
  */
-export function useGridColumns(grid: RefObject<HTMLElement>): number {
+export function useGridColumns(grid: RefObject<HTMLElement | null>): number {
   const [columns, setColumns] = useState(1);
 
   useLayoutEffect(() => {

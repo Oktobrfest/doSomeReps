@@ -1,22 +1,17 @@
-import { useEffect, useState } from "react";
-import { flushSync } from "react-dom";
-import { Toaster } from "sonner";
+import { useEffect } from "react";
+import { Toaster, toast } from "sonner";
 import styles from "./Toast.module.css";
 
 /**
- * Where every toast in the document appears. Render exactly one, ahead of the
- * page it serves: sonner drops a toast raised before its host is listening,
- * and effects run in tree order.
+ * Where every toast in the document appears. Render exactly one: a second
+ * host would show every toast twice.
  */
 export function ToastHost() {
-  // A fresh host for every visit, so a page restored from the back/forward
-  // cache comes back without the toasts it had up when the reader left it.
-  // Synchronously, so the stale ones are gone before the page is painted.
-  const [visit, setVisit] = useState(0);
-
+  // A page restored from the back/forward cache comes back without the toasts
+  // it had up when the reader left it.
   useEffect(() => {
     const onPageShow = ({ persisted }: PageTransitionEvent) => {
-      if (persisted) flushSync(() => setVisit((count) => count + 1));
+      if (persisted) toast.dismiss();
     };
     window.addEventListener("pageshow", onPageShow);
     return () => window.removeEventListener("pageshow", onPageShow);
@@ -24,7 +19,5 @@ export function ToastHost() {
 
   // Expanded: sonner hides the content of a styled toast stacked behind the
   // front one, but a headless toast would show through it.
-  return (
-    <Toaster key={visit} position="top-right" expand toastOptions={{ className: styles.slot }} />
-  );
+  return <Toaster position="top-right" expand toastOptions={{ className: styles.slot }} />;
 }

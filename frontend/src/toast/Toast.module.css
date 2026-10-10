@@ -43,17 +43,8 @@
   scrollbar-color: currentColor transparent;
 }
 
-/* Animated in place of `opacity` itself, so that holding a toast can still
-   bring it back to full strength. */
-@property --toast-opacity {
-  syntax: "<number>";
-  inherits: false;
-  initial-value: 1;
-}
-
 /* A timed toast fades out over the last stretch of its life... */
 .timed {
-  opacity: var(--toast-opacity);
   animation: toastFade var(--rep-toast-fade-duration) linear
     calc(var(--rep-toast-lifetime) - var(--rep-toast-fade-duration)) forwards;
 }
@@ -68,19 +59,14 @@
   animation: toastCountdown var(--rep-toast-lifetime) linear forwards;
 }
 
-/* Reading a toast, or reaching for it or its dismiss, holds it where it is... */
+/* Reading a toast, or reaching for it or its dismiss, holds it where it is. */
 .slot:is(:hover, :focus-within) :is(.timed, .countdown) {
   animation-play-state: paused;
 }
 
-/* ...and at full strength, however far it had faded. */
-.slot:is(:hover, :focus-within) .timed {
-  opacity: 1;
-}
-
 @keyframes toastFade {
   to {
-    --toast-opacity: 0;
+    opacity: 0;
   }
 }
 

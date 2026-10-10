@@ -311,7 +311,7 @@ interface QuizBodyProps {
   editQuestionUrl: string;
   categoryList?: string[];
   selectedCategories?: string[];
-  slideOutRef: RefObject<SlideOutButtonsHandle>;
+  slideOutRef: RefObject<SlideOutButtonsHandle | null>;
   /** Starts an Ask AI session with the wake-word path's own "was listening" flag. */
   onAskAi: () => void;
   panelMetrics: Metrics | null;

@@ -22,8 +22,8 @@ const MOVE_MS = 300;
  * the two of them.
  */
 function useFitsInline(
-  host: RefObject<HTMLElement>,
-  content: RefObject<HTMLElement>,
+  host: RefObject<HTMLElement | null>,
+  content: RefObject<HTMLElement | null>,
   key: string
 ): boolean {
   const [fits, setFits] = useState(true);
