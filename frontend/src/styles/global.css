@@ -38,6 +38,16 @@
   --rep-color-error-surface-subtle: #fff5f5;
   --rep-color-error-border-subtle: #feb2b2;
 
+  /* The alert family's other two members, so every severity a toast can carry
+     has a text, surface and border that read together. */
+  --rep-color-info-text: #0c5460;
+  --rep-color-info-surface: #d1ecf1;
+  --rep-color-info-border: #bee5eb;
+
+  --rep-color-warning-text: #856404;
+  --rep-color-warning-surface: #fff3cd;
+  --rep-color-warning-border: #ffeeba;
+
   /* Hover for the primary action colour, and its foreground dimmed for
      secondary copy sitting on a primary-coloured surface. */
   --rep-color-action-primary-hover: #2b6cb0;
@@ -254,8 +264,8 @@
 
   /* ---- Button size scale ----
      Primitive tiers. `md` is the app-wide control; `sm` is its dense variant.
-     The three `touch-*` tiers exist for the quiz, which is driven by a thumb on
-     a phone and by a pointer everywhere else. */
+     The `touch-*` tiers are for controls driven by a thumb on a phone and by a
+     pointer everywhere else, the quiz above all. */
   --rep-btn-height-md: 46px;
   --rep-btn-padding-x-md: 24px;
   --rep-btn-font-size-md: 1rem;
@@ -274,6 +284,12 @@
   --rep-btn-padding-x-sm: 14px;
   --rep-btn-font-size-sm: 0.875rem;
   --rep-btn-min-width-sm: 0;
+
+  /* A dismiss tucked into a corner: the smallest target a thumb still hits. */
+  --rep-btn-height-touch-xs: 44px;
+  --rep-btn-padding-x-touch-xs: 12px;
+  --rep-btn-font-size-touch-xs: 1rem;
+  --rep-btn-icon-size-touch-xs: 1.5rem;
 
   /* Secondary thumb target: several share a row. */
   --rep-btn-height-touch-sm: 50px;
@@ -336,14 +352,12 @@
     box-shadow 120ms ease,
     background-color 120ms ease;
 
-  /* ---- Toast close button scale ----
-     `md` is sonner's own pointer-sized dismiss; `touch` is sized for a thumb
-     and collapses onto `md` with the button touch tiers below. The touch icon
-     is the glyph's native 24px viewBox, so its stroke renders unscaled. */
-  --rep-toast-close-size-md: 20px;
-  --rep-toast-close-icon-size-md: 12px;
-  --rep-toast-close-size-touch: 44px;
-  --rep-toast-close-icon-size-touch: 24px;
+  /* ---- Toasts ----
+     A timed toast lives for `lifetime`, fading out over the last `fade` of it.
+     A message taller than `message-max-height` scrolls inside its toast. */
+  --rep-toast-lifetime: 7s;
+  --rep-toast-fade-duration: 3s;
+  --rep-toast-message-max-height: 30vh;
 }
 
 /* Above this width the quiz is driven by a pointer on a page that is no longer
@@ -370,7 +384,10 @@
     --rep-btn-radius-touch-lg: var(--rep-btn-radius-md);
     --rep-btn-icon-size-touch-lg: var(--rep-btn-icon-size-md);
 
-    --rep-toast-close-size-touch: var(--rep-toast-close-size-md);
-    --rep-toast-close-icon-size-touch: var(--rep-toast-close-icon-size-md);
+    /* A corner dismiss drops back to the badge-sized `xs`, not to `md`. */
+    --rep-btn-height-touch-xs: var(--rep-btn-height-xs);
+    --rep-btn-padding-x-touch-xs: var(--rep-btn-padding-x-xs);
+    --rep-btn-font-size-touch-xs: var(--rep-btn-font-size-xs);
+    --rep-btn-icon-size-touch-xs: var(--rep-btn-icon-size-xs);
   }
 }

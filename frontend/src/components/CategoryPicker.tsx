@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Plus, X } from "lucide-react";
-import { toast } from "sonner";
 import { useCategories } from "../hooks/useCategories";
 import { useFullSizedPage } from "../hooks/useFullSizedPage";
 import { byName, createCategory } from "../lib/categories";
+import { errorMessage } from "../lib/errors";
+import { notify } from "../toast/notify";
 import { CategoryChip } from "./CategoryChip";
 import { CategorySection, type CategoryItem } from "./CategorySection";
 import { QuizModal } from "./QuizModal";
@@ -141,9 +142,9 @@ export function CategoryPicker({
       const name = await createCategory(wanted);
       if (!chosen.has(name)) onChange([...selectedCategories, name]);
       setFilter("");
-      toast.success(`Category "${name}" created.`);
+      notify.success(`Category "${name}" created.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not create that category.");
+      notify.error(errorMessage(error, "Could not create that category."));
     } finally {
       setCreating(false);
     }

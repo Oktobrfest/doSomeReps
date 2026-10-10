@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 import { BookOpen, ListChecks, Save, Search } from "lucide-react";
-import { toast } from "sonner";
 import { QueFilters } from "./QueFilters";
 import { QueResultsList, type QueCardActions } from "./QueResultsList";
 import { blockUser, saveToQue, searchQue } from "./quemore_api";
 import { toSlug } from "../lib/categories";
+import { errorMessage } from "../lib/errors";
+import { notify } from "../toast/notify";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./QueMore.module.css";
 import type {
@@ -90,13 +91,9 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
       setResults(outcome.results);
       setSelected(autoSelect(outcome.results, Number(qty)));
 
-      if (outcome.msg) {
-        if (outcome.msgCategory === "error") toast.error(outcome.msg);
-        else if (outcome.msgCategory === "warning") toast.warning(outcome.msg);
-        else toast.success(outcome.msg);
-      }
+      if (outcome.msg) notify[outcome.msgCategory](outcome.msg);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Search failed.");
+      notify.error(errorMessage(err, "Search failed."));
     } finally {
       setSearching(false);
     }
@@ -131,10 +128,10 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
   const commit = useCallback(
     async (payload: SavePayload) => {
       try {
-        toast.success(await saveToQue(endpoints.saveUrl, payload));
+        notify.success(await saveToQue(endpoints.saveUrl, payload));
         return true;
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Could not save.");
+        notify.error(errorMessage(err, "Could not save."));
         return false;
       }
     },
@@ -165,9 +162,9 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
     try {
       await blockUser(endpoints.blockUserUrl, userId);
       setResults((prev) => prev.filter((result) => result.created_by !== userId));
-      toast.success(`Blocked ${username}.`);
+      notify.success(`Blocked ${username}.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not block user.");
+      notify.error(errorMessage(err, "Could not block user."));
     } finally {
       setBlockingUserId(null);
     }

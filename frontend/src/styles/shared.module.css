@@ -87,6 +87,22 @@
   border-color: var(--rep-color-error-border);
 }
 
+.alertInfo {
+  color: var(--rep-color-info-text);
+
+  background-color: var(--rep-color-info-surface);
+
+  border-color: var(--rep-color-info-border);
+}
+
+.alertWarning {
+  color: var(--rep-color-warning-text);
+
+  background-color: var(--rep-color-warning-surface);
+
+  border-color: var(--rep-color-warning-border);
+}
+
 .alertCloseButton {
   position: absolute;
   top: 0;
@@ -328,6 +344,14 @@
   --rep-btn-padding-x: var(--rep-btn-padding-x-sm);
   --rep-btn-font-size: var(--rep-btn-font-size-sm);
   --rep-btn-min-width: var(--rep-btn-min-width-sm);
+}
+
+.buttonTouchXs {
+  --rep-btn-height: var(--rep-btn-height-touch-xs);
+  --rep-btn-padding-x: var(--rep-btn-padding-x-touch-xs);
+  --rep-btn-font-size: var(--rep-btn-font-size-touch-xs);
+  --rep-btn-min-width: var(--rep-btn-min-width-touch);
+  --rep-btn-icon-size: var(--rep-btn-icon-size-touch-xs);
 }
 
 .buttonTouchSm {

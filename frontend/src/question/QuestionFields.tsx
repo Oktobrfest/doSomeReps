@@ -1,7 +1,7 @@
 import { useId, type ChangeEvent } from "react";
-import { toast } from "sonner";
 import { AutoResizeTextarea } from "../components/AutoResizeTextarea";
 import { CategoryPicker } from "../components/CategoryPicker";
+import { notify } from "../toast/notify";
 import { useFilePreviews } from "./useFilePreviews";
 import {
   QUESTION_PARTS,
@@ -63,7 +63,7 @@ function PartField({ part, draft, onChange }: PartFieldProps) {
       .filter((message): message is string => message !== null);
 
     if (problems.length > 0) {
-      problems.forEach((message) => toast.error(message));
+      problems.forEach((message) => notify.error(message));
       return;
     }
 

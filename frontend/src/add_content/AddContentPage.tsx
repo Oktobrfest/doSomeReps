@@ -1,5 +1,4 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Toaster, toast } from "sonner";
 import { AskAiPanel } from "../ask_ai/AskAiPanel";
 import { useAskAi } from "../ask_ai/useAskAi";
 import type { AskAiContext } from "../ask_ai/types";
@@ -13,6 +12,8 @@ import {
   type QuestionDraft,
 } from "../question/question_types";
 import { useFilePreviews } from "../question/useFilePreviews";
+import { errorMessage } from "../lib/errors";
+import { notify } from "../toast/notify";
 import styles from "./AddContent.module.css";
 import sharedStyles from "../styles/shared.module.css";
 
@@ -41,7 +42,7 @@ export function AddContentPage() {
   const handleSave = async () => {
     const problem = draftError(draft);
     if (problem) {
-      toast.error(problem);
+      notify.error(problem);
       return;
     }
 
@@ -49,11 +50,9 @@ export function AddContentPage() {
     try {
       await createQuestion(draft);
       setDraft(emptyDraft());
-      toast.success("New question created.");
+      notify.success("New question created.");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not save the question."
-      );
+      notify.error(errorMessage(err, "Could not save the question."));
     } finally {
       setSaving(false);
     }
@@ -66,8 +65,6 @@ export function AddContentPage() {
 
   return (
     <div className={styles.page}>
-      <Toaster richColors position="top-right" />
-
       <form onSubmit={handleSubmit}>
         <div className={styles.header}>
           <h1 className={styles.pageTitle}>New Question</h1>

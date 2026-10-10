@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Loader2, Settings } from "lucide-react";
-import { toast } from "sonner";
+import { errorMessage } from "../lib/errors";
+import { notify } from "../toast/notify";
 import { extendQuestion, type ExtendTarget } from "./question_api";
 import type { QuestionDraft } from "./question_types";
 import sharedStyles from "../styles/shared.module.css";
@@ -114,12 +115,12 @@ export function ExtendButton({
       controller.signal.throwIfAborted();
 
       onExtended({ ...draft, text });
-      toast.success("Answer extended with AI.");
-      if (messageToEditor) toast.info(messageToEditor);
+      notify.success("Answer extended with AI.");
+      if (messageToEditor) notify.info(messageToEditor);
     } catch (err) {
       // The user cancelled: drop whatever came back instead of applying it.
       if (!controller.signal.aborted) {
-        toast.error(err instanceof Error ? err.message : "Extend failed");
+        notify.error(errorMessage(err, "Extend failed"));
       }
     } finally {
       extendAbortRef.current = null;

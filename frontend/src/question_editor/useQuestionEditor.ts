@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { errorMessage } from "../lib/errors";
+import { notify } from "../toast/notify";
 import {
   deleteAudio,
   deleteQuestion,
@@ -32,7 +33,7 @@ export function useQuestionEditor({
   const [deleting, setDeleting] = useState(false);
 
   const report = (err: unknown, fallback: string) =>
-    toast.error(err instanceof Error ? err.message : fallback);
+    notify.error(errorMessage(err, fallback));
 
   const load = useCallback(async (id: number) => {
     const loaded = await loadQuestion(id);
@@ -71,7 +72,7 @@ export function useQuestionEditor({
       await deleteQuestion(questionId);
       setDraft(emptyDraft());
       setAudio([]);
-      toast.success("Question deleted.");
+      notify.success("Question deleted.");
       onDeleted?.();
     } catch (err) {
       report(err, "Failed to delete question.");
@@ -85,7 +86,7 @@ export function useQuestionEditor({
 
     const problem = draftError(draft);
     if (problem) {
-      toast.error(problem);
+      notify.error(problem);
       return;
     }
 
@@ -94,7 +95,7 @@ export function useQuestionEditor({
       await updateQuestion(questionId, draft);
       // Reload so the images just uploaded come back with their stored ids.
       await load(questionId);
-      toast.success("Question saved.");
+      notify.success("Question saved.");
       onSaved?.();
     } catch (err) {
       report(err, "Failed to save the question.");

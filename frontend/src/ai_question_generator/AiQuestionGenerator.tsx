@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
-import { Toaster, toast } from "sonner";
-import "../lib/toast";
 
 import { AskAiPanel } from "../ask_ai/AskAiPanel";
 import { useAskAi } from "../ask_ai/useAskAi";
@@ -13,6 +11,8 @@ import { QuestionFields } from "../question/QuestionFields";
 import { QuestionPreview } from "../question/QuestionPreview";
 import { createQuestion, extendQuestion } from "../question/question_api";
 import { emptyDraft, type QuestionDraft } from "../question/question_types";
+import { errorMessage } from "../lib/errors";
+import { notify } from "../toast/notify";
 import {
   clearGenerated,
   generateQuestions,
@@ -23,9 +23,6 @@ import styles from "./AiQuestionGenerator.module.css";
 import sharedStyles from "../styles/shared.module.css";
 
 const MAX_QUESTIONS = 50;
-
-const errorMessage = (err: unknown, fallback: string) =>
-  err instanceof Error ? err.message : fallback;
 
 interface GeneratedCardProps {
   index: number;
@@ -126,7 +123,7 @@ export function AiQuestionGenerator() {
         setDrafts(state.drafts);
         setCategories(state.categories);
       })
-      .catch((err) => toast.error(errorMessage(err, "Error loading state")))
+      .catch((err) => notify.error(errorMessage(err, "Error loading state")))
       .finally(() => setLoading(false));
   }, []);
 
@@ -140,11 +137,11 @@ export function AiQuestionGenerator() {
     event.preventDefault();
 
     if (!quizContent.trim() && !file) {
-      toast.error("Quiz content or a document file is required.");
+      notify.error("Quiz content or a document file is required.");
       return;
     }
     if (categories.length === 0) {
-      toast.error(
+      notify.error(
         "Pick at least one category - the AI tags every generated question with them."
       );
       return;
@@ -165,9 +162,9 @@ export function AiQuestionGenerator() {
       setQuizContent("");
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      toast.success(`Generated ${generated.length} question(s).`);
+      notify.success(`Generated ${generated.length} question(s).`);
     } catch (err) {
-      toast.error(errorMessage(err, "Generation failed"));
+      notify.error(errorMessage(err, "Generation failed"));
     } finally {
       setBusy(false);
     }
@@ -186,9 +183,9 @@ export function AiQuestionGenerator() {
     setBusy(true);
     try {
       await saveOne(index);
-      toast.success("Question saved.");
+      notify.success("Question saved.");
     } catch (err) {
-      toast.error(errorMessage(err, "Save failed"));
+      notify.error(errorMessage(err, "Save failed"));
     } finally {
       setBusy(false);
     }
@@ -202,7 +199,7 @@ export function AiQuestionGenerator() {
       }
       dropAt(index);
     } catch (err) {
-      toast.error(errorMessage(err, "Delete failed"));
+      notify.error(errorMessage(err, "Delete failed"));
     } finally {
       setBusy(false);
     }
@@ -224,8 +221,8 @@ export function AiQuestionGenerator() {
     }
 
     setBusy(false);
-    if (saved > 0) toast.success(`Saved ${saved} question(s).`);
-    if (failures.length > 0) toast.error(failures.join("; "));
+    if (saved > 0) notify.success(`Saved ${saved} question(s).`);
+    if (failures.length > 0) notify.error(failures.join("; "));
   };
 
   const handleDeleteAll = async () => {
@@ -242,7 +239,7 @@ export function AiQuestionGenerator() {
       await clearGenerated();
       setDrafts([]);
     } catch (err) {
-      toast.error(errorMessage(err, "Delete all failed"));
+      notify.error(errorMessage(err, "Delete all failed"));
     } finally {
       setBusy(false);
     }
@@ -264,7 +261,7 @@ export function AiQuestionGenerator() {
           controller.signal
         );
         replaceAt(index, { ...draft, text });
-        if (messageToEditor) toast.info(`#${index + 1}: ${messageToEditor}`);
+        if (messageToEditor) notify.info(`#${index + 1}: ${messageToEditor}`);
         extended += 1;
       } catch (err) {
         failures.push(`#${index + 1}: ${errorMessage(err, "Extend failed")}`);
@@ -272,8 +269,8 @@ export function AiQuestionGenerator() {
     }
 
     setBusy(false);
-    if (extended > 0) toast.success(`Extended ${extended} answer(s).`);
-    if (failures.length > 0) toast.error(failures.join("; "));
+    if (extended > 0) notify.success(`Extended ${extended} answer(s).`);
+    if (failures.length > 0) notify.error(failures.join("; "));
   };
 
   const applyToAll = (patch: Partial<QuestionDraft>) =>
@@ -288,8 +285,6 @@ export function AiQuestionGenerator() {
 
   return (
     <div className={styles.container}>
-      <Toaster richColors position="top-right" />
-
       <h1 className={styles.title}>AI Question Generator</h1>
       <p className={styles.description}>
         Have AI generate quiz questions from your material.

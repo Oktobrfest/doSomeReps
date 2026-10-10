@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Toaster } from "sonner";
 import { CategoryPicker } from "../components/CategoryPicker";
 import { QuePanel } from "./QuePanel";
 import { readBootstrap } from "./quemore_api";
@@ -20,8 +19,6 @@ export function QueMorePage() {
 
   return (
     <div className={styles.page}>
-      <Toaster richColors position="top-right" />
-
       <h1 className={styles.pageTitle}>Que More Questions</h1>
 
       <CategoryPicker

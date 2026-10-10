@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { Toaster, toast } from "sonner";
 import { QuestionEditor } from "../question_editor/QuestionEditor";
+import { errorMessage } from "../lib/errors";
+import { notify } from "../toast/notify";
 import { QuestionSearchPanel } from "./QuestionSearchPanel";
 import { QuestionResultsList } from "./QuestionResultsList";
 import { readBootstrap, unexcludeQuestion } from "./question_search_api";
@@ -41,9 +42,9 @@ export function EditQuestionsPage() {
         await unexcludeQuestion(bootstrap.unexcludeUrl, questionId);
         search.removeResult(questionId);
         if (selectedId === questionId) setSelectedId(null);
-        toast.success("Question unexcluded.");
+        notify.success("Question unexcluded.");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Unexclude failed.");
+        notify.error(errorMessage(err, "Unexclude failed."));
       }
     },
     [search, selectedId]
@@ -51,8 +52,6 @@ export function EditQuestionsPage() {
 
   return (
     <div className={styles.page}>
-      <Toaster richColors position="top-right" />
-
       <QuestionSearchPanel
         filters={filters}
         onChange={setFilters}
