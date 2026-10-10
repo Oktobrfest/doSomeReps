@@ -4,7 +4,7 @@ import {
   useEffect,
   type ButtonHTMLAttributes,
 } from 'react';
-import { BookOpen, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { BookOpen, Lightbulb, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import type { AudioAsset } from './types';
 import type { QuizController } from './useQuizController';
@@ -112,6 +112,32 @@ export function ReadQuestionControl({ quiz }: QuizControlProps) {
     >
       <Volume2 className={sharedStyles.buttonIcon} />
       <span>Read Question</span>
+    </LargeActionButton>
+  );
+}
+
+/** Hint narration uses exactly the same button and player as the other parts. */
+export function HintControl({ quiz }: QuizControlProps) {
+  if (quiz.hintActive) {
+    return (
+      <LargePlayableControl
+        onClick={quiz.actions.readHint}
+        isPlaying={quiz.hintPlaying}
+        intentClass={sharedStyles.btnCyan}
+        assets={quiz.hintAssets}
+        onSequenceEnd={quiz.actions.hintEnded}
+      />
+    );
+  }
+
+  return (
+    <LargeActionButton
+      onClick={quiz.actions.readHint}
+      disabled={quiz.hintAssets.length === 0 || quiz.isSubmitting}
+      className={sharedStyles.btnCyan}
+    >
+      <Lightbulb className={sharedStyles.buttonIcon} />
+      <span>Read Hint</span>
     </LargeActionButton>
   );
 }

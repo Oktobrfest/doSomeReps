@@ -1,4 +1,4 @@
-import { Ban, Edit, Lightbulb, Star } from 'lucide-react';
+import { Ban, Edit, Star } from 'lucide-react';
 import { AuthorButton } from './AuthorButton';
 import { RatingStars } from './RatingStars';
 import { FlagButton, type QuestionFlag } from '../components/FlagButton';
@@ -16,8 +16,6 @@ interface QuestionToolbarProps {
   isOwnQuestion: boolean;
   editQuestionUrl: string;
   disabled: boolean;
-  /** Absent when the question has nothing to hint at. */
-  onHint?: () => void;
   /** Absent once the reader has rated the question. */
   onRate?: () => void;
   onExclude: () => void;
@@ -37,25 +35,12 @@ export function QuestionToolbar({
   isOwnQuestion,
   editQuestionUrl,
   disabled,
-  onHint,
   onRate,
   onExclude,
   onFlagChange,
 }: QuestionToolbarProps) {
   return (
     <div className={styles.toolbar}>
-      {onHint && (
-        <button
-          type="button"
-          className={toolbarBtn(sharedStyles.btnCyan)}
-          onClick={onHint}
-          disabled={disabled}
-        >
-          <Lightbulb className={sharedStyles.buttonIcon} />
-          <span>Hint</span>
-        </button>
-      )}
-
       <FlagButton
         questionId={question.question_id}
         initialFlag={question.flag}

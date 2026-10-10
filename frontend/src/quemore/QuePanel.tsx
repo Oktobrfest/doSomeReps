@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { BookOpen, ListChecks, Save, Search } from "lucide-react";
 import { QueFilters } from "./QueFilters";
 import { QueResultsList, type QueCardActions } from "./QueResultsList";
@@ -64,6 +64,8 @@ interface QuePanelProps {
 export function QuePanel({ endpoints, categories }: QuePanelProps) {
   const [filters, setFilters] = useState<QueFilterState>(DEFAULT_FILTERS);
   const [qty, setQty] = useState("10");
+  const selectionToastId = useId();
+  const [queuedCount, setQueuedCount] = useState(0);
 
   const [results, setResults] = useState<QueSearchResult[]>([]);
   const [selected, setSelected] = useState<ReadonlySet<number>>(() => new Set());
@@ -115,6 +117,16 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
   const allSelected = hasAll(selected, queableIds);
   const allExpanded = hasAll(expanded, resultIds);
 
+  useEffect(() => {
+    if (!hasSearched) return;
+    notify.info(
+      `${chosen.length} selected to add to your que. Press Save above to queue the selected questions. ${queuedCount} queued this visit.`,
+      { id: selectionToastId, persistent: true }
+    );
+  }, [chosen.length, queuedCount, hasSearched, selectionToastId]);
+
+  useEffect(() => () => { notify.dismiss(selectionToastId); }, [selectionToastId]);
+
   /** The quantity is what picks the rows, so editing it re-picks them. */
   const handleQtyChange = useCallback(
     (value: string) => {
@@ -129,6 +141,7 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
     async (payload: SavePayload) => {
       try {
         notify.success(await saveToQue(endpoints.saveUrl, payload));
+        setQueuedCount((count) => count + (payload.que?.length ?? 0));
         return true;
       } catch (err) {
         notify.error(errorMessage(err, "Could not save."));

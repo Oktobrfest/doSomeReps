@@ -47,88 +47,6 @@
   font-size: 0.85rem;
 }
 
-/* Question, hint and answer are one card in three colours: the part's name on a
-   header in its colour, over the part. */
-.part {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  margin-bottom: 10px;
-  background: var(--rep-color-surface);
-  border: 1px solid var(--part-border);
-  border-radius: var(--rep-radius-card);
-  overflow: hidden;
-  box-shadow: var(--rep-shadow-card);
-}
-
-.part:last-child {
-  margin-bottom: 0;
-}
-
-/* The question carries no header: it wears its colour throughout. */
-.question {
-  --part-border: var(--rep-part-question-border);
-
-  background: var(--rep-part-question-surface);
-}
-
-.hint {
-  --part-header: var(--rep-part-hint-surface-strong);
-  --part-border: var(--rep-part-hint-border-strong);
-  --part-text: var(--rep-part-hint-text);
-}
-
-.answer {
-  --part-header: var(--rep-part-answer-surface-strong);
-  --part-border: var(--rep-part-answer-border-strong);
-  --part-text: var(--rep-part-answer-text);
-}
-
-.partHeader {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  padding: 4px 12px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--part-text);
-  background-color: var(--part-header);
-  border-bottom: 1px solid var(--part-border);
-}
-
-/* A closed part is its header alone, and the card's own border closes it. */
-.partHeader:last-child {
-  border-bottom: 0;
-}
-
-/* Wide equations, tables and code scroll inside their own card, and long words
-   break, rather than widening the page on a phone. */
-.partBody {
-  padding: 10px 12px;
-  overflow-x: auto;
-  overflow-wrap: break-word;
-}
-
-.partBody > :last-child {
-  margin-bottom: 0;
-}
-
-/* While the answer is closed, the question takes whatever room its column
-   leaves and shows as much of itself as that holds, fading out where the
-   room runs out. */
-.glimpse {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.glimpse > .partBody {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-  mask-image: linear-gradient(to bottom, black calc(100% - 0.75rem), transparent);
-}
-
 .previewImages {
   display: flex;
   flex-wrap: wrap;
@@ -142,4 +60,23 @@
   object-fit: contain;
   border-radius: var(--rep-radius-card);
   border: 1px solid var(--rep-color-border);
+}
+
+.question {
+  margin-bottom: 10px;
+  background: var(--rep-part-question-surface);
+  border: 1px solid var(--rep-part-question-border);
+  border-radius: var(--rep-radius-card);
+  overflow: hidden;
+  box-shadow: var(--rep-shadow-card);
+}
+
+.partBody {
+  padding: 10px 12px;
+  overflow-x: auto;
+  overflow-wrap: break-word;
+}
+
+.partBody > :last-child {
+  margin-bottom: 0;
 }

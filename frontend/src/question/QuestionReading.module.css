@@ -1,0 +1,79 @@
+/* Question, hint and answer are one card in three colours: the part's name on a
+   header in its colour, over the part. */
+.part {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  margin-bottom: 10px;
+  background: var(--rep-color-surface);
+  border: 1px solid var(--part-border);
+  border-radius: var(--rep-radius-card);
+  overflow: hidden;
+  box-shadow: var(--rep-shadow-card);
+}
+
+.part:last-child {
+  margin-bottom: 0;
+}
+
+.hint {
+  --part-header: var(--rep-part-hint-surface-strong);
+  --part-border: var(--rep-part-hint-border-strong);
+  --part-text: var(--rep-part-hint-text);
+}
+
+.answer {
+  --part-header: var(--rep-part-answer-surface-strong);
+  --part-border: var(--rep-part-answer-border-strong);
+  --part-text: var(--rep-part-answer-text);
+}
+
+.partHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 4px 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--part-text);
+  background-color: var(--part-header);
+}
+
+.partBody:not([hidden]) {
+  border-top: 1px solid var(--part-border);
+}
+
+/* Wide equations, tables and code scroll inside their own card, and long words
+   break, rather than widening the page on a phone. */
+.partBody {
+  padding: 10px 12px;
+  overflow-x: auto;
+  overflow-wrap: break-word;
+}
+
+.partBody > :last-child {
+  margin-bottom: 0;
+}
+
+
+.text {
+  font-size: 1.4rem;
+  line-height: 1.2;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.images {
+  width: 100%;
+  max-width: var(--rep-quiz-control-width);
+  margin-inline: auto;
+  margin-bottom: var(--rep-quiz-gap);
+}
+
+@media (min-width: 900px) {
+  .text {
+    font-size: 1.25rem;
+    line-height: 1.6;
+  }
+}

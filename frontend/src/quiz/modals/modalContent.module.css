@@ -9,14 +9,6 @@
   color: var(--rep-color-text-secondary);
 }
 
-.image {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  margin-top: 12px;
-  border-radius: var(--rep-radius-control);
-}
-
 .textarea {
   width: 100%;
   min-height: 8rem;
@@ -33,13 +25,6 @@
   outline: none;
   border-color: var(--rep-color-focus);
   box-shadow: 0 0 0 3px var(--rep-color-focus-ring);
-}
-
-.playerRow {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
 }
 
 /* An action that follows the content it acts on, so it carries the gap between. */

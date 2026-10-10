@@ -17,7 +17,7 @@ import type {
 } from './types';
 
 type PanelSnap = 'collapsed' | 'trio' | 'full';
-type AudioSource = 'question' | 'answer' | null;
+type AudioSource = 'question' | 'answer' | 'hint' | null;
 type VerdictKind = 'correct' | 'wrong' | 'slightlyWrong';
 
 interface ModalState {
@@ -47,6 +47,8 @@ type QuizUiAction =
   | { type: 'QUESTION_CHANGED' }
   | { type: 'QUESTION_AUDIO_TOGGLE_OR_START' }
   | { type: 'QUESTION_AUDIO_ENDED' }
+  | { type: 'HINT_AUDIO_TOGGLE_OR_START' }
+  | { type: 'HINT_AUDIO_ENDED' }
   | { type: 'ANSWER_REVEALED'; playAudio: boolean }
   | { type: 'ANSWER_AUDIO_TOGGLED' }
   | { type: 'ANSWER_AUDIO_ENDED' }
@@ -163,6 +165,20 @@ function reducer(state: QuizUiState, action: QuizUiAction): QuizUiState {
         activeAudio: null,
         audioPlaying: false,
       };
+
+    case 'HINT_AUDIO_TOGGLE_OR_START':
+      if (state.isSubmitting) return state;
+      return {
+        ...state,
+        // Like rereading the question, returning to the hint offers Get Answer again.
+        answerRevealed: state.activeAudio === 'answer' ? false : state.answerRevealed,
+        activeAudio: 'hint',
+        audioPlaying: state.activeAudio === 'hint' ? !state.audioPlaying : true,
+      };
+
+    case 'HINT_AUDIO_ENDED':
+      if (state.activeAudio !== 'hint') return state;
+      return { ...state, audioPlaying: false };
 
     case 'ANSWER_REVEALED':
       if (state.isSubmitting) return state;
@@ -566,6 +582,17 @@ export function useQuizController({
     dispatch({ type: 'QUESTION_AUDIO_TOGGLE_OR_START' });
   }, [stopAllAudio]);
 
+  const readHint = useCallback(() => {
+    if (uiRef.current.isSubmitting || !audioEnabledRef.current) return;
+    if (!(getAudioAssets(currentItemRef.current).hint?.length)) return;
+    if (uiRef.current.activeAudio !== 'hint') stopAllAudio();
+    dispatch({ type: 'HINT_AUDIO_TOGGLE_OR_START' });
+  }, [stopAllAudio]);
+
+  const hintEnded = useCallback(() => {
+    dispatch({ type: 'HINT_AUDIO_ENDED' });
+  }, []);
+
   const pause = useCallback(() => {
     dispatch({ type: 'PAUSE_AUDIO' });
   }, []);
@@ -719,7 +746,9 @@ export function useQuizController({
 
     const item = currentItemRef.current;
     const quizqId = item?.question?.quizq_id;
-    if (!quizqId || (item?.audioAssets?.question?.length ?? 0) > 0) return;
+    const assets = getAudioAssets(item);
+    const needsHintAudio = Boolean(item?.question?.hint) && !assets.hint?.length;
+    if (!quizqId || (assets.question?.length && !needsHintAudio)) return;
 
     let cancelled = false;
 
@@ -735,7 +764,12 @@ export function useQuizController({
 
         commitItems(
           latestItems.map((entry, index) =>
-            index === 0 ? { ...entry, audioAssets: data.audioAssets } : entry,
+            index === 0 ? {
+              ...entry,
+              audioAssets: assets.question?.length
+                ? { ...entry.audioAssets, hint: data.audioAssets.hint }
+                : data.audioAssets,
+            } : entry,
           ),
         );
       })
@@ -764,6 +798,8 @@ export function useQuizController({
       slightlyWrong: () => submitVerdict('slightlyWrong'),
       exclude: excludeCurrentQuestion,
       readQuestion,
+      readHint,
+      hintEnded,
       getAnswer,
       pause,
       resume,
@@ -786,6 +822,8 @@ export function useQuizController({
       pause,
       questionEnded,
       readQuestion,
+      readHint,
+      hintEnded,
       resume,
       setPanelSnap,
       submitVerdict,
@@ -832,6 +870,9 @@ export function useQuizController({
 
     questionActive: ui.activeAudio === 'question',
     questionPlaying: ui.activeAudio === 'question' && ui.audioPlaying,
+
+    hintActive: ui.activeAudio === 'hint',
+    hintPlaying: ui.activeAudio === 'hint' && ui.audioPlaying,
 
     answerActive: ui.activeAudio === 'answer',
     answerPlaying: ui.activeAudio === 'answer' && ui.audioPlaying,

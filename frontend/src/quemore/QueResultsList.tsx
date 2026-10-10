@@ -1,10 +1,13 @@
-import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Ban, ListPlus, Maximize2, UserX } from "lucide-react";
 import { CategoryChips } from "../components/CategoryChip";
 import { QuizModal } from "../components/QuizModal";
-import { useFitSpan, useGridShape, type GridShape } from "../hooks/useCardGrid";
-import { QuestionContent } from "../question/QuestionPreview";
+import { useGridColumns } from "../hooks/useCardGrid";
+import { QuestionPreviewBody } from "../question/QuestionPreview";
+import { QuestionPart, QuestionText, QuestionImages, QuestionReadingPart } from "../question/QuestionReading";
+import { ImageModal } from "../quiz/ImageModal";
 import { draftFromPayload } from "../question/question_api";
+import type { QuestionPart as Part } from "../question/question_types";
 import { RatingBadge } from "../quiz/RatingStars";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./QueMore.module.css";
@@ -33,7 +36,7 @@ interface VerdictProps {
   actions: QueCardActions;
 }
 
-/** Excludes the question on the spot. Compact, it fits the card's top edge. */
+/** Excludes the question on the spot; cards use the compact control tier. */
 function ExcludeButton({ result, busy, actions, compact = false }: VerdictProps & { compact?: boolean }) {
   return (
     <button
@@ -75,29 +78,26 @@ interface QueCardProps {
   expanded: boolean;
   busy: boolean;
   blocking: boolean;
-  shape: GridShape;
+  columns: number;
   actions: QueCardActions;
   onView: CardAction;
 }
 
-/**
- * One question. Closed, it fills one cell of the grid with as much of the
- * question as fits over its answer's header. Opened by that header, it grows a
- * cell at a time, to at most four, until its question, hint and answer all
- * show, covering the cards after it, which flow on past it.
- */
+/** A closed card, a two-row hint, or a two-by-two answer. */
 function QueCard({
   result,
   selected,
   expanded,
   busy,
   blocking,
-  shape,
+  columns,
   actions,
   onView,
 }: QueCardProps) {
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const span = useFitSpan(expanded, bodyRef, shape);
+  const [hintOpen, setHintOpen] = useState(false);
+  // Opening the answer (including Expand All) starts with the hint folded away.
+  useEffect(() => setHintOpen(false), [expanded]);
+  const hasHint = Boolean(result.hint) || Boolean(result.pics_by_type?.hint?.length);
   const draft = useMemo(() => draftFromPayload(result), [result]);
 
   return (
@@ -105,13 +105,9 @@ function QueCard({
       className={`${styles.card} ${selected ? styles.cardQued : ""} ${
         result.excluded ? styles.cardExcluded : ""
       }`}
-      style={{ "--card-cols": span.cols, "--card-rows": span.rows } as CSSProperties}
+      style={{ "--card-cols": expanded ? Math.min(2, columns) : 1, "--card-rows": expanded || hintOpen ? 2 : 1 } as CSSProperties}
     >
       <div className={styles.cardEdge}>
-        {selected && (
-          <span className={styles.cardNotice}>Press Save above to add to que</span>
-        )}
-        <ExcludeButton result={result} busy={busy} actions={actions} compact />
         <label className={styles.cardPick} title="Select for Save">
           <input
             type="checkbox"
@@ -120,27 +116,6 @@ function QueCard({
             aria-label="Select for Save"
           />
         </label>
-      </div>
-
-      <div ref={bodyRef} className={`${styles.cardBody} ${expanded ? "" : styles.cardBodyClosed}`}>
-        <QuestionContent
-          draft={draft}
-          disclosure={{
-            open: expanded,
-            onToggle: () => actions.onToggle(result),
-            extra: (
-              <button
-                type="button"
-                className={`${sharedStyles.actionButton} ${sharedStyles.buttonXs} ${sharedStyles.buttonRound} ${sharedStyles.btnOverlay} ${styles.viewButton}`}
-                onClick={() => onView(result)}
-                title="Full question and answer"
-                aria-label="Full question and answer"
-              >
-                <Maximize2 className={sharedStyles.buttonIcon} />
-              </button>
-            ),
-          }}
-        />
       </div>
 
       <div className={styles.cardMeta}>
@@ -161,7 +136,86 @@ function QueCard({
           </button>
         </div>
       </div>
+
+      <div className={`${styles.cardBody} ${expanded || hintOpen ? "" : styles.cardBodyClosed}`}>
+        <div className={styles.cardQuestion}>
+          <QuestionPreviewBody draft={draft} part="question" />
+        </div>
+        {hasHint && (expanded || hintOpen) && (
+          <QuestionPart part="hint" disclosure={{ open: hintOpen, onToggle: () => setHintOpen((open) => !open) }}>
+            <QuestionPreviewBody draft={draft} part="hint" />
+          </QuestionPart>
+        )}
+        {expanded && (
+          <QuestionPart part="answer" disclosure={{ open: true, onToggle: () => actions.onToggle(result) }}>
+            <QuestionPreviewBody draft={draft} part="answer" />
+          </QuestionPart>
+        )}
+      </div>
+
+      <div className={styles.cardFooter}>
+        {!expanded && (
+          <>
+            {hasHint && (
+              <button
+                type="button"
+                className={cardBtn(sharedStyles.btnCyan)}
+                aria-expanded={hintOpen}
+                onClick={() => setHintOpen((open) => !open)}
+              >Hint</button>
+            )}
+            <button type="button" className={cardBtn(sharedStyles.btnBlue)} onClick={() => actions.onToggle(result)}>
+              Get Answer
+            </button>
+          </>
+        )}
+        <ExcludeButton result={result} busy={busy} actions={actions} compact />
+        <button
+          type="button"
+          className={`${cardBtn(sharedStyles.btnOverlay, sharedStyles.buttonXs)} ${sharedStyles.buttonRound} ${styles.viewButton}`}
+          onClick={() => onView(result)}
+          title="Full question and answer"
+          aria-label="Full question and answer"
+        >
+          <Maximize2 className={sharedStyles.buttonIcon} />
+        </button>
+      </div>
     </li>
+  );
+}
+
+/** Full reading view shares the quiz's text, disclosures, carousel and lightbox. */
+function FullQuestion({ result, busy, actions, onClose }: VerdictProps & { onClose: () => void }) {
+  const [answerOpen, setAnswerOpen] = useState(true);
+  const [hintOpen, setHintOpen] = useState(true);
+  const [imageView, setImageView] = useState<{ images: string[]; startIndex: number } | null>(null);
+  const images = (part: Part) =>
+    result.pics_by_type?.[part]?.map((pic) => pic.pic_string) ?? [];
+  const openImages = (images: string[], startIndex: number) => setImageView({ images, startIndex });
+  const hintImages = images("hint");
+
+  return (
+    <>
+      <QuizModal title="Question & Answer" onClose={() => { if (!imageView) onClose(); }}>
+        <QuestionImages images={images("question")} onOpen={openImages} />
+        <CategoryChips names={result.categories} />
+        <QuestionText text={result.question_text} />
+        {(result.hint || hintImages.length > 0) && (
+          <QuestionReadingPart
+            part="hint" text={result.hint ?? null} images={hintImages} onOpen={openImages}
+            disclosure={{ open: hintOpen, onToggle: () => setHintOpen((open) => !open) }}
+          />
+        )}
+        <QuestionReadingPart
+          part="answer" text={result.answer} images={images("answer")} onOpen={openImages}
+          disclosure={{ open: answerOpen, onToggle: () => setAnswerOpen((open) => !open) }}
+        />
+        <div className={styles.viewVerdicts}>
+          <Verdicts result={result} busy={busy} actions={actions} />
+        </div>
+      </QuizModal>
+      {imageView && <ImageModal {...imageView} onClose={() => setImageView(null)} />}
+    </>
   );
 }
 
@@ -188,10 +242,9 @@ export function QueResultsList({
   actions,
 }: QueResultsListProps) {
   const gridRef = useRef<HTMLUListElement>(null);
-  const shape = useGridShape(gridRef);
+  const columns = useGridColumns(gridRef);
 
   const [viewing, setViewing] = useState<QueSearchResult | null>(null);
-  const viewingDraft = useMemo(() => viewing && draftFromPayload(viewing), [viewing]);
 
   // Qued or excluded from its full view, a question leaves the results and
   // takes the view with it; a later search hands back new objects, never this one.
@@ -202,7 +255,7 @@ export function QueResultsList({
       <ul
         ref={gridRef}
         className={styles.cardGrid}
-        style={{ "--grid-cols": shape.cols } as CSSProperties}
+        style={{ "--grid-cols": columns } as CSSProperties}
       >
         {results.map((result) => (
           <QueCard
@@ -212,20 +265,21 @@ export function QueResultsList({
             expanded={expanded.has(result.id)}
             busy={actingId === result.id}
             blocking={blockingUserId === result.created_by}
-            shape={shape}
+            columns={columns}
             actions={actions}
             onView={setViewing}
           />
         ))}
       </ul>
 
-      {viewingOpen && viewingDraft && (
-        <QuizModal title="Question & Answer" onClose={() => setViewing(null)}>
-          <QuestionContent draft={viewingDraft} />
-          <div className={styles.viewVerdicts}>
-            <Verdicts result={viewing} busy={actingId === viewing.id} actions={actions} />
-          </div>
-        </QuizModal>
+      {viewingOpen && (
+        <FullQuestion
+          key={viewing.id}
+          result={viewing}
+          busy={actingId === viewing.id}
+          actions={actions}
+          onClose={() => setViewing(null)}
+        />
       )}
     </>
   );

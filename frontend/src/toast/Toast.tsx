@@ -21,6 +21,7 @@ interface ToastProps {
   severity: ToastSeverity;
   message: string;
   onDismiss: () => void;
+  persistent?: boolean;
 }
 
 /**
@@ -30,14 +31,14 @@ interface ToastProps {
  * the end of it. The countdown finishing is what dismisses it, so the
  * stylesheet is the only clock and the bar can never disagree with it.
  */
-export function Toast({ severity, message, onDismiss }: ToastProps) {
+export function Toast({ severity, message, onDismiss, persistent = false }: ToastProps) {
   const { alert, Icon, label, timesOut } = SEVERITIES[severity];
 
   // The clock only runs while the page is in front, and starts over when the
   // reader comes back to it. Keying on that gives the toast fresh elements,
   // and so fresh animations: a hidden page cannot be relied on to restyle.
   const visible = useDocumentVisible();
-  const timed = timesOut && visible;
+  const timed = timesOut && !persistent && visible;
 
   return (
     <div key={String(timed)} className={`${styles.toast} ${alert} ${timed ? styles.timed : ""}`}>

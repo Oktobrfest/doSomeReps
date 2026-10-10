@@ -153,7 +153,7 @@
   color: var(--rep-color-text-muted);
 }
 
-/* Equal cells, as many columns as `useGridShape` finds room for. A row never
+/* Equal cells, as many columns as `useGridColumns` finds room for. A row never
    stretches to fit a card: an open card covers more cells instead, and `dense`
    flows the cards it covers on into whatever cells are left. Rows stand far
    enough apart to clear what sits on each card's top edge. */
@@ -179,7 +179,7 @@
   flex-direction: column;
   gap: 0.5rem;
 
-  padding: 1rem 0.75rem 0.6rem;
+  padding: 0.35rem 0.75rem 0.6rem;
 
   background-color: var(--rep-color-surface);
   border: 1px solid var(--rep-color-border);
@@ -206,9 +206,7 @@
   border-color: var(--rep-intent-red-bg);
 }
 
-/* The card's top edge: the note a checked card waits on at the left, and the
-   card's own controls at the right, Exclude, then the checkbox in a notch cut
-   into the border. On a narrow card the note gives way before the controls. */
+/* The selection checkbox sits in a notch along the card's top edge. */
 .cardEdge {
   position: absolute;
   top: 0;
@@ -246,24 +244,7 @@
   border-color: var(--rep-intent-cyan-bg);
 }
 
-.cardNotice {
-  min-width: 0;
-  margin-right: auto;
-  overflow: hidden;
-  padding: 0.1rem 0.55rem;
-
-  font-size: 0.7rem;
-  font-weight: 700;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--rep-intent-cyan-fg);
-
-  background-color: var(--rep-intent-cyan-bg);
-  border-radius: 999px;
-}
-
-/* The question, and once open its hint and answer: whatever height the cells
-   leave after the controls below. `useFitSpan` measures this to size the card. */
+/* Content scrolls only after using the rows allocated to this card. */
 .cardBody {
   flex: 1 1 auto;
   min-height: 0;
@@ -279,12 +260,12 @@
   overflow: hidden;
 }
 
-/* The full-view button sits at the far end of the answer's header. */
+/* The full-view button stays at the bottom right in every card state. */
 .viewButton {
   margin-left: auto;
 }
 
-/* One line at the foot of the card, however many topics: a second line would
+/* One line above the question, however many topics: a second line would
    come out of the question's room. The byline keeps its place, and the topics
    take what is left, fading out where it runs out. */
 .cardMeta {
@@ -292,10 +273,8 @@
   align-items: center;
   gap: 0.5rem;
 
-  margin-top: auto;
-  padding-top: 0.5rem;
-
-  border-top: 1px solid var(--rep-color-border);
+  flex-shrink: 0;
+  margin-right: 1.75rem;
 }
 
 .cardMeta .cardTags {
@@ -324,4 +303,37 @@
 
 .viewVerdicts {
   margin-top: 1rem;
+}
+
+.cardFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rep-btn-gap);
+  flex-shrink: 0;
+}
+
+.cardQuestion {
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  overflow-wrap: break-word;
+  background: var(--rep-part-question-surface);
+  border: 1px solid var(--rep-part-question-border);
+  border-radius: var(--rep-radius-card);
+}
+
+.cardQuestion > :last-child {
+  margin-bottom: 0;
+}
+
+.cardQuestion > :first-child {
+  margin-top: 0;
+}
+
+.cardBodyClosed .cardQuestion {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black calc(100% - 0.75rem), transparent);
 }
