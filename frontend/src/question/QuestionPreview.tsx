@@ -1,7 +1,12 @@
+import type { ReactNode } from "react";
 import { CategoryChips } from "../components/CategoryChip";
 import { MarkdownContent } from "../components/MarkdownContent";
 import { useFilePreviews } from "./useFilePreviews";
-import type { QuestionDraft, QuestionPart } from "./question_types";
+import {
+  QUESTION_PART_SPECS,
+  type QuestionDraft,
+  type QuestionPart,
+} from "./question_types";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./QuestionPreview.module.css";
 
@@ -40,22 +45,112 @@ function PreviewImages({
   );
 }
 
+/** The parts that carry a header naming them. The question speaks for itself. */
+type HeadedPart = Exclude<QuestionPart, "question">;
+
+const PART_ICONS: Record<HeadedPart, string> = {
+  hint: "fa-question-circle",
+  answer: "fa-book",
+};
+
+/** A header that opens and closes what hangs off it. */
+export interface Disclosure {
+  open: boolean;
+  onToggle: () => void;
+  /** Whatever else the page puts on the header, at its far end. */
+  extra?: ReactNode;
+}
+
+interface PartProps {
+  part: HeadedPart;
+  /** Makes the header a disclosure; closed, the part is its header alone. */
+  disclosure?: Disclosure;
+  children: ReactNode;
+}
+
+/** A hint or an answer: its name on a header in the part's colour, over the part. */
+function Part({ part, disclosure, children }: PartProps) {
+  const open = disclosure?.open ?? true;
+  const title = (
+    <>
+      <i className={`fa ${PART_ICONS[part]}`}></i> {QUESTION_PART_SPECS[part].name}
+    </>
+  );
+
+  return (
+    <div className={`${styles.part} ${styles[part]}`}>
+      <div className={styles.partHeader}>
+        {disclosure ? (
+          <button
+            type="button"
+            className={sharedStyles.disclosureToggle}
+            aria-expanded={disclosure.open}
+            onClick={disclosure.onToggle}
+          >
+            {title}
+          </button>
+        ) : (
+          title
+        )}
+        {disclosure?.extra}
+      </div>
+      {open && <div className={styles.partBody}>{children}</div>}
+    </div>
+  );
+}
+
+interface QuestionContentProps {
+  draft: QuestionDraft;
+  /** Hangs the hint and answer off the answer's header, to be opened by it. */
+  disclosure?: Disclosure;
+}
+
 /**
- * The live read view of a draft, identical on every page that writes one.
+ * Question, hint and answer, colour-coded the same wherever a question is read
+ * rather than answered: in the live preview, in a dialog, on a card.
+ */
+export function QuestionContent({ draft, disclosure }: QuestionContentProps) {
+  const open = disclosure?.open ?? true;
+  const hasHint =
+    Boolean(draft.text.hint) ||
+    (draft.pics?.hint?.length ?? 0) > 0 ||
+    (draft.files?.hint?.length ?? 0) > 0;
+
+  return (
+    <>
+      <div className={`${styles.part} ${styles.question} ${open ? "" : styles.glimpse}`}>
+        <div className={styles.partBody}>
+          <MarkdownContent content={draft.text.question || "*No question text yet.*"} />
+          {open && <PreviewImages draft={draft} part="question" />}
+        </div>
+      </div>
+
+      {open && hasHint && (
+        <Part part="hint">
+          {draft.text.hint && <MarkdownContent content={draft.text.hint} />}
+          <PreviewImages draft={draft} part="hint" />
+        </Part>
+      )}
+
+      <Part part="answer" disclosure={disclosure}>
+        <MarkdownContent content={draft.text.answer || "*No answer text yet.*"} />
+        <PreviewImages draft={draft} part="answer" />
+      </Part>
+    </>
+  );
+}
+
+/**
+ * The live preview pane around a draft, identical on every page that writes one.
  *
  * The add-content page, the AI question generator and the question editor all
- * render this: question, hint and answer exactly as the quiz will show them.
+ * render this.
  */
 export function QuestionPreview({
   draft,
   onHide,
   className,
 }: QuestionPreviewProps) {
-  const hasHint =
-    Boolean(draft.text.hint) ||
-    (draft.pics?.hint?.length ?? 0) > 0 ||
-    (draft.files?.hint?.length ?? 0) > 0;
-
   return (
     <div className={`${styles.preview}${className ? ` ${className}` : ""}`}>
       <div className={styles.previewPaneHeader}>
@@ -79,36 +174,7 @@ export function QuestionPreview({
         <CategoryChips names={draft.categories} />
       </div>
 
-      <div className={styles.previewTextBlock}>
-        <MarkdownContent
-          content={draft.text.question || "*No question text yet.*"}
-        />
-        <PreviewImages draft={draft} part="question" />
-      </div>
-
-      {hasHint && (
-        <div className={styles.previewHintCard}>
-          <div className={styles.previewHintHeader}>
-            <i className="fa fa-question-circle"></i> Hint
-          </div>
-          <div className={styles.previewHintContent}>
-            {draft.text.hint && <MarkdownContent content={draft.text.hint} />}
-            <PreviewImages draft={draft} part="hint" />
-          </div>
-        </div>
-      )}
-
-      <div className={styles.previewAnswerCard}>
-        <div className={styles.previewAnswerHeader}>
-          <i className="fa fa-book"></i> The Answer
-        </div>
-        <div className={styles.previewAnswerContent}>
-          <MarkdownContent
-            content={draft.text.answer || "*No answer text yet.*"}
-          />
-          <PreviewImages draft={draft} part="answer" />
-        </div>
-      </div>
+      <QuestionContent draft={draft} />
     </div>
   );
 }

@@ -15,6 +15,18 @@ interface RatingStarsProps {
   className?: string;
 }
 
+/** A rating read at a glance, where five stars would not fit: the average and one star. */
+export function RatingBadge({ value }: { value: number }) {
+  const average = value.toFixed(1);
+
+  return (
+    <span className={styles.badge} role="img" aria-label={`Rated ${average} out of 5`}>
+      {average}
+      <Star className={styles.starOn} />
+    </span>
+  );
+}
+
 export function RatingStars({ value, label, onRate, className }: RatingStarsProps) {
   const filled = Math.round(value);
   const starClass = (star: number) => (star <= filled ? styles.starOn : styles.starOff);

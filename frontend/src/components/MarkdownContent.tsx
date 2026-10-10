@@ -15,8 +15,9 @@ import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
 import mermaid from "mermaid";
 
-// Initialize mermaid
-mermaid.initialize({ startOnLoad: false, theme: "default" });
+// Initialize mermaid. A diagram that fails to parse throws into Mermaid's own
+// catch below rather than rendering mermaid's "Syntax error" graphic as the diagram.
+mermaid.initialize({ startOnLoad: false, theme: "default", suppressErrorRendering: true });
 
 interface MarkdownContentProps {
   content: string;

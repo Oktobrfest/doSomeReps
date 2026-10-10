@@ -11,6 +11,8 @@
   --rep-color-surface-subtle: #f8fafc;
   --rep-color-surface-secondary: #edf2f7;
   --rep-color-surface-secondary-hover: #e2e8f0;
+  /* A card held for the next save: the que's cyan, washed out to a surface. */
+  --rep-color-surface-selected: #ecfeff;
 
   --rep-color-text-strong: #0f172a;
   --rep-color-text-primary: #2d3748;
@@ -82,6 +84,7 @@
   /* ---- Rating star scale ----
      `md` reads a rating inline with the question's meta; `lg` is the target the
      rating dialog is rated with. Holders rebind the alias, never the primitives. */
+  --rep-rating-star-size-sm: 0.8rem;
   --rep-rating-star-size-md: 1.25rem;
   --rep-rating-star-size-lg: 2.5rem;
   --rep-rating-star-size: var(--rep-rating-star-size-md);
@@ -265,6 +268,7 @@
   --rep-btn-padding-x-xs: 6px;
   --rep-btn-font-size-xs: 0.75rem;
   --rep-btn-min-width-xs: 0;
+  --rep-btn-icon-size-xs: 0.85rem;
 
   --rep-btn-height-sm: 34px;
   --rep-btn-padding-x-sm: 14px;
@@ -309,6 +313,13 @@
   --rep-btn-gap: 8px;
   --rep-btn-row-gap: 12px;
   --rep-btn-cluster-basis: 150px;
+
+  /* A bar's title that opens what it heads: the category picker's, a question's. */
+  --rep-disclosure-padding-y: 3px;
+  --rep-disclosure-padding-x: 7px;
+  --rep-disclosure-font-size: 0.9rem;
+  --rep-disclosure-chevron-size: 7px;
+  --rep-disclosure-hover-bg: var(--rep-intent-overlay-bg);
 
   /* Inert while a label fits on one line, because the tier height wins; it is
      what keeps a wrapped label off the button's edges. */

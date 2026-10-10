@@ -2,6 +2,9 @@
 {% block title %}
 	Questions for {{ topic_name }}
 {% endblock title %}
+{% block description %}
+<meta name="description" content="{{ topic_name }} practice questions and answers: {{ questions | length }} to study free on DoSomeReps, the spaced repetition learning platform.">
+{% endblock description %}
 {% block content %}
 
 <div id="topic-questions-root"></div>
@@ -9,7 +12,7 @@
 <script id="topic-questions-data" type="application/json">
 {{ {
   'topicName': topic_name,
-  'questions': questions
+  'topicListUrl': url_for('catz.topiclist')
 } | tojson }}
 </script>
 

@@ -4,37 +4,20 @@ import styles from "./Topics.module.css";
 
 const bootstrap = readTopicQuestionsBootstrap();
 
+/** Scaffolding: the topic's questions come back here on the Que More cards. */
 export function TopicQuestionsPage() {
   return (
     <div className={styles.page}>
-      <h2 className={styles.pageTitle}>Questions for {bootstrap.topicName}</h2>
+      <nav aria-label="Topics">
+        <a
+          href={bootstrap.topicListUrl}
+          className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
+        >
+          All Topics
+        </a>
+      </nav>
 
-      {bootstrap.questions.length === 0 ? (
-        <p className={styles.empty}>No questions found for this topic.</p>
-      ) : (
-        <div className={sharedStyles.tableResponsive}>
-          <table className={styles.questionsTable}>
-            <thead>
-              <tr>
-                <th scope="col">Question</th>
-                <th scope="col">Answer</th>
-                <th scope="col">Rating</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bootstrap.questions.map((question) => (
-                <tr key={question.id}>
-                  <td>{question.questionText}</td>
-                  <td>{question.answer}</td>
-                  <td className={styles.ratingCell}>
-                    {question.rating.toFixed(1)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <h1 className={styles.pageTitle}>Questions for {bootstrap.topicName}</h1>
     </div>
   );
 }

@@ -1,11 +1,17 @@
-export interface QueMoreBootstrap {
+import type { QuestionPayload } from "../question/question_api";
+
+/** What the que workflow talks to, on whichever page it is mounted. */
+export interface QueEndpoints {
+  searchUrl: string;
+  saveUrl: string;
+  blockUserUrl: string;
+}
+
+export interface QueMoreBootstrap extends QueEndpoints {
   /** Canonical category names, used to resolve the session's slugs back to names. */
   categoryList: string[];
   /** Slugs restored from the user's last search, held in the Flask session. */
   selectedCategories: string[];
-  searchUrl: string;
-  saveUrl: string;
-  blockUserUrl: string;
 }
 
 export interface QueFilterState {
@@ -16,9 +22,11 @@ export interface QueFilterState {
   excluded: boolean;
 }
 
-export interface QueSearchResult {
-  question_id: number;
+/** The question whole, as every page reads one, plus where the reader stands with it. */
+export interface QueSearchResult extends QuestionPayload {
+  id: number;
   question_text: string;
+  answer: string;
   categories: string[];
   username: string;
   created_by: number;
@@ -27,19 +35,11 @@ export interface QueSearchResult {
   excluded: boolean;
 }
 
-/** Per-row selection state. Que and exclude are mutually exclusive. */
-export interface RowSelection {
-  que: boolean;
-  exclude: boolean;
-}
-
-/** A row the reader has not given a verdict on. */
-export const NO_SELECTION: RowSelection = { que: false, exclude: false };
-
+/** `save_to_que` reads each list as empty when it is left out. */
 export interface SavePayload {
-  que: number[];
-  exclude: number[];
-  unexclude: number[];
+  que?: number[];
+  exclude?: number[];
+  unexclude?: number[];
 }
 
 export interface AjaxEnvelope<T> {

@@ -23,6 +23,7 @@ from repz.services.question_service import (
     QuestionValidationError,
     apply_draft,
     create_question,
+    question_payload,
 )
 
 
@@ -239,14 +240,6 @@ def getq():
         .first()
     )
 
-    pics_by_type = {part: [] for part in PIC_PART_BY_TYPE.values()}
-    for pic in question_obj.pics:
-        part = PIC_PART_BY_TYPE.get(pic.pic_type)
-        if part:
-            pics_by_type[part].append(
-                {"pic_string": pic.pic_string, "pic_id": pic.pic_id}
-            )
-
     audio_files = []
     # Query audio records directly to avoid relationship loading/stale cache issues
     audio_records = session.query(audio).filter_by(question_id=question_id).all()
@@ -262,16 +255,7 @@ def getq():
             "object_key": aud.object_key,
         })
 
-    q = {
-        "question_text": question_obj.question_text,
-        "hint": question_obj.hint,
-        "answer": question_obj.answer,
-        "id": question_obj.question_id,
-        "pics_by_type": pics_by_type,
-        "audio_files": audio_files,
-        "categories": [c.category_name for c in question_obj.categories],
-        "privacy": question_obj.privacy,
-    }
+    q = {**question_payload(question_obj), "audio_files": audio_files}
 
     res_q = jsonify(q)
     response = make_response(res_q)

@@ -31,6 +31,21 @@
   stroke: var(--rep-color-rating-star);
 }
 
+.badge {
+  --rep-rating-star-size: var(--rep-rating-star-size-sm);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--rep-color-text-strong);
+  background-color: var(--rep-color-surface-secondary);
+  border-radius: 999px;
+}
+
 .starOff {
   fill: none;
   stroke: var(--rep-color-rating-star-empty);

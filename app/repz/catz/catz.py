@@ -2,10 +2,10 @@ from flask import (
     render_template,
     url_for
 )
-from flask_login import current_user, login_required
+from flask_login import current_user
 
 from ..bluehelpers import (cat_questions_count, get_categories_questions,
-                           get_rating, slugify, unslugify)
+                           slugify, unslugify)
 from repz.routes import catz
 
 
@@ -29,21 +29,13 @@ def topiclist():
 
 
 @catz.route("/topic/<selected_topic>", methods=["GET"], endpoint="topic_questions")
-@login_required
 def topic_questions(selected_topic):
+    """Public, so search engines can index a topic's questions; queuing them needs a login."""
 
     # TODO: PAGINATION
     topic_name = unslugify(selected_topic)
 
-    questions = [
-        {
-            "id": question_obj.question_id,
-            "questionText": question_obj.question_text,
-            "answer": question_obj.answer,
-            "rating": get_rating(question_obj.question_id),
-        }
-        for question_obj in get_categories_questions(topic_name)
-    ]
+    questions = get_categories_questions(topic_name)
 
     return render_template(
         "topic_questions.html",

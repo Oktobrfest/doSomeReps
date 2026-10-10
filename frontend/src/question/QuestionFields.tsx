@@ -91,7 +91,7 @@ function PartField({ part, draft, onChange }: PartFieldProps) {
         <ul className={styles.thumbs}>
           {pics.map((pic) => (
             <li key={pic.pic_id} className={styles.thumb}>
-              <img className={styles.image} src={pic.pic_string} alt={spec.mediaLabel} />
+              <img className={styles.image} src={pic.pic_string} alt={spec.name} />
               <button
                 type="button"
                 className={styles.removeImage}
@@ -140,7 +140,7 @@ function PartField({ part, draft, onChange }: PartFieldProps) {
         onChange={addFiles}
       />
       <label className={styles.fileLabel} htmlFor={fileId}>
-        Add {spec.mediaLabel} Images
+        Add {spec.name} Images
       </label>
     </section>
   );

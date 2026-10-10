@@ -8,8 +8,13 @@ from repz.routes import que_ajx
 from ...bluehelpers import (exclude, create_brand_new_quizq, remove_underscore,
                             set_session, get_user, time, unexclude, get_rating)
 from ..ajax_response import AjaxResponse
+from repz.services.question_service import question_payload
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
+# A search answers with each question whole, so these come in one query apiece.
+WITH_CONTENT = (selectinload(question.categories), selectinload(question.pics))
 
 
             # In the quemore page
@@ -55,7 +60,7 @@ def searchquefilters():
         if filters['excluded'] == False:
             query = query.filter(~question.question_id.in_(excluded_question_ids))
 
-        dif = session.execute(query.distinct()).scalars().all()
+        dif = session.execute(query.distinct().options(*WITH_CONTENT)).scalars().all()
 
         for r in dif:
             question_que.setdefault(r.question_id, r)
@@ -103,49 +108,28 @@ def searchquefilters():
         # update query to exclude them
         final_query = final_query.filter(~question.question_id.in_(excluded_question_ids))
 
-    filtered_questions = session.execute(final_query.distinct()).scalars().all()
+    filtered_questions = session.execute(final_query.distinct().options(*WITH_CONTENT)).scalars().all()
 
     for r in filtered_questions:
         question_que.setdefault(r.question_id, r)
 
-    search_results = []
-    for r in question_que.values():
-        catz = []
-        for c in r.categories:
-            catz.append(c.category_name)
+    authors = {r.created_by for r in question_que.values()}
+    usernames = dict(session.execute(
+        select(users.id, users.username).where(users.id.in_(authors))
+    ).all())
 
-        # get username
-        usr_qry = select(users.username).where(users.id == r.created_by)
-        username = session.execute(usr_qry).scalar()
-
-        # see if user is a favorate
-        fav_qry = select(users).where(users.id == UID)
-        user = session.execute(fav_qry).scalars().first()
-        fav = False
-        for u in user.favorates:
-                if u.id == r.created_by:
-                    fav = True
-
-         # see if in excluded list
-        if filters['excluded'] == False:
-            excluded = False
-        else:
-            if r.question_id in excluded_question_ids:
-                 excluded = True
-            else:
-                excluded = False
-
-        q = {
-            "question_text": r.question_text,
-            "question_id": r.question_id,
-            "categories": catz,
-            "username": username,
+    search_results = [
+        {
+            **question_payload(r),
+            "username": usernames[r.created_by],
             "created_by": r.created_by,
-            "favorite": fav,
+            "favorite": r.created_by in fav_list,
             "rating": get_rating(r.question_id),
-            "excluded": excluded,
+            # Only reported when the reader asked to see their excluded questions.
+            "excluded": filters['excluded'] and r.question_id in excluded_question_ids,
         }
-        search_results.append(q)
+        for r in question_que.values()
+    ]
     # add selected categories to the session
    #   set_session("quiz_category_names", filters['catz'])
 

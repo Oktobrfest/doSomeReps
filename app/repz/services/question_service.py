@@ -15,7 +15,7 @@ from sqlalchemy.sql import func
 
 from repz.bluehelpers import create_brand_new_quizq, remove_underscore
 from repz.database import session
-from repz.home.form_helpers import save_pictures
+from repz.home.form_helpers import PIC_PART_BY_TYPE, save_pictures
 from repz.models import category, question
 
 # Mirrors the column widths on `question`. The editors enforce the same limits
@@ -71,6 +71,29 @@ class QuestionDraft:
             )
         if self.hint and len(self.hint) > MAX_HINT:
             raise QuestionValidationError(f"Hint cannot exceed {MAX_HINT} characters.")
+
+
+def question_payload(stored: question) -> dict[str, Any]:
+    """A stored question in the shape `QuestionDraft.from_payload` reads.
+
+    The editors load a question in this shape and the topic pages render it, so
+    every page that shows one reads the same fields with the same images.
+    """
+    pics_by_type = {part: [] for part in PIC_PART_BY_TYPE.values()}
+    for pic in stored.pics:
+        part = PIC_PART_BY_TYPE.get(pic.pic_type)
+        if part:
+            pics_by_type[part].append({"pic_string": pic.pic_string, "pic_id": pic.pic_id})
+
+    return {
+        "id": stored.question_id,
+        "question_text": stored.question_text,
+        "hint": stored.hint,
+        "answer": stored.answer,
+        "categories": [c.category_name for c in stored.categories],
+        "privacy": stored.privacy,
+        "pics_by_type": pics_by_type,
+    }
 
 
 def resolve_categories(names: Sequence[str]) -> list[category]:

@@ -238,7 +238,7 @@ export function CategoryPicker({
         <div className={styles.summary}>
           <button
             type="button"
-            className={`${styles.toggle} ${expanded ? styles.toggleOpen : ""}`}
+            className={styles.toggle}
             aria-expanded={expanded}
             onClick={() => setExpanded(!expanded)}
           >
