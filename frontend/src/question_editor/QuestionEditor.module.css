@@ -227,6 +227,7 @@
   }
   .previewPane {
     width: 100%;
+    min-width: 0;
     height: auto;
     overflow-y: visible;
   }

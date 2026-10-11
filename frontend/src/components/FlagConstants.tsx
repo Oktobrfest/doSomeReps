@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wrench, ShieldAlert, BookOpen, Trash2, Flag } from 'lucide-react';
+import { Wrench, ShieldAlert, BookOpen, Trash2, Flag, type LucideProps } from 'lucide-react';
 import sharedStyles from '../styles/shared.module.css';
 
 export enum FlagCategory {
@@ -10,7 +10,7 @@ export enum FlagCategory {
 
 export interface FlagMetadata {
   label: string;
-  icon: React.ReactNode;
+  icon: React.ReactElement<LucideProps>;
   colorClass: string;
 }
 

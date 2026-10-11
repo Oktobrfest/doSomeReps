@@ -21,7 +21,8 @@ interface ImageCarouselProps {
 
 export function ImageCarousel({ images, onImageClick }: ImageCarouselProps) {
   const filtered = images.filter((img): img is string => img !== null && img !== undefined);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedIndex, setCurrentIndex] = useState(0);
+  const currentIndex = Math.min(selectedIndex, Math.max(0, filtered.length - 1));
   const touchStartX = useRef<number>(0);
   const touchDeltaX = useRef<number>(0);
 
@@ -30,12 +31,12 @@ export function ImageCarousel({ images, onImageClick }: ImageCarouselProps) {
   }, [filtered.length]);
 
   const goNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % filtered.length);
-  }, [filtered.length]);
+    setCurrentIndex((currentIndex + 1) % filtered.length);
+  }, [currentIndex, filtered.length]);
 
   const goPrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + filtered.length) % filtered.length);
-  }, [filtered.length]);
+    setCurrentIndex((currentIndex - 1 + filtered.length) % filtered.length);
+  }, [currentIndex, filtered.length]);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;

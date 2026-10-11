@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Toaster } from "sonner";
 import { QuestionEditor } from "./QuestionEditor";
 import sharedStyles from "../styles/shared.module.css";
 
@@ -21,8 +20,6 @@ export function EditQuestionPage() {
 
   return (
     <div>
-      <Toaster richColors position="top-right" />
-
       <button
         type="button"
         className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}

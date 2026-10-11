@@ -34,5 +34,5 @@ class ProdConfig(Config):
     FLASK_ENV = environ.get("FLASK_ENV", "production")
     TEMPLATES_AUTO_RELOAD = environ.get("TEMPLATES_AUTO_RELOAD", False)
     COMPRESSOR_DEBUG = environ.get("COMPRESSOR_DEBUG", False)    
-    CACHE_TYPE = environ.get("CACHE_TYPE", "null")
+    CACHE_TYPE = environ.get("CACHE_TYPE", "NullCache")
     FLASK_DEBUG = environ.get("FLASK_DEBUG", "0")

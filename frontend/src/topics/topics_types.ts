@@ -9,17 +9,10 @@ export interface TopicListBootstrap {
   topics: TopicSummary[];
 }
 
-export interface TopicQuestion {
-  id: number;
-  questionText: string;
-  answer: string;
-  /** Mean community rating; 0 when nobody has rated the question yet. */
-  rating: number;
-}
-
 export interface TopicQuestionsBootstrap {
   topicName: string;
-  questions: TopicQuestion[];
+  /** Server-built link back to the list of every topic. */
+  topicListUrl: string;
 }
 
 export type TopicSortColumn = "name" | "count";

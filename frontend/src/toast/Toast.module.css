@@ -1,0 +1,77 @@
+/* The list item sonner wraps each toast in. Sonner sizes the toasts it styles
+   itself but leaves a headless one to its content, so this gives it the width
+   sonner lays its list out at; on a phone sonner's own layout outranks it and
+   runs the toast edge to edge. */
+.slot {
+  width: var(--width);
+}
+
+/* The colours come from the severity's alert modifier. */
+.toast {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 12px;
+  overflow: hidden;
+
+  font-family: var(--rep-font-family-system);
+  font-size: 0.875rem;
+  line-height: 1.4;
+
+  border-width: 1px;
+  border-style: solid;
+  border-radius: var(--rep-radius-dialog);
+  box-shadow: var(--rep-shadow-dialog);
+}
+
+/* One line of the message tall, so it sits level with the first line. */
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* A long message scrolls inside the toast instead of running off the screen. */
+.message {
+  max-height: var(--rep-toast-message-max-height);
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+  scrollbar-color: currentColor transparent;
+}
+
+/* A timed toast fades out over the last stretch of its life... */
+.timed {
+  animation: toastFade var(--rep-toast-fade-duration) linear
+    calc(var(--rep-toast-lifetime) - var(--rep-toast-fade-duration)) forwards;
+}
+
+/* ...while what is left of that life drains along its bottom edge. */
+.countdown {
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background-color: currentColor;
+  transform-origin: left;
+  animation: toastCountdown var(--rep-toast-lifetime) linear forwards;
+}
+
+/* Reading a toast, or reaching for it or its dismiss, holds it where it is. */
+.slot:is(:hover, :focus-within) :is(.timed, .countdown) {
+  animation-play-state: paused;
+}
+
+@keyframes toastFade {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes toastCountdown {
+  to {
+    transform: scaleX(0);
+  }
+}

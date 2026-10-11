@@ -4,7 +4,7 @@
  * and the one way to create one.
  */
 
-import { csrfHeaders } from "./http";
+import { csrfHeaders, jsonHeaders } from "./http";
 
 export const toSlug = (value: string) => value.replace(/ /g, "_");
 
@@ -29,6 +29,19 @@ export function resolveCategoryNames(
 ): string[] {
   const namesBySlug = new Map(categoryList.map((category) => [toSlug(category), category]));
   return values.map((value) => namesBySlug.get(toSlug(value)) ?? fromSlug(value));
+}
+
+/** The pages that draw from many categories; each remembers its own selection. */
+export type SelectionPage = "quiz" | "quemore" | "editquestions";
+
+/** Keep `categories` as the selection `page` opens with on the reader's next visit. */
+export async function saveSelectedCategories(page: SelectionPage, categories: string[]): Promise<void> {
+  const response = await fetch(`/api/selected-categories/${page}`, {
+    method: "PUT",
+    headers: jsonHeaders(),
+    body: JSON.stringify({ categories: categories.map(toSlug) }),
+  });
+  if (!response.ok) throw new Error("Could not save your categories. Please try again.");
 }
 
 /** Create a category and tell every mounted picker to refetch. */

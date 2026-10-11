@@ -87,6 +87,22 @@
   border-color: var(--rep-color-error-border);
 }
 
+.alertInfo {
+  color: var(--rep-color-info-text);
+
+  background-color: var(--rep-color-info-surface);
+
+  border-color: var(--rep-color-info-border);
+}
+
+.alertWarning {
+  color: var(--rep-color-warning-text);
+
+  background-color: var(--rep-color-warning-surface);
+
+  border-color: var(--rep-color-warning-border);
+}
+
 .alertCloseButton {
   position: absolute;
   top: 0;
@@ -320,6 +336,7 @@
   --rep-btn-padding-x: var(--rep-btn-padding-x-xs);
   --rep-btn-font-size: var(--rep-btn-font-size-xs);
   --rep-btn-min-width: var(--rep-btn-min-width-xs);
+  --rep-btn-icon-size: var(--rep-btn-icon-size-xs);
 }
 
 .buttonSm {
@@ -327,6 +344,14 @@
   --rep-btn-padding-x: var(--rep-btn-padding-x-sm);
   --rep-btn-font-size: var(--rep-btn-font-size-sm);
   --rep-btn-min-width: var(--rep-btn-min-width-sm);
+}
+
+.buttonTouchXs {
+  --rep-btn-height: var(--rep-btn-height-touch-xs);
+  --rep-btn-padding-x: var(--rep-btn-padding-x-touch-xs);
+  --rep-btn-font-size: var(--rep-btn-font-size-touch-xs);
+  --rep-btn-min-width: var(--rep-btn-min-width-touch);
+  --rep-btn-icon-size: var(--rep-btn-icon-size-touch-xs);
 }
 
 .buttonTouchSm {
@@ -390,6 +415,50 @@
 /* An icon that turns while the control's work is in flight. */
 .spinIcon {
   animation: sharedSpin 0.75s linear infinite;
+}
+
+/* A bar's title that opens and closes what it heads: a chevron and a bold label
+   on whatever colour the bar wears. Its state is read off `aria-expanded`. */
+.disclosureToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--rep-btn-gap);
+  flex: 0 0 auto;
+  margin-left: calc(-1 * var(--rep-disclosure-padding-x));
+  padding: var(--rep-disclosure-padding-y) var(--rep-disclosure-padding-x);
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--rep-disclosure-font-size);
+  font-weight: 700;
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  border-radius: var(--rep-radius-control);
+  cursor: pointer;
+  user-select: none;
+}
+
+.disclosureToggle::before {
+  content: "";
+  width: var(--rep-disclosure-chevron-size);
+  height: var(--rep-disclosure-chevron-size);
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translate(1px, -2px) rotate(-45deg);
+  transition: transform var(--rep-transition-fast);
+}
+
+.disclosureToggle[aria-expanded="true"]::before {
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.disclosureToggle:hover {
+  background: var(--rep-disclosure-hover-bg);
+}
+
+.disclosureToggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
 }
 
 /* Layout: one row of equal controls. */

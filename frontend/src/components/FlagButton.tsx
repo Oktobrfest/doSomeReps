@@ -1,3 +1,4 @@
+import { errorMessage } from "../lib/errors";
 import { jsonHeaders } from "../lib/http";
 import React, { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
@@ -73,7 +74,7 @@ export function FlagButton({
       }
       setIsOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Request failed");
+      setError(errorMessage(err, "Request failed"));
     } finally {
       setIsSaving(false);
     }
@@ -121,7 +122,7 @@ export function FlagButton({
       className={`${styles.compactTrigger} ${flagClass}`}
       title={isFlagged ? `Flagged: ${FLAG_METADATA[initialFlag.category].label}` : "Flag Question"}
     >
-      {React.cloneElement((isFlagged ? FLAG_METADATA[initialFlag.category].icon : DEFAULT_FLAG_METADATA.icon) as React.ReactElement, {
+      {React.cloneElement(isFlagged ? FLAG_METADATA[initialFlag.category].icon : DEFAULT_FLAG_METADATA.icon, {
         className: styles.compactIcon,
       })}
     </button>
@@ -138,7 +139,7 @@ export function FlagButton({
         disabled={disabled || isSaving}
         aria-label={isSaving ? "Flagging" : "Flag question"}
       >
-        {React.cloneElement(activeIconElement as React.ReactElement, {
+        {React.cloneElement(activeIconElement, {
           className: styles.flagIcon,
         })}
         <span>{isSaving ? "Saving..." : buttonText}</span>
@@ -177,7 +178,7 @@ export function FlagButton({
                     onChange={(e) => setCategory(e.target.value as FlagCategory)}
                     className={styles.radioInput}
                   />
-                  {React.cloneElement(metadata.icon as React.ReactElement, {
+                  {React.cloneElement(metadata.icon, {
                     className: styles.radioIcon,
                   })}
                   <span className={styles.radioText}>{metadata.label}</span>

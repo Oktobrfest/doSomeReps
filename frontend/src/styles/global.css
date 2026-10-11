@@ -11,6 +11,8 @@
   --rep-color-surface-subtle: #f8fafc;
   --rep-color-surface-secondary: #edf2f7;
   --rep-color-surface-secondary-hover: #e2e8f0;
+  /* A card held for the next save: the que's cyan, washed out to a surface. */
+  --rep-color-surface-selected: #ecfeff;
 
   --rep-color-text-strong: #0f172a;
   --rep-color-text-primary: #2d3748;
@@ -35,6 +37,16 @@
   --rep-color-error-text-strong: #c53030;
   --rep-color-error-surface-subtle: #fff5f5;
   --rep-color-error-border-subtle: #feb2b2;
+
+  /* The alert family's other two members, so every severity a toast can carry
+     has a text, surface and border that read together. */
+  --rep-color-info-text: #0c5460;
+  --rep-color-info-surface: #d1ecf1;
+  --rep-color-info-border: #bee5eb;
+
+  --rep-color-warning-text: #856404;
+  --rep-color-warning-surface: #fff3cd;
+  --rep-color-warning-border: #ffeeba;
 
   /* Hover for the primary action colour, and its foreground dimmed for
      secondary copy sitting on a primary-coloured surface. */
@@ -82,6 +94,7 @@
   /* ---- Rating star scale ----
      `md` reads a rating inline with the question's meta; `lg` is the target the
      rating dialog is rated with. Holders rebind the alias, never the primitives. */
+  --rep-rating-star-size-sm: 0.8rem;
   --rep-rating-star-size-md: 1.25rem;
   --rep-rating-star-size-lg: 2.5rem;
   --rep-rating-star-size: var(--rep-rating-star-size-md);
@@ -251,8 +264,8 @@
 
   /* ---- Button size scale ----
      Primitive tiers. `md` is the app-wide control; `sm` is its dense variant.
-     The three `touch-*` tiers exist for the quiz, which is driven by a thumb on
-     a phone and by a pointer everywhere else. */
+     The `touch-*` tiers are for controls driven by a thumb on a phone and by a
+     pointer everywhere else, the quiz above all. */
   --rep-btn-height-md: 46px;
   --rep-btn-padding-x-md: 24px;
   --rep-btn-font-size-md: 1rem;
@@ -265,11 +278,18 @@
   --rep-btn-padding-x-xs: 6px;
   --rep-btn-font-size-xs: 0.75rem;
   --rep-btn-min-width-xs: 0;
+  --rep-btn-icon-size-xs: 0.85rem;
 
   --rep-btn-height-sm: 34px;
   --rep-btn-padding-x-sm: 14px;
   --rep-btn-font-size-sm: 0.875rem;
   --rep-btn-min-width-sm: 0;
+
+  /* A dismiss tucked into a corner: the smallest target a thumb still hits. */
+  --rep-btn-height-touch-xs: 44px;
+  --rep-btn-padding-x-touch-xs: 12px;
+  --rep-btn-font-size-touch-xs: 1rem;
+  --rep-btn-icon-size-touch-xs: 1.5rem;
 
   /* Secondary thumb target: several share a row. */
   --rep-btn-height-touch-sm: 50px;
@@ -310,6 +330,13 @@
   --rep-btn-row-gap: 12px;
   --rep-btn-cluster-basis: 150px;
 
+  /* A bar's title that opens what it heads: the category picker's, a question's. */
+  --rep-disclosure-padding-y: 3px;
+  --rep-disclosure-padding-x: 7px;
+  --rep-disclosure-font-size: 0.9rem;
+  --rep-disclosure-chevron-size: 7px;
+  --rep-disclosure-hover-bg: var(--rep-intent-overlay-bg);
+
   /* Inert while a label fits on one line, because the tier height wins; it is
      what keeps a wrapped label off the button's edges. */
   --rep-btn-padding-y: 8px;
@@ -324,6 +351,13 @@
     opacity 120ms ease,
     box-shadow 120ms ease,
     background-color 120ms ease;
+
+  /* ---- Toasts ----
+     A timed toast lives for `lifetime`, fading out over the last `fade` of it.
+     A message taller than `message-max-height` scrolls inside its toast. */
+  --rep-toast-lifetime: 7s;
+  --rep-toast-fade-duration: 3s;
+  --rep-toast-message-max-height: 30vh;
 }
 
 /* Above this width the quiz is driven by a pointer on a page that is no longer
@@ -349,5 +383,11 @@
     --rep-btn-font-size-touch-lg: var(--rep-btn-font-size-md);
     --rep-btn-radius-touch-lg: var(--rep-btn-radius-md);
     --rep-btn-icon-size-touch-lg: var(--rep-btn-icon-size-md);
+
+    /* A corner dismiss drops back to the badge-sized `xs`, not to `md`. */
+    --rep-btn-height-touch-xs: var(--rep-btn-height-xs);
+    --rep-btn-padding-x-touch-xs: var(--rep-btn-padding-x-xs);
+    --rep-btn-font-size-touch-xs: var(--rep-btn-font-size-xs);
+    --rep-btn-icon-size-touch-xs: var(--rep-btn-icon-size-xs);
   }
 }

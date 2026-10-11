@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { QuizPage } from '../quiz/QuizPage';
 import type { QuizPageProps } from '../quiz/types';
-import "../lib/toast";
+import { ToastHost } from '../toast/ToastHost';
 import "../styles/global.css";
 
 // Jinja passes data via:
@@ -14,7 +14,12 @@ function mount() {
   if (!root || !dataEl) return;
 
   const props: QuizPageProps = JSON.parse(dataEl.textContent || '{}');
-  createRoot(root).render(<QuizPage {...props} />);
+  createRoot(root).render(
+    <>
+      <ToastHost />
+      <QuizPage {...props} />
+    </>
+  );
 }
 
 if (document.readyState === 'loading') {

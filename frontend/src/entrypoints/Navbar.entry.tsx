@@ -1,7 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { Navbar } from "../navbar/Navbar";
 import type { NavbarProps } from "../navbar/Navbar";
-import "../lib/toast";
 import "../styles/global.css";
 
 function mount() {

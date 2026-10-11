@@ -2,7 +2,7 @@ ARG NODE_ENV=prod
 ARG PYTHON_VERSION=3.14
 ARG PYTHON_LIB_VERSION=3.14
 
-FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
+FROM python:${PYTHON_VERSION}-slim-trixie AS builder
 
 ARG NODE_ENV
 ARG PYTHON_VERSION
@@ -53,7 +53,7 @@ WORKDIR /app
 
 
 # =====  Final production stage    =====
-FROM python:${PYTHON_VERSION}-slim-bookworm AS base-runtime
+FROM python:${PYTHON_VERSION}-slim-trixie AS base-runtime
 
 ARG PYTHON_LIB_VERSION
 # move this??
@@ -81,8 +81,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install hatchet-sdk directly in the runtime stage. It is deliberately
 # excluded from requirements.txt (builder stage) because its namespace-
 # package layout does not survive the multi-stage COPY of site-packages.
-# This may upgrade pydantic past litellm's pin; the patch bump is compatible.
-RUN pip install --no-cache-dir "hatchet-sdk==1.33.12"
+RUN pip install --no-cache-dir "hatchet-sdk==1.42.1"
 
 
 # ARG NODE_ENV=production

@@ -45,8 +45,8 @@ export interface AudioAsset {
 interface PartSpec {
   /** Label above the text field. */
   label: string;
-  /** How the part is named in the image controls ("Add Answer Images"). */
-  mediaLabel: string;
+  /** The part's own name: in the image controls ("Add Answer Images") and over its card when read. */
+  name: string;
   rows: number;
   /** Matches the column width `question_service` enforces server-side. */
   maxLength: number;
@@ -56,21 +56,21 @@ interface PartSpec {
 export const QUESTION_PART_SPECS: ByPart<PartSpec> = {
   question: {
     label: "Question Text",
-    mediaLabel: "Question",
+    name: "Question",
     rows: 2,
     maxLength: 1500,
     required: true,
   },
   hint: {
     label: "Hint",
-    mediaLabel: "Hint",
+    name: "Hint",
     rows: 2,
     maxLength: 2000,
     required: false,
   },
   answer: {
     label: "The Answer",
-    mediaLabel: "Answer",
+    name: "Answer",
     rows: 4,
     maxLength: 4000,
     required: true,

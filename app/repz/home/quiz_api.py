@@ -19,7 +19,6 @@ from repz.services.quiz_service import (
     continue_guide,
     get_quiz_queue,
     get_selected_categories,
-    set_selected_categories,
     exclude_quiz_question,
     submit_quiz_answer,
 )
@@ -137,22 +136,6 @@ def quiz_audio_assets():
 
     assets = build_audio_assets(question, current_user, _audio_service_if(True))
     return jsonify({"ok": True, "audioAssets": assets})
-
-
-@home.route("/quiz/api/categories", methods=["POST"], endpoint="quiz_set_categories")
-@login_required
-def quiz_set_categories():
-    """Replace the reader's category selection, as slugs."""
-    data = request.get_json(silent=True) or {}
-    categories = data.get("categories")
-
-    if not isinstance(categories, list) or not all(
-        isinstance(c, str) for c in categories
-    ):
-        return jsonify({"ok": False, "error": "categories must be a list of strings."}), 400
-
-    set_selected_categories(categories)
-    return jsonify({"ok": True, "categories": categories})
 
 
 @home.route("/quiz/api/action", methods=["POST"], endpoint="quiz_action")

@@ -127,16 +127,20 @@ def _build_audio_assets_for_template(q: dict, raw_assets: dict) -> dict:
     return audio_assets
 
 
-def get_selected_categories() -> list[str] | str:
+# The pages that draw from many categories; each remembers its own selection.
+SELECTION_PAGES = frozenset({"quiz", "quemore", "editquestions"})
+
+
+def get_selected_categories(page: str = "quiz") -> list[str] | str:
     """
-    The categories the current user is quizzing on, as slugs.
+    The categories the current user last picked on `page`, as slugs.
 
     Falls back to the user's default category list the first time they arrive,
     and returns the sentinel "Not set" when they have never chosen any.
     """
-    saved_names = get_session("quiz_category_names")
+    saved_names = get_session(f"{page}_category_names")
 
-    if saved_names == "Not set" or not saved_names:
+    if saved_names == "Not set":
         from repz.models import category_lists
 
         default_list = session.execute(
@@ -149,14 +153,14 @@ def get_selected_categories() -> list[str] | str:
             saved_names = [
                 c.category_name.replace(" ", "_") for c in default_list.categories
             ]
-            set_selected_categories(saved_names)
+            set_selected_categories(saved_names, page)
 
     return saved_names
 
 
-def set_selected_categories(category_slugs: list[str]) -> None:
-    """Persist the user's category selection for subsequent quiz requests."""
-    set_session("quiz_category_names", category_slugs)
+def set_selected_categories(category_slugs: list[str], page: str = "quiz") -> None:
+    """Persist the user's category selection on `page` for their next request."""
+    set_session(f"{page}_category_names", category_slugs)
 
 
 GUIDE_USERNAME = "guide"

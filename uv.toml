@@ -1,0 +1,3 @@
+# Validate dependency compatibility after installing the existing requirements.
+[pip]
+strict = true

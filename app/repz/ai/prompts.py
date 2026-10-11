@@ -146,7 +146,7 @@ in - do NOT deviate into unrelated material.
 
 The topic categories are {categories}.
 
-Keep spacing TIGHT between paragraphs. 
+Keep spacing TIGHT between paragraphs.
 The user has requested an AI-assisted change to this study question.
 Ensure to stay focused on the question and within its topic categories!
 If you for some reason need to tell the user something - for example that a requested

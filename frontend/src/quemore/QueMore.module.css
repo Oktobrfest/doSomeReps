@@ -153,79 +153,187 @@
   color: var(--rep-color-text-muted);
 }
 
-/* One column on a phone and as many as fit once there is room, without a media
-   query and without ever making the page wider than the screen. */
+/* Equal cells, as many columns as `useGridColumns` finds room for. A row never
+   stretches to fit a card: an open card covers more cells instead, and `dense`
+   flows the cards it covers on into whatever cells are left. Rows stand far
+   enough apart to clear what sits on each card's top edge. */
 .cardGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(var(--grid-cols, 1), minmax(0, 1fr));
+  grid-auto-rows: 10.5rem;
+  grid-auto-flow: row dense;
+  gap: 1.25rem 0.75rem;
 
-  padding: 0;
+  padding: 0.5rem 0 0;
   margin: 0;
   list-style: none;
 }
 
 .card {
+  position: relative;
+  grid-column: span var(--card-cols, 1);
+  grid-row: span var(--card-rows, 1);
+  min-width: 0;
+
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.5rem;
 
-  padding: 0.85rem;
+  padding: 0.35rem 0.75rem 0.6rem;
 
   background-color: var(--rep-color-surface);
   border: 1px solid var(--rep-color-border);
   border-radius: var(--rep-radius-card);
   box-shadow: var(--rep-shadow-card);
   transition:
+    transform var(--rep-transition-fast),
+    background-color var(--rep-transition-fast),
     border-color var(--rep-transition-fast),
     box-shadow var(--rep-transition-fast);
 }
 
-/* The verdict a card is left on, read off the colour of its edge rather than
-   off which of two checkboxes happens to be ticked. */
+/* Held for the next save, a card reads as a button pressed in: washed in the
+   que's colour, sunk a pixel, and shaded from its top edge down. */
 .cardQued {
+  transform: translateY(1px);
+
+  background-color: var(--rep-color-surface-selected);
   border-color: var(--rep-intent-cyan-bg);
-  box-shadow: var(--rep-shadow-card-raised);
+  box-shadow: var(--rep-shadow-well);
 }
 
 .cardExcluded {
   border-color: var(--rep-intent-red-bg);
 }
 
-.cardQuestion {
-  margin: 0;
+/* The selection checkbox sits in a notch along the card's top edge. */
+.cardEdge {
+  position: absolute;
+  top: 0;
+  right: 0.75rem;
+  left: 0.75rem;
+  transform: translateY(-50%);
 
-  font-size: 0.95rem;
-  line-height: 1.45;
-  color: var(--rep-color-text-primary);
-
-  /* A pasted URL or an unspaced string breaks rather than widening the page. */
-  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
 }
 
-/* Pushed to the foot of the card so that cards sharing a row line their
-   ratings and their buttons up, however long the questions above them run. */
+.cardPick {
+  display: flex;
+  padding: 0.25rem;
+  margin: 0;
+
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: var(--rep-radius-control);
+  cursor: pointer;
+}
+
+.cardPick input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+
+  accent-color: var(--rep-intent-cyan-bg);
+  cursor: pointer;
+}
+
+.cardQued .cardPick {
+  border-color: var(--rep-intent-cyan-bg);
+}
+
+/* Content scrolls only after using the rows allocated to this card. */
+.cardBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+
+  font-size: 1.1rem;
+}
+
+/* Closed, the question's part fills the room and clips, rather than scrolling. */
+.cardBodyClosed {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The full-view button stays at the bottom right in every card state. */
+.viewButton {
+  margin-left: auto;
+}
+
+/* One line above the question, however many topics: a second line would
+   come out of the question's room. The byline keeps its place, and the topics
+   take what is left, fading out where it runs out. */
 .cardMeta {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: 0.5rem;
 
-  margin-top: auto;
-  padding-top: 0.6rem;
+  flex-shrink: 0;
+  margin-right: 1.75rem;
+}
 
-  border-top: 1px solid var(--rep-color-border);
+.cardMeta .cardTags {
+  flex: 1 1 0;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
 }
 
 .byline {
   display: flex;
+  flex: 0 1 auto;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 }
 
-.author,
-.unrated {
+.author {
+  overflow: hidden;
   font-size: 0.8rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--rep-color-text-muted);
+}
+
+.viewVerdicts {
+  margin-top: 1rem;
+}
+
+.cardFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rep-btn-gap);
+  flex-shrink: 0;
+}
+
+.cardQuestion {
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  overflow-wrap: break-word;
+  background: var(--rep-part-question-surface);
+  border: 1px solid var(--rep-part-question-border);
+  border-radius: var(--rep-radius-card);
+}
+
+.cardQuestion > :last-child {
+  margin-bottom: 0;
+}
+
+.cardQuestion > :first-child {
+  margin-top: 0;
+}
+
+.cardBodyClosed .cardQuestion {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black calc(100% - 0.75rem), transparent);
 }

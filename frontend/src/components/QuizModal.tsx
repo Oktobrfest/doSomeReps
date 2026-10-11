@@ -5,6 +5,7 @@ import styles from './QuizModal.module.css';
 
 interface QuizModalProps {
   title: string;
+  header?: ReactNode;
   onClose: () => void;
   children: ReactNode;
   /** Give the dialog the whole screen, for work that wants every pixel of it. */
@@ -17,7 +18,7 @@ interface QuizModalProps {
  * They live in modals so the page itself keeps the whole screen: a phone only
  * has room for the button that opens them.
  */
-export function QuizModal({ title, onClose, children, fullScreen = false }: QuizModalProps) {
+export function QuizModal({ title, header, onClose, children, fullScreen = false }: QuizModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
 
@@ -54,7 +55,7 @@ export function QuizModal({ title, onClose, children, fullScreen = false }: Quiz
         onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.header}>
-          <h2 className={styles.title}>{title}</h2>
+          {header ?? <h2 className={styles.title}>{title}</h2>}
           <button
             type="button"
             className={styles.closeBtn}

@@ -12,7 +12,6 @@ import {
 import { Check, X, Minus } from 'lucide-react';
 import { AuthorButton, type QuestionAuthor } from './AuthorButton';
 import { ToggleButton } from './AudioControls';
-import { CategoriesSection } from './CategoriesSection';
 import { FlagButton, type QuestionFlag } from '../components/FlagButton';
 import sharedStyles from '../styles/shared.module.css';
 import styles from './SlideOutButtons.module.css';
@@ -98,10 +97,6 @@ export interface SlideOutButtonsProps {
   /** Reports the measured panel heights so content can clear the docked panel. */
   onMetricsChange?: (metrics: Metrics) => void;
   expandToTrio?: boolean;
-  showCategories?: boolean;
-  categoryList?: string[];
-  initialSelectedCategories?: string[];
-  onApplyCategories?: (categories: string[]) => void;
   questionId?: string | number;
   author?: QuestionAuthor;
   initialFlag?: QuestionFlag | null;
@@ -136,10 +131,6 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
     onSnapChange,
     onMetricsChange,
     expandToTrio = false,
-    showCategories = false,
-    categoryList,
-    initialSelectedCategories,
-    onApplyCategories,
     questionId,
     author,
     initialFlag,
@@ -163,7 +154,6 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const buttonsRowRef = useRef<HTMLDivElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
-  const categoriesRef = useRef<HTMLDivElement | null>(null);
 
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [currentHeight, setCurrentHeight] = useState<number | null>(null);
@@ -220,7 +210,6 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
       gripRef.current,
       buttonsRowRef.current,
       drawerRef.current,
-      categoriesRef.current,
     ].filter(Boolean) as Element[];
 
     const resizeObserver = new ResizeObserver(measure);
@@ -233,7 +222,7 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
     };
-  }, [measure, showCategories, hasExtra]);
+  }, [measure, hasExtra]);
 
   useEffect(() => {
     if (!metrics) return;
@@ -520,17 +509,6 @@ export const SlideOutButtons = forwardRef<SlideOutButtonsHandle, SlideOutButtons
                 disabled={disabled}
               />
             )}
-          </div>
-        )}
-
-        {showCategories && (
-          <div ref={categoriesRef}>
-            <CategoriesSection
-              categoryList={categoryList}
-              initialSelectedCategories={initialSelectedCategories}
-              onApply={onApplyCategories}
-              disabled={disabled}
-            />
           </div>
         )}
       </div>

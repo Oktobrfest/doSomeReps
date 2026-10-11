@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, type TouchEvent, type KeyboardEvent } from 'react';
+import { useState, useCallback, useRef, useEffect, type TouchEvent } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './ImageModal.module.css';
 import sharedStyles from '../styles/shared.module.css';
@@ -43,12 +43,15 @@ export function ImageModal({ images, startIndex, onClose, onCorrect, onWrong, on
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
       if (e.key === 'ArrowLeft') goPrev();
       if (e.key === 'ArrowRight') goNext();
     };
-    document.addEventListener('keydown', handleKeyDown as unknown as EventListener);
-    return () => document.removeEventListener('keydown', handleKeyDown as unknown as EventListener);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [onClose, goNext, goPrev]);
 
   // Prevent body scroll while modal is open

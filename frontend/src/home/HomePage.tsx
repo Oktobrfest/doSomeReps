@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { Toaster, toast } from "sonner";
+import { errorMessage } from "../lib/errors";
+import { notify } from "../toast/notify";
 import { UserListPanel } from "./UserListPanel";
 import { readBootstrap, unblockUser, unfavoriteUser } from "./home_api";
 import styles from "./Home.module.css";
@@ -15,9 +16,9 @@ export function HomePage() {
     try {
       await unfavoriteUser(bootstrap.unfavoriteUrl, userId);
       setFavorites((prev) => prev.filter((user) => user.id !== userId));
-      toast.success("Removed from favorites.");
+      notify.success("Removed from favorites.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong.");
+      notify.error(errorMessage(err, "Something went wrong."));
     }
   }, []);
 
@@ -25,16 +26,14 @@ export function HomePage() {
     try {
       await unblockUser(bootstrap.unblockUrl, userId);
       setBlocked((prev) => prev.filter((user) => user.id !== userId));
-      toast.success("User unblocked.");
+      notify.success("User unblocked.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong.");
+      notify.error(errorMessage(err, "Something went wrong."));
     }
   }, []);
 
   return (
     <div className={styles.page}>
-      <Toaster richColors position="top-right" />
-
       <aside className={styles.sidebar}>
         <UserListPanel
           title="Favorite Users"

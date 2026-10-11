@@ -3,6 +3,7 @@ import { Sparkles } from 'lucide-react';
 import {
   AnswerPlayer,
   GetAnswerButton,
+  HintControl,
   ReadQuestionControl,
   ToggleButton,
 } from './AudioControls';
@@ -68,6 +69,9 @@ export function AudioPlane({
           {quiz.currentQuestion && (
             <>
               <ReadQuestionControl quiz={quiz} />
+              {(quiz.currentQuestion.hint || quiz.currentQuestion.pics.hint_image?.some(Boolean)) && (
+                <HintControl quiz={quiz} />
+              )}
               {!quiz.answerRevealed && <GetAnswerButton quiz={quiz} />}
               {quiz.answerActive && <AnswerPlayer quiz={quiz} />}
             </>

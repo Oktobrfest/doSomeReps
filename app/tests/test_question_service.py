@@ -12,6 +12,7 @@ from repz.services.question_service import (  # noqa: E402
     QuestionDraft,
     QuestionValidationError,
     create_question,
+    question_payload,
     resolve_categories,
 )
 
@@ -113,6 +114,37 @@ class TestCreateQuestion(unittest.TestCase):
 
         self.assertEqual(fake.commits, 0)
         self.assertEqual(fake.added, [])
+
+
+class TestQuestionPayload(unittest.TestCase):
+    """A stored question goes out in the shape the payload reader takes in."""
+
+    def test_round_trips_through_the_draft_reader(self):
+        stored = SimpleNamespace(
+            question_id=3, question_text='Q?', hint='H', answer='A', privacy=False,
+            categories=[SimpleNamespace(category_name='Math')], pics=[],
+        )
+        payload = question_payload(stored)
+
+        self.assertEqual(payload['id'], 3)
+        self.assertEqual(QuestionDraft.from_payload(payload), draft(
+            question_text='Q?', hint='H', answer='A', categories=['Math']))
+
+    def test_pictures_are_grouped_by_part(self):
+        stored = SimpleNamespace(
+            question_id=3, question_text='Q?', hint=None, answer='A', privacy=False,
+            categories=[],
+            pics=[
+                SimpleNamespace(pic_type='answer_pics', pic_string='a.png', pic_id=1),
+                SimpleNamespace(pic_type='hint_image', pic_string='h.png', pic_id=2),
+            ],
+        )
+
+        self.assertEqual(question_payload(stored)['pics_by_type'], {
+            'question': [],
+            'hint': [{'pic_string': 'h.png', 'pic_id': 2}],
+            'answer': [{'pic_string': 'a.png', 'pic_id': 1}],
+        })
 
 
 if __name__ == '__main__':

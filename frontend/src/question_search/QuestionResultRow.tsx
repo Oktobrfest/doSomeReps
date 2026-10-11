@@ -37,7 +37,7 @@ export function QuestionResultRow({
             className={`${styles.flagChip} ${flagMeta.colorClass}`}
             title={item.flag?.note || flagMeta.label}
           >
-            {React.cloneElement(flagMeta.icon as React.ReactElement, {
+            {React.cloneElement(flagMeta.icon, {
               className: styles.flagChipIcon,
             })}
             <span>{flagMeta.label}</span>

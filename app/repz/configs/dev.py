@@ -50,7 +50,7 @@ class DevConfig(Config):
     FLASK_ENV = environ.get("FLASK_ENV", "development")
     TEMPLATES_AUTO_RELOAD = environ.get("TEMPLATES_AUTO_RELOAD", True)
     COMPRESSOR_DEBUG = environ.get("COMPRESSOR_DEBUG", True)
-    CACHE_TYPE = environ.get("CACHE_TYPE", "null")
+    CACHE_TYPE = environ.get("CACHE_TYPE", "NullCache")
     FLASK_DEBUG = environ.get("FLASK_DEBUG", "1")
 
     #included to be able to step into other modules

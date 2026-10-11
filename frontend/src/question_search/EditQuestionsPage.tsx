@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { Toaster, toast } from "sonner";
 import { QuestionEditor } from "../question_editor/QuestionEditor";
+import { useRememberedCategories } from "../hooks/useRememberedCategories";
+import { resolveCategoryNames } from "../lib/categories";
+import { errorMessage } from "../lib/errors";
+import { notify } from "../toast/notify";
 import { QuestionSearchPanel } from "./QuestionSearchPanel";
 import { QuestionResultsList } from "./QuestionResultsList";
 import { readBootstrap, unexcludeQuestion } from "./question_search_api";
@@ -13,8 +16,14 @@ import styles from "./QuestionSearch.module.css";
 const bootstrap = readBootstrap();
 const initial = readUrlState();
 
+/** A link's own categories win; otherwise the page opens with the ones picked here last. */
+const openingFilters: SearchFilters = initial.filters.categories.length
+  ? initial.filters
+  : { ...initial.filters, categories: resolveCategoryNames(bootstrap.selectedCategories, bootstrap.categoryList) };
+
 export function EditQuestionsPage() {
-  const [filters, setFilters] = useState<SearchFilters>(initial.filters);
+  const [filters, setFilters] = useState<SearchFilters>(openingFilters);
+  useRememberedCategories("editquestions", filters.categories);
   const [selectedId, setSelectedId] = useState<number | null>(initial.questionId);
   
    const [resultsCollapsed, setResultsCollapsed] = useState(false);
@@ -41,9 +50,9 @@ export function EditQuestionsPage() {
         await unexcludeQuestion(bootstrap.unexcludeUrl, questionId);
         search.removeResult(questionId);
         if (selectedId === questionId) setSelectedId(null);
-        toast.success("Question unexcluded.");
+        notify.success("Question unexcluded.");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Unexclude failed.");
+        notify.error(errorMessage(err, "Unexclude failed."));
       }
     },
     [search, selectedId]
@@ -51,8 +60,6 @@ export function EditQuestionsPage() {
 
   return (
     <div className={styles.page}>
-      <Toaster richColors position="top-right" />
-
       <QuestionSearchPanel
         filters={filters}
         onChange={setFilters}

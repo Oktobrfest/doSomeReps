@@ -192,35 +192,3 @@
 
   background-color: var(--rep-color-action-primary);
 }
-
-/* ---------- Topic questions ---------- */
-
-.questionsTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-}
-
-.questionsTable th,
-.questionsTable td {
-  padding: 0.75rem;
-  text-align: left;
-  vertical-align: top;
-  border-bottom: 1px solid var(--rep-color-border);
-}
-
-.questionsTable th {
-  font-weight: 700;
-  color: var(--rep-color-text-primary);
-  background-color: var(--rep-color-surface-secondary);
-}
-
-.questionsTable tbody tr:hover {
-  background-color: var(--rep-color-surface-subtle);
-}
-
-.ratingCell {
-  width: 6rem;
-  text-align: center;
-  font-weight: 700;
-}

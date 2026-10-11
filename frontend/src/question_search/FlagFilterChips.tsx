@@ -1,6 +1,6 @@
 import React from "react";
 import { Circle } from "lucide-react";
-import { FLAG_METADATA, type FlagCategory } from "../components/FlagConstants";
+import { FLAG_METADATA, type FlagCategory, type FlagMetadata } from "../components/FlagConstants";
 import { UNFLAGGED, type FlagFilterKey } from "./question_search_types";
 import styles from "./QuestionSearch.module.css";
 
@@ -9,7 +9,7 @@ interface FlagFilterChipsProps {
   onChange: (next: FlagFilterKey[]) => void;
 }
 
-const CHIPS: { key: FlagFilterKey; label: string; icon: React.ReactNode }[] = [
+const CHIPS: { key: FlagFilterKey; label: string; icon: FlagMetadata["icon"] }[] = [
   ...Object.entries(FLAG_METADATA).map(([key, meta]) => ({
     key: key as FlagCategory,
     label: meta.label,
@@ -39,7 +39,7 @@ export function FlagFilterChips({ selected, onChange }: FlagFilterChipsProps) {
             className={`${styles.chip} ${active ? styles.chipActive : ""}`}
             onClick={() => toggle(key)}
           >
-            {React.cloneElement(icon as React.ReactElement, {
+            {React.cloneElement(icon, {
               className: styles.chipIcon,
             })}
             <span>{label}</span>

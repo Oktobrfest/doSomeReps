@@ -1,13 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Plus, X } from "lucide-react";
-import { toast } from "sonner";
 import { useCategories } from "../hooks/useCategories";
 import { useFullSizedPage } from "../hooks/useFullSizedPage";
 import { byName, createCategory } from "../lib/categories";
+import { errorMessage } from "../lib/errors";
+import { notify } from "../toast/notify";
 import { CategoryChip } from "./CategoryChip";
 import { CategorySection, type CategoryItem } from "./CategorySection";
 import { QuizModal } from "./QuizModal";
-import { SavedCategoryLists } from "./SavedCategoryLists";
+import { SavedCategoryLists, useSavedCategoryLists } from "./SavedCategoryLists";
 import styles from "./CategoryPicker.module.css";
 
 /** How long a chip wears its new tick before it moves to the other section. */
@@ -21,8 +22,8 @@ const MOVE_MS = 300;
  * the two of them.
  */
 function useFitsInline(
-  host: RefObject<HTMLElement>,
-  content: RefObject<HTMLElement>,
+  host: RefObject<HTMLElement | null>,
+  content: RefObject<HTMLElement | null>,
   key: string
 ): boolean {
   const [fits, setFits] = useState(true);
@@ -46,6 +47,7 @@ function useFitsInline(
 export interface CategoryPickerProps {
   selectedCategories: string[];
   onChange: (categories: string[]) => void;
+  onOpenChange?: (open: boolean) => void;
   /** Saved lists: for the many categories a quiz or a search is drawn from. */
   savedLists?: boolean;
   /** Creating a category: only where new questions are written. */
@@ -75,6 +77,7 @@ export interface CategoryPickerProps {
 export function CategoryPicker({
   selectedCategories,
   onChange,
+  onOpenChange,
   savedLists = false,
   allowCreate = false,
   selectAll = false,
@@ -89,6 +92,10 @@ export function CategoryPicker({
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   useEffect(() => {
+    onOpenChange?.(fullSized ? expanded : sheetOpen);
+  }, [fullSized, expanded, sheetOpen, onOpenChange]);
+
+  useEffect(() => {
     if (!moving) return;
     const timer = window.setTimeout(() => setMoving(null), MOVE_MS);
     return () => window.clearTimeout(timer);
@@ -101,6 +108,7 @@ export function CategoryPicker({
     [known, selectedCategories]
   );
   const chosen = useMemo(() => new Set(selectedCategories), [selectedCategories]);
+  const savedListState = useSavedCategoryLists(savedLists, selectedCategories);
 
   /* The moving chip holds the section it came from until its tick has landed. */
   const isSelected = (name: string) => (name === moving ? !chosen.has(name) : chosen.has(name));
@@ -141,9 +149,9 @@ export function CategoryPicker({
       const name = await createCategory(wanted);
       if (!chosen.has(name)) onChange([...selectedCategories, name]);
       setFilter("");
-      toast.success(`Category "${name}" created.`);
+      notify.success(`Category "${name}" created.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not create that category.");
+      notify.error(errorMessage(error, "Could not create that category."));
     } finally {
       setCreating(false);
     }
@@ -157,6 +165,7 @@ export function CategoryPicker({
             categories={categories}
             selected={selectedCategories}
             onChange={onChange}
+            state={savedListState}
           />
         </div>
       )}
@@ -238,7 +247,7 @@ export function CategoryPicker({
         <div className={styles.summary}>
           <button
             type="button"
-            className={`${styles.toggle} ${expanded ? styles.toggleOpen : ""}`}
+            className={styles.toggle}
             aria-expanded={expanded}
             onClick={() => setExpanded(!expanded)}
           >
