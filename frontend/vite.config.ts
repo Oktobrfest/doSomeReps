@@ -36,7 +36,6 @@ export default defineConfig({
         landing: "src/entrypoints/Landing.entry.tsx",
         profile: "src/entrypoints/Profile.entry.tsx",
         topic_list: "src/entrypoints/TopicList.entry.tsx",
-        topic_questions: "src/entrypoints/TopicQuestions.entry.tsx",
       },
     },
   },

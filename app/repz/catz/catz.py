@@ -1,11 +1,11 @@
 from flask import (
+    redirect,
     render_template,
     url_for
 )
 from flask_login import current_user
 
-from ..bluehelpers import (cat_questions_count, get_categories_questions,
-                           slugify, unslugify)
+from ..bluehelpers import cat_questions_count, unslugify
 from repz.routes import catz
 
 
@@ -16,8 +16,7 @@ def topiclist():
         {
             "name": topic,
             "questionCount": count,
-            "url": url_for("catz.topic_questions",
-                           selected_topic=slugify(topic)),
+            "url": url_for("home.quemore", topic=topic),
         }
         for topic, count in cat_questions_count(100)
     ]
@@ -30,17 +29,5 @@ def topiclist():
 
 @catz.route("/topic/<selected_topic>", methods=["GET"], endpoint="topic_questions")
 def topic_questions(selected_topic):
-    """Public, so search engines can index a topic's questions; queuing them needs a login."""
-
-    # TODO: PAGINATION
-    topic_name = unslugify(selected_topic)
-
-    questions = get_categories_questions(topic_name)
-
-    return render_template(
-        "topic_questions.html",
-        title=f"Questions for {topic_name}",
-        user=current_user,
-        topic_name=topic_name,
-        questions=questions
-    )
+    """A topic's questions moved to Que More; a permanent redirect keeps old links and their ranking."""
+    return redirect(url_for("home.quemore", topic=unslugify(selected_topic)), code=301)

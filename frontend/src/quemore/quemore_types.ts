@@ -7,12 +7,23 @@ export interface QueEndpoints {
   blockUserUrl: string;
 }
 
-export interface QueMoreBootstrap extends QueEndpoints {
+/** A signed-in reader's Que More: categories to pick, and a que to fill. */
+export interface QueMemberBootstrap extends QueEndpoints {
   /** Canonical category names, used to resolve the session's slugs back to names. */
   categoryList: string[];
-  /** Slugs restored from the user's last search, held in the Flask session. */
+  /** The topic a link landed on, or slugs restored from the user's last search. */
   selectedCategories: string[];
+  /** The topic a link landed on: its questions come straight up, open. */
+  topic: string | null;
 }
+
+/** A visitor's Que More: one topic's questions to read, with nothing to que. */
+export interface QueVisitorBootstrap {
+  topic: string;
+  questions: QueSearchResult[];
+}
+
+export type QueMoreBootstrap = QueMemberBootstrap | QueVisitorBootstrap;
 
 export interface QueFilterState {
   personal: boolean;

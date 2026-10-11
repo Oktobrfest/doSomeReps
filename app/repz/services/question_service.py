@@ -8,15 +8,15 @@ none of the three can drift from the others.
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any, Collection, Mapping, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.sql import func
 
-from repz.bluehelpers import create_brand_new_quizq, remove_underscore
+from repz.bluehelpers import create_brand_new_quizq, get_rating, remove_underscore
 from repz.database import session
 from repz.home.form_helpers import PIC_PART_BY_TYPE, save_pictures
-from repz.models import category, question
+from repz.models import category, question, users
 
 # Mirrors the column widths on `question`. The editors enforce the same limits
 # client-side, so a breach here means a stale or forged request.
@@ -94,6 +94,33 @@ def question_payload(stored: question) -> dict[str, Any]:
         "privacy": stored.privacy,
         "pics_by_type": pics_by_type,
     }
+
+
+def que_listing(
+    questions: Collection[question],
+    favorites: Collection[int] = (),
+    excluded: Collection[int] = (),
+) -> list[dict[str, Any]]:
+    """`questions` as the Que More cards show them: whole, with author and
+    rating, and where the reader stands with each. A visitor stands nowhere,
+    so leaves `favorites` and `excluded` out.
+    """
+    usernames = dict(session.execute(
+        select(users.id, users.username)
+        .where(users.id.in_({q.created_by for q in questions}))
+    ).all())
+
+    return [
+        {
+            **question_payload(q),
+            "username": usernames[q.created_by],
+            "created_by": q.created_by,
+            "favorite": q.created_by in favorites,
+            "rating": get_rating(q.question_id),
+            "excluded": q.question_id in excluded,
+        }
+        for q in questions
+    ]
 
 
 def resolve_categories(names: Sequence[str]) -> list[category]:

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useId, useMemo, useRef, useState } from "react";
 import { BookOpen, ListChecks, Save, Search } from "lucide-react";
 import { QueFilters } from "./QueFilters";
 import { QueResultsList, type QueCardActions } from "./QueResultsList";
@@ -55,13 +55,15 @@ interface QuePanelProps {
   endpoints: QueEndpoints;
   /** Category names to search; the page decides whether the reader picks them. */
   categories: string[];
+  /** Browsing a topic: search on arrival, and open every result to its answer. */
+  browse?: boolean;
 }
 
 /**
  * Search, pick and save questions into the reader's que: the whole Que More
  * workflow, short of choosing the categories it searches.
  */
-export function QuePanel({ endpoints, categories }: QuePanelProps) {
+export function QuePanel({ endpoints, categories, browse = false }: QuePanelProps) {
   const [filters, setFilters] = useState<QueFilterState>(DEFAULT_FILTERS);
   const [qty, setQty] = useState("10");
   const selectionToastId = useId();
@@ -99,6 +101,7 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
       setFound(outcome.ok);
       setResults(available);
       setSelected(autoSelect(available, Number(qty)));
+      if (browse) setExpanded(new Set(available.map((result) => result.id)));
 
       if (outcome.msg) notify[outcome.msgCategory](outcome.msg);
     } catch (err) {
@@ -107,7 +110,13 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
     } finally {
       setSearching(false);
     }
-  }, [endpoints, categories, filters, qty]);
+  }, [endpoints, categories, filters, qty, browse]);
+
+  const searchOnArrival = useEffectEvent(() => void runSearch());
+
+  useEffect(() => {
+    if (browse) searchOnArrival();
+  }, [browse]);
 
   const resultIds = useMemo(() => results.map((result) => result.id), [results]);
 
