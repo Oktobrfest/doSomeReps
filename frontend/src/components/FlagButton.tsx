@@ -1,3 +1,4 @@
+import { errorMessage } from "../lib/errors";
 import { jsonHeaders } from "../lib/http";
 import React, { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
@@ -73,7 +74,7 @@ export function FlagButton({
       }
       setIsOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Request failed");
+      setError(errorMessage(err, "Request failed"));
     } finally {
       setIsSaving(false);
     }

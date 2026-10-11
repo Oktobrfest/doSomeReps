@@ -3,10 +3,10 @@
    once so no page's preview can drift from another's. */
 .preview {
   display: block;
-  background-color: var(--rep-color-surface-subtle);
+  background-color: var(--rep-color-surface);
   border: 1px solid var(--rep-color-border);
   border-radius: var(--rep-panel-radius);
-  padding: 20px 20px 60px 20px;
+  padding: var(--rep-panel-padding);
   box-shadow: var(--rep-shadow-card-raised);
   transition: all 0.3s ease;
 }
@@ -45,38 +45,4 @@
   align-items: center;
   margin-bottom: 12px;
   font-size: 0.85rem;
-}
-
-.previewImages {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.previewImage {
-  max-width: 100%;
-  max-height: 200px;
-  object-fit: contain;
-  border-radius: var(--rep-radius-card);
-  border: 1px solid var(--rep-color-border);
-}
-
-.question {
-  margin-bottom: 10px;
-  background: var(--rep-part-question-surface);
-  border: 1px solid var(--rep-part-question-border);
-  border-radius: var(--rep-radius-card);
-  overflow: hidden;
-  box-shadow: var(--rep-shadow-card);
-}
-
-.partBody {
-  padding: 10px 12px;
-  overflow-x: auto;
-  overflow-wrap: break-word;
-}
-
-.partBody > :last-child {
-  margin-bottom: 0;
 }

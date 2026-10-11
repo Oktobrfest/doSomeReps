@@ -53,7 +53,6 @@ from ..bluehelpers import (
     cat_questions_count,
     get_all_categories,
     get_quizes,
-    get_session,
     get_user,
     set_session,
     split_dict,
@@ -204,20 +203,13 @@ def quiz():
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
 @login_required
 def quemore():
-    category_list = get_all_categories()
-    search_que_filters = get_session("search_que_filters")
-    if search_que_filters == 'Not set':
-        selected_categories = []
-    else:
-        selected_categories = search_que_filters['catz']
-
     return render_template(
         "quemore.html",
         title="Que More Questions",
         description="Que More Questions",
         user=current_user,
-        category_list=category_list,
-        selected_categories=selected_categories,
+        category_list=get_all_categories(),
+        selected_categories=get_selected_categories("quemore"),
     )
 
 
@@ -229,6 +221,8 @@ def editquestions():
         "editquestions.html",
         title="Edit or Delete Questions",
         user=current_user,
+        category_list=get_all_categories(),
+        selected_categories=get_selected_categories("editquestions"),
     )
 
 

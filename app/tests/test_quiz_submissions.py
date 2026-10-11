@@ -29,7 +29,34 @@ class TestQuizCategorySelection(unittest.TestCase):
              patch.object(quiz_service, 'set_selected_categories') as save:
             database.execute.return_value.scalars.return_value.first.return_value = default
             self.assertEqual(quiz_service.get_selected_categories(), ['Site_Guide'])
-            save.assert_called_once_with(['Site_Guide'])
+            save.assert_called_once_with(['Site_Guide'], 'quiz')
+
+    def test_each_page_reads_its_own_selection(self):
+        from repz.services import quiz_service
+
+        with patch.object(quiz_service, 'get_session', return_value=['Python']) as read:
+            self.assertEqual(quiz_service.get_selected_categories('quemore'), ['Python'])
+            read.assert_called_once_with('quemore_category_names')
+
+
+class TestSelectedCategoriesEndpoint(unittest.TestCase):
+    def _put(self, page, payload):
+        from repz.catz import catz_api
+
+        with Flask(__name__).test_request_context(method="PUT", json=payload), \
+             patch.object(catz_api, 'set_selected_categories') as save:
+            return catz_api.put_selected_categories.__wrapped__(page), save
+
+    def test_saves_the_selection_for_that_page(self):
+        _, save = self._put('editquestions', {'categories': ['Python']})
+        save.assert_called_once_with(['Python'], 'editquestions')
+
+    def test_rejects_an_unknown_page_or_a_malformed_selection(self):
+        for page, payload, status in (('profile', {'categories': []}, 404),
+                                      ('quemore', {'categories': 'Python'}, 400)):
+            (_, code), save = self._put(page, payload)
+            self.assertEqual(code, status)
+            save.assert_not_called()
 
 
 class TestQuizSubmissions(unittest.TestCase):

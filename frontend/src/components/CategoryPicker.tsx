@@ -8,7 +8,7 @@ import { notify } from "../toast/notify";
 import { CategoryChip } from "./CategoryChip";
 import { CategorySection, type CategoryItem } from "./CategorySection";
 import { QuizModal } from "./QuizModal";
-import { SavedCategoryLists } from "./SavedCategoryLists";
+import { SavedCategoryLists, useSavedCategoryLists } from "./SavedCategoryLists";
 import styles from "./CategoryPicker.module.css";
 
 /** How long a chip wears its new tick before it moves to the other section. */
@@ -108,6 +108,7 @@ export function CategoryPicker({
     [known, selectedCategories]
   );
   const chosen = useMemo(() => new Set(selectedCategories), [selectedCategories]);
+  const savedListState = useSavedCategoryLists(savedLists, selectedCategories);
 
   /* The moving chip holds the section it came from until its tick has landed. */
   const isSelected = (name: string) => (name === moving ? !chosen.has(name) : chosen.has(name));
@@ -164,6 +165,7 @@ export function CategoryPicker({
             categories={categories}
             selected={selectedCategories}
             onChange={onChange}
+            state={savedListState}
           />
         </div>
       )}

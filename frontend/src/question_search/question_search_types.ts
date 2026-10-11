@@ -25,6 +25,9 @@ export interface SearchFilters {
 }
 
 export interface EditQuestionsBootstrap {
+  categoryList: string[];
+  /** Slugs the reader last picked here, or their default list. */
+  selectedCategories: string[];
   searchUrl: string;
   unexcludeUrl: string;
 }

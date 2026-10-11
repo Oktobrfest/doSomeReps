@@ -4,6 +4,7 @@ from sqlalchemy import select
 from repz.database import session
 from repz.models import category_lists, category
 from repz.bluehelpers import remove_underscore
+from repz.services.quiz_service import SELECTION_PAGES, set_selected_categories
 
 # JSON-based endpoints for Category Lists CRUD
 catz_api = Blueprint('catz_api', __name__)
@@ -60,6 +61,21 @@ def get_categories():
     db_categories = session.execute(select(category)).scalars().all()
     categories_list = sorted([c.category_name for c in db_categories])
     return jsonify(categories_list)
+
+
+@catz_api.route('/api/selected-categories/<page>', methods=['PUT'])
+@login_required
+def put_selected_categories(page):
+    """Replace the categories `page` starts from on the caller's next visit, as slugs."""
+    if page not in SELECTION_PAGES:
+        return jsonify({"error": "No such page."}), 404
+
+    categories = (request.get_json(silent=True) or {}).get("categories")
+    if not isinstance(categories, list) or not all(isinstance(c, str) for c in categories):
+        return jsonify({"error": "categories must be a list of strings."}), 400
+
+    set_selected_categories(categories, page)
+    return jsonify({"categories": categories})
 
 
 @catz_api.route('/api/category-lists', methods=['GET'])

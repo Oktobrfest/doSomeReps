@@ -6,6 +6,8 @@ Edit Questions
 
 <script id="edit-questions-bootstrap" type="application/json">
 {{ {
+  "categoryList": category_list,
+  "selectedCategories": selected_categories if selected_categories != 'Not set' else [],
   "searchUrl": url_for('quest_ajx.searchq'),
   "unexcludeUrl": url_for('que_ajx.unexclude_q')
 } | tojson }}

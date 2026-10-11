@@ -1,11 +1,8 @@
-import { QuestionPart as ReadingPart } from "./QuestionReading";
+import { useState } from "react";
+import { QuestionView } from "./QuestionReading";
+import { ImageModal } from "../quiz/ImageModal";
 import { CategoryChips } from "../components/CategoryChip";
-import { MarkdownContent } from "../components/MarkdownContent";
-import { useFilePreviews } from "./useFilePreviews";
-import {
-  type QuestionDraft,
-  type QuestionPart,
-} from "./question_types";
+import type { QuestionDraft } from "./question_types";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./QuestionPreview.module.css";
 
@@ -15,55 +12,6 @@ interface QuestionPreviewProps {
   onHide?: () => void;
   /** Sizing class for pages that place the pane in a split layout. */
   className?: string;
-}
-
-function PreviewImages({
-  draft,
-  part,
-}: {
-  draft: QuestionDraft;
-  part: QuestionPart;
-}) {
-  const previews = useFilePreviews(draft.files?.[part] ?? []);
-  const stored = (draft.pics?.[part] ?? []).map((p) => p.pic_string);
-  const allImages = [...stored, ...previews];
-
-  if (allImages.length === 0) return null;
-
-  return (
-    <div className={styles.previewImages}>
-      {allImages.map((src, index) => (
-        <img
-          key={index}
-          src={src}
-          alt={`${part} visual ${index + 1}`}
-          className={styles.previewImage}
-        />
-      ))}
-    </div>
-  );
-}
-
-/** A draft part's markdown and stored or newly picked images. */
-export function QuestionPreviewBody({ draft, part }: { draft: QuestionDraft; part: QuestionPart }) {
-  const text = draft.text[part] || (part === "hint" ? "" : `*No ${part} text yet.*`);
-  return <>
-    {text && <MarkdownContent content={text} />}
-    <PreviewImages draft={draft} part={part} />
-  </>;
-}
-
-function QuestionContent({ draft }: { draft: QuestionDraft }) {
-  const hasHint = Boolean(draft.text.hint) || draft.pics.hint.length > 0 || draft.files.hint.length > 0;
-  return (
-    <>
-      <div className={styles.question}>
-        <div className={styles.partBody}><QuestionPreviewBody draft={draft} part="question" /></div>
-      </div>
-      {hasHint && <ReadingPart part="hint"><QuestionPreviewBody draft={draft} part="hint" /></ReadingPart>}
-      <ReadingPart part="answer"><QuestionPreviewBody draft={draft} part="answer" /></ReadingPart>
-    </>
-  );
 }
 
 /**
@@ -77,6 +25,7 @@ export function QuestionPreview({
   onHide,
   className,
 }: QuestionPreviewProps) {
+  const [imageView, setImageView] = useState<{ images: string[]; startIndex: number } | null>(null);
   return (
     <div className={`${styles.preview}${className ? ` ${className}` : ""}`}>
       <div className={styles.previewPaneHeader}>
@@ -100,7 +49,8 @@ export function QuestionPreview({
         <CategoryChips names={draft.categories} />
       </div>
 
-      <QuestionContent draft={draft} />
+      <QuestionView draft={draft} onOpen={(images, startIndex) => setImageView({ images, startIndex })} />
+      {imageView && <ImageModal {...imageView} onClose={() => setImageView(null)} />}
     </div>
   );
 }

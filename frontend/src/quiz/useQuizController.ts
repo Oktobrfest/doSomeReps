@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import { jsonHeaders } from '../lib/http';
-import { resolveCategoryNames, toSlug } from '../lib/categories';
+import { resolveCategoryNames, saveSelectedCategories, toSlug } from '../lib/categories';
 import type {
   AudioAssets,
   QuizCommandHandlers,
@@ -497,13 +497,7 @@ export function useQuizController({
     // category write before starting the next; skip intermediate selections.
     const save = categorySaveRef.current.catch(() => {}).then(async () => {
       if (!isCurrent() || key === savedCategoriesRef.current) return;
-      const response = await fetch('/quiz/api/categories', {
-        method: 'POST',
-        headers: jsonHeaders(),
-        credentials: 'same-origin',
-        body: JSON.stringify({ categories }),
-      });
-      if (!response.ok) throw new Error('Could not save your categories. Please try again.');
+      await saveSelectedCategories('quiz', categories);
       savedCategoriesRef.current = key;
     });
     categorySaveRef.current = save;

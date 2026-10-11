@@ -3,11 +3,9 @@ import { Ban, ListPlus, Maximize2, User, UserX } from "lucide-react";
 import { CategoryChips } from "../components/CategoryChip";
 import { QuizModal } from "../components/QuizModal";
 import { useGridColumns } from "../hooks/useCardGrid";
-import { QuestionPreviewBody } from "../question/QuestionPreview";
-import { QuestionPart, QuestionText, QuestionImages, QuestionReadingPart } from "../question/QuestionReading";
+import { QuestionPart, QuestionBody, QuestionView } from "../question/QuestionReading";
 import { ImageModal } from "../quiz/ImageModal";
 import { draftFromPayload } from "../question/question_api";
-import type { QuestionPart as Part } from "../question/question_types";
 import { RatingBadge, RatingStars } from "../quiz/RatingStars";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./QueMore.module.css";
@@ -139,16 +137,16 @@ function QueCard({
 
       <div className={`${styles.cardBody} ${expanded || hintOpen ? "" : styles.cardBodyClosed}`}>
         <div className={styles.cardQuestion}>
-          <QuestionPreviewBody draft={draft} part="question" />
+          <QuestionBody draft={draft} part="question" />
         </div>
         {hasHint && (expanded || hintOpen) && (
           <QuestionPart part="hint" disclosure={{ open: hintOpen, onToggle: () => setHintOpen((open) => !open) }}>
-            <QuestionPreviewBody draft={draft} part="hint" />
+            <QuestionBody draft={draft} part="hint" />
           </QuestionPart>
         )}
         {expanded && (
           <QuestionPart part="answer" disclosure={{ open: true, onToggle: () => actions.onToggle(result) }}>
-            <QuestionPreviewBody draft={draft} part="answer" />
+            <QuestionBody draft={draft} part="answer" />
           </QuestionPart>
         )}
       </div>
@@ -186,13 +184,8 @@ function QueCard({
 
 /** Full reading view shares the quiz's text, disclosures, carousel and lightbox. */
 function FullQuestion({ result, busy, actions, onClose }: VerdictProps & { onClose: () => void }) {
-  const [answerOpen, setAnswerOpen] = useState(true);
-  const [hintOpen, setHintOpen] = useState(true);
+  const draft = useMemo(() => draftFromPayload(result), [result]);
   const [imageView, setImageView] = useState<{ images: string[]; startIndex: number } | null>(null);
-  const images = (part: Part) =>
-    result.pics_by_type?.[part]?.map((pic) => pic.pic_string) ?? [];
-  const openImages = (images: string[], startIndex: number) => setImageView({ images, startIndex });
-  const hintImages = images("hint");
 
   return (
     <>
@@ -213,18 +206,7 @@ function FullQuestion({ result, busy, actions, onClose }: VerdictProps & { onClo
           </div>
         }
       >
-        <QuestionImages images={images("question")} onOpen={openImages} />
-        <QuestionText text={result.question_text} />
-        {(result.hint || hintImages.length > 0) && (
-          <QuestionReadingPart
-            part="hint" text={result.hint ?? null} images={hintImages} onOpen={openImages}
-            disclosure={{ open: hintOpen, onToggle: () => setHintOpen((open) => !open) }}
-          />
-        )}
-        <QuestionReadingPart
-          part="answer" text={result.answer} images={images("answer")} onOpen={openImages}
-          disclosure={{ open: answerOpen, onToggle: () => setAnswerOpen((open) => !open) }}
-        />
+        <QuestionView draft={draft} onOpen={(images, startIndex) => setImageView({ images, startIndex })} />
         <div className={styles.viewVerdicts}>
           <Verdicts result={result} busy={busy} actions={actions} />
         </div>

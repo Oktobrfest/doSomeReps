@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CategoryPicker } from "../components/CategoryPicker";
+import { useRememberedCategories } from "../hooks/useRememberedCategories";
 import { QuePanel } from "./QuePanel";
 import { readBootstrap } from "./quemore_api";
 import { resolveCategoryNames } from "../lib/categories";
@@ -16,6 +17,7 @@ function resolveInitialSelection(): string[] {
 
 export function QueMorePage() {
   const [categories, setCategories] = useState<string[]>(resolveInitialSelection);
+  useRememberedCategories("quemore", categories);
 
   return (
     <div className={styles.page}>

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AskAiPanel } from "../ask_ai/AskAiPanel";
 import { useAskAi } from "../ask_ai/useAskAi";
 import type { AskAiContext } from "../ask_ai/types";
@@ -17,8 +17,21 @@ import { notify } from "../toast/notify";
 import styles from "./AddContent.module.css";
 import sharedStyles from "../styles/shared.module.css";
 
+/** Questions written here tend to come in runs under the same categories. */
+const CATEGORIES_KEY = "addcontent.categories";
+
+function storedCategories(): string[] {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(CATEGORIES_KEY) ?? "[]");
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    // Unreadable storage only costs the page its remembered categories.
+    return [];
+  }
+}
+
 export function AddContentPage() {
-  const [draft, setDraft] = useState<QuestionDraft>(emptyDraft);
+  const [draft, setDraft] = useState<QuestionDraft>(() => ({ ...emptyDraft(), categories: storedCategories() }));
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(true);
 
@@ -39,6 +52,14 @@ export function AddContentPage() {
 
   const askAi = useAskAi({ context: askAiContext, answerRevealed: true });
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(CATEGORIES_KEY, JSON.stringify(draft.categories));
+    } catch {
+      // Unwritable storage only costs the next visit its starting categories.
+    }
+  }, [draft.categories]);
+
   const handleSave = async () => {
     const problem = draftError(draft);
     if (problem) {
@@ -49,7 +70,7 @@ export function AddContentPage() {
     setSaving(true);
     try {
       await createQuestion(draft);
-      setDraft(emptyDraft());
+      setDraft({ ...emptyDraft(), categories: draft.categories });
       notify.success("New question created.");
     } catch (err) {
       notify.error(errorMessage(err, "Could not save the question."));

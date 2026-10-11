@@ -71,6 +71,7 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
   const [selected, setSelected] = useState<ReadonlySet<number>>(() => new Set());
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => new Set());
   const [hasSearched, setHasSearched] = useState(false);
+  const [found, setFound] = useState(false);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [actingId, setActingId] = useState<number | null>(null);
@@ -95,11 +96,13 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
       if (version !== searchVersion.current) return;
       const available = outcome.results.filter((result) => !dismissedIds.current.has(result.id));
       setHasSearched(true);
+      setFound(outcome.ok);
       setResults(available);
       setSelected(autoSelect(available, Number(qty)));
 
       if (outcome.msg) notify[outcome.msgCategory](outcome.msg);
     } catch (err) {
+      setFound(false);
       notify.error(errorMessage(err, "Search failed."));
     } finally {
       setSearching(false);
@@ -123,12 +126,12 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
   const allExpanded = hasAll(expanded, resultIds);
 
   useEffect(() => {
-    if (!hasSearched) return;
+    if (!found) return void notify.dismiss(selectionToastId);
     notify.info(
       `${chosen.length} selected to add to your que. Press Save above to queue the selected questions. ${queuedCount} queued this visit.`,
       { id: selectionToastId, persistent: true }
     );
-  }, [chosen.length, queuedCount, hasSearched, selectionToastId]);
+  }, [chosen.length, queuedCount, found, selectionToastId]);
 
   useEffect(() => () => { notify.dismiss(selectionToastId); }, [selectionToastId]);
 

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { resolveCategoryNames, toSlug } from "../lib/categories";
+import { errorMessage } from "../lib/errors";
 import { csrfHeaders, jsonHeaders } from "../lib/http";
 import styles from "./SavedCategoryLists.module.css";
 
@@ -29,17 +30,51 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   return data;
 }
 
+/**
+ * The saved lists, owned by the picker rather than by this toolbar, which only
+ * mounts while the picker is open: the lists, and which one is showing, stay
+ * put whether the picker is open or not. The selection itself is the page's,
+ * which opens with the reader's last pick, or else their default list.
+ */
+export function useSavedCategoryLists(enabled: boolean, selected: string[]) {
+  const [lists, setLists] = useState<CategoryList[]>([]);
+  const [activeId, setActiveId] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  // The list showing is whichever one the selection is when the lists arrive.
+  const hydrate = useEffectEvent((loaded: CategoryList[]) => {
+    setLists(loaded);
+    const match = loaded.find((list) => sameSelection(list.categories, selected));
+    if (match) setActiveId(String(match.id));
+  });
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    void requestJson<CategoryList[]>("/api/category-lists")
+      .then((loaded) => {
+        if (!cancelled && Array.isArray(loaded)) hydrate(loaded);
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) setError(errorMessage(reason, "Failed to load saved lists."));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  return { lists, setLists, activeId, setActiveId, error, setError };
+}
+
 export function SavedCategoryLists({
   categories,
   selected,
   onChange,
-}: SavedCategoryListsProps) {
-  const [lists, setLists] = useState<CategoryList[]>([]);
-  const [activeId, setActiveId] = useState("");
+  state: { lists, setLists, activeId, setActiveId, error, setError },
+}: SavedCategoryListsProps & { state: ReturnType<typeof useSavedCategoryLists> }) {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const active = useMemo(
     () => lists.find((list) => String(list.id) === activeId),
@@ -51,30 +86,6 @@ export function SavedCategoryLists({
   const worthSaving = selected.length > 0 && (!active || dirty);
   const resolve = (values: string[]) => categories.length > 0 ? resolveCategoryNames(values, categories) : values;
 
-  // Only initial hydration may auto-apply the default, and only when the caller
-  // supplied no selection of its own.
-  useEffect(() => {
-    let cancelled = false;
-    void requestJson<CategoryList[]>("/api/category-lists")
-      .then((loaded) => {
-        if (cancelled || !Array.isArray(loaded)) return;
-        setLists(loaded);
-        const match = loaded.find((list) => sameSelection(list.categories, selected));
-        const initial = match ?? (selected.length === 0 ? loaded.find((list) => list.is_default) : undefined);
-        if (!initial) return;
-        setActiveId(String(initial.id));
-        if (!match) onChange(resolve(initial.categories));
-      })
-      .catch((reason: unknown) => {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : "Failed to load saved lists.");
-      });
-    return () => {
-      cancelled = true;
-    };
-    // Initial hydration intentionally ignores later selection changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const run = async (work: () => Promise<void>) => {
     if (busy) return;
     setBusy(true);
@@ -82,7 +93,7 @@ export function SavedCategoryLists({
     try {
       await work();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Category list request failed.");
+      setError(errorMessage(reason, "Category list request failed."));
     } finally {
       setBusy(false);
     }

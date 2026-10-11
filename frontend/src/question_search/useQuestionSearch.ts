@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { errorMessage } from "../lib/errors";
 import { searchQuestions } from "./question_search_api";
 import type { SearchFilters, SearchResultItem } from "./question_search_types";
 
@@ -27,7 +28,7 @@ export function useQuestionSearch(searchUrl: string) {
       } catch (err) {
         if (currentRequest !== requestId.current) return;
         setResults([]);
-        setError(err instanceof Error ? err.message : "Search failed.");
+        setError(errorMessage(err, "Search failed."));
       } finally {
         if (currentRequest === requestId.current) setLoading(false);
       }

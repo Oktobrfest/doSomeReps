@@ -9,7 +9,7 @@ Que More Questions
 <script id="quemore-data" type="application/json">
 {{ {
   'categoryList': category_list,
-  'selectedCategories': selected_categories,
+  'selectedCategories': selected_categories if selected_categories != 'Not set' else [],
   'searchUrl': url_for('que_ajx.searchquefilters'),
   'saveUrl': url_for('que_ajx.save_to_que'),
   'blockUserUrl': url_for('user_ajx.block_user')

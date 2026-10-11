@@ -6,7 +6,7 @@ import json
 from ...database import session
 from repz.routes import que_ajx
 from ...bluehelpers import (exclude, create_brand_new_quizq, remove_underscore,
-                            set_session, get_user, time, unexclude, get_rating)
+                            get_user, time, unexclude, get_rating)
 from ..ajax_response import AjaxResponse
 from repz.services.question_service import question_payload
 
@@ -35,8 +35,6 @@ def searchquefilters():
 
     cleaned_cats = list(map(lambda x: remove_underscore(x), filters['catz']))
     filters['catz'] = cleaned_cats
-
-    set_session("search_que_filters", filters)
 
     cur_user = get_user(UID)
     excluded_question_ids = [q.question_id for q in cur_user.excluded_questions]
