@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { BookOpen, ListChecks, Save, Search } from "lucide-react";
 import { QueFilters } from "./QueFilters";
 import { QueResultsList, type QueCardActions } from "./QueResultsList";
@@ -75,8 +75,11 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
   const [saving, setSaving] = useState(false);
   const [actingId, setActingId] = useState<number | null>(null);
   const [blockingUserId, setBlockingUserId] = useState<number | null>(null);
+  const searchVersion = useRef(0);
+  const dismissedIds = useRef(new Set<number>());
 
   const runSearch = useCallback(async () => {
+    const version = ++searchVersion.current;
     setSearching(true);
     setResults([]);
     setSelected(new Set());
@@ -89,9 +92,11 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
         categories.map(toSlug)
       );
 
+      if (version !== searchVersion.current) return;
+      const available = outcome.results.filter((result) => !dismissedIds.current.has(result.id));
       setHasSearched(true);
-      setResults(outcome.results);
-      setSelected(autoSelect(outcome.results, Number(qty)));
+      setResults(available);
+      setSelected(autoSelect(available, Number(qty)));
 
       if (outcome.msg) notify[outcome.msgCategory](outcome.msg);
     } catch (err) {
@@ -161,13 +166,21 @@ export function QuePanel({ endpoints, categories }: QuePanelProps) {
   /** Que or exclude one question on the spot; either way it leaves the results. */
   const settle = useCallback(
     async (result: QueSearchResult, payload: SavePayload) => {
+      if (dismissedIds.current.has(result.id)) return;
+      dismissedIds.current.add(result.id);
+      const version = searchVersion.current;
+      const index = results.indexOf(result);
       setActingId(result.id);
-      if (await commit(payload)) {
-        setResults((prev) => prev.filter((other) => other.id !== result.id));
+      setResults((prev) => prev.filter((other) => other.id !== result.id));
+      if (!await commit(payload)) {
+        dismissedIds.current.delete(result.id);
+        if (version === searchVersion.current) setResults((prev) => prev.some((other) => other.id === result.id)
+          ? prev
+          : [...prev.slice(0, index), result, ...prev.slice(index)]);
       }
-      setActingId(null);
+      setActingId((id) => id === result.id ? null : id);
     },
-    [commit]
+    [commit, results]
   );
 
   const handleBlock = useCallback(async ({ created_by: userId, username }: QueSearchResult) => {

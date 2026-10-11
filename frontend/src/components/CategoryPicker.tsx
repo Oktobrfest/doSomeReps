@@ -47,6 +47,7 @@ function useFitsInline(
 export interface CategoryPickerProps {
   selectedCategories: string[];
   onChange: (categories: string[]) => void;
+  onOpenChange?: (open: boolean) => void;
   /** Saved lists: for the many categories a quiz or a search is drawn from. */
   savedLists?: boolean;
   /** Creating a category: only where new questions are written. */
@@ -76,6 +77,7 @@ export interface CategoryPickerProps {
 export function CategoryPicker({
   selectedCategories,
   onChange,
+  onOpenChange,
   savedLists = false,
   allowCreate = false,
   selectAll = false,
@@ -88,6 +90,10 @@ export function CategoryPicker({
   const [creating, setCreating] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expanded, setExpanded] = useState(defaultExpanded);
+
+  useEffect(() => {
+    onOpenChange?.(fullSized ? expanded : sheetOpen);
+  }, [fullSized, expanded, sheetOpen, onOpenChange]);
 
   useEffect(() => {
     if (!moving) return;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Ban, ListPlus, Maximize2, UserX } from "lucide-react";
+import { Ban, ListPlus, Maximize2, User, UserX } from "lucide-react";
 import { CategoryChips } from "../components/CategoryChip";
 import { QuizModal } from "../components/QuizModal";
 import { useGridColumns } from "../hooks/useCardGrid";
@@ -8,7 +8,7 @@ import { QuestionPart, QuestionText, QuestionImages, QuestionReadingPart } from 
 import { ImageModal } from "../quiz/ImageModal";
 import { draftFromPayload } from "../question/question_api";
 import type { QuestionPart as Part } from "../question/question_types";
-import { RatingBadge } from "../quiz/RatingStars";
+import { RatingBadge, RatingStars } from "../quiz/RatingStars";
 import sharedStyles from "../styles/shared.module.css";
 import styles from "./QueMore.module.css";
 import type { QueSearchResult } from "./quemore_types";
@@ -196,9 +196,24 @@ function FullQuestion({ result, busy, actions, onClose }: VerdictProps & { onClo
 
   return (
     <>
-      <QuizModal title="Question & Answer" onClose={() => { if (!imageView) onClose(); }}>
+      <QuizModal
+        title="Question details"
+        onClose={() => { if (!imageView) onClose(); }}
+        header={
+          <div className={sharedStyles.actionCluster}>
+            <CategoryChips names={result.categories} />
+            <span className={styles.byline}>
+              <User className={sharedStyles.buttonIcon} />
+              <span>{result.username}</span>
+            </span>
+            <RatingStars
+              value={result.rating ?? 0}
+              label={result.rating ? `Rated ${result.rating.toFixed(1)} out of 5` : "Not rated yet"}
+            />
+          </div>
+        }
+      >
         <QuestionImages images={images("question")} onOpen={openImages} />
-        <CategoryChips names={result.categories} />
         <QuestionText text={result.question_text} />
         {(result.hint || hintImages.length > 0) && (
           <QuestionReadingPart
@@ -249,6 +264,10 @@ export function QueResultsList({
   // Qued or excluded from its full view, a question leaves the results and
   // takes the view with it; a later search hands back new objects, never this one.
   const viewingOpen = viewing !== null && results.includes(viewing);
+
+  useEffect(() => {
+    if (!viewingOpen) setViewing(null);
+  }, [viewingOpen]);
 
   return (
     <>

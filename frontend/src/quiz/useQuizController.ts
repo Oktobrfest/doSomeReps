@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import { jsonHeaders } from '../lib/http';
+import { resolveCategoryNames, toSlug } from '../lib/categories';
 import type {
   AudioAssets,
   QuizCommandHandlers,
@@ -39,6 +40,7 @@ interface QuizUiState {
 }
 
 type QuizUiAction =
+  | { type: 'QUEUE_LOADING' }
   | { type: 'SUBMIT_STARTED' }
   | { type: 'SUBMIT_FINISHED' }
   | { type: 'SUBMIT_FAILED'; message: string }
@@ -75,6 +77,7 @@ const QUEUE_TARGET_SIZE = 2;
 
 /** The queue always starts empty: the page fetches it once it knows the mode. */
 const NO_ITEMS: QuizItem[] = [];
+const categoryKey = (categories: string[]) => categories.map(toSlug).sort().join('\u0000');
 
 const initialUiState: QuizUiState = {
   isSubmitting: false,
@@ -94,6 +97,9 @@ const initialUiState: QuizUiState = {
 
 function reducer(state: QuizUiState, action: QuizUiAction): QuizUiState {
   switch (action.type) {
+    case 'QUEUE_LOADING':
+      return { ...state, error: null, queueExhausted: false, queueExhaustedMessage: '' };
+
     case 'SUBMIT_STARTED':
       return {
         ...state,
@@ -311,6 +317,8 @@ function verdictToServerValue(verdict: VerdictKind): string {
 export type QuizController = ReturnType<typeof useQuizController>;
 
 interface UseQuizControllerOptions {
+  initialSelectedCategories?: string[];
+  categoryList?: string[];
   /** When false the queue is fetched without audio and nothing ever plays. */
   audioEnabled: boolean;
   /** Start reading each new question aloud. Only consulted while audio is on. */
@@ -320,7 +328,19 @@ interface UseQuizControllerOptions {
 export function useQuizController({
   audioEnabled,
   autoPlay,
+  initialSelectedCategories = [],
+  categoryList = [],
 }: UseQuizControllerOptions) {
+  const [selectedCategories, setSelectedCategories] = useState(() =>
+    resolveCategoryNames(initialSelectedCategories, categoryList),
+  );
+  const categoriesRef = useRef(selectedCategories);
+  const categoriesOpenRef = useRef(false);
+  const queueDirtyRef = useRef(false);
+  const savedCategoriesRef = useRef(categoryKey(selectedCategories));
+  const categorySaveRef = useRef(Promise.resolve());
+  const queueVersionRef = useRef(0);
+  const queueRequestRef = useRef<AbortController | null>(null);
   const [items, setItems] = useReducer(
     (_previous: QuizItem[], next: QuizItem[]) => next,
     NO_ITEMS,
@@ -405,7 +425,7 @@ export function useQuizController({
   }, [audioEnabled]);
 
   const fetchBatch = useCallback(
-    async (count: number, excludeQuizqIds: Array<string | number> = []) => {
+    async (count: number, excludeQuizqIds: Array<string | number>, signal: AbortSignal) => {
       const params = new URLSearchParams();
       params.set('count', String(count));
       params.set('audio', audioEnabledRef.current ? '1' : '0');
@@ -416,6 +436,7 @@ export function useQuizController({
 
       const response = await fetch(`/quiz/queue?${params.toString()}`, {
         credentials: 'same-origin',
+        signal,
       });
 
       if (!response.ok) {
@@ -451,33 +472,98 @@ export function useQuizController({
     [],
   );
 
-  const topUpQueue = useCallback(
-    async (itemsAfterRemoval: QuizItem[], submittedQuizqId: string | number) => {
-      const count = Math.max(0, QUEUE_TARGET_SIZE - itemsAfterRemoval.length);
-      if (count === 0) return;
+  const cancelQueueRequest = useCallback(() => {
+    queueVersionRef.current += 1;
+    queueRequestRef.current?.abort();
+    queueRequestRef.current = null;
+  }, []);
 
-      const excludeQuizqIds = [
-        submittedQuizqId,
-        ...itemsAfterRemoval
-          .map(getQuizqId)
-          .filter((id): id is string | number => id != null),
-      ];
+  /** Serialize selection writes and ignore reads superseded by a newer selection or verdict. */
+  const refreshQueue = useCallback(async (submittedQuizqId?: string | number) => {
+    queueDirtyRef.current = true;
+    if (submitInFlightRef.current) return;
+    if (categoriesOpenRef.current && currentItemRef.current) return;
 
-      const data = await fetchBatch(count, excludeQuizqIds);
-      const fetched = data.items ?? [];
-      const latestItems = itemsRef.current;
+    cancelQueueRequest();
+    const version = queueVersionRef.current;
+    const request = new AbortController();
+    queueRequestRef.current = request;
+    const categories = categoriesRef.current.map(toSlug).sort();
+    const key = categories.join('\u0000');
+    const isCurrent = () => version === queueVersionRef.current;
+    dispatch({ type: 'QUEUE_LOADING' });
 
-      if (fetched.length === 0 && latestItems.length === 0 && data.queueExhausted) {
-        dispatch({
-          type: 'QUEUE_EXHAUSTED',
-          message: data.message || 'No more questions are available.',
-        });
-      } else {
-        commitItems(dedupeItems(latestItems, fetched));
+    // A cancelled browser request can still write on the server. Complete each
+    // category write before starting the next; skip intermediate selections.
+    const save = categorySaveRef.current.catch(() => {}).then(async () => {
+      if (!isCurrent() || key === savedCategoriesRef.current) return;
+      const response = await fetch('/quiz/api/categories', {
+        method: 'POST',
+        headers: jsonHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify({ categories }),
+      });
+      if (!response.ok) throw new Error('Could not save your categories. Please try again.');
+      savedCategoriesRef.current = key;
+    });
+    categorySaveRef.current = save;
+
+    try {
+      await save;
+      if (!isCurrent()) return;
+      const currentItems = itemsRef.current;
+      const count = Math.max(0, QUEUE_TARGET_SIZE - currentItems.length);
+      if (count === 0) {
+        queueDirtyRef.current = false;
+        return;
       }
-    },
-    [commitItems, fetchBatch],
-  );
+      const excluded = currentItems.map(getQuizqId).filter((id): id is string | number => id != null);
+      if (submittedQuizqId != null) excluded.push(submittedQuizqId);
+      const data = await fetchBatch(count, excluded, request.signal);
+      if (!isCurrent()) return;
+      queueDirtyRef.current = false;
+      const next = dedupeItems(itemsRef.current, data.items ?? []);
+      commitItems(next);
+      if (next.length === 0 && data.queueExhausted) {
+        dispatch({ type: 'QUEUE_EXHAUSTED', message: data.message || 'No more questions are available.' });
+      }
+    } catch (error) {
+      if (!isCurrent()) return;
+      dispatch({
+        type: 'QUEUE_FETCH_FAILED',
+        message: savedCategoriesRef.current !== key && error instanceof Error
+          ? error.message
+          : 'Could not load quiz questions. Please try again.',
+      });
+    } finally {
+      if (isCurrent()) queueRequestRef.current = null;
+    }
+  }, [cancelQueueRequest, commitItems, fetchBatch]);
+
+  const changeCategories = useCallback((categories: string[]) => {
+    if (categoryKey(categories) === categoryKey(categoriesRef.current)) return;
+    categoriesRef.current = categories;
+    setSelectedCategories(categories);
+    queueDirtyRef.current = true;
+    cancelQueueRequest();
+    const selected = new Set(categories.map(toSlug));
+    const matching = itemsRef.current.filter((item) =>
+      item.question?.categories.some((name) => selected.has(toSlug(name))),
+    ).slice(0, 1);
+    if (matching[0] !== currentItemRef.current) stopAllAudio();
+    commitItems(matching);
+    void refreshQueue();
+  }, [cancelQueueRequest, commitItems, refreshQueue, stopAllAudio]);
+
+  const setCategoriesOpen = useCallback((open: boolean) => {
+    categoriesOpenRef.current = open;
+    if (!open && queueDirtyRef.current && !queueRequestRef.current) void refreshQueue();
+  }, [refreshQueue]);
+
+  useEffect(() => {
+    void refreshQueue();
+    return cancelQueueRequest;
+  }, [cancelQueueRequest, refreshQueue]);
 
   const submitCurrentQuestion = useCallback(
     async (
@@ -492,12 +578,15 @@ export function useQuizController({
 
       const submittedQuizqId = q.quizq_id;
       const previousItems = itemsRef.current;
+      const providedAnswer = providedAnswerRef.current;
+      let submitted = false;
 
       const itemsAfterRemoval = previousItems.filter((item) => {
         const id = getQuizqId(item);
         return id == null || String(id) !== String(submittedQuizqId);
       });
 
+      cancelQueueRequest();
       submitInFlightRef.current = true;
       stopAllAudio();
 
@@ -524,25 +613,16 @@ export function useQuizController({
             action: 'submit',
             quizqId: submittedQuizqId,
             verdict: verdictToServerValue(action.verdict),
-            providedAnswer: providedAnswerRef.current || null,
+            providedAnswer: providedAnswer || null,
           });
         }
 
-        dispatch({ type: 'SUBMIT_FINISHED' });
-
-        /*
-         * Background top-up only.
-         * This may wait on audio generation/checking, but the user should
-         * already be looking at the next queued question.
-         */
-        void topUpQueue(itemsAfterRemoval, submittedQuizqId).catch(() => {
-          dispatch({
-            type: 'QUEUE_FETCH_FAILED',
-            message: 'Submitted, but could not preload another question.',
-          });
-        });
+        submitted = true;
       } catch {
-        commitItems(previousItems);
+        const selected = new Set(categoriesRef.current.map(toSlug));
+        commitItems(previousItems.filter((item) =>
+          item.question?.categories.some((name) => selected.has(toSlug(name))),
+        ));
 
         dispatch({
           type: 'SUBMIT_FAILED',
@@ -551,9 +631,12 @@ export function useQuizController({
       } finally {
         submitInFlightRef.current = false;
         dispatch({ type: 'SUBMIT_FINISHED' });
+        if (submitted || (queueDirtyRef.current && !currentItemRef.current)) {
+          void refreshQueue(submittedQuizqId);
+        }
       }
     },
-    [commitItems, postQuizAction, stopAllAudio, topUpQueue],
+    [cancelQueueRequest, commitItems, postQuizAction, stopAllAudio, refreshQueue],
   );
 
   const submitVerdict = useCallback(
@@ -680,62 +763,6 @@ export function useQuizController({
     setProvidedAnswer('');
   }, [currentQuestion?.quizq_id, setProvidedAnswer]);
 
-  const loadQueue = useCallback(() => {
-    let cancelled = false;
-
-    fetchBatch(QUEUE_TARGET_SIZE, []).then((data) => {
-      if (cancelled) return;
-      const fetched = data.items ?? [];
-      if (fetched.length === 0 && data.queueExhausted) {
-        dispatch({
-          type: 'QUEUE_EXHAUSTED',
-          message: data.message || 'No more questions are available.',
-        });
-      } else {
-        commitItems(fetched);
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        dispatch({
-          type: 'QUEUE_FETCH_FAILED',
-          message: 'Could not load quiz questions. Please try again.',
-        });
-      }
-    });
-
-    return () => { cancelled = true; };
-  }, [commitItems, fetchBatch]);
-
-  // The server renders an empty shell, so the first queue always comes from here.
-  useEffect(loadQueue, [loadQueue]);
-
-  const applyCategories = useCallback(
-    async (categories: string[]) => {
-      try {
-        const response = await fetch('/quiz/api/categories', {
-          method: 'POST',
-          headers: jsonHeaders(),
-          credentials: 'same-origin',
-          body: JSON.stringify({ categories }),
-        });
-
-        if (!response.ok) throw new Error(String(response.status));
-      } catch {
-        dispatch({
-          type: 'QUEUE_FETCH_FAILED',
-          message: 'Could not save your categories. Please try again.',
-        });
-        return;
-      }
-
-      // The queue is per-category-selection, so it has to be rebuilt wholesale.
-      stopAllAudio();
-      commitItems(NO_ITEMS);
-      loadQueue();
-    },
-    [commitItems, loadQueue, stopAllAudio],
-  );
-
   /*
    * Switching audio on mid-question would otherwise leave the reader with a
    * question that has no soundtrack, because it was queued without one. Fetch
@@ -811,7 +838,8 @@ export function useQuizController({
       setPanelSnap,
       setFlag,
       setProvidedAnswer,
-      applyCategories,
+      changeCategories,
+      setCategoriesOpen,
     }),
     [
       answerEnded,
@@ -830,7 +858,8 @@ export function useQuizController({
       toggleAnswerAudio,
       setFlag,
       setProvidedAnswer,
-      applyCategories,
+      changeCategories,
+      setCategoriesOpen,
     ],
   );
 
@@ -856,6 +885,7 @@ export function useQuizController({
   );
 
   return {
+    selectedCategories,
     items,
     currentItem,
     currentQuestion,

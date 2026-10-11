@@ -10,6 +10,28 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from flask import Flask
 
 
+class TestQuizCategorySelection(unittest.TestCase):
+    def test_explicitly_empty_selection_does_not_restore_default(self):
+        from repz.services import quiz_service
+
+        with patch.object(quiz_service, 'get_session', return_value=[]), \
+             patch.object(quiz_service, 'session') as database:
+            self.assertEqual(quiz_service.get_selected_categories(), [])
+            database.execute.assert_not_called()
+
+    def test_first_visit_still_uses_default_categories(self):
+        from repz.services import quiz_service
+
+        default = SimpleNamespace(categories=[SimpleNamespace(category_name='Site Guide')])
+        with patch.object(quiz_service, 'get_session', return_value='Not set'), \
+             patch.object(quiz_service, 'current_user', SimpleNamespace(id=1)), \
+             patch.object(quiz_service, 'session') as database, \
+             patch.object(quiz_service, 'set_selected_categories') as save:
+            database.execute.return_value.scalars.return_value.first.return_value = default
+            self.assertEqual(quiz_service.get_selected_categories(), ['Site_Guide'])
+            save.assert_called_once_with(['Site_Guide'])
+
+
 class TestQuizSubmissions(unittest.TestCase):
     """
     The quiz SPA reports verdicts through /quiz/api/action, so these cover the

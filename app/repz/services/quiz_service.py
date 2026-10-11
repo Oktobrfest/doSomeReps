@@ -136,7 +136,7 @@ def get_selected_categories() -> list[str] | str:
     """
     saved_names = get_session("quiz_category_names")
 
-    if saved_names == "Not set" or not saved_names:
+    if saved_names == "Not set":
         from repz.models import category_lists
 
         default_list = session.execute(

@@ -38,51 +38,13 @@ function validImages(images?: Array<string | null>): string[] {
   return images?.filter((image): image is string => Boolean(image)) ?? [];
 }
 
-interface QuizEmptyProps {
-  message: string;
-  categoryList?: string[];
-  selectedCategories?: string[];
-  onApplyCategories: (categories: string[]) => void;
-}
-
-function QuizEmpty({
-  message,
-  categoryList,
-  selectedCategories,
-  onApplyCategories,
-}: QuizEmptyProps) {
-  const [picking, setPicking] = useState(false);
-
+function QuizEmpty({ message }: { message: string }) {
   return (
     <div className={styles.emptyContainer}>
       <p className={styles.emptyMessage}>{message}</p>
-
-      <div className={`${sharedStyles.actionCluster} ${styles.emptyActions}`}>
-        <a
-          href="/quemore"
-          className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}
-        >
-          Que More Questions
-        </a>
-        <button
-          type="button"
-          className={`${sharedStyles.actionButton} ${sharedStyles.btnSlate}`}
-          aria-expanded={picking}
-          onClick={() => setPicking(!picking)}
-        >
-          {picking ? 'Hide Categories' : 'Select More Categories'}
-        </button>
-      </div>
-
-      {/* An empty queue has no panel and no disclosure to hold the picker, so it
-          opens here - the same section, not a second way of choosing. */}
-      {picking && (
-        <CategoriesSection
-          categoryList={categoryList}
-          initialSelectedCategories={selectedCategories}
-          onApply={onApplyCategories}
-        />
-      )}
+      <a href="/quemore" className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue}`}>
+        Que More Questions
+      </a>
     </div>
   );
 }
@@ -100,6 +62,8 @@ export function QuizPage(props: QuizPageProps) {
   const quiz = useQuizController({
     audioEnabled: mode.audioEnabled,
     autoPlay: mode.autoPlay,
+    initialSelectedCategories: selectedCategories,
+    categoryList,
   });
 
   const commandSystemRef = useRef<AudioCommandSystemHandle>(null);
@@ -236,8 +200,6 @@ export function QuizPage(props: QuizPageProps) {
       fullSized={fullSized}
       currentUsername={currentUsername}
       editQuestionUrl={editQuestionUrl}
-      categoryList={categoryList}
-      selectedCategories={selectedCategories}
       slideOutRef={slideOutRef}
       onAskAi={askAi.actions.start}
       panelMetrics={panelMetrics}
@@ -247,9 +209,6 @@ export function QuizPage(props: QuizPageProps) {
   ) : quiz.queueExhausted ? (
     <QuizEmpty
       message={quiz.queueExhaustedMessage}
-      categoryList={categoryList}
-      selectedCategories={selectedCategories}
-      onApplyCategories={quiz.actions.applyCategories}
     />
   ) : (
     <div className={styles.centerContainer}>
@@ -263,17 +222,20 @@ export function QuizPage(props: QuizPageProps) {
     </div>
   );
 
+  const categories = (
+    <CategoriesSection
+      selectedCategories={quiz.selectedCategories}
+      onChange={quiz.actions.changeCategories}
+      onOpenChange={quiz.actions.setCategoriesOpen}
+    />
+  );
+
   return (
     <div className={styles.quizContainer}>
       {fullSized ? (
         <div className={styles.pageLayout}>
           <div className={styles.readingColumn}>
-            <CategoriesSection
-              categoryList={categoryList}
-              initialSelectedCategories={selectedCategories}
-              onApply={quiz.actions.applyCategories}
-              disabled={quiz.isSubmitting}
-            />
+            {categories}
 
             {body}
           </div>
@@ -290,6 +252,7 @@ export function QuizPage(props: QuizPageProps) {
       ) : (
         <>
           {commandSystem && <div className={styles.audioCommandRoot}>{commandSystem}</div>}
+          {categories}
           {body}
         </>
       )}
@@ -309,8 +272,6 @@ interface QuizBodyProps {
   fullSized: boolean;
   currentUsername: string;
   editQuestionUrl: string;
-  categoryList?: string[];
-  selectedCategories?: string[];
   slideOutRef: RefObject<SlideOutButtonsHandle | null>;
   /** Starts an Ask AI session with the wake-word path's own "was listening" flag. */
   onAskAi: () => void;
@@ -328,8 +289,6 @@ function QuizBody({
   fullSized,
   currentUsername,
   editQuestionUrl,
-  categoryList,
-  selectedCategories,
   slideOutRef,
   onAskAi,
   panelMetrics,
@@ -439,10 +398,6 @@ function QuizBody({
     : {
         extraActions,
         compactActions,
-        showCategories: true,
-        categoryList,
-        initialSelectedCategories: selectedCategories,
-        onApplyCategories: quiz.actions.applyCategories,
         questionId: currentQuestion.question_id,
         author: {
           id: currentQuestion.created_by_id,
