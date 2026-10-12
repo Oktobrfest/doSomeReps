@@ -58,6 +58,10 @@ export function Navbar({
       { label: `Logout (${user.username})`, href: "/logout", active: false, id: "logout", highlight: true }
     );
   } else {
+    // A visitor reaches the questions page only through a topic, so it is listed while they are on it.
+    if (currentPath === quemoreUrl) {
+      navLinks.push({ label: "Topic Questions", href: window.location.href, active: true, id: "quemore" });
+    }
     navLinks.push(
       { label: "Login", href: "/login", active: currentPath === "/login", id: "login", highlight: true }
     );
