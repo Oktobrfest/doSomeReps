@@ -2,6 +2,7 @@ import os
 
 from flask import (
     Blueprint,
+    abort,
     current_app as app,
     flash,
     g,
@@ -47,11 +48,13 @@ from wtforms.validators import DataRequired, NumberRange
 from repz.extensions import cache
 from repz.cache_helper import CacheHelper
 from repz.routes import home
+from repz.services.question_service import que_listing
 from repz.services.quiz_service import get_selected_categories
 
 from ..bluehelpers import (
     cat_questions_count,
     get_all_categories,
+    get_categories_questions,
     get_quizes,
     get_user,
     set_session,
@@ -201,15 +204,33 @@ def quiz():
 
 
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")
-@login_required
 def quemore():
+    """Public for a topic, so search engines can index its questions; queuing them needs a login."""
+    topic = request.args.get("topic")
+
+    if current_user.is_authenticated:
+        return render_template(
+            "quemore.html",
+            title="Que More Questions",
+            description="Que More Questions",
+            user=current_user,
+            topic=topic,
+            category_list=get_all_categories(),
+            selected_categories=[topic] if topic else get_selected_categories("quemore"),
+        )
+
+    if not topic:
+        return app.login_manager.unauthorized()
+
+    questions = que_listing(get_categories_questions(topic))
+    if not questions:
+        abort(404)
+
     return render_template(
         "quemore.html",
-        title="Que More Questions",
-        description="Que More Questions",
         user=current_user,
-        category_list=get_all_categories(),
-        selected_categories=get_selected_categories("quemore"),
+        topic=topic,
+        questions=questions,
     )
 
 

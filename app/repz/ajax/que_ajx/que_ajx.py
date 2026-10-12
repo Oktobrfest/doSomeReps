@@ -6,15 +6,11 @@ import json
 from ...database import session
 from repz.routes import que_ajx
 from ...bluehelpers import (exclude, create_brand_new_quizq, remove_underscore,
-                            get_user, time, unexclude, get_rating)
+                            get_user, time, unexclude, WITH_CONTENT)
 from ..ajax_response import AjaxResponse
-from repz.services.question_service import question_payload
+from repz.services.question_service import que_listing
 
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-
-# A search answers with each question whole, so these come in one query apiece.
-WITH_CONTENT = (selectinload(question.categories), selectinload(question.pics))
 
 
             # In the quemore page
@@ -111,23 +107,12 @@ def searchquefilters():
     for r in filtered_questions:
         question_que.setdefault(r.question_id, r)
 
-    authors = {r.created_by for r in question_que.values()}
-    usernames = dict(session.execute(
-        select(users.id, users.username).where(users.id.in_(authors))
-    ).all())
-
-    search_results = [
-        {
-            **question_payload(r),
-            "username": usernames[r.created_by],
-            "created_by": r.created_by,
-            "favorite": r.created_by in fav_list,
-            "rating": get_rating(r.question_id),
-            # Only reported when the reader asked to see their excluded questions.
-            "excluded": filters['excluded'] and r.question_id in excluded_question_ids,
-        }
-        for r in question_que.values()
-    ]
+    search_results = que_listing(
+        question_que.values(),
+        favorites=fav_list,
+        # Only reported when the reader asked to see their excluded questions.
+        excluded=excluded_question_ids if filters['excluded'] else (),
+    )
     # add selected categories to the session
    #   set_session("quiz_category_names", filters['catz'])
 

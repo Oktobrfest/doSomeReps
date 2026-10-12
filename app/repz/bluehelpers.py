@@ -11,12 +11,16 @@ import urllib
 from flask import current_app, flash, session as local_session
 from sqlalchemy import and_, select, text
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import selectinload
 
 
 from .database import session
 from .models import category, level, question, quizq, rating, users
 from repz.extensions import cache
 from .s3_ext import get_s3
+
+# A page that shows each question whole loads these in one query apiece.
+WITH_CONTENT = (selectinload(question.categories), selectinload(question.pics))
 
 
 def clean_for_html(unclean: str) -> str:
@@ -351,7 +355,7 @@ def get_categories_questions(cat):
         question.privacy == False
     )
 
-    questions = session.execute(questions_qry.distinct()).scalars().all()
+    questions = session.execute(questions_qry.distinct().options(*WITH_CONTENT)).scalars().all()
 
     return questions
 
@@ -369,16 +373,6 @@ def get_rating(question_id):
 
     return rate
 
-
-def slugify(text):
-    """
-    Reversible slugify with better readability.
-    """
-    # Replace spaces with hyphens for readability
-    text = text.replace(' ', '-')
-
-    # Replace other characters with URL encoding
-    return urllib.parse.quote(text, safe='-')
 
 def unslugify(slug):
     """

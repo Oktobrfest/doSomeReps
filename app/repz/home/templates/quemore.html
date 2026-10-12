@@ -1,13 +1,20 @@
 {% extends "base.html" %}
 {% block title %}
-Que More Questions
+{% if user.is_authenticated %}Que More Questions{% else %}{{ topic }} Questions and Answers{% endif %}
 {% endblock title %}
+{% block description %}
+{% if not user.is_authenticated %}
+<meta name="description" content="{{ topic }} practice questions and answers: {{ questions | length }} to study free on DoSomeReps, the spaced repetition learning platform.">
+{% endif %}
+{% endblock description %}
 {% block content %}
 
 <div id="quemore-root"></div>
 
+{% if user.is_authenticated %}
 <script id="quemore-data" type="application/json">
 {{ {
+  'topic': topic,
   'categoryList': category_list,
   'selectedCategories': selected_categories if selected_categories != 'Not set' else [],
   'searchUrl': url_for('que_ajx.searchquefilters'),
@@ -15,6 +22,33 @@ Que More Questions
   'blockUserUrl': url_for('user_ajx.block_user')
 } | tojson }}
 </script>
+{% else %}
+<script id="quemore-data" type="application/json">
+{{ {
+  'topic': topic,
+  'questions': questions
+} | tojson }}
+</script>
+
+{# The same questions as schema.org flashcards, which search engines can show as rich results. #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "about": {"@type": "Thing", "name": {{ topic | tojson }}},
+  "hasPart": [
+  {%- for q in questions %}
+    {
+      "@type": "Question",
+      "eduQuestionType": "Flashcard",
+      "text": {{ q.question_text | tojson }},
+      "acceptedAnswer": {"@type": "Answer", "text": {{ q.answer | tojson }}}
+    }{{ "," if not loop.last }}
+  {%- endfor %}
+  ]
+}
+</script>
+{% endif %}
 
 {{ vite_asset("src/entrypoints/QueMore.entry.tsx") }}
 {% endblock content %}

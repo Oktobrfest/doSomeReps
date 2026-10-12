@@ -9,12 +9,6 @@ export interface TopicListBootstrap {
   topics: TopicSummary[];
 }
 
-export interface TopicQuestionsBootstrap {
-  topicName: string;
-  /** Server-built link back to the list of every topic. */
-  topicListUrl: string;
-}
-
 export type TopicSortColumn = "name" | "count";
 
 export type SortDirection = "asc" | "desc";

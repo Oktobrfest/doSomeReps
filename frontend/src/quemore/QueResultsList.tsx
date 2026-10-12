@@ -77,7 +77,8 @@ interface QueCardProps {
   busy: boolean;
   blocking: boolean;
   columns: number;
-  actions: QueCardActions;
+  /** Left out for a visitor, who cannot que: the card is read-only and nothing on it folds. */
+  actions?: QueCardActions;
   onView: CardAction;
 }
 
@@ -105,16 +106,18 @@ function QueCard({
       }`}
       style={{ "--card-cols": expanded ? Math.min(2, columns) : 1, "--card-rows": expanded || hintOpen ? 2 : 1 } as CSSProperties}
     >
-      <div className={styles.cardEdge}>
-        <label className={styles.cardPick} title="Select for Save">
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => actions.onSelect(result)}
-            aria-label="Select for Save"
-          />
-        </label>
-      </div>
+      {actions && (
+        <div className={styles.cardEdge}>
+          <label className={styles.cardPick} title="Select for Save">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => actions.onSelect(result)}
+              aria-label="Select for Save"
+            />
+          </label>
+        </div>
+      )}
 
       <div className={styles.cardMeta}>
         <CategoryChips names={result.categories} className={styles.cardTags} />
@@ -122,16 +125,18 @@ function QueCard({
         <div className={styles.byline}>
           {result.rating ? <RatingBadge value={result.rating} /> : null}
           <span className={styles.author}>by {result.username}</span>
-          <button
-            type="button"
-            className={`${cardBtn(sharedStyles.btnRed)} ${sharedStyles.buttonRound}`}
-            onClick={() => actions.onBlock(result)}
-            disabled={blocking}
-            title={`Block ${result.username}`}
-            aria-label={`Block ${result.username}`}
-          >
-            <UserX className={sharedStyles.buttonIcon} />
-          </button>
+          {actions && (
+            <button
+              type="button"
+              className={`${cardBtn(sharedStyles.btnRed)} ${sharedStyles.buttonRound}`}
+              onClick={() => actions.onBlock(result)}
+              disabled={blocking}
+              title={`Block ${result.username}`}
+              aria-label={`Block ${result.username}`}
+            >
+              <UserX className={sharedStyles.buttonIcon} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -140,19 +145,19 @@ function QueCard({
           <QuestionBody draft={draft} part="question" />
         </div>
         {hasHint && (expanded || hintOpen) && (
-          <QuestionPart part="hint" disclosure={{ open: hintOpen, onToggle: () => setHintOpen((open) => !open) }}>
+          <QuestionPart part="hint" disclosure={actions && { open: hintOpen, onToggle: () => setHintOpen((open) => !open) }}>
             <QuestionBody draft={draft} part="hint" />
           </QuestionPart>
         )}
         {expanded && (
-          <QuestionPart part="answer" disclosure={{ open: true, onToggle: () => actions.onToggle(result) }}>
+          <QuestionPart part="answer" disclosure={actions && { open: true, onToggle: () => actions.onToggle(result) }}>
             <QuestionBody draft={draft} part="answer" />
           </QuestionPart>
         )}
       </div>
 
       <div className={styles.cardFooter}>
-        {!expanded && (
+        {!expanded && actions && (
           <>
             {hasHint && (
               <button
@@ -167,7 +172,7 @@ function QueCard({
             </button>
           </>
         )}
-        <ExcludeButton result={result} busy={busy} actions={actions} compact />
+        {actions && <ExcludeButton result={result} busy={busy} actions={actions} compact />}
         <button
           type="button"
           className={`${cardBtn(sharedStyles.btnOverlay, sharedStyles.buttonXs)} ${sharedStyles.buttonRound} ${styles.viewButton}`}
@@ -183,7 +188,10 @@ function QueCard({
 }
 
 /** Full reading view shares the quiz's text, disclosures, carousel and lightbox. */
-function FullQuestion({ result, busy, actions, onClose }: VerdictProps & { onClose: () => void }) {
+function FullQuestion({ result, busy, actions, onClose }: Omit<VerdictProps, "actions"> & {
+  actions?: QueCardActions;
+  onClose: () => void;
+}) {
   const draft = useMemo(() => draftFromPayload(result), [result]);
   const [imageView, setImageView] = useState<{ images: string[]; startIndex: number } | null>(null);
 
@@ -207,9 +215,11 @@ function FullQuestion({ result, busy, actions, onClose }: VerdictProps & { onClo
         }
       >
         <QuestionView draft={draft} onOpen={(images, startIndex) => setImageView({ images, startIndex })} />
-        <div className={styles.viewVerdicts}>
-          <Verdicts result={result} busy={busy} actions={actions} />
-        </div>
+        {actions && (
+          <div className={styles.viewVerdicts}>
+            <Verdicts result={result} busy={busy} actions={actions} />
+          </div>
+        )}
       </QuizModal>
       {imageView && <ImageModal {...imageView} onClose={() => setImageView(null)} />}
     </>
@@ -218,12 +228,16 @@ function FullQuestion({ result, busy, actions, onClose }: VerdictProps & { onClo
 
 interface QueResultsListProps {
   results: QueSearchResult[];
-  selected: ReadonlySet<number>;
-  expanded: ReadonlySet<number>;
-  actingId: number | null;
-  blockingUserId: number | null;
-  actions: QueCardActions;
+  /* The reader's que state, which a visitor's list leaves out. */
+  selected?: ReadonlySet<number>;
+  expanded?: ReadonlySet<number>;
+  actingId?: number | null;
+  blockingUserId?: number | null;
+  /** Left out for a visitor, who cannot que: every card is read-only and open in full. */
+  actions?: QueCardActions;
 }
+
+const NONE: ReadonlySet<number> = new Set();
 
 /**
  * The questions found, as a grid of equal cells. Checking a card holds it for
@@ -232,10 +246,10 @@ interface QueResultsListProps {
  */
 export function QueResultsList({
   results,
-  selected,
-  expanded,
-  actingId,
-  blockingUserId,
+  selected = NONE,
+  expanded = NONE,
+  actingId = null,
+  blockingUserId = null,
   actions,
 }: QueResultsListProps) {
   const gridRef = useRef<HTMLUListElement>(null);
@@ -263,7 +277,7 @@ export function QueResultsList({
             key={result.id}
             result={result}
             selected={selected.has(result.id)}
-            expanded={expanded.has(result.id)}
+            expanded={!actions || expanded.has(result.id)}
             busy={actingId === result.id}
             blocking={blockingUserId === result.created_by}
             columns={columns}
