@@ -17,21 +17,29 @@ const SEVERITIES = {
 
 export type ToastSeverity = keyof typeof SEVERITIES;
 
+/** Somewhere the toast offers to take the reader next. */
+export interface ToastLink {
+  label: string;
+  href: string;
+}
+
 interface ToastProps {
   severity: ToastSeverity;
   message: string;
   onDismiss: () => void;
   persistent?: boolean;
+  link?: ToastLink;
 }
 
 /**
- * One toast: its severity's icon, the message, and a dismiss at the top right.
+ * One toast: its severity's icon, the message, and a dismiss at the top right,
+ * with the link it offers, if any, under the message.
  *
  * A timed toast drains a countdown along its bottom edge and fades out over
  * the end of it. The countdown finishing is what dismisses it, so the
  * stylesheet is the only clock and the bar can never disagree with it.
  */
-export function Toast({ severity, message, onDismiss, persistent = false }: ToastProps) {
+export function Toast({ severity, message, onDismiss, persistent = false, link }: ToastProps) {
   const { alert, Icon, label, timesOut } = SEVERITIES[severity];
 
   // The clock only runs while the page is in front, and starts over when the
@@ -52,6 +60,14 @@ export function Toast({ severity, message, onDismiss, persistent = false }: Toas
       >
         <X className={sharedStyles.buttonIcon} aria-hidden="true" />
       </button>
+      {link && (
+        <a
+          href={link.href}
+          className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnOverlay} ${styles.link}`}
+        >
+          {link.label}
+        </a>
+      )}
       {timed && (
         <span className={styles.countdown} aria-hidden="true" onAnimationEnd={onDismiss} />
       )}

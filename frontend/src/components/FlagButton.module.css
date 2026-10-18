@@ -11,11 +11,9 @@
   width: 100%;
   min-height: var(--rep-btn-height-touch-sm);
   overflow: hidden;
-  background-color: var(--rep-intent-amber-bg);
   border: none;
   border-radius: var(--rep-btn-radius-touch-sm);
   box-shadow: var(--rep-btn-shadow);
-  color: var(--rep-intent-amber-fg);
   transition: var(--rep-btn-transition);
 }
 
@@ -28,15 +26,30 @@
   transform: translateY(0);
 }
 
-/* A question already flagged reads as something to undo. */
-.flaggedStudyMe {
-  background-color: var(--rep-intent-amber-bg);
-  color: var(--rep-intent-amber-fg);
+/* A flag that is set reads as the question's condition, not as the control to
+   set one: its category's colour flashes and its icon is drawn heavier. */
+.flagged {
+  animation: flagFlash 0.8s ease-in-out infinite alternate;
 }
 
-.flaggedOther {
-  background-color: var(--rep-intent-red-bg);
-  color: var(--rep-intent-red-fg);
+.flagged svg {
+  stroke-width: 2.75;
+}
+
+@keyframes flagFlash {
+  from {
+    filter: brightness(0.8);
+  }
+
+  to {
+    filter: brightness(1.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flagged {
+    animation: none;
+  }
 }
 
 .flagBtn,
@@ -65,12 +78,12 @@
 .settingsBtn {
   flex-shrink: 0;
   width: calc(var(--rep-btn-height-touch-sm) + var(--rep-btn-padding-x-touch-sm));
-  border-left: 1px solid var(--rep-color-divider-on-action);
+  border-left: 1px solid var(--rep-intent-overlay-bg);
 }
 
 .flagBtn:hover:not(:disabled),
 .settingsBtn:hover:not(:disabled) {
-  background-color: var(--rep-color-divider-on-action);
+  background-color: var(--rep-intent-overlay-bg);
 }
 
 .flagBtn:disabled,
@@ -85,31 +98,10 @@
   flex-shrink: 0;
 }
 
-/* The compact trigger that sits inline with the question's meta row: a round
-   icon button, sized off the small control tier. */
+/* The compact trigger that sits inline with the question's meta row. It
+   composes the shared round button, so this only spaces it. */
 .compactTrigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--rep-btn-height-sm);
-  height: var(--rep-btn-height-sm);
-  padding: 0;
   margin-left: var(--rep-btn-gap);
-  background-color: var(--rep-color-surface);
-  border: 1px solid var(--rep-color-border-strong);
-  border-radius: 50%;
-  color: var(--rep-color-text-muted);
-  cursor: pointer;
-}
-
-.compactTrigger.flaggedStudyMe,
-.compactTrigger.flaggedOther {
-  border-color: transparent;
-}
-
-.compactIcon {
-  width: var(--rep-btn-icon-size-md);
-  height: var(--rep-btn-icon-size-md);
 }
 
 /* Contents of the flag dialog. The chrome around them is QuizModal's. */

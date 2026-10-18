@@ -1,9 +1,10 @@
 import { toast } from "sonner";
-import { Toast, type ToastSeverity } from "./Toast";
+import { Toast, type ToastLink, type ToastSeverity } from "./Toast";
 
 interface NotifyOptions {
   id?: string | number;
   persistent?: boolean;
+  link?: ToastLink;
 }
 
 let raised = 0;
@@ -17,9 +18,9 @@ let raised = 0;
  * the toast's dismiss closes. Raising again under an `id` updates that toast.
  */
 const raise = (severity: ToastSeverity) =>
-  (message: string, { id = `notify-${++raised}`, persistent }: NotifyOptions = {}) =>
+  (message: string, { id = `notify-${++raised}`, persistent, link }: NotifyOptions = {}) =>
     toast.custom(
-      () => <Toast severity={severity} message={message} persistent={persistent} onDismiss={() => toast.dismiss(id)} />,
+      () => <Toast severity={severity} message={message} persistent={persistent} link={link} onDismiss={() => toast.dismiss(id)} />,
       { id, duration: Infinity, dismissible: false }
     );
 

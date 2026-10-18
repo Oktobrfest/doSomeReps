@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect, useCallback, RefObject } from 'react';
+import { useId, useMemo, useRef, useState, useEffect, useCallback, RefObject } from 'react';
 import { AudioCommandSystemComponent } from './AudioCommandSystem';
 import type { AudioCommandSystemHandle } from './AudioCommandSystem';
 import { ImageCarousel } from './ImageCarousel';
@@ -17,6 +17,8 @@ import {
 import type { SlideOutButtonsHandle } from './SlideOutButtons';
 import { QuestionText, QuestionReadingPart } from '../question/QuestionReading';
 import { FlagButton } from '../components/FlagButton';
+import { FLAG_METADATA } from '../components/FlagConstants';
+import { notify } from '../toast/notify';
 import { CategoryChips } from '../components/CategoryChip';
 import { useQuizController, type QuizController } from './useQuizController';
 import { useQuizMode, type QuizMode } from './useQuizMode';
@@ -331,9 +333,24 @@ function QuizBody({
 
   const hintImages = validImages(currentQuestion.pics.hint_image);
   const isOwnQuestion = currentQuestion.created_by_username === currentUsername;
+  const editHref = `${editQuestionUrl}?q_id=${currentQuestion.question_id}`;
   const hasHint = Boolean(currentQuestion.hint) || hintImages.length > 0;
   /** A reader rates a question once, so the offer to rate outlives its use. */
   const hasRated = userRating !== null;
+
+  // A flagged question says which flag it carries while it is on screen, and
+  // offers its author the way to fix it.
+  const flagToastId = useId();
+  useEffect(() => {
+    const flag = currentQuestion.flag;
+    if (!flag) return void notify.dismiss(flagToastId);
+    notify.warning(`This question is flagged "${FLAG_METADATA[flag.category].label}".`, {
+      id: flagToastId,
+      link: isOwnQuestion ? { label: 'Edit Question', href: editHref } : undefined,
+    });
+  }, [currentQuestion.flag, isOwnQuestion, editHref, flagToastId]);
+
+  useEffect(() => () => { notify.dismiss(flagToastId); }, [flagToastId]);
 
   const compactActions = useMemo((): CompactAction[] => {
     const actions: CompactAction[] = [
@@ -381,12 +398,12 @@ function QuizBody({
         label: 'Edit Question',
         icon: <Edit className={sharedStyles.buttonIcon} />,
         variant: 'edit',
-        href: `${editQuestionUrl}?q_id=${currentQuestion.question_id}`,
+        href: editHref,
       });
     }
 
     return actions;
-  }, [currentQuestion, isOwnQuestion, editQuestionUrl, onAskAi, quiz.actions.exclude]);
+  }, [isOwnQuestion, editHref, onAskAi, quiz.actions.exclude]);
 
   /*
    * A full-sized page gives every secondary control a home of its own — the

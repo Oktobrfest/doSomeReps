@@ -316,17 +316,22 @@
   background-color: var(--rep-color-glass-active);
 }
 
-/* The colour a flagged question's chip wears. Same intent palette as the
-   buttons, so a flag and a button never drift apart. */
+/* The colour each flag category wears wherever a flagged question shows it.
+   Same intent palette as the buttons, so a flag and a button never drift apart. */
 
-.flagStudyMe {
+.flagNeedsChanges {
   background-color: var(--rep-intent-amber-bg);
   color: var(--rep-intent-amber-fg);
 }
 
-.flagOther {
+.flagInappropriate {
   background-color: var(--rep-intent-red-bg);
   color: var(--rep-intent-red-fg);
+}
+
+.flagStudyMe {
+  background-color: var(--rep-intent-blue-bg);
+  color: var(--rep-intent-blue-fg);
 }
 
 /* Size modifiers rebind the semantic aliases and nothing else. */
