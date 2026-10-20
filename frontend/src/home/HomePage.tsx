@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { errorMessage } from "../lib/errors";
 import { notify } from "../toast/notify";
+import { DailyActivityChart } from "./DailyActivityChart";
 import { UserListPanel } from "./UserListPanel";
 import { readBootstrap, unblockUser, unfavoriteUser } from "./home_api";
 import styles from "./Home.module.css";
@@ -32,6 +33,8 @@ export function HomePage() {
     }
   }, []);
 
+  const hasDueQuestions = bootstrap.quizQuestionCount > 0 && Boolean(bootstrap.catzChart);
+
   return (
     <div className={styles.page}>
       <aside className={styles.sidebar}>
@@ -62,18 +65,18 @@ export function HomePage() {
           </p>
         )}
 
-        <section className={styles.chartArea}>
-          <h3 className={styles.chartTitle}>Categories to Do</h3>
-          {bootstrap.catzChart ? (
+        {hasDueQuestions && (
+          <section className={styles.chartArea}>
+            <h3 className={styles.chartTitle}>Categories to Do</h3>
             <img
               className={styles.chartImage}
               src={`data:image/png;base64,${bootstrap.catzChart}`}
               alt="Bar chart of your due questions grouped by category"
             />
-          ) : (
-            <p className={styles.empty}>No categories due right now.</p>
-          )}
-        </section>
+          </section>
+        )}
+
+        <DailyActivityChart data={bootstrap.dailyHistory ?? []} />
       </main>
     </div>
   );

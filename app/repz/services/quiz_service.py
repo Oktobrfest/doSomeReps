@@ -5,7 +5,7 @@ from typing import Any
 
 from flask import flash, url_for
 from flask_login import current_user
-from sqlalchemy import select, update
+from sqlalchemy import Date, cast, select, update
 from sqlalchemy.sql import func
 
 from repz.extensions import cache
@@ -522,3 +522,58 @@ def _get_question_flag(user_id: int, question_id) -> dict[str, Any] | None:
         return None
 
     return flag_payload(f)
+
+
+def get_daily_quiz_history(user_id: int) -> list[dict[str, Any]]:
+    """
+    Returns daily counts of correct and incorrect answers grouped by category
+    for a given user, ordered chronologically by date.
+    """
+    from repz.models import question_categories
+
+    qpc = (
+        select(
+            question_categories.c.question_id,
+            func.min(question_categories.c.category).label("category_name"),
+        )
+        .group_by(question_categories.c.question_id)
+        .subquery()
+    )
+    date_col = cast(quizq.answered_on, Date)
+    cat_col = func.coalesce(qpc.c.category_name, "Uncategorized").label("category_name")
+    qry = (
+        select(
+            date_col.label("answer_date"),
+            quizq.correct,
+            cat_col,
+            func.count().label("count"),
+        )
+        .outerjoin(qpc, quizq.question_id == qpc.c.question_id)
+        .where(quizq.user_id == user_id, quizq.answered_on.is_not(None))
+        .group_by(date_col, quizq.correct, cat_col)
+        .order_by(date_col.asc())
+    )
+    rows = session.execute(qry).all()
+
+    daily_map: dict[str, dict[str, Any]] = {}
+    for r_date, r_correct, r_cat, r_count in rows:
+        d_str = r_date.isoformat() if hasattr(r_date, "isoformat") else str(r_date)
+        if d_str not in daily_map:
+            daily_map[d_str] = {
+                "date": d_str,
+                "correct": {},
+                "incorrect": {},
+                "totalCorrect": 0,
+                "totalIncorrect": 0,
+            }
+        day = daily_map[d_str]
+        cat_name = str(r_cat)
+        cnt = int(r_count)
+        if r_correct is True:
+            day["correct"][cat_name] = day["correct"].get(cat_name, 0) + cnt
+            day["totalCorrect"] += cnt
+        else:
+            day["incorrect"][cat_name] = day["incorrect"].get(cat_name, 0) + cnt
+            day["totalIncorrect"] += cnt
+
+    return list(daily_map.values())

@@ -17,6 +17,7 @@
   'editquestionsUrl': '/editquestions',
   'aiGeneratorUrl': url_for('ai.question_generator'),
   'profileUrl': url_for('ai.profile'),
+  'logoUrl': url_for('static', filename='favicon.ico'),
   'user': {
     'isAuthenticated': nav_is_auth,
     'username': user.username if nav_is_auth else ''

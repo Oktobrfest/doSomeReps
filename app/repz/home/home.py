@@ -47,7 +47,7 @@ from wtforms.validators import DataRequired, NumberRange
 from repz.extensions import cache
 from repz.cache_helper import CacheHelper
 from repz.routes import home
-from repz.services.quiz_service import get_selected_categories
+from repz.services.quiz_service import get_daily_quiz_history, get_selected_categories
 
 from ..bluehelpers import (
     cat_questions_count,
@@ -124,15 +124,17 @@ def homepage():
 
         que_list = get_quizes(selected_cats, UID)
 
-        category_count = tally_que_catz(que_list)
+        if que_list:
+            category_count = tally_que_catz(que_list)
+            sorted_cats = sorted(category_count.items(), key = lambda x: x[1], reverse = True)
+            limited_sorted_cats = sorted_cats[:5]
+            sorted_cats_dict = dict(limited_sorted_cats)
+            x_arr, y_arr = split_dict(sorted_cats_dict)
+            catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
+        else:
+            catz_chart = ""
 
-        sorted_cats = sorted(category_count.items(), key = lambda x: x[1], reverse = True)
-        limited_sorted_cats = sorted_cats[:5]
-        sorted_cats_dict = dict(limited_sorted_cats)
-
-        x_arr, y_arr = split_dict(sorted_cats_dict)
-
-        catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
+        daily_history = get_daily_quiz_history(UID)
 
         return render_template(
             "home.html",
@@ -143,6 +145,7 @@ def homepage():
             user=current_user,
             quiz_q_count=len(que_list),
             catz_chart=catz_chart,
+            daily_history=daily_history,
             )
     else:
         # categories graph

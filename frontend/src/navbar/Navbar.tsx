@@ -16,6 +16,7 @@ export interface NavbarProps {
   editquestionsUrl: string;
   aiGeneratorUrl: string;
   profileUrl: string;
+  logoUrl?: string;
 }
 
 interface NavLinkItem {
@@ -38,6 +39,7 @@ export function Navbar({
   editquestionsUrl,
   aiGeneratorUrl,
   profileUrl,
+  logoUrl = "/static/favicon.ico",
 }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -69,10 +71,13 @@ export function Navbar({
         {/* Logo / Brand styling */}
         <div className={styles.brandContainer}>
           <a href="/" className={styles.brandLink}>
-            <span className={styles.star}>★</span>
-            DoSomeReps
+            <img
+              src={logoUrl}
+              alt="Do Some Reps logo"
+              className={styles.brandLogo}
+            />
+            <span className={styles.brandText}>Do Some Reps!</span>
           </a>
-
         </div>
 
         {/* Hamburger Button for mobile */}

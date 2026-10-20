@@ -31,17 +31,23 @@
   color: var(--rep-color-surface-subtle);
   text-decoration: none;
   letter-spacing: 1px;
-  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brandLogo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: invert(1);
+}
+
+.brandText {
   background: linear-gradient(to right, var(--rep-color-navbar-accent), var(--rep-color-navbar-accent-hover));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.star {
-  color: var(--rep-color-navbar-accent);
 }
 
 .togglerBtn {
