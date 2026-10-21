@@ -11,6 +11,11 @@ export interface DailyQuizStat {
   totalIncorrect: number;
 }
 
+export interface CategoryToDoItem {
+  category: string;
+  count: number;
+}
+
 export interface HomeBootstrap {
   favorites: HomeUser[];
   blocked: HomeUser[];
@@ -18,6 +23,7 @@ export interface HomeBootstrap {
   quizUrl: string;
   /** Base64-encoded PNG of the "categories to do" chart, rendered server-side. */
   catzChart: string;
+  categoriesToDo?: CategoryToDoItem[];
   dailyHistory?: DailyQuizStat[];
   unfavoriteUrl: string;
   unblockUrl: string;

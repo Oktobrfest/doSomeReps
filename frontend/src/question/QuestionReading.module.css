@@ -71,6 +71,11 @@
   overflow-wrap: break-word;
 }
 
+.text table {
+  white-space: normal;
+  font-size: 1rem;
+}
+
 .images {
   width: 100%;
   max-width: var(--rep-quiz-control-width);

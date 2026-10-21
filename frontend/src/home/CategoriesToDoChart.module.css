@@ -1,0 +1,160 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-dialog);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--rep-color-text-strong);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--rep-color-text-muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background-color: var(--rep-color-surface-secondary);
+  color: var(--rep-color-text-secondary);
+  border: 1px solid var(--rep-color-border);
+}
+
+.chartWrapper {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.chartSvg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.gridLine {
+  stroke: var(--rep-color-border);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+
+.axisBaseline {
+  stroke: var(--rep-color-border-strong);
+  stroke-width: 1;
+}
+
+.zeroLine {
+  stroke: var(--rep-color-border-strong);
+  stroke-width: 1.5;
+}
+
+.barGroup {
+  cursor: pointer;
+}
+
+.bar {
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.barGroup:hover .bar {
+  filter: brightness(1.12);
+}
+
+.barDimmed {
+  opacity: 0.45;
+}
+
+.barValueLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  fill: var(--rep-color-text-strong);
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.xTickText {
+  font-size: 0.75rem;
+  fill: var(--rep-color-text-secondary);
+  text-anchor: end;
+  user-select: none;
+}
+
+.yTickText {
+  font-size: 0.72rem;
+  fill: var(--rep-color-text-muted);
+  text-anchor: end;
+  user-select: none;
+}
+
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1500;
+  padding: 0.45rem 0.65rem;
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  transform: translate(-50%, -100%);
+  margin-top: -8px;
+}
+
+.tooltipSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tooltipCategory {
+  font-weight: 600;
+  color: var(--rep-color-text-primary);
+}
+
+.tooltipCount {
+  font-weight: 700;
+  color: var(--rep-color-action-primary);
+}
+
+.fallbackImage {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}

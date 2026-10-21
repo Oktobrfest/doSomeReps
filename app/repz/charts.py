@@ -8,6 +8,55 @@ logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Color palette matching D3's schemeTableau10 + schemePaired + schemeSet3
+# used by DailyActivityChart in frontend/src/home/DailyActivityChart.tsx
+D3_COLOR_PALETTE = [
+    # Tableau 10
+    "#4e79a7", "#f28e2c", "#e15759", "#76b7b2", "#59a14f",
+    "#edc949", "#af7aa1", "#ff9da7", "#9c755f", "#bab0ab",
+    # Paired
+    "#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99",
+    "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a",
+    "#ffff99", "#b15928",
+    # Set3
+    "#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3",
+    "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd",
+    "#ccebc5", "#ffed6f",
+]
+
+
+def get_category_color_map(
+    daily_history: list[dict] | None = None,
+    extra_categories: list[str] | None = None,
+) -> dict[str, str]:
+    """
+    Computes a deterministic category -> color mapping matching the
+    DailyActivityChart legend on the home page.
+    Categories are ordered by total answer count descending in daily history,
+    breaking ties alphabetically. Any extra categories (e.g. from due questions)
+    that have no prior activity are appended deterministically.
+    """
+    tally: dict[str, int] = {}
+    for entry in daily_history or []:
+        for cat, count in (entry.get("correct") or {}).items():
+            tally[cat] = tally.get(cat, 0) + count
+        for cat, count in (entry.get("incorrect") or {}).items():
+            tally[cat] = tally.get(cat, 0) + count
+
+    sorted_cats = [
+        cat for cat, _ in sorted(tally.items(), key=lambda item: (-item[1], item[0]))
+    ]
+
+    color_map: dict[str, str] = {}
+    for cat in sorted_cats:
+        color_map[cat] = D3_COLOR_PALETTE[len(color_map) % len(D3_COLOR_PALETTE)]
+
+    for cat in extra_categories or []:
+        if cat not in color_map:
+            color_map[cat] = D3_COLOR_PALETTE[len(color_map) % len(D3_COLOR_PALETTE)]
+
+    return color_map
+
 
 def rep_vs_forget(repetition_days_real):
     repetition_days = [round(day) for day in repetition_days_real[:10]]
@@ -94,20 +143,29 @@ def rep_vs_forget(repetition_days_real):
     return chart_image
 
 
-def render_chart(x_arr, y_arr, x_label, y_label):
+def render_chart(x_arr, y_arr, x_label, y_label, colors=None):
     # Create sample data
     x = np.array(x_arr)
     y = np.array(y_arr)  
         
-    # Create the bar chart
-    fig, ax = plt.subplots()
-    ax.bar(x, y)
+    # Scale figure to span wide layout matching the activity chart
+    num_items = len(x)
+    fig_width = max(10.0, min(16.0, num_items * 0.85 + 2.0)) if num_items > 0 else 10.0
+    fig, ax = plt.subplots(figsize=(fig_width, 4.2))
+
+    # Control bar width up to a sensible limit of ridiculousness
+    bar_width = 0.55 if num_items > 6 else 0.45 if num_items > 3 else 0.35
+    if colors is not None:
+        ax.bar(x, y, width=bar_width, color=colors, edgecolor='white', linewidth=0.5)
+    else:
+        ax.bar(x, y, width=bar_width)
     
-         # Set the axis labels
+    # Set the axis labels
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
 
-    # Rotate x-axis labels by 45 degrees
+    # Set xticks and rotate x-axis labels by 35 degrees
+    ax.set_xticks(range(len(x)))
     ax.set_xticklabels(x, rotation=-35, ha='left')
 
     if y_label == 'Questions':
@@ -122,7 +180,5 @@ def render_chart(x_arr, y_arr, x_label, y_label):
     buffer = BytesIO()
     fig.savefig(buffer, format='png')
     chart_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
-    
+    plt.close(fig)
     return chart_image
-
-

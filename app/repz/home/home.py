@@ -58,7 +58,7 @@ from ..bluehelpers import (
     split_dict,
     tally_que_catz
 )
-from ..charts import rep_vs_forget, render_chart
+from ..charts import get_category_color_map, rep_vs_forget, render_chart
 from ..database import session
 from ..models import (
     category,
@@ -124,17 +124,24 @@ def homepage():
 
         que_list = get_quizes(selected_cats, UID)
 
+        daily_history = get_daily_quiz_history(UID)
+
         if que_list:
             category_count = tally_que_catz(que_list)
             sorted_cats = sorted(category_count.items(), key = lambda x: x[1], reverse = True)
-            limited_sorted_cats = sorted_cats[:5]
+            # Allow as many categories as reasonable (up to 20) so the chart spans wide
+            limited_sorted_cats = sorted_cats[:20]
             sorted_cats_dict = dict(limited_sorted_cats)
             x_arr, y_arr = split_dict(sorted_cats_dict)
-            catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
+            cat_color_map = get_category_color_map(daily_history, extra_categories=x_arr)
+            bar_colors = [cat_color_map[cat] for cat in x_arr]
+            catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions', colors=bar_colors)
+            categories_to_do = [
+                {"category": cat, "count": count} for cat, count in sorted_cats
+            ]
         else:
             catz_chart = ""
-
-        daily_history = get_daily_quiz_history(UID)
+            categories_to_do = []
 
         return render_template(
             "home.html",
@@ -145,6 +152,7 @@ def homepage():
             user=current_user,
             quiz_q_count=len(que_list),
             catz_chart=catz_chart,
+            categories_to_do=categories_to_do,
             daily_history=daily_history,
             )
     else:

@@ -14,10 +14,38 @@ import css from "highlight.js/lib/languages/css";
 import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
 import mermaid from "mermaid";
+import type { Root } from "hast";
+import { visit } from "unist-util-visit";
+import styles from "./MarkdownContent.module.css";
 
 // Initialize mermaid. A diagram that fails to parse throws into Mermaid's own
 // catch below rather than rendering mermaid's "Syntax error" graphic as the diagram.
 mermaid.initialize({ startOnLoad: false, theme: "default", suppressErrorRendering: true });
+
+const TABLE_CONTAINERS = new Set(["table", "thead", "tbody", "tfoot", "tr", "colgroup"]);
+
+/**
+ * Strips whitespace-only text children from table structural containers
+ * (table, thead, tbody, tfoot, tr, colgroup) before `rehype-raw` runs.
+ *
+ * `remark-rehype` injects formatting `\n` text nodes into table structures.
+ * When `rehype-raw` processes the tree through parse5, WHATWG HTML foster-parenting
+ * rules hoist any text nodes directly inside table containers out and place them
+ * immediately BEFORE the <table> element. In containers styled with `white-space: pre-wrap`,
+ * these dozens of hoisted newlines are rendered as blank lines, creating a full page
+ * of empty padding above the table.
+ */
+function rehypeCleanTableWhitespace() {
+  return (tree: Root) => {
+    visit(tree, "element", (node) => {
+      if (TABLE_CONTAINERS.has(node.tagName) && Array.isArray(node.children)) {
+        node.children = node.children.filter(
+          (child) => !(child.type === "text" && /^[\r\n\s]+$/.test(child.value))
+        );
+      }
+    });
+  };
+}
 
 interface MarkdownContentProps {
   content: string;
@@ -66,6 +94,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkMath, remarkSub, remarkSuper]}
       rehypePlugins={[
+        rehypeCleanTableWhitespace,
         rehypeRaw,
         rehypeKatex,
         [
@@ -87,6 +116,18 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
         ],
       ]}
       components={{
+        table({ node, className, ...props }) {
+          return <table className={`${styles.table}${className ? ` ${className}` : ""}`} {...props} />;
+        },
+        th({ node, className, ...props }) {
+          return <th className={`${styles.th}${className ? ` ${className}` : ""}`} {...props} />;
+        },
+        td({ node, className, ...props }) {
+          return <td className={`${styles.td}${className ? ` ${className}` : ""}`} {...props} />;
+        },
+        tr({ node, className, ...props }) {
+          return <tr className={`${styles.tr}${className ? ` ${className}` : ""}`} {...props} />;
+        },
         code({ node, className, children, ...props }) {
           const match = /language-(\w+)/.exec(className || "");
           const isMermaid = match && match[1] === "mermaid";

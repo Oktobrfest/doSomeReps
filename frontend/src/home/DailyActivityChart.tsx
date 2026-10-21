@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createCategoryColorScale, extractSortedCategories } from "./categoryColors";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import * as d3 from "d3";
 import type { DailyQuizStat } from "./home_types";
 import sharedStyles from "../styles/shared.module.css";
@@ -9,18 +11,28 @@ interface DailyActivityChartProps {
 }
 
 type ChartMode = "usage" | "accuracy";
+type Granularity = "daily" | "weekly";
 
-const COLOR_PALETTE = [
-  ...d3.schemeTableau10,
-  ...d3.schemePaired,
-  ...d3.schemeSet3,
-];
+interface ActivityItem {
+  date: string;
+  correct: Record<string, number>;
+  incorrect: Record<string, number>;
+  totalCorrect: number;
+  totalIncorrect: number;
+}
+
+// Category colors shared via categoryColors.ts
+
+function parseDateParts(dateStr: string): { year: number; month: number; day: number } {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return { year, month, day };
+}
 
 function formatDateLabel(dateStr: string): string {
   try {
-    const [year, month, day] = dateStr.split("-").map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const { year, month, day } = parseDateParts(dateStr);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
   } catch {
     return dateStr;
   }
@@ -28,16 +40,44 @@ function formatDateLabel(dateStr: string): string {
 
 function formatFullDate(dateStr: string): string {
   try {
-    const [year, month, day] = dateStr.split("-").map(Number);
-    const date = new Date(year, month - 1, day);
+    const { year, month, day } = parseDateParts(dateStr);
+    const date = new Date(Date.UTC(year, month - 1, day));
     return date.toLocaleDateString(undefined, {
       weekday: "short",
       year: "numeric",
       month: "short",
       day: "numeric",
+      timeZone: "UTC",
     });
   } catch {
     return dateStr;
+  }
+}
+
+function getMonday(dateStr: string): string {
+  const { year, month, day } = parseDateParts(dateStr);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const dayOfWeek = date.getUTCDay();
+  const diff = (dayOfWeek + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - diff);
+  return date.toISOString().slice(0, 10);
+}
+
+function getWeekRangeLabel(mondayStr: string): string {
+  try {
+    const { year, month, day } = parseDateParts(mondayStr);
+    const mon = new Date(Date.UTC(year, month - 1, day));
+    const sun = new Date(Date.UTC(year, month - 1, day + 6));
+    const monLabel = mon.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+    const sunLabel = sun.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    return `Week of ${monLabel} \u2013 ${sunLabel}`;
+  } catch {
+    return mondayStr;
   }
 }
 
@@ -47,12 +87,15 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
   const legendRef = useRef<HTMLDivElement>(null);
 
   const [containerWidth, setContainerWidth] = useState(600);
+  const [granularity, setGranularity] = useState<Granularity>("daily");
   const [mode, setMode] = useState<ChartMode>("usage");
   const [zoom, setZoom] = useState<number>(1.0);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isLegendExpanded, setIsLegendExpanded] = useState<boolean>(false);
-  const [hoveredDay, setHoveredDay] = useState<DailyQuizStat | null>(null);
-  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredItem, setHoveredItem] = useState<ActivityItem | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [anchorPos, setAnchorPos] = useState<{ x: number; y: number } | null>(null);
+  const [tooltipCoords, setTooltipCoords] = useState<{ left: number; top: number } | null>(null);
 
   // Drag-to-pan state
   const isDraggingRef = useRef(false);
@@ -86,29 +129,76 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
 
   // Mouse wheel zoom: scrolling down zooms in, scrolling up zooms out!
   // Pinching on trackpad (wheel with ctrlKey) also zooms in/out!
+  // Horizontal scroll (mouse tilt wheel, thumb wheel, trackpad horizontal swipe, Shift + wheel) scrolls the chart!
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
 
     const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-
+      // 1. Pinch-to-zoom on trackpad (ctrlKey or metaKey)
       if (e.ctrlKey || e.metaKey) {
-        // Trackpad pinch gesture:
-        // pinch out: deltaY < 0 -> zoom in
-        // pinch in:  deltaY > 0 -> zoom out
+        e.preventDefault();
         const factor = e.deltaY < 0 ? 1.12 : 0.88;
         setZoom((prev) => Math.min(4.5, Math.max(0.3, Number((prev * factor).toFixed(2)))));
-      } else {
-        // Direct mouse wheel:
-        // Scrolling down zooms in, scrolling up zooms out!
-        const factor = e.deltaY > 0 ? 1.15 : 0.85;
-        setZoom((prev) => Math.min(4.5, Math.max(0.3, Number((prev * factor).toFixed(2)))));
+        setHoveredItem(null);
+        setAnchorPos(null);
+      setTooltipCoords(null);
+        return;
       }
+
+      // 2. Shift + wheel: standard mouse horizontal scroll
+      if (e.shiftKey) {
+        e.preventDefault();
+        const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+        const multiplier = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? el.clientWidth : 1;
+        el.scrollLeft += delta * multiplier;
+        setHoveredItem(null);
+        setAnchorPos(null);
+      setTooltipCoords(null);
+        return;
+      }
+
+      // 3. Horizontal scroll (mouse tilt wheel, thumb wheel, or horizontal trackpad swipe)
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.deltaY === 0) {
+        // Let native horizontal scroll handle it on .scrollArea
+        return;
+      }
+
+      // 4. Vertical scroll without modifier keys: zoom in / out
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 1.15 : 0.85;
+      setZoom((prev) => Math.min(4.5, Math.max(0.3, Number((prev * factor).toFixed(2)))));
+      setHoveredItem(null);
+      setAnchorPos(null);
+      setTooltipCoords(null);
     };
 
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  // Dismiss tooltip when either the chart or window scrolls or resizes
+  useEffect(() => {
+    const handleScroll = () => {
+      setHoveredItem(null);
+      setAnchorPos(null);
+      setTooltipCoords(null);
+    };
+
+    const scrollEl = scrollRef.current;
+    if (scrollEl) {
+      scrollEl.addEventListener("scroll", handleScroll, { passive: true });
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll, { passive: true });
+
+    return () => {
+      if (scrollEl) {
+        scrollEl.removeEventListener("scroll", handleScroll);
+      }
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
   }, []);
 
   // Touch pinch-to-zoom on mobile / touch displays
@@ -147,6 +237,9 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
     isDraggingRef.current = true;
     startXRef.current = e.pageX - scrollRef.current.offsetLeft;
     scrollLeftRef.current = scrollRef.current.scrollLeft;
+    setHoveredItem(null);
+    setAnchorPos(null);
+      setTooltipCoords(null);
   };
 
   const handleMouseMovePan = (e: React.MouseEvent) => {
@@ -155,33 +248,64 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
     const x = e.pageX - scrollRef.current.offsetLeft;
     const walk = x - startXRef.current;
     scrollRef.current.scrollLeft = scrollLeftRef.current - walk;
+    setHoveredItem(null);
+    setAnchorPos(null);
+      setTooltipCoords(null);
   };
 
   const handleMouseUpOrLeave = () => {
     isDraggingRef.current = false;
   };
 
-  // Auto-scroll to the latest days (far right) on mount / mode change
+  // Sort daily data chronologically
+  const sortedDailyData = useMemo(() => {
+    return [...data].sort((a, b) => a.date.localeCompare(b.date));
+  }, [data]);
+
+  // Aggregate into weekly data (weeks starting on Monday)
+  const weeklyData = useMemo(() => {
+    const weekMap = new Map<string, ActivityItem>();
+
+    for (const day of sortedDailyData) {
+      const monday = getMonday(day.date);
+      let entry = weekMap.get(monday);
+      if (!entry) {
+        entry = {
+          date: monday,
+          correct: {},
+          incorrect: {},
+          totalCorrect: 0,
+          totalIncorrect: 0,
+        };
+        weekMap.set(monday, entry);
+      }
+      entry.totalCorrect += day.totalCorrect;
+      entry.totalIncorrect += day.totalIncorrect;
+
+      for (const [cat, cnt] of Object.entries(day.correct)) {
+        entry.correct[cat] = (entry.correct[cat] || 0) + cnt;
+      }
+      for (const [cat, cnt] of Object.entries(day.incorrect)) {
+        entry.incorrect[cat] = (entry.incorrect[cat] || 0) + cnt;
+      }
+    }
+
+    return Array.from(weekMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+  }, [sortedDailyData]);
+
+  // Active dataset based on granularity
+  const activeData: ActivityItem[] = granularity === "daily" ? sortedDailyData : weeklyData;
+
+  // Auto-scroll to the latest items (far right) on mount / mode / granularity change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
     }
-  }, [data, containerWidth, mode]);
+  }, [data, containerWidth, mode, granularity]);
 
   // Extract all categories across history, sorted by most to least commonly answered
   const sortedCategories = useMemo(() => {
-    const tally = new Map<string, number>();
-    for (const d of data) {
-      for (const [c, count] of Object.entries(d.correct)) {
-        tally.set(c, (tally.get(c) || 0) + count);
-      }
-      for (const [c, count] of Object.entries(d.incorrect)) {
-        tally.set(c, (tally.get(c) || 0) + count);
-      }
-    }
-    return Array.from(tally.entries())
-      .sort((a, b) => b[1] - a[1]) // most to least answered
-      .map(([cat]) => cat);
+    return extractSortedCategories(data);
   }, [data]);
 
   // Max visible categories in the upper-right corner without pushing down the chart
@@ -192,7 +316,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
 
   // Color scale mapping category names consistently to palette colors
   const colorScale = useMemo(() => {
-    return d3.scaleOrdinal<string, string>().domain(sortedCategories).range(COLOR_PALETTE);
+    return createCategoryColorScale(sortedCategories);
   }, [sortedCategories]);
 
   // Quick summary aggregates
@@ -206,13 +330,14 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
     const totalAnswered = totalCorrect + totalIncorrect;
     const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
     return {
-      daysCount: data.length,
+      daysCount: sortedDailyData.length,
+      weeksCount: weeklyData.length,
       totalCorrect,
       totalIncorrect,
       totalAnswered,
       accuracy,
     };
-  }, [data]);
+  }, [data, sortedDailyData, weeklyData]);
 
   if (data.length === 0) {
     return (
@@ -226,7 +351,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
           </div>
         </div>
         <div className={styles.emptyState}>
-          No quiz activity recorded yet. Take a quiz to begin tracking your daily progress!
+          No quiz activity recorded yet. Take a quiz to begin tracking your progress!
         </div>
       </section>
     );
@@ -238,18 +363,82 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
   const marginBottom = 40;
   const yAxisWidth = 48;
 
-  // Day step width scaled by zoom: baseline is 46px
-  const baseStep = 46;
+  // Step width scaled by zoom: baseline is 46px for daily, 56px for weekly
+  const baseStep = granularity === "daily" ? 46 : 56;
   const stepWidth = Math.max(14, Math.round(baseStep * zoom));
-  const chartWidth = Math.max(containerWidth, data.length * stepWidth);
+  const chartWidth = Math.max(containerWidth, activeData.length * stepWidth);
 
   const xScale = d3
     .scaleBand()
-    .domain(data.map((d) => d.date))
+    .domain(activeData.map((d) => d.date))
     .range([0, chartWidth])
     .padding(0.32);
 
   const barWidth = xScale.bandwidth();
+
+  // Dynamic Ticks and Labels: skip items when zoomed out to prevent text overlap
+  const visibleTicks = useMemo(() => {
+    if (activeData.length === 0) return [];
+
+    const stepPx = xScale.step();
+    const MIN_LABEL_DISTANCE = 46;
+
+    if (stepPx >= MIN_LABEL_DISTANCE) {
+      return activeData.map((it) => ({
+        item: it,
+        cx: (xScale(it.date) ?? 0) + barWidth / 2,
+      }));
+    }
+
+    const result: { item: ActivityItem; cx: number }[] = [];
+    let lastX = -Infinity;
+
+    if (granularity === "daily") {
+      const isVeryZoomedOut = stepPx < 24;
+
+      for (let i = 0; i < activeData.length; i++) {
+        const it = activeData[i];
+        const { year, month, day } = parseDateParts(it.date);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        const dayOfWeek = date.getUTCDay();
+
+        // Candidates:
+        // 1. Monday (dayOfWeek === 1)
+        // 2. Or first day of that week in data if Monday wasn't recorded
+        // 3. Or Thursday (dayOfWeek === 4) if not very zoomed out
+        const prev = activeData[i - 1];
+        const isFirstInWeek = !prev || getMonday(prev.date) !== getMonday(it.date);
+        const isCandidate =
+          isFirstInWeek ||
+          dayOfWeek === 1 ||
+          (!isVeryZoomedOut && dayOfWeek === 4);
+
+        if (isCandidate) {
+          const cx = (xScale(it.date) ?? 0) + barWidth / 2;
+          if (cx - lastX >= MIN_LABEL_DISTANCE) {
+            result.push({ item: it, cx });
+            lastX = cx;
+          }
+        }
+      }
+    } else {
+      // Weekly granularity
+      const stride = Math.max(1, Math.ceil(MIN_LABEL_DISTANCE / stepPx));
+      for (let i = 0; i < activeData.length; i += stride) {
+        const it = activeData[i];
+        const cx = (xScale(it.date) ?? 0) + barWidth / 2;
+        result.push({ item: it, cx });
+      }
+    }
+
+    // Safety fallback: ensure at least the first item is marked
+    if (result.length === 0 && activeData.length > 0) {
+      const it = activeData[0];
+      result.push({ item: it, cx: (xScale(it.date) ?? 0) + barWidth / 2 });
+    }
+
+    return result;
+  }, [activeData, xScale, barWidth, granularity]);
 
   // Scales & Ticks based on Mode
   let yScale: d3.ScaleLinear<number, number>;
@@ -258,7 +447,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
 
   if (mode === "usage") {
     const maxTotal = Math.max(
-      ...data.map((d) => d.totalCorrect + d.totalIncorrect),
+      ...activeData.map((d) => d.totalCorrect + d.totalIncorrect),
       1
     );
     yScale = d3
@@ -271,8 +460,8 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
     yTicks = Array.from(new Set(rawTicks.map((t) => Math.round(t)))).sort((a, b) => b - a);
   } else {
     // "accuracy" mode: correct positive, incorrect negative
-    const maxCorrect = Math.max(...data.map((d) => d.totalCorrect), 1);
-    const maxIncorrect = Math.max(...data.map((d) => d.totalIncorrect), 1);
+    const maxCorrect = Math.max(...activeData.map((d) => d.totalCorrect), 1);
+    const maxIncorrect = Math.max(...activeData.map((d) => d.totalIncorrect), 1);
     yScale = d3
       .scaleLinear()
       .domain([-maxIncorrect, maxCorrect])
@@ -283,54 +472,53 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
     yTicks = Array.from(new Set(rawTicks.map((t) => Math.round(t)))).sort((a, b) => b - a);
   }
 
-  const handleBarMouseEnter = (day: DailyQuizStat, event: React.MouseEvent<SVGElement>) => {
+  const updateTooltipPosition = (event: React.MouseEvent<SVGElement>) => {
+    if (!scrollRef.current) return;
+    const scrollRect = scrollRef.current.getBoundingClientRect();
+    const clientX = event.clientX;
+    const clientY = Math.min(event.clientY, scrollRect.top + yZero);
+    setAnchorPos({ x: clientX, y: clientY });
+  };
+
+  const handleBarMouseEnter = (item: ActivityItem, event: React.MouseEvent<SVGElement>) => {
     if (isDraggingRef.current) return;
-    setHoveredDay(day);
-    if (scrollRef.current) {
-      const scrollRect = scrollRef.current.getBoundingClientRect();
-      const x = event.clientX - scrollRect.left + scrollRef.current.scrollLeft;
-      const y = Math.min(event.clientY - scrollRect.top, yZero);
-      setTooltipPos({ x, y });
-    }
+    setHoveredItem(item);
+    updateTooltipPosition(event);
   };
 
   const handleBarMouseMove = (event: React.MouseEvent<SVGElement>) => {
     if (isDraggingRef.current) return;
-    if (scrollRef.current) {
-      const scrollRect = scrollRef.current.getBoundingClientRect();
-      const x = event.clientX - scrollRect.left + scrollRef.current.scrollLeft;
-      const y = Math.min(event.clientY - scrollRect.top, yZero);
-      setTooltipPos({ x, y });
-    }
+    updateTooltipPosition(event);
   };
 
   const handleBarMouseLeave = () => {
-    setHoveredDay(null);
-    setTooltipPos(null);
+    setHoveredItem(null);
+    setAnchorPos(null);
+      setTooltipCoords(null);
   };
 
   const toggleCategory = (cat: string) => {
     setActiveCategory((prev) => (prev === cat ? null : cat));
   };
 
-  // Prepare table rows for tooltip for the hovered day
+  // Prepare table rows for tooltip for the hovered item
   const hoveredCategoryRows = useMemo(() => {
-    if (!hoveredDay) return [];
+    if (!hoveredItem) return [];
     const catMap = new Map<string, { correct: number; incorrect: number; total: number }>();
-    for (const [cat, count] of Object.entries(hoveredDay.correct)) {
+    for (const [cat, count] of Object.entries(hoveredItem.correct)) {
       if (count > 0) {
-        const item = catMap.get(cat) || { correct: 0, incorrect: 0, total: 0 };
-        item.correct += count;
-        item.total += count;
-        catMap.set(cat, item);
+        const it = catMap.get(cat) || { correct: 0, incorrect: 0, total: 0 };
+        it.correct += count;
+        it.total += count;
+        catMap.set(cat, it);
       }
     }
-    for (const [cat, count] of Object.entries(hoveredDay.incorrect)) {
+    for (const [cat, count] of Object.entries(hoveredItem.incorrect)) {
       if (count > 0) {
-        const item = catMap.get(cat) || { correct: 0, incorrect: 0, total: 0 };
-        item.incorrect += count;
-        item.total += count;
-        catMap.set(cat, item);
+        const it = catMap.get(cat) || { correct: 0, incorrect: 0, total: 0 };
+        it.incorrect += count;
+        it.total += count;
+        catMap.set(cat, it);
       }
     }
     return Array.from(catMap.entries())
@@ -341,30 +529,94 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
         total: stats.total,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [hoveredDay]);
+  }, [hoveredItem]);
 
-  const hoveredDayTotal = hoveredDay ? hoveredDay.totalCorrect + hoveredDay.totalIncorrect : 0;
+  const hoveredDayTotal = hoveredItem ? hoveredItem.totalCorrect + hoveredItem.totalIncorrect : 0;
   const hoveredDayAccuracy =
-    hoveredDay && hoveredDayTotal > 0
-      ? Math.round((hoveredDay.totalCorrect / hoveredDayTotal) * 100)
+    hoveredItem && hoveredDayTotal > 0
+      ? Math.round((hoveredItem.totalCorrect / hoveredDayTotal) * 100)
       : 0;
+
+  useLayoutEffect(() => {
+    if (!hoveredItem || !anchorPos || !tooltipRef.current) {
+      setTooltipCoords(null);
+      return;
+    }
+
+    const el = tooltipRef.current;
+    const width = el.offsetWidth;
+    const height = el.offsetHeight;
+    const PADDING = 12;
+    const GAP = 10;
+
+    // Center horizontally on anchor, strictly clamped within viewport padding
+    let left = anchorPos.x - width / 2;
+    left = Math.max(PADDING, Math.min(window.innerWidth - width - PADDING, left));
+
+    // Prefer placing above cursor
+    let top = anchorPos.y - height - GAP;
+    if (top < PADDING) {
+      // If above does not fit, check if placing below fits within viewport
+      const belowTop = anchorPos.y + GAP + 14;
+      if (belowTop + height <= window.innerHeight - PADDING) {
+        top = belowTop;
+      } else {
+        // If neither fits fully, clamp so bottom of tooltip NEVER cuts off at viewport bottom
+        top = Math.max(PADDING, window.innerHeight - height - PADDING);
+      }
+    }
+
+    setTooltipCoords({ left, top });
+  }, [hoveredItem, anchorPos, hoveredCategoryRows]);
 
   return (
     <section className={styles.container} ref={containerRef}>
       <div className={styles.header}>
-        {/* Left column: Title, subtitle, colored mode buttons, stats */}
+        {/* Left column: Title, subtitle, Granularity buttons, Mode buttons, Stats */}
         <div className={styles.leftCol}>
           <div className={styles.titleArea}>
-            <h3 className={styles.title}>Daily Quiz Activity</h3>
+            <h3 className={styles.title}>
+              {granularity === "weekly" ? "Weekly Quiz Activity" : "Daily Quiz Activity"}
+            </h3>
             <p className={styles.subtitle}>
-              {mode === "usage"
-                ? "Daily questions answered by category (Mouse wheel zooms in/out, click & drag to scroll)"
-                : "Questions answered correct (above 0) and incorrect (below 0) each day"}
+              {granularity === "weekly"
+                ? mode === "usage"
+                  ? "Weekly questions answered by category (Mouse wheel zooms in/out, click & drag to scroll)"
+                  : "Questions answered correct (above 0) and incorrect (below 0) each week"
+                : mode === "usage"
+                  ? "Daily questions answered by category (Mouse wheel zooms in/out, click & drag to scroll)"
+                  : "Questions answered correct (above 0) and incorrect (below 0) each day"}
             </p>
           </div>
 
           <div className={styles.controlsRow}>
-            {/* Colored Mode Buttons using existing shared button code */}
+            {/* Granularity Option: Daily / Weekly */}
+            <div className={styles.buttonGroup} role="tablist" aria-label="Chart granularity">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={granularity === "daily"}
+                className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${
+                  granularity === "daily" ? sharedStyles.btnSlate : styles.btnInactive
+                }`}
+                onClick={() => setGranularity("daily")}
+              >
+                Daily
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={granularity === "weekly"}
+                className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${
+                  granularity === "weekly" ? sharedStyles.btnSlate : styles.btnInactive
+                }`}
+                onClick={() => setGranularity("weekly")}
+              >
+                Weekly
+              </button>
+            </div>
+
+            {/* Mode Buttons */}
             <div className={styles.buttonGroup} role="tablist" aria-label="Chart mode">
               <button
                 type="button"
@@ -390,9 +642,44 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
               </button>
             </div>
 
-            {/* Quick Summary Badges: NO % in default Usage view! */}
+            {/* Zoom In / Out / Reset Controls */}
+            <div className={styles.zoomControls} role="group" aria-label="Zoom controls">
+              <button
+                type="button"
+                className={styles.zoomBtn}
+                onClick={() => setZoom((prev) => Math.max(0.3, Number((prev * 0.8).toFixed(2))))}
+                title="Zoom out"
+                aria-label="Zoom out"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className={styles.zoomResetBtn}
+                onClick={() => setZoom(1.0)}
+                title="Reset zoom to 100%"
+                aria-label="Reset zoom"
+              >
+                {Math.round(zoom * 100)}%
+              </button>
+              <button
+                type="button"
+                className={styles.zoomBtn}
+                onClick={() => setZoom((prev) => Math.min(4.5, Number((prev * 1.25).toFixed(2))))}
+                title="Zoom in"
+                aria-label="Zoom in"
+              >
+                +
+              </button>
+            </div>
+
+            {/* Summary Badges */}
             <div className={styles.statsRow}>
-              <span className={styles.statBadge}>{summary.daysCount} active days</span>
+              <span className={styles.statBadge}>
+                {granularity === "weekly"
+                  ? `${summary.weeksCount} active week${summary.weeksCount === 1 ? "" : "s"}`
+                  : `${summary.daysCount} active day${summary.daysCount === 1 ? "" : "s"}`}
+              </span>
               <span className={styles.statBadge}>
                 {summary.totalAnswered} questions answered
               </span>
@@ -411,7 +698,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
           </div>
         </div>
 
-        {/* Upper-right Single-Column Condensed Legend (max 3-5 categories, 2px margins/paddings, '...' expander) */}
+        {/* Upper-right Single-Column Condensed Legend */}
         {sortedCategories.length > 0 && (
           <div className={styles.rightLegendCol} ref={legendRef}>
             {visibleCategories.map((cat) => {
@@ -529,7 +816,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
             width={chartWidth}
             height={svgHeight}
             role="img"
-            aria-label="Daily quiz activity bar chart"
+            aria-label="Quiz activity bar chart"
           >
             {/* Horizontal Grid lines */}
             {yTicks.map((tick) => {
@@ -556,13 +843,22 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
               className={styles.zeroLine}
             />
 
-            {/* Bars for each day */}
-            {data.map((day) => {
-              const x = xScale(day.date) ?? 0;
-              const dayTotal = day.totalCorrect + day.totalIncorrect;
+            {/* Axis baseline at bottom of chart */}
+            <line
+              x1={0}
+              y1={svgHeight - marginBottom}
+              x2={chartWidth}
+              y2={svgHeight - marginBottom}
+              className={styles.axisBaseline}
+            />
+
+            {/* Bars for each day / week */}
+            {activeData.map((item) => {
+              const x = xScale(item.date) ?? 0;
+              const dayTotal = item.totalCorrect + item.totalIncorrect;
 
               if (mode === "usage") {
-                // Stack all questions for the day upwards from 0
+                // Stack all questions for the item upwards from 0
                 let currentY = 0;
                 const totalSegments: {
                   category: string;
@@ -572,7 +868,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
                 }[] = [];
 
                 for (const cat of sortedCategories) {
-                  const catCount = (day.correct[cat] || 0) + (day.incorrect[cat] || 0);
+                  const catCount = (item.correct[cat] || 0) + (item.incorrect[cat] || 0);
                   if (catCount <= 0) continue;
                   const segTop = yScale(currentY + catCount);
                   const segBottom = yScale(currentY);
@@ -589,7 +885,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
                 const totalTop = yScale(dayTotal);
 
                 return (
-                  <g key={day.date} className={styles.dayGroup}>
+                  <g key={item.date} className={styles.dayGroup}>
                     {totalSegments.map((seg) => {
                       const color = colorScale(seg.category);
                       const isDimmed =
@@ -611,7 +907,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
                       );
                     })}
 
-                    {dayTotal > 0 && (
+                    {dayTotal > 0 && barWidth >= 16 && (
                       <text
                         x={x + barWidth / 2}
                         y={totalTop - 4}
@@ -621,21 +917,13 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
                       </text>
                     )}
 
-                    <text
-                      x={x + barWidth / 2}
-                      y={svgHeight - marginBottom + 16}
-                      className={styles.xAxisText}
-                    >
-                      {formatDateLabel(day.date)}
-                    </text>
-
                     <rect
                       x={x - 2}
                       y={marginTop}
                       width={barWidth + 4}
                       height={svgHeight - marginTop - marginBottom}
                       className={styles.dayColumnHit}
-                      onMouseEnter={(e) => handleBarMouseEnter(day, e)}
+                      onMouseEnter={(e) => handleBarMouseEnter(item, e)}
                       onMouseMove={handleBarMouseMove}
                       onMouseLeave={handleBarMouseLeave}
                     />
@@ -652,7 +940,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
                 height: number;
               }[] = [];
 
-              for (const [cat, count] of Object.entries(day.correct)) {
+              for (const [cat, count] of Object.entries(item.correct)) {
                 if (count <= 0) continue;
                 const segTop = yScale(currentCorrectY + count);
                 const segBottom = yScale(currentCorrectY);
@@ -674,7 +962,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
                 height: number;
               }[] = [];
 
-              for (const [cat, count] of Object.entries(day.incorrect)) {
+              for (const [cat, count] of Object.entries(item.incorrect)) {
                 if (count <= 0) continue;
                 const segTop = yScale(-currentIncorrectY);
                 const segBottom = yScale(-(currentIncorrectY + count));
@@ -688,11 +976,11 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
                 currentIncorrectY += count;
               }
 
-              const totalCorrectTop = yScale(day.totalCorrect);
-              const totalIncorrectBottom = yScale(-day.totalIncorrect);
+              const totalCorrectTop = yScale(item.totalCorrect);
+              const totalIncorrectBottom = yScale(-item.totalIncorrect);
 
               return (
-                <g key={day.date} className={styles.dayGroup}>
+                <g key={item.date} className={styles.dayGroup}>
                   {correctSegments.map((seg) => {
                     const color = colorScale(seg.category);
                     const isDimmed =
@@ -735,32 +1023,24 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
                     );
                   })}
 
-                  {day.totalCorrect > 0 && (
+                  {item.totalCorrect > 0 && barWidth >= 16 && (
                     <text
                       x={x + barWidth / 2}
                       y={totalCorrectTop - 4}
                       className={`${styles.barValueLabel} ${styles.barValueCorrect}`}
                     >
-                      +{day.totalCorrect}
+                      +{item.totalCorrect}
                     </text>
                   )}
-                  {day.totalIncorrect > 0 && (
+                  {item.totalIncorrect > 0 && barWidth >= 16 && (
                     <text
                       x={x + barWidth / 2}
                       y={totalIncorrectBottom + 11}
                       className={`${styles.barValueLabel} ${styles.barValueIncorrect}`}
                     >
-                      -{day.totalIncorrect}
+                      -{item.totalIncorrect}
                     </text>
                   )}
-
-                  <text
-                    x={x + barWidth / 2}
-                    y={svgHeight - marginBottom + 16}
-                    className={styles.xAxisText}
-                  >
-                    {formatDateLabel(day.date)}
-                  </text>
 
                   <rect
                     x={x - 2}
@@ -768,116 +1048,144 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
                     width={barWidth + 4}
                     height={svgHeight - marginTop - marginBottom}
                     className={styles.dayColumnHit}
-                    onMouseEnter={(e) => handleBarMouseEnter(day, e)}
+                    onMouseEnter={(e) => handleBarMouseEnter(item, e)}
                     onMouseMove={handleBarMouseMove}
                     onMouseLeave={handleBarMouseLeave}
                   />
                 </g>
               );
             })}
+
+            {/* X-Axis Ticks & Labels: carefully spaced so they never overlap */}
+            {visibleTicks.map(({ item, cx }) => (
+              <g key={`tick-${item.date}`} className={styles.tickGroup}>
+                <line
+                  x1={cx}
+                  y1={svgHeight - marginBottom}
+                  x2={cx}
+                  y2={svgHeight - marginBottom + 5}
+                  className={styles.tickLine}
+                />
+                <text
+                  x={cx}
+                  y={svgHeight - marginBottom + 18}
+                  className={styles.xAxisText}
+                >
+                  {formatDateLabel(item.date)}
+                </text>
+              </g>
+            ))}
           </svg>
-
-          {/* Floating Tooltip */}
-          {hoveredDay && tooltipPos && (
-            <div
-              className={styles.tooltip}
-              style={{
-                left: `${tooltipPos.x}px`,
-                top: `${tooltipPos.y}px`,
-              }}
-            >
-              <div className={styles.tooltipDate}>{formatFullDate(hoveredDay.date)}</div>
-
-              {mode === "accuracy" ? (
-                <>
-                  <div className={styles.tooltipSummary}>
-                    <span className={styles.statCorrect}>
-                      +{hoveredDay.totalCorrect} Correct
-                    </span>
-                    <span className={styles.statIncorrect}>
-                      -{hoveredDay.totalIncorrect} Incorrect
-                    </span>
-                    <span>{hoveredDayAccuracy}% acc</span>
-                  </div>
-
-                  {hoveredCategoryRows.length > 0 && (
-                    <table className={styles.tooltipTable}>
-                      <thead>
-                        <tr>
-                          <th className={styles.thCat}>Category</th>
-                          <th className={styles.thNum}>Correct</th>
-                          <th className={styles.thNum}>Incorrect</th>
-                          <th className={styles.thNum}>Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {hoveredCategoryRows.map((row) => (
-                          <tr key={row.name}>
-                            <td className={styles.tdCat}>
-                              <div className={styles.tdCatContent}>
-                                <span
-                                  className={styles.legendSwatch}
-                                  style={{ backgroundColor: colorScale(row.name) }}
-                                />
-                                <span title={row.name}>{row.name}</span>
-                              </div>
-                            </td>
-                            <td className={`${styles.tdNum} ${styles.statCorrect}`}>
-                              {row.correct > 0 ? `+${row.correct}` : "0"}
-                            </td>
-                            <td className={`${styles.tdNum} ${styles.statIncorrect}`}>
-                              {row.incorrect > 0 ? `-${row.incorrect}` : "0"}
-                            </td>
-                            <td className={`${styles.tdNum} ${styles.tdTotal}`}>
-                              {row.total}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </>
-              ) : (
-                /* Default "Usage" mode tooltip: NO % CORRECT ANYWHERE! */
-                <>
-                  <div className={styles.tooltipSummary}>
-                    <span className={styles.tdTotal}>{hoveredDayTotal} Questions Answered</span>
-                  </div>
-
-                  {hoveredCategoryRows.length > 0 && (
-                    <table className={styles.tooltipTable}>
-                      <thead>
-                        <tr>
-                          <th className={styles.thCat}>Category</th>
-                          <th className={styles.thNum}>Count</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {hoveredCategoryRows.map((row) => (
-                          <tr key={row.name}>
-                            <td className={styles.tdCat}>
-                              <div className={styles.tdCatContent}>
-                                <span
-                                  className={styles.legendSwatch}
-                                  style={{ backgroundColor: colorScale(row.name) }}
-                                />
-                                <span title={row.name}>{row.name}</span>
-                              </div>
-                            </td>
-                            <td className={`${styles.tdNum} ${styles.tdTotal}`}>
-                              {row.total}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Floating Tooltip rendered via portal, strictly clamped so bottom or top never truncate */}
+      {hoveredItem &&
+        createPortal(
+          <div
+            ref={tooltipRef}
+            className={styles.tooltip}
+            style={{
+              left: tooltipCoords ? `${tooltipCoords.left}px` : "-9999px",
+              top: tooltipCoords ? `${tooltipCoords.top}px` : "-9999px",
+              visibility: tooltipCoords ? "visible" : "hidden",
+            }}
+          >
+            <div className={styles.tooltipDate}>
+              {granularity === "weekly"
+                ? getWeekRangeLabel(hoveredItem.date)
+                : formatFullDate(hoveredItem.date)}
+            </div>
+
+            {mode === "accuracy" ? (
+              <>
+                <div className={styles.tooltipSummary}>
+                  <span className={styles.statCorrect}>
+                    +{hoveredItem.totalCorrect} Correct
+                  </span>
+                  <span className={styles.statIncorrect}>
+                    -{hoveredItem.totalIncorrect} Incorrect
+                  </span>
+                  <span>{hoveredDayAccuracy}% acc</span>
+                </div>
+
+                {hoveredCategoryRows.length > 0 && (
+                  <table className={styles.tooltipTable}>
+                    <thead>
+                      <tr>
+                        <th className={styles.thCat}>Category</th>
+                        <th className={styles.thNum}>Correct</th>
+                        <th className={styles.thNum}>Incorrect</th>
+                        <th className={styles.thNum}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hoveredCategoryRows.map((row) => (
+                        <tr key={row.name}>
+                          <td className={styles.tdCat}>
+                            <div className={styles.tdCatContent}>
+                              <span
+                                className={styles.legendSwatch}
+                                style={{ backgroundColor: colorScale(row.name) }}
+                              />
+                              <span title={row.name}>{row.name}</span>
+                            </div>
+                          </td>
+                          <td className={`${styles.tdNum} ${styles.statCorrect}`}>
+                            {row.correct > 0 ? `+${row.correct}` : "0"}
+                          </td>
+                          <td className={`${styles.tdNum} ${styles.statIncorrect}`}>
+                            {row.incorrect > 0 ? `-${row.incorrect}` : "0"}
+                          </td>
+                          <td className={`${styles.tdNum} ${styles.tdTotal}`}>
+                            {row.total}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </>
+            ) : (
+              /* Default "Usage" mode tooltip: NO % CORRECT */
+              <>
+                <div className={styles.tooltipSummary}>
+                  <span className={styles.tdTotal}>{hoveredDayTotal} Questions Answered</span>
+                </div>
+
+                {hoveredCategoryRows.length > 0 && (
+                  <table className={styles.tooltipTable}>
+                    <thead>
+                      <tr>
+                        <th className={styles.thCat}>Category</th>
+                        <th className={styles.thNum}>Count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hoveredCategoryRows.map((row) => (
+                        <tr key={row.name}>
+                          <td className={styles.tdCat}>
+                            <div className={styles.tdCatContent}>
+                              <span
+                                className={styles.legendSwatch}
+                                style={{ backgroundColor: colorScale(row.name) }}
+                              />
+                              <span title={row.name}>{row.name}</span>
+                            </div>
+                          </td>
+                          <td className={`${styles.tdNum} ${styles.tdTotal}`}>
+                            {row.total}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </>
+            )}
+          </div>,
+          document.body
+        )}
     </section>
   );
 }

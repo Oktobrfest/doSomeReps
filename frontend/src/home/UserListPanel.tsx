@@ -1,23 +1,28 @@
 import { useState } from "react";
-import sharedStyles from "../styles/shared.module.css";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import styles from "./Home.module.css";
 import type { HomeUser } from "./home_types";
 
 interface UserListPanelProps {
   title: string;
+  icon?: React.ReactNode;
   users: HomeUser[];
   actionLabel: string;
   emptyLabel: string;
   onAction: (userId: number) => Promise<void>;
+  defaultOpen?: boolean;
 }
 
 export function UserListPanel({
   title,
+  icon,
   users,
   actionLabel,
   emptyLabel,
   onAction,
+  defaultOpen = true,
 }: UserListPanelProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [pendingId, setPendingId] = useState<number | null>(null);
 
   const run = async (userId: number) => {
@@ -31,26 +36,46 @@ export function UserListPanel({
 
   return (
     <section className={styles.panel}>
-      <h3 className={styles.panelTitle}>{title}</h3>
+      <button
+        type="button"
+        className={styles.panelHeaderBtn}
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-expanded={isOpen}
+      >
+        <div className={styles.panelHeaderLeft}>
+          {icon}
+          <span className={styles.panelTitle}>{title}</span>
+          <span className={styles.panelCount}>{users.length}</span>
+        </div>
+        <span className={styles.panelChevron}>
+          {isOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </span>
+      </button>
 
-      {users.length === 0 ? (
-        <p className={styles.empty}>{emptyLabel}</p>
-      ) : (
-        <ul className={styles.userList}>
-          {users.map((user) => (
-            <li key={user.id} className={styles.userRow}>
-              <span className={styles.userName}>{user.username}</span>
-              <button
-                type="button"
-                className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.btnSlate}`}
-                onClick={() => void run(user.id)}
-                disabled={pendingId === user.id}
-              >
-                {pendingId === user.id ? "..." : actionLabel}
-              </button>
-            </li>
-          ))}
-        </ul>
+      {isOpen && (
+        <div className={styles.panelContent}>
+          {users.length === 0 ? (
+            <p className={styles.empty}>{emptyLabel}</p>
+          ) : (
+            <ul className={styles.userList}>
+              {users.map((user) => (
+                <li key={user.id} className={styles.userRow}>
+                  <span className={styles.userName} title={user.username}>
+                    {user.username}
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.miniActionButton}
+                    onClick={() => void run(user.id)}
+                    disabled={pendingId === user.id}
+                  >
+                    {pendingId === user.id ? "..." : actionLabel}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </section>
   );
