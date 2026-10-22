@@ -19,7 +19,10 @@
   'selectedCategories': selected_categories if selected_categories != 'Not set' else [],
   'searchUrl': url_for('que_ajx.searchquefilters'),
   'saveUrl': url_for('que_ajx.save_to_que'),
-  'blockUserUrl': url_for('user_ajx.block_user')
+  'blockUserUrl': url_for('user_ajx.block_user'),
+  'currentUserId': user.id if user is defined and user.is_authenticated else None,
+  'currentUsername': user.username if user is defined and user.is_authenticated else None,
+  'editQuestionUrl': url_for('home.edit_question')
 } | tojson }}
 </script>
 {% else %}

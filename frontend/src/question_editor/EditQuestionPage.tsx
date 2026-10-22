@@ -2,6 +2,14 @@ import { useEffect, useState } from "react";
 import { QuestionEditor } from "./QuestionEditor";
 import sharedStyles from "../styles/shared.module.css";
 
+function getReturnTo(): string | null {
+  const returnTo = new URLSearchParams(window.location.search).get("return_to");
+  if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+    return returnTo;
+  }
+  return null;
+}
+
 export function EditQuestionPage() {
   const [questionId, setQuestionId] = useState<number | null>(null);
 
@@ -11,6 +19,11 @@ export function EditQuestionPage() {
   }, []);
 
   const goBack = () => {
+    const returnTo = getReturnTo();
+    if (returnTo) {
+      window.location.href = returnTo;
+      return;
+    }
     if (window.history.length > 1) {
       window.history.back();
     } else {
@@ -31,7 +44,12 @@ export function EditQuestionPage() {
       <QuestionEditor
         questionId={questionId}
         onDeleted={() => {
-          window.location.href = "/editquestions";
+          const returnTo = getReturnTo();
+          if (returnTo) {
+            window.location.href = returnTo;
+          } else {
+            window.location.href = "/editquestions";
+          }
         }}
         onSaved={goBack}
       />

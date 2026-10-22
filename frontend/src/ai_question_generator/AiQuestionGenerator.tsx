@@ -80,18 +80,35 @@ function GeneratedCard({
         />
       </div>
 
-      <div className={sharedStyles.splitLayout}>
+      <div
+        className={`${styles.questionBody}${
+          previewOpen ? "" : ` ${styles.questionBodyNoPreview}`
+        }`}
+      >
         <div className={sharedStyles.formPane}>
           <QuestionFields value={draft} onChange={onChange} />
         </div>
 
-        {previewOpen && (
-          <QuestionPreview
-            draft={draft}
-            onHide={() => setPreviewOpen(false)}
-            className={sharedStyles.previewPane}
-          />
-        )}
+        <div className={styles.previewColumn}>
+          {previewOpen && (
+            <div className={styles.previewTrack}>
+              <QuestionPreview
+                draft={draft}
+                onHide={() => setPreviewOpen(false)}
+                className={styles.previewPane}
+              />
+            </div>
+          )}
+
+          <button
+            type="button"
+            className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue} ${styles.bottomSaveBtn}`}
+            onClick={onSave}
+            disabled={busy}
+          >
+            Save Question
+          </button>
+        </div>
       </div>
 
       <div className={styles.askAiRoot}>

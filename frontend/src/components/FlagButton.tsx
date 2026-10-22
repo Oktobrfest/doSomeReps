@@ -100,9 +100,15 @@ export function FlagButton({
 
   const isFlagged = !!initialFlag;
   
+  // Set, the flag wears its category's colour; unset, the neutral of a choice not yet taken.
   const flagClass = isFlagged
-    ? (initialFlag.category === FlagCategory.STUDY_ME ? styles.flaggedStudyMe : styles.flaggedOther)
-    : "";
+    ? `${FLAG_METADATA[initialFlag.category].colorClass} ${styles.flagged}`
+    : sharedStyles.btnQuiet;
+
+  // What hovering the flag says: the flag set on the question and its note.
+  const hoverText = isFlagged
+    ? `Flagged: ${FLAG_METADATA[initialFlag.category].label}${initialFlag.note ? `\n${initialFlag.note}` : ""}`
+    : "Flag Question";
 
   // Custom button text logic
   const buttonText = isFlagged
@@ -119,11 +125,11 @@ export function FlagButton({
       type="button"
       onClick={() => setIsOpen(true)}
       disabled={disabled || isSaving}
-      className={`${styles.compactTrigger} ${flagClass}`}
-      title={isFlagged ? `Flagged: ${FLAG_METADATA[initialFlag.category].label}` : "Flag Question"}
+      className={`${sharedStyles.actionButton} ${sharedStyles.buttonSm} ${sharedStyles.buttonRound} ${flagClass} ${styles.compactTrigger}`}
+      title={hoverText}
     >
       {React.cloneElement(isFlagged ? FLAG_METADATA[initialFlag.category].icon : DEFAULT_FLAG_METADATA.icon, {
-        className: styles.compactIcon,
+        className: sharedStyles.buttonIcon,
       })}
     </button>
   ) : (
@@ -138,6 +144,7 @@ export function FlagButton({
         onClick={handleMainButtonClick}
         disabled={disabled || isSaving}
         aria-label={isSaving ? "Flagging" : "Flag question"}
+        title={hoverText}
       >
         {React.cloneElement(activeIconElement, {
           className: styles.flagIcon,

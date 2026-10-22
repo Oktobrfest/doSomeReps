@@ -18,12 +18,12 @@ export const FLAG_METADATA: Record<FlagCategory, FlagMetadata> = {
   [FlagCategory.NEEDS_CHANGES]: {
     label: "Needs Changes",
     icon: <Wrench />,
-    colorClass: sharedStyles.flagOther,
+    colorClass: sharedStyles.flagNeedsChanges,
   },
   [FlagCategory.INAPPROPRIATE]: {
     label: "Inappropriate",
     icon: <ShieldAlert />,
-    colorClass: sharedStyles.flagOther,
+    colorClass: sharedStyles.flagInappropriate,
   },
   [FlagCategory.STUDY_ME]: {
     label: "Study Me",

@@ -1,31 +1,23 @@
 {% block footer %}
-<footer>
-    <div class="footer-content container">
-        <div class="container">
-            <div class="footer-row">
-                <div class="col-md-4">
-                    <a href=" {{ url_for('home.about') }}">
-                        <button id="login-link-button" class="btn btn-secondary bigbtn btn3d">
-                            <h3>About us</h3>
-                        </button>
-                    </a>
-                </div>
-                <div class="col-md-4">
-                    <h4>Contact Us</h4>
-                    <p>Email: daveemail@gmx.com</p>
-                </div>
-
-            </div> <!-- This closes the .footer-row div -->
-        </div> <!-- This closes the inner .container div -->
-    </div> <!-- This closes the .footer-content.container div -->
-    <div class="footer-bottom">
-        <div class="container">
-            <div class="arow">
-                <div class="col-md-12">
-                    <p>&copy; 2023. All rights reserved.</p>
-                </div>
-            </div>
+<footer class="site-footer">
+    <div class="container footer-container">
+        <div class="footer-brand-group">
+            <span class="footer-brand">Do Some Reps</span>
+            <a href="{{ url_for('home.about') }}" class="footer-btn">About Us</a>
+        </div>
+        <div class="footer-contact-group">
+            <span class="footer-label">Contact:</span>
+            <a href="mailto:daveemail@gmx.com" class="footer-link">daveemail@gmx.com</a>
+        </div>
+        <div class="footer-copy-group">
+            <span class="footer-copy">&copy; <span id="footer-year">2026</span> Do Some Reps. All rights reserved.</span>
         </div>
     </div>
 </footer>
+<script>
+  (function() {
+    var el = document.getElementById('footer-year');
+    if (el) { el.textContent = new Date().getFullYear(); }
+  })();
+</script>
 {% endblock footer %}

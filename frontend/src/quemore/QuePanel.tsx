@@ -196,6 +196,13 @@ export function QuePanel({ endpoints, categories, browse = false }: QuePanelProp
   );
 
   const handleBlock = useCallback(async ({ created_by: userId, username }: QueSearchResult) => {
+    if (
+      (endpoints.currentUserId != null && userId === endpoints.currentUserId) ||
+      (endpoints.currentUsername && username === endpoints.currentUsername)
+    ) {
+      notify.warning("You cannot block yourself.");
+      return;
+    }
     setBlockingUserId(userId);
     try {
       await blockUser(endpoints.blockUserUrl, userId);
@@ -301,6 +308,9 @@ export function QuePanel({ endpoints, categories, browse = false }: QuePanelProp
             actingId={actingId}
             blockingUserId={blockingUserId}
             actions={cardActions}
+            currentUserId={endpoints.currentUserId}
+            currentUsername={endpoints.currentUsername}
+            editQuestionUrl={endpoints.editQuestionUrl}
           />
         ) : (
           <p className={styles.empty}>

@@ -49,7 +49,7 @@ from repz.extensions import cache
 from repz.cache_helper import CacheHelper
 from repz.routes import home
 from repz.services.question_service import que_listing
-from repz.services.quiz_service import get_selected_categories
+from repz.services.quiz_service import get_daily_quiz_history, get_selected_categories
 
 from ..bluehelpers import (
     cat_questions_count,
@@ -61,7 +61,7 @@ from ..bluehelpers import (
     split_dict,
     tally_que_catz
 )
-from ..charts import rep_vs_forget, render_chart
+from ..charts import get_category_color_map, rep_vs_forget, render_chart
 from ..database import session
 from ..models import (
     category,
@@ -127,15 +127,24 @@ def homepage():
 
         que_list = get_quizes(selected_cats, UID)
 
-        category_count = tally_que_catz(que_list)
+        daily_history = get_daily_quiz_history(UID)
 
-        sorted_cats = sorted(category_count.items(), key = lambda x: x[1], reverse = True)
-        limited_sorted_cats = sorted_cats[:5]
-        sorted_cats_dict = dict(limited_sorted_cats)
-
-        x_arr, y_arr = split_dict(sorted_cats_dict)
-
-        catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions')
+        if que_list:
+            category_count = tally_que_catz(que_list)
+            sorted_cats = sorted(category_count.items(), key = lambda x: x[1], reverse = True)
+            # Allow as many categories as reasonable (up to 20) so the chart spans wide
+            limited_sorted_cats = sorted_cats[:20]
+            sorted_cats_dict = dict(limited_sorted_cats)
+            x_arr, y_arr = split_dict(sorted_cats_dict)
+            cat_color_map = get_category_color_map(daily_history, extra_categories=x_arr)
+            bar_colors = [cat_color_map[cat] for cat in x_arr]
+            catz_chart = render_chart(x_arr, y_arr, 'Categories', 'Questions', colors=bar_colors)
+            categories_to_do = [
+                {"category": cat, "count": count} for cat, count in sorted_cats
+            ]
+        else:
+            catz_chart = ""
+            categories_to_do = []
 
         return render_template(
             "home.html",
@@ -146,6 +155,8 @@ def homepage():
             user=current_user,
             quiz_q_count=len(que_list),
             catz_chart=catz_chart,
+            categories_to_do=categories_to_do,
+            daily_history=daily_history,
             )
     else:
         # categories graph
@@ -248,6 +259,7 @@ def editquestions():
 
 
 @home.route("/edit_question", methods=["GET"], endpoint="edit_question")
+@home.route("/edit_questions", methods=["GET"], endpoint="edit_questions")
 @login_required
 def edit_question():
     return render_template(

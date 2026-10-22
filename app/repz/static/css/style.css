@@ -1,3 +1,17 @@
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-main {
+  flex: 1 0 auto;
+}
+
 label > input { width: 3em; }
 form > * { padding-right: 0.1em; }
 
@@ -59,76 +73,101 @@ td {
   box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.3);
 }
 
+/* Footer layout and styling */
+footer.site-footer,
 footer {
-  background-color: #343a40;
-  /* A dark grey color */
-  color: #ffffff;
-  /* Text color is white for contrast */
-  padding: 5px 0;
-  /* Padding at the top and bottom of the footer */
-  margin-top: 5px;
-  /* Margin at the top of the footer to separate from the content above */
-  /* float: left; */
+  width: 100%;
+  margin-top: auto;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  color: #cbd5e1;
+  border-top: 1px solid #334155;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 14px 0;
+  box-sizing: border-box;
+}
+
+.footer-container {
   display: flex;
-  align-content: space-around;
-  justify-content: center;
-  align-items: flex-end;
-  flex-wrap: wrap
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  min-height: 36px;
 }
 
-.footer-content {
-  margin: 0 auto;
-  /* Center the content */
-  max-width: 960px;
-  /* Maximum width of the content */
-  padding: 0 20px;
-  /* Padding at the sides of the content */
+.footer-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.footer-content h4 {
-  margin-bottom: 4px;
-  /* Space below the headings */
+.footer-brand {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: 0.3px;
 }
 
-.footer-content p {
-  margin-bottom: 0;
-  /* Remove the space below paragraphs */
+.footer-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: 6px;
+  background-color: #334155;
+  color: #f8fafc;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  line-height: 1.4;
 }
 
-.footer-bottom {
-  border-top: 1px solid #ffffff;
-  /* A border at the top of the bottom section for separation */
-  padding-top: 5px;
-  /* Padding at the top of the bottom section */
+.footer-btn:hover,
+.footer-btn:focus {
+  background-color: #ff8c00;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.footer-contact-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.footer-label {
+  color: #94a3b8;
+}
+
+.footer-link {
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.footer-link:hover,
+.footer-link:focus {
+  color: #ff8c00;
+  text-decoration: underline;
+}
+
+.footer-copy-group {
+  display: flex;
+  align-items: center;
+}
+
+.footer-copy {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0;
 }
 
 .picture {
   max-width: 100%;
-}
-
-.footer-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-evenly;
-}
-
-footer .bigbtn {
-  min-height: 25px;
-  margin: 0.125em;
-  padding: 0.25em 0.5em;
-}
-
-footer h3, footer h4, footer h5 {
-  font-size: 0.9rem;
-  margin-top: 4px;
-  margin-bottom: 4px;
-}
-
-footer p {
-  font-size: 0.8rem;
-  margin-bottom: 2px;
 }
 
 .form-control.answer {

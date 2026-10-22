@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Ban, ListPlus, Maximize2, User, UserX } from "lucide-react";
+import { Ban, Edit, ListPlus, Maximize2, User, UserX } from "lucide-react";
 import { CategoryChips } from "../components/CategoryChip";
 import { QuizModal } from "../components/QuizModal";
 import { useGridColumns } from "../hooks/useCardGrid";
@@ -68,6 +68,17 @@ function Verdicts({ result, busy, actions }: VerdictProps) {
   );
 }
 
+function getFallbackUsername(): string | null {
+  try {
+    const node = document.getElementById("navbar-data");
+    if (!node?.textContent) return null;
+    const data = JSON.parse(node.textContent);
+    return data?.user?.username || null;
+  } catch {
+    return null;
+  }
+}
+
 interface QueCardProps {
   result: QueSearchResult;
   /** Checked, waiting for the Save above. */
@@ -80,6 +91,9 @@ interface QueCardProps {
   /** Left out for a visitor, who cannot que: the card is read-only and nothing on it folds. */
   actions?: QueCardActions;
   onView: CardAction;
+  currentUserId?: number | null;
+  currentUsername?: string | null;
+  editQuestionUrl?: string;
 }
 
 /** A closed card, a two-row hint, or a two-by-two answer. */
@@ -92,12 +106,23 @@ function QueCard({
   columns,
   actions,
   onView,
+  currentUserId,
+  currentUsername,
+  editQuestionUrl = "/edit_question",
 }: QueCardProps) {
   const [hintOpen, setHintOpen] = useState(false);
   // Opening the answer (including Expand All) starts with the hint folded away.
   useEffect(() => setHintOpen(false), [expanded]);
   const hasHint = Boolean(result.hint) || Boolean(result.pics_by_type?.hint?.length);
   const draft = useMemo(() => draftFromPayload(result), [result]);
+
+  const effectiveUsername = currentUsername || getFallbackUsername();
+  const isOwnQuestion = Boolean(
+    (currentUserId != null && result.created_by === currentUserId) ||
+    (effectiveUsername && result.username === effectiveUsername)
+  );
+  const returnUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/quemore";
+  const editHref = `${editQuestionUrl}?q_id=${result.id}&return_to=${encodeURIComponent(returnUrl)}`;
 
   return (
     <li
@@ -125,7 +150,16 @@ function QueCard({
         <div className={styles.byline}>
           {result.rating ? <RatingBadge value={result.rating} /> : null}
           <span className={styles.author}>by {result.username}</span>
-          {actions && (
+          {isOwnQuestion ? (
+            <a
+              href={editHref}
+              className={`${cardBtn(sharedStyles.btnCyan)} ${sharedStyles.buttonRound}`}
+              title="Edit Question"
+              aria-label="Edit Question"
+            >
+              <Edit className={sharedStyles.buttonIcon} />
+            </a>
+          ) : actions ? (
             <button
               type="button"
               className={`${cardBtn(sharedStyles.btnRed)} ${sharedStyles.buttonRound}`}
@@ -136,7 +170,7 @@ function QueCard({
             >
               <UserX className={sharedStyles.buttonIcon} />
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -187,13 +221,34 @@ function QueCard({
   );
 }
 
-/** Full reading view shares the quiz's text, disclosures, carousel and lightbox. */
-function FullQuestion({ result, busy, actions, onClose }: Omit<VerdictProps, "actions"> & {
-  actions?: QueCardActions;
+interface FullQuestionProps extends Omit<VerdictProps, "actions"> {
   onClose: () => void;
-}) {
+  actions?: QueCardActions;
+  currentUserId?: number | null;
+  currentUsername?: string | null;
+  editQuestionUrl?: string;
+}
+
+/** Full reading view shares the quiz's text, disclosures, carousel and lightbox. */
+function FullQuestion({
+  result,
+  busy,
+  actions,
+  onClose,
+  currentUserId,
+  currentUsername,
+  editQuestionUrl = "/edit_question",
+}: FullQuestionProps) {
   const draft = useMemo(() => draftFromPayload(result), [result]);
   const [imageView, setImageView] = useState<{ images: string[]; startIndex: number } | null>(null);
+
+  const effectiveUsername = currentUsername || getFallbackUsername();
+  const isOwnQuestion = Boolean(
+    (currentUserId != null && result.created_by === currentUserId) ||
+    (effectiveUsername && result.username === effectiveUsername)
+  );
+  const returnUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/quemore";
+  const editHref = `${editQuestionUrl}?q_id=${result.id}&return_to=${encodeURIComponent(returnUrl)}`;
 
   return (
     <>
@@ -206,6 +261,16 @@ function FullQuestion({ result, busy, actions, onClose }: Omit<VerdictProps, "ac
             <span className={styles.byline}>
               <User className={sharedStyles.buttonIcon} />
               <span>{result.username}</span>
+              {isOwnQuestion && (
+                <a
+                  href={editHref}
+                  className={`${cardBtn(sharedStyles.btnCyan)} ${sharedStyles.buttonRound}`}
+                  title="Edit Question"
+                  aria-label="Edit Question"
+                >
+                  <Edit className={sharedStyles.buttonIcon} />
+                </a>
+              )}
             </span>
             <RatingStars
               value={result.rating ?? 0}
@@ -235,6 +300,9 @@ interface QueResultsListProps {
   blockingUserId?: number | null;
   /** Left out for a visitor, who cannot que: every card is read-only and open in full. */
   actions?: QueCardActions;
+  currentUserId?: number | null;
+  currentUsername?: string | null;
+  editQuestionUrl?: string;
 }
 
 const NONE: ReadonlySet<number> = new Set();
@@ -251,6 +319,9 @@ export function QueResultsList({
   actingId = null,
   blockingUserId = null,
   actions,
+  currentUserId,
+  currentUsername,
+  editQuestionUrl = "/edit_question",
 }: QueResultsListProps) {
   const gridRef = useRef<HTMLUListElement>(null);
   const columns = useGridColumns(gridRef);
@@ -283,6 +354,9 @@ export function QueResultsList({
             columns={columns}
             actions={actions}
             onView={setViewing}
+            currentUserId={currentUserId}
+            currentUsername={currentUsername}
+            editQuestionUrl={editQuestionUrl}
           />
         ))}
       </ul>
@@ -294,6 +368,9 @@ export function QueResultsList({
           busy={actingId === viewing.id}
           actions={actions}
           onClose={() => setViewing(null)}
+          currentUserId={currentUserId}
+          currentUsername={currentUsername}
+          editQuestionUrl={editQuestionUrl}
         />
       )}
     </>

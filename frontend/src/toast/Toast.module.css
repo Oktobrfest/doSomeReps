@@ -43,6 +43,12 @@
   scrollbar-color: currentColor transparent;
 }
 
+/* The link a toast offers sits under the message it belongs to. */
+.link {
+  grid-column: 2;
+  justify-self: start;
+}
+
 /* A timed toast fades out over the last stretch of its life... */
 .timed {
   animation: toastFade var(--rep-toast-fade-duration) linear

@@ -1,0 +1,506 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-radius-dialog);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ---------- Header with Left Info/Controls & Upper-Right Column Legend ---------- */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--rep-color-text-strong);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--rep-color-text-muted);
+}
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.buttonGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Inactive button style */
+.btnInactive {
+  background-color: var(--rep-color-surface-secondary);
+  color: var(--rep-color-text-secondary);
+  box-shadow: none;
+}
+
+.btnInactive:hover:not(:disabled) {
+  background-color: var(--rep-color-surface-secondary-hover);
+  color: var(--rep-color-text-strong);
+}
+
+/* Zoom controls */
+.zoomControls {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--rep-color-border);
+  border-radius: var(--rep-btn-radius);
+  background-color: var(--rep-color-surface-subtle);
+  overflow: hidden;
+}
+
+.zoomBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  color: var(--rep-color-text-secondary);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color 0.15s ease;
+}
+
+.zoomBtn:hover {
+  background-color: var(--rep-color-surface-secondary-hover);
+  color: var(--rep-color-text-strong);
+}
+
+.zoomResetBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.4rem;
+  height: 26px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--rep-color-border);
+  border-right: 1px solid var(--rep-color-border);
+  color: var(--rep-color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.zoomResetBtn:hover {
+  background-color: var(--rep-color-surface-secondary-hover);
+  color: var(--rep-color-text-strong);
+}
+
+/* ---------- Upper Right Single-Column Condensed Legend ---------- */
+
+.rightLegendCol {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 2px;
+  border-radius: 3px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--rep-color-text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  user-select: none;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.legendItem:hover {
+  background-color: var(--rep-color-surface-secondary-hover);
+}
+
+.legendItemActive {
+  background-color: var(--rep-color-surface-selected);
+  border-color: var(--rep-color-action-primary);
+  font-weight: 600;
+}
+
+.legendItemDimmed {
+  opacity: 0.3;
+}
+
+.legendSwatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legendMoreBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--rep-color-action-primary);
+  background: var(--rep-color-surface-subtle);
+  border: 1px solid var(--rep-color-border);
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.legendMoreBtn:hover {
+  background-color: var(--rep-color-surface-secondary-hover);
+}
+
+/* Floating popover dropdown for expanded legend */
+.legendDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  z-index: 50;
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+  min-width: 130px;
+}
+
+.legendDropdownTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--rep-color-text-subtle);
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--rep-color-border);
+  margin-bottom: 2px;
+}
+
+/* ---------- Stats Badges ---------- */
+
+.statsRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.statBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background-color: var(--rep-color-surface-subtle);
+  border: 1px solid var(--rep-color-border);
+  color: var(--rep-color-text-secondary);
+}
+
+.statCorrect {
+  color: var(--rep-color-success-text-strong);
+  background-color: var(--rep-color-success-surface-subtle);
+  border-color: var(--rep-color-success-border-subtle);
+}
+
+.statIncorrect {
+  color: var(--rep-color-error-text-strong);
+  background-color: var(--rep-color-error-surface-subtle);
+  border-color: var(--rep-color-error-border-subtle);
+}
+
+/* ---------- Graph Viewport & Scrolling ---------- */
+
+.graphLayout {
+  position: relative;
+  display: flex;
+  border: 1px solid var(--rep-color-border);
+  border-radius: 8px;
+  background-color: var(--rep-color-surface);
+  overflow: hidden;
+  user-select: none;
+}
+
+.yAxisSticky {
+  flex-shrink: 0;
+  width: 48px;
+  background-color: var(--rep-color-surface);
+  border-right: 1px solid var(--rep-color-border);
+  z-index: 2;
+  user-select: none;
+}
+
+.scrollArea {
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rep-color-border-strong) transparent;
+  position: relative;
+  cursor: grab;
+}
+
+.scrollArea:active {
+  cursor: grabbing;
+}
+
+.scrollArea::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scrollArea::-webkit-scrollbar-thumb {
+  background-color: var(--rep-color-border-strong);
+  border-radius: 3px;
+}
+
+.chartSvg {
+  display: block;
+}
+
+/* Axis and Grid styling */
+.zeroLine {
+  stroke: var(--rep-color-text-strong);
+  stroke-width: 1.5;
+}
+
+.gridLine {
+  stroke: var(--rep-color-border);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+
+.axisBaseline {
+  stroke: var(--rep-color-border-strong);
+  stroke-width: 1;
+}
+
+.tickLine {
+  stroke: var(--rep-color-border-strong);
+  stroke-width: 1.25;
+}
+
+.tickGroup {
+  pointer-events: none;
+}
+
+.yAxisText {
+  fill: var(--rep-color-text-muted);
+  font-size: 11px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  text-anchor: end;
+  dominant-baseline: middle;
+}
+
+.xAxisText {
+  fill: var(--rep-color-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: hanging;
+}
+
+.barValueLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.barValueCorrect {
+  fill: var(--rep-color-success-text-strong);
+}
+
+.barValueIncorrect {
+  fill: var(--rep-color-error-text-strong);
+}
+
+.barValueTotal {
+  fill: var(--rep-color-text-strong);
+}
+
+/* Bar segment interaction */
+.segment {
+  cursor: pointer;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.segment:hover {
+  filter: brightness(1.12);
+}
+
+.segmentDimmed {
+  opacity: 0.18;
+}
+
+.dayColumnHit {
+  cursor: pointer;
+  fill: transparent;
+}
+
+.dayColumnHit:hover {
+  fill: rgba(66, 153, 225, 0.06);
+}
+
+/* ---------- Tooltip with Multi-Column Table ---------- */
+
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1500;
+  padding: 0.55rem 0.75rem;
+  background-color: var(--rep-color-surface);
+  border: 1px solid var(--rep-color-border-strong);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  min-width: 200px;
+  max-width: 320px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.tooltipDate {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--rep-color-text-strong);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--rep-color-border);
+}
+
+.tooltipSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.tooltipTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+  border-bottom: 1.5px solid var(--rep-color-border-strong);
+}
+
+.tooltipTable th {
+  padding: 0.25rem 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--rep-color-text-subtle);
+  border-bottom: 1.5px solid var(--rep-color-border-strong);
+}
+
+.tooltipTable td {
+  padding: 0.25rem 0.35rem;
+  border-bottom: 1px solid var(--rep-color-border);
+  background: transparent;
+}
+
+.tooltipTable tr:last-child td {
+  border-bottom: 1.5px solid var(--rep-color-border-strong) !important;
+}
+
+.tooltipTable td.statCorrect,
+.tooltipTable td.statIncorrect {
+  background-color: transparent;
+  border-color: var(--rep-color-border);
+}
+
+.tooltipTable tr:last-child td.statCorrect,
+.tooltipTable tr:last-child td.statIncorrect {
+  border-bottom-color: var(--rep-color-border-strong) !important;
+}
+
+.thCat,
+.tdCat {
+  text-align: left;
+}
+
+.thNum,
+.tdNum {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tdCatContent {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tdTotal {
+  font-weight: 700;
+  color: var(--rep-color-text-strong);
+}
+
+.emptyState {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--rep-color-text-muted);
+  font-size: 0.95rem;
+}

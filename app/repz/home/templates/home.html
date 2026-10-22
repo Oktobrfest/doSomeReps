@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Reps Home{% endblock title %}
+{% block container_class %}container-fluid px-3 px-md-4 px-xl-5{% endblock %}
 {% block content %}
 
 <div id="home-root"></div>
@@ -11,6 +12,8 @@
   'quizQuestionCount': quiz_q_count,
   'quizUrl': url_for('home.quiz'),
   'catzChart': catz_chart,
+  'categoriesToDo': categories_to_do,
+  'dailyHistory': daily_history,
   'unfavoriteUrl': url_for('user_ajx.unfavorite_user'),
   'unblockUrl': url_for('user_ajx.unblock_user')
 } | tojson }}

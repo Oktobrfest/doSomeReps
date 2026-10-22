@@ -17,6 +17,7 @@ from repz.services.quiz_service import (
     build_audio_assets,
     build_quiz_items,
     continue_guide,
+    get_daily_quiz_history,
     get_quiz_queue,
     get_selected_categories,
     exclude_quiz_question,
@@ -199,3 +200,11 @@ def quiz_action():
         })
 
     return jsonify({"ok": False, "error": f"Invalid action: {action!r}"}), 400
+
+
+@home.route("/api/daily-quiz-history", methods=["GET"], endpoint="daily_quiz_history")
+@login_required
+def api_daily_quiz_history():
+    """Return the authenticated reader's daily quiz answer counts by category."""
+    history = get_daily_quiz_history(current_user.id)
+    return jsonify({"ok": True, "history": history})

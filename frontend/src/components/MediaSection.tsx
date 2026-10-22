@@ -7,6 +7,7 @@ interface MediaSectionProps {
   /** Which side the image sits on while the section is wide enough to split. */
   imagePosition?: "left" | "right";
   title?: string;
+  className?: string;
   children: ReactNode;
 }
 
@@ -17,15 +18,19 @@ export function MediaSection({
   imageAlt,
   imagePosition = "left",
   title,
+  className,
   children,
 }: MediaSectionProps) {
-  const className =
-    imagePosition === "right"
-      ? `${styles.section} ${styles.imageRight}`
-      : styles.section;
+  const sectionClass = [
+    styles.section,
+    imagePosition === "right" ? styles.imageRight : undefined,
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <section className={className}>
+    <section className={sectionClass}>
       <div className={styles.imageFrame}>
         <img className={styles.image} src={imageSrc} alt={imageAlt} />
       </div>
