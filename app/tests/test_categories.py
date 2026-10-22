@@ -5,6 +5,7 @@ import os
 # Add the parent directory of 'repz' to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+
 class TestAddcontentIsReact(unittest.TestCase):
     """addcontent.html mounts the whole page as one React entrypoint."""
 
@@ -58,10 +59,12 @@ class TestPagesUsingFullCategories(unittest.TestCase):
         self.assertIn('id="quemore-root"', content)
         self.assertIn('categoryList', content)
         self.assertIn('selectedCategories', content)
+        self.assertIn('currentUserId', content)
+        self.assertIn('currentUsername', content)
+        self.assertIn('editQuestionUrl', content)
         self.assertIn(
             'vite_asset("src/entrypoints/QueMore.entry.tsx")', content
         )
-
 
     def test_edit_question_renders_react_edit_component(self):
         content = self._read_template(
@@ -72,7 +75,3 @@ class TestPagesUsingFullCategories(unittest.TestCase):
             'vite_asset("src/entrypoints/EditQuestion.entry.tsx")',
             content,
         )
-
-
-if __name__ == '__main__':
-    unittest.main()

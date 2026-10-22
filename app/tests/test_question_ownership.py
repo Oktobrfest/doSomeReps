@@ -175,5 +175,21 @@ class TestDeleteqOwnership(unittest.TestCase):
         )
 
 
+class TestBlockUserSelfBlock(unittest.TestCase):
+    """Users cannot block themselves."""
+
+    def setUp(self):
+        self.app = Flask(__name__)
+        self.app.config['TESTING'] = True
+
+    def test_blocking_self_is_rejected(self):
+        from repz.ajax.user_ajx import user_ajx as module
+
+        with self.app.test_request_context(method='POST', data={'block_user_id': '7'}):
+            module.g._login_user = SimpleNamespace(id=7)
+            response, status = module.block_user.__wrapped__()
+            self.assertEqual(status, 400)
+
+
 if __name__ == '__main__':
     unittest.main()

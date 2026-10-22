@@ -238,6 +238,7 @@ def editquestions():
 
 
 @home.route("/edit_question", methods=["GET"], endpoint="edit_question")
+@home.route("/edit_questions", methods=["GET"], endpoint="edit_questions")
 @login_required
 def edit_question():
     return render_template(

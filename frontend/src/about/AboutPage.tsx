@@ -6,7 +6,10 @@ import styles from "./About.module.css";
 const bootstrap = readBootstrap();
 
 /** Each interval reads as its own wait plus the gap since the previous one. */
-function intervalLabel(daysHence: number, previousDaysHence?: number): string {
+export function intervalLabel(
+  daysHence: number,
+  previousDaysHence?: number
+): string {
   const current = formatDuration(daysHence);
   if (previousDaysHence === undefined) {
     return current;
@@ -19,17 +22,18 @@ export function AboutPage() {
     <div className={styles.page}>
       <header className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>About DoSomeReps</h1>
-        <p className={styles.pageIntro}>
+        <h2 className={styles.pageIntro}>
           DoSomeReps is a spaced repetition study site. You answer questions at
           widening intervals, ideally just before your brain would have forgotten
           the answer.
-        </p>
+        </h2>
       </header>
 
       <MediaSection
         imageSrc={bootstrap.images.siteFormat}
         imageAlt="Site Format Image"
         title="Site Format"
+        className={styles.mediaCard}
       >
         <p>
           This site uses a question/answer format of learning which has been
@@ -45,6 +49,7 @@ export function AboutPage() {
         imageAlt="Black Board"
         imagePosition="right"
         title="Active vs. Passive Learning"
+        className={styles.mediaCard}
       >
         <p>
           Spaced repetition is considered an active form of learning. Because
@@ -60,6 +65,7 @@ export function AboutPage() {
         imageSrc={bootstrap.images.community}
         imageAlt="pcb-brain"
         title="Community"
+        className={styles.mediaCard}
       >
         <p>
           There is some pre-existing material that you may be interested in
@@ -73,32 +79,58 @@ export function AboutPage() {
         </p>
       </MediaSection>
 
-      <MediaSection
-        imageSrc={bootstrap.images.hourglass}
-        imageAlt="hour glass"
-        title="Our spaced intervals:"
-      >
-        <ol className={styles.intervalList}>
-          {bootstrap.intervals.map((interval, index) => (
-            <li key={interval.levelNo}>
-              {intervalLabel(
-                interval.daysHence,
-                bootstrap.intervals[index - 1]?.daysHence
-              )}
-            </li>
-          ))}
-        </ol>
-      </MediaSection>
+      <section className={styles.intervalsCard}>
+        <div className={styles.hourglassColumn}>
+          <div className={styles.hourglassFrame}>
+            <img
+              className={styles.hourglassImage}
+              src={bootstrap.images.hourglass}
+              alt="hour glass"
+            />
+          </div>
 
-      <section className={styles.wideSection}>
-        <h3 className={styles.wideTitle}>Why bother with spaced repetition?</h3>
-        <p>
-          Ultimately, spaced repetition helps you permanantly retain what you're
-          studying! By exposing yourself to the same material a few more times,
-          you can hold onto the knowledge you teach yourself forever! Don't fool
-          yourself into thinking you'll remember everything from one study
-          session.
-        </p>
+          <div className={styles.whyBother}>
+            <h3 className={styles.whyBotherTitle}>
+              Why bother with spaced repetition?
+            </h3>
+            <p className={styles.whyBotherText}>
+              Ultimately, spaced repetition helps you permanantly retain what
+              you're studying! By exposing yourself to the same material a few
+              more times, you can hold onto the knowledge you teach yourself
+              forever! Don't fool yourself into thinking you'll remember
+              everything from one study session.
+            </p>
+          </div>
+        </div>
+
+        <div className={styles.intervalsColumn}>
+          <h3 className={styles.intervalsTitle}>Our spaced intervals:</h3>
+          <p className={styles.intervalKey}>
+            <span className={styles.intervalLabel}>Total</span>{" "}
+            <span className={styles.intervalGap}>(since last)</span>
+          </p>
+
+          <ol className={styles.intervalList}>
+            {bootstrap.intervals.map((interval, index) => (
+              <li key={interval.levelNo} className={styles.intervalItem}>
+                <span className={styles.intervalLabel}>
+                  {formatDuration(interval.daysHence)}
+                </span>
+                {index > 0 && (
+                  <span className={styles.intervalGap}>
+                    {" "}
+                    (
+                    {formatDuration(
+                      interval.daysHence -
+                        bootstrap.intervals[index - 1].daysHence
+                    )}
+                    )
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
       </section>
     </div>
   );

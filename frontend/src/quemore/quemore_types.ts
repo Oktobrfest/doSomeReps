@@ -5,6 +5,9 @@ export interface QueEndpoints {
   searchUrl: string;
   saveUrl: string;
   blockUserUrl: string;
+  currentUserId?: number | null;
+  currentUsername?: string | null;
+  editQuestionUrl?: string;
 }
 
 export interface QueMoreBootstrap extends QueEndpoints {

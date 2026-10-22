@@ -25,8 +25,8 @@ export function HomePage() {
     } catch {
       // ignore storage access issues
     }
-    // Default collapsed when empty to save maximum space
-    return (bootstrap.favorites?.length ?? 0) === 0 && (bootstrap.blocked?.length ?? 0) === 0;
+    // Default collapsed in the middle
+    return true;
   });
 
   const toggleUsersCollapsed = useCallback(() => {
@@ -67,22 +67,33 @@ export function HomePage() {
 
   return (
     <div className={styles.page}>
-      <aside
-        className={`${styles.sidebar} ${isUsersCollapsed ? styles.sidebarCollapsed : ""}`}
+      {bootstrap.quizQuestionCount > 0 && (
+        <p className={styles.quizCallout}>
+          You have {bootstrap.quizQuestionCount} quiz question
+          {bootstrap.quizQuestionCount === 1 ? "" : "s"} to answer.{" "}
+          <a className={styles.quizLink} href={bootstrap.quizUrl}>
+            Take Quiz
+          </a>
+        </p>
+      )}
+
+      {/* Centered Collapsible Favorite and Blocked Users in the middle */}
+      <section
+        className={`${styles.usersSection} ${isUsersCollapsed ? styles.usersSectionCollapsed : ""}`}
         aria-label="User relationships"
       >
-        <div className={`${styles.sidebarHeader} ${!isUsersCollapsed ? styles.sidebarHeaderOpen : ""}`}>
+        <div className={`${styles.usersHeader} ${!isUsersCollapsed ? styles.usersHeaderOpen : ""}`}>
           <button
             type="button"
-            className={styles.sidebarToggle}
+            className={styles.usersToggle}
             onClick={toggleUsersCollapsed}
             aria-expanded={!isUsersCollapsed}
-            title={isUsersCollapsed ? "Expand users section" : "Collapse users section"}
+            title={isUsersCollapsed ? "Expand favorite and blocked users" : "Collapse users section"}
           >
-            <div className={styles.sidebarTitleRow}>
-              <Users size={14} className={styles.sidebarIcon} />
-              <span className={styles.sidebarHeading}>Users</span>
-              <span className={styles.sidebarPills}>
+            <div className={styles.usersTitleRow}>
+              <Users size={16} className={styles.usersIcon} />
+              <span className={styles.usersHeading}>Favorite &amp; Blocked Users</span>
+              <span className={styles.usersPills}>
                 <span className={styles.pillFav} title={`${favorites.length} favorite users`}>
                   ⭐ {favorites.length}
                 </span>
@@ -92,16 +103,16 @@ export function HomePage() {
               </span>
             </div>
             <span className={styles.chevronIcon}>
-              {isUsersCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              {isUsersCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
             </span>
           </button>
         </div>
 
         {!isUsersCollapsed && (
-          <div className={styles.sidebarBody}>
+          <div className={styles.usersBody}>
             <UserListPanel
               title="Favorites"
-              icon={<Star size={12} className={styles.panelTitleIconFav} />}
+              icon={<Star size={13} className={styles.panelTitleIconFav} />}
               users={favorites}
               actionLabel="Remove"
               emptyLabel="No favorite users"
@@ -109,7 +120,7 @@ export function HomePage() {
             />
             <UserListPanel
               title="Blocked"
-              icon={<Ban size={12} className={styles.panelTitleIconBlocked} />}
+              icon={<Ban size={13} className={styles.panelTitleIconBlocked} />}
               users={blocked}
               actionLabel="Unblock"
               emptyLabel="No blocked users"
@@ -117,19 +128,10 @@ export function HomePage() {
             />
           </div>
         )}
-      </aside>
+      </section>
 
-      <main className={styles.main}>
-        {bootstrap.quizQuestionCount > 0 && (
-          <p className={styles.quizCallout}>
-            You have {bootstrap.quizQuestionCount} quiz question
-            {bootstrap.quizQuestionCount === 1 ? "" : "s"} to answer.{" "}
-            <a className={styles.quizLink} href={bootstrap.quizUrl}>
-              Take Quiz
-            </a>
-          </p>
-        )}
-
+      {/* Main Charts - centered and spanning wide across the screen */}
+      <div className={styles.chartsContainer}>
         {hasDueQuestions && (
           <CategoriesToDoChart
             categories={bootstrap.categoriesToDo ?? []}
@@ -139,7 +141,7 @@ export function HomePage() {
         )}
 
         <DailyActivityChart data={bootstrap.dailyHistory ?? []} />
-      </main>
+      </div>
     </div>
   );
 }

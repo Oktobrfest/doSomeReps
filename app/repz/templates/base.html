@@ -10,6 +10,7 @@
     integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
     crossorigin="anonymous" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   {# Every React island reads its CSRF token from here; see lib/http.ts. #}
   <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -53,9 +54,9 @@
 </div>
 
   {# The quiz overrides this: it lays itself out across the whole page. #}
-  <div class="{% block container_class %}container{% endblock %}">
+  <main class="site-main {% block container_class %}container{% endblock %}">
     {% block content %}{% endblock %}
-  </div>
+  </main>
 
   {% block footer %}
   {% include 'footer.html' %}
@@ -70,7 +71,6 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
     integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
     crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </body>
 
 </html>

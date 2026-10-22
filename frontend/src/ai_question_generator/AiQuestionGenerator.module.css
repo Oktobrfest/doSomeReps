@@ -1,7 +1,9 @@
 .container {
-  max-width: 900px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
-  padding: 20px;
+  padding: 12px 6px;
+  box-sizing: border-box;
   font-family: var(--rep-font-family-system);
   color: var(--rep-color-text-primary);
 }
@@ -24,7 +26,7 @@
   background-color: var(--rep-color-surface);
   border: 1px solid var(--rep-color-border);
   border-radius: var(--rep-radius-dialog);
-  padding: 24px;
+  padding: 16px 12px;
   margin-bottom: 24px;
   box-shadow: var(--rep-shadow-card-raised);
 }
@@ -89,6 +91,7 @@
 }
 
 .legend {
+  
   font-weight: 600;
   font-size: 1.1rem;
   padding: 0 8px;
@@ -163,7 +166,7 @@
 .questionGroup {
   border: 1px solid var(--rep-color-border);
   border-radius: var(--rep-radius-dialog);
-  padding: 20px;
+  padding: 16px 12px;
   margin-bottom: 24px;
   background-color: var(--rep-color-surface);
   box-shadow: var(--rep-shadow-card);
@@ -183,6 +186,84 @@
   flex-direction: column;
   gap: 12px;
   margin-bottom: 20px;
+}
+
+/* The form column dictates the question's height; the right column holds the
+   preview above the bottom-right Save button without adding height. */
+.questionBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 20px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.questionBodyNoPreview > :first-child {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.previewColumn {
+  grid-column: 2;
+  grid-row: 1;
+  contain: size;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: var(--rep-btn-row-gap);
+}
+
+.questionBodyNoPreview .previewColumn {
+  pointer-events: none;
+}
+
+.previewTrack {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.previewPane {
+  position: sticky;
+  top: 20px;
+  max-height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.bottomSaveBtn {
+  align-self: stretch;
+  margin-top: auto;
+  pointer-events: auto;
+}
+
+@media (max-width: 991px) {
+  .questionBody {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .questionBodyNoPreview > :first-child {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .previewColumn {
+    grid-column: auto;
+    grid-row: auto;
+    contain: none;
+    height: auto;
+  }
+
+  .previewTrack {
+    flex: 0 0 auto;
+  }
+
+  .previewPane {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 .askAiRoot {

@@ -56,13 +56,17 @@ def unfavorite_user():
 @user_ajx.route("/block_user", methods=["POST"], endpoint="block_user")
 @login_required
 def block_user():
+    target_id = request.form.get("block_user_id")
+    if target_id and str(target_id) == str(g._login_user.id):
+        return jsonify("Cannot block yourself"), 400
+
     def drop_from_favorites(usr, blocked_user):
         """Blocking supersedes favouriting: you cannot hold both on one user."""
         if blocked_user in usr.favorates:
             usr.favorates.remove(blocked_user)
 
     return _update_relation(
-        "blocked_users", True, request.form.get("block_user_id"), "Blocked User",
+        "blocked_users", True, target_id, "Blocked User",
         before_commit=drop_from_favorites,
     )
 
