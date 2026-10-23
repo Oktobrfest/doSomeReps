@@ -150,23 +150,20 @@ def get_quizes(selected_cats, UID):
         user_rated = session.execute(user_rate_qry).scalars().first()
         # see if it's due to be answered- (levels 2+)
         if r.quizq.level_no > 1:
-            # find the quiz question that was answered before it and grab that datetime
-            previous_level = r.quizq.level_no - 1
+            # Measure the interval from the most recent completed rep for this
+            # question, whether it was promoted (Correct) or demoted (Slightly Wrong).
             previous_quizq = (
                 select(quizq.answered_on)
                 .where(quizq.user_id == UID)
                 .where(quizq.question_id == r.quizq.question_id)
-                .where(quizq.level_no == previous_level)
-                .where(quizq.correct == True)
+                .where(quizq.answered_on.is_not(None))
                 .order_by(quizq.answered_on.desc())
             )
-            previous_quizq_date = (
+            answered_on = (
                 session.execute(previous_quizq.distinct()).scalars().first()
             )
-            answered_on = previous_quizq_date
             days_hence = r.days_hence
-            due_date = answered_on + timedelta(days=days_hence)
-            if now > due_date:
+            if answered_on is not None and now > answered_on + timedelta(days=days_hence):
                 addit = True
                 last_ansered = answered_on
             else:

@@ -3,7 +3,7 @@ import random
 from enum import StrEnum
 from typing import Any
 
-from flask import flash, url_for
+from flask import url_for
 from flask_login import current_user
 from sqlalchemy import Date, cast, select, update
 from sqlalchemy.sql import func
@@ -250,7 +250,7 @@ def invalidate_quiz_queue_cache(user_id: int) -> None:
     prompted the invalidation.
     """
     try:
-        selected_categories = get_session("quiz_category_names")
+        selected_categories = get_selected_categories("quiz")
         if not selected_categories or selected_categories == "Not set":
             return
 
@@ -299,8 +299,12 @@ def submit_quiz_answer(
     provided_answer: str | None,
     que_list: list[dict[str, Any]],
     que_cache_key: str,
-):
-    """Record a Correct / Wrong / Slightly Wrong verdict and re-level the question."""
+) -> bool:
+    """Record a Correct / Wrong / Slightly Wrong verdict and re-level the question.
+
+    Returns True when the open rep was recorded, or False when `quizq_id` had
+    already been answered (e.g. from a stale client queue).
+    """
     time_now = func.now()
 
     qry = (
@@ -343,8 +347,13 @@ def submit_quiz_answer(
                     f"in the list to remove it."
                 )
 
-        flash("This question was already submitted!", category="warning")
-        return
+        return False
+
+    if not que_list:
+        selected_categories = get_selected_categories("quiz")
+        if selected_categories and selected_categories != "Not set":
+            selected_cats = [remove_underscore(x) for x in selected_categories]
+            que_list[:] = get_quizes(selected_cats, user_id)
 
     update_stmt = (
         update(quizq)
@@ -362,7 +371,7 @@ def submit_quiz_answer(
 
         update_stmt = update_stmt.values(correct=True)
 
-        if que_list is not None:
+        if que_list:
             for i in range(len(que_list) - 1, -1, -1):
                 if str(que_list[i].get("quizq_id")) == str(quizq_id):
                     logging.info(f"Successfully popped quizq_id {quizq_id} from list index {i}")
@@ -386,10 +395,10 @@ def submit_quiz_answer(
         else:
             new_lvl = 1
 
-        if len(que_list) > 0:
+        if que_list:
             que_list[:] = [
                 q for q in que_list
-                if q["quizq_id"] != quizq_id
+                if str(q.get("quizq_id")) != str(quizq_id)
             ]
             cache.set(que_cache_key, que_list, timeout=600)
 
@@ -404,6 +413,7 @@ def submit_quiz_answer(
 
     session.execute(update_stmt)
     session.commit()
+    return True
 
 
 def pick_next_questions(

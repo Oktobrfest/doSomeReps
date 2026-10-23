@@ -7,6 +7,7 @@ from flask import (
     flash,
     g,
     jsonify,
+    make_response,
     redirect,
     render_template,
     request,
@@ -73,8 +74,7 @@ from ..models import (
     rating,
     users
 )
-# Imported for its side effect: configuring the image UploadSet.
-from . import homeforms  # noqa: F401
+# Imported for its side effect: configuring the image UploadSet.\nfrom . import homeforms  # noqa: F401
 
 
 @home.route("/favicon.ico")
@@ -204,14 +204,18 @@ def quiz():
     The page fetches its own question queue from /quiz/queue, so nothing here
     depends on whether the reader has audio switched on.
     """
-    return render_template(
-        "quiz.html",
-        title="Quiz",
-        description=".",
-        user=current_user,
-        category_list=get_all_categories(),
-        selected_categories=get_selected_categories(),
+    response = make_response(
+        render_template(
+            "quiz.html",
+            title="Quiz",
+            description=".",
+            user=current_user,
+            category_list=get_all_categories(),
+            selected_categories=get_selected_categories(),
+        )
     )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @home.route("/quemore", methods=["GET", "POST"], endpoint="quemore")

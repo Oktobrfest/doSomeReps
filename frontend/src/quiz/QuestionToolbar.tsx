@@ -14,7 +14,7 @@ function toolbarBtn(intent: string) {
 interface QuestionToolbarProps {
   question: Question;
   isOwnQuestion: boolean;
-  editQuestionUrl: string;
+  editHref: string;
   disabled: boolean;
   /** Absent once the reader has rated the question. */
   onRate?: () => void;
@@ -33,7 +33,7 @@ interface QuestionToolbarProps {
 export function QuestionToolbar({
   question,
   isOwnQuestion,
-  editQuestionUrl,
+  editHref,
   disabled,
   onRate,
   onExclude,
@@ -71,7 +71,7 @@ export function QuestionToolbar({
 
       {isOwnQuestion && (
         <a
-          href={disabled ? undefined : `${editQuestionUrl}?q_id=${question.question_id}`}
+          href={disabled ? undefined : editHref}
           aria-disabled={disabled}
           className={toolbarBtn(sharedStyles.btnCyan)}
           onClick={(event) => {

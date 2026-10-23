@@ -70,7 +70,7 @@ class TestQuizSubmissions(unittest.TestCase):
         self.app.config['TESTING'] = True
         self.app.config['SECRET_KEY'] = 'test-secret'
 
-    def _post_action(self, payload):
+    def _post_action(self, payload, submit_return=True):
         """Run quiz_action against a request carrying `payload`, with IO mocked out."""
         from repz.home import quiz_api
         from repz.services.quiz_service import AnswerVerdict

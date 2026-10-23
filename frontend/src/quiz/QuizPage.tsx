@@ -333,7 +333,8 @@ function QuizBody({
 
   const hintImages = validImages(currentQuestion.pics.hint_image);
   const isOwnQuestion = currentQuestion.created_by_username === currentUsername;
-  const editHref = `${editQuestionUrl}?q_id=${currentQuestion.question_id}`;
+  const returnUrl = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/quiz';
+  const editHref = `${editQuestionUrl}?q_id=${currentQuestion.question_id}&return_to=${encodeURIComponent(returnUrl)}`;
   const hasHint = Boolean(currentQuestion.hint) || hintImages.length > 0;
   /** A reader rates a question once, so the offer to rate outlives its use. */
   const hasRated = userRating !== null;
@@ -512,7 +513,7 @@ function QuizBody({
               <QuestionToolbar
                 question={currentQuestion}
                 isOwnQuestion={isOwnQuestion}
-                editQuestionUrl={editQuestionUrl}
+                editHref={editHref}
                 disabled={quiz.isSubmitting}
                 onRate={hasRated ? undefined : () => setDialog('rate')}
                 onExclude={quiz.actions.exclude}
