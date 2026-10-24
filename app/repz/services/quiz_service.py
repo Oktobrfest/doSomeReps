@@ -445,10 +445,7 @@ def pick_next_questions(
         if str(q.get("quizq_id")) not in exclude_set
     ]
 
-    if len(candidates) <= count:
-        return candidates
-
-    return random.sample(candidates, count)
+    return random.sample(candidates, min(count, len(candidates)))
 
 
 def get_quiz_queue(
@@ -481,27 +478,26 @@ def build_quiz_items(
     audio_service=None,
 ) -> list[dict[str, Any]]:
     """
-    Build fully-populated SPA quiz items ({question, audioAssets}) for the next
+    Build SPA quiz items ({question, audioAssets}) for the next
     `count` questions in the queue.
 
-    Text-to-speech is only run when an `audio_service` is supplied, so readers
-    who have audio switched off never pay for audio generation.  Generation
-    failures are logged and do not block the item from being returned.
+    Never waits on text-to-speech: items carry only audio that already exists,
+    and questions whose audio is ready are served first.  The SPA fetches any
+    audio still missing once a question is on screen.
     """
-    questions = pick_next_questions(que_list, count, exclude_quizq_ids)
-    items: list[dict[str, Any]] = []
+    items = [
+        {"question": q, "audioAssets": build_audio_assets(q, user, audio_service, generate=False)}
+        for q in pick_next_questions(que_list, len(que_list), exclude_quizq_ids)
+    ]
+    items = sorted(items, key=lambda item: not item["audioAssets"].get("question"))[:count]
 
-    for q in questions:
+    for q in (item["question"] for item in items):
         q["flag"] = _get_question_flag(user_id=user.id, question_id=q["question_id"])
-        items.append({
-            "question": q,
-            "audioAssets": build_audio_assets(q, user, audio_service),
-        })
 
     return items
 
 
-def build_audio_assets(q: dict[str, Any], user, audio_service) -> dict:
+def build_audio_assets(q: dict[str, Any], user, audio_service, generate: bool = True) -> dict:
     """Ensure and describe the audio assets for one question, or {} without a service."""
     if audio_service is None:
         return {}
@@ -511,6 +507,7 @@ def build_audio_assets(q: dict[str, Any], user, audio_service) -> dict:
             q=q,
             user=user,
             parts=("question", "answer", "hint"),
+            generate=generate,
         )
     except Exception as e:
         logging.error(f"❌ Failed to generate audio assets for quizq {q.get('quizq_id')}: {e}")

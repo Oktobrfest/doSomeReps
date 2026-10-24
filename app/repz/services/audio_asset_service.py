@@ -245,6 +245,7 @@ Avoid difficult rarely used words and jargon.
         user,
         parts=("question", "answer"),
         language: str = "en_US",
+        generate: bool = True,
     ) -> dict:
         """
         Audio generation is idempotent and separate from quiz progression.
@@ -297,6 +298,9 @@ Avoid difficult rarely used words and jargon.
                 if existing_url is not None:
                     logging.info(f"Found existing audio for {part} in {lang}: {existing_url}")
                     assets_by_language[lang][part] = existing_url
+                    continue
+
+                if not generate:
                     continue
 
                 tts_text = self._resolve_tts_text_for_part(

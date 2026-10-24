@@ -787,7 +787,7 @@ export function useQuizController({
     const quizqId = item?.question?.quizq_id;
     const assets = getAudioAssets(item);
     const needsHintAudio = Boolean(item?.question?.hint) && !assets.hint?.length;
-    if (!quizqId || (assets.question?.length && !needsHintAudio)) return;
+    if (!quizqId || (assets.question?.length && assets.answer?.length && !needsHintAudio)) return;
 
     let cancelled = false;
 
@@ -805,9 +805,7 @@ export function useQuizController({
           latestItems.map((entry, index) =>
             index === 0 ? {
               ...entry,
-              audioAssets: assets.question?.length
-                ? { ...entry.audioAssets, hint: data.audioAssets.hint }
-                : data.audioAssets,
+              audioAssets: { ...data.audioAssets, ...entry.audioAssets },
             } : entry,
           ),
         );
