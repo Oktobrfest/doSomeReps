@@ -7,6 +7,7 @@ import remarkSuper from "remark-super";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import typescript from "highlight.js/lib/languages/typescript";
 import javascript from "highlight.js/lib/languages/javascript";
 import xml from "highlight.js/lib/languages/xml";
@@ -96,6 +97,13 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
       rehypePlugins={[
         rehypeCleanTableWhitespace,
         rehypeRaw,
+        [rehypeSanitize, {
+          ...defaultSchema,
+          attributes: {
+            ...defaultSchema.attributes,
+            code: [["className", /^language-./, "math-inline", "math-display"]],
+          },
+        }],
         rehypeKatex,
         [
           rehypeHighlight,

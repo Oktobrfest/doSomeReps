@@ -11,7 +11,12 @@ from sqlalchemy import select
 from repz.routes import ai
 from ..database import session
 from ..models import users
-from .litellm_client import completion_for_user, resolve_user_ai_config, AIConfigError
+from .client import (
+    AIConfigError,
+    client_for_config,
+    completion_for_user,
+    resolve_user_ai_config,
+)
 from .prompts import (
     SYSTEM_PROMPT,
     ANSWER_SECTION_REVEALED,
@@ -41,12 +46,6 @@ def _sanitize_image_urls(raw_urls) -> list:
         if isinstance(u, str)
         and u.strip().lower().startswith(("http://", "https://", "data:image/"))
     ]
-
-def _resolve_stt_config(user_obj):
-    """Return (api_key, api_base, model) for STT transcription."""
-    config = resolve_user_ai_config(user_obj, "stt")
-    return (config.api_key, config.api_base or None, config.model or TRANSCRIBE_MODEL)
-
 
 @ai.route("/api/ask-ai/transcribe", methods=["POST"])
 @login_required
@@ -81,10 +80,11 @@ def ask_ai_transcribe():
     logger.debug("transcribe user_lookup=%.3fs", time.perf_counter() - t_user)
 
     t_cfg = time.perf_counter()
-    api_key, api_base, model = _resolve_stt_config(user_obj)
+    config = resolve_user_ai_config(user_obj, "stt")
+    api_key, api_base, model = config.api_key, config.api_base, config.model or TRANSCRIBE_MODEL
     logger.info("STT config: model=%r api_base=%r has_key=%s",
                 model, api_base, bool(api_key))
-    logger.debug("transcribe _resolve_stt_config=%.3fs", time.perf_counter() - t_cfg)
+    logger.debug("transcribe resolve_user_ai_config=%.3fs", time.perf_counter() - t_cfg)
 
     if not api_key:
         logger.warning("No API key configured for STT")
@@ -109,52 +109,9 @@ def ask_ai_transcribe():
             logger.warning("Audio file is empty on disk")
             return jsonify({"ok": False, "error": "Audio file is empty."}), 400
 
-        # Use the OpenAI client directly instead of litellm.transcription()
-        # because LiteLLM's transcription handler strips the "openai/" prefix
-        # from the model name before sending it in the JSON body.  Providers
-        # like DeepInfra require the full "openai/whisper-large-v3" string
-        # as the model parameter, so we must bypass LiteLLM for STT.
-        t_openai_import = time.perf_counter()
-        from openai import OpenAI
-        logger.debug("transcribe openai import=%.3fs", time.perf_counter() - t_openai_import)
-
-        t_client = time.perf_counter()
-        client_kwargs: dict = {"api_key": api_key}
-        if api_base:
-            # The OpenAI-compatible audio endpoint is underneath api_base.
-            # api_base is e.g. "https://api.deepinfra.com/v1/openai"
-            # Ensure it ends with a single trailing slash so URL path segments join correctly.
-            client_kwargs["base_url"] = api_base.rstrip("/") + "/"
-
-        logger.info("OpenAI client base_url argument=%s", client_kwargs.get("base_url"))
-
-        client = OpenAI(**client_kwargs)
-
-        logger.info(
-            "Resolved STT configuration: model=%r db_api_base=%r "
-            "env_OPENAI_BASE_URL=%r final_client_base_url=%s",
-            model,
-            api_base,
-            os.getenv("OPENAI_BASE_URL"),
-            client.base_url,
-        )
-
-        logger.debug(
-            "transcribe openai client ctor=%.3fs",
-            time.perf_counter() - t_client,
-        )
-
-        logger.info("Calling client.audio.transcriptions.create with model=%r", model)
-        client = OpenAI(**client_kwargs)
-        logger.debug("transcribe openai client ctor=%.3fs", time.perf_counter() - t_client)
-
-        logger.info("Calling client.audio.transcriptions.create with model=%r", model)
         t_api = time.perf_counter()
-        with open(temp_path, "rb") as f:
-            resp = client.audio.transcriptions.create(
-                model=model,
-                file=f,
-            )
+        with client_for_config(config) as client, open(temp_path, "rb") as audio:
+            resp = client.audio.transcriptions.create(model=model, file=audio)
         api_elapsed = time.perf_counter() - t_api
         logger.info("[BOTTLENECK CANDIDATE] audio.transcriptions.create took %.3fs", api_elapsed)
 
@@ -203,7 +160,7 @@ def _build_ask_ai_prompt(
     """Build the LLM messages for an Ask AI request.
 
     Images are attached to the FIRST user message as OpenAI-style content blocks
-    (LiteLLM normalises this across providers), so a multi-turn conversation does
+    (supported by both providers), so a multi-turn conversation does
     not re-upload them on every follow-up.
     """
     if history is None:
@@ -353,11 +310,7 @@ def ask_ai():
         t_llm = time.perf_counter()
         resp = completion_for_user(user_obj, messages=messages, modality=modality, temperature=0.4)
         logger.info("[BOTTLENECK CANDIDATE] ask_ai completion_for_user=%.3fs", time.perf_counter() - t_llm)
-        choices = getattr(resp, "choices", None)
-        if choices:
-            answer = choices[0]["message"]["content"]
-        else:
-            answer = resp["choices"][0]["message"]["content"]
+        answer = resp.choices[0].message.content
     except AIConfigError as e:
         logger.warning("Ask AI AIConfigError: %s", e)
         return jsonify({"ok": False, "error": str(e)}), 400

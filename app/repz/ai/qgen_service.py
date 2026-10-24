@@ -71,16 +71,8 @@ _JSON_FENCE_RE = re.compile(r"^```(?:json)?\s*\n?(.*?)\n?```$", re.DOTALL)
 
 
 def _extract_message_content(resp: Any) -> str:
-    """Pull the assistant message text out of a LiteLLM response."""
-    try:
-        return resp["choices"][0]["message"]["content"] or ""
-    except (KeyError, IndexError, TypeError):
-        # litellm.ModelResponse also supports attribute access
-        return getattr(
-            getattr(getattr(resp.choices[0], "message", None), "content", "") or "",
-            "__str__",
-            lambda: "",
-        )()
+    """Pull the assistant text from the SDK's chat completion."""
+    return resp.choices[0].message.content or ""
 
 
 def _strip_json_fence(content: str) -> str:

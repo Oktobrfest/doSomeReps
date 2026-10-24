@@ -1,3 +1,6 @@
-sherpa-onnx
-sentencepiece
-pypinyin
+-r requirements.txt
+black==26.10.1
+debugpy==1.8.22
+httpx==0.28.1
+pydevd-pycharm==263.7031.30
+pytest==9.1.1

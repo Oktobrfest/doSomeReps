@@ -22,7 +22,7 @@ from repz.ai.prompts import (
 
 from ..bluehelpers import remove_underscore
 from ..database import session as db_session
-from .litellm_client import completion_for_user
+from .client import completion_for_user
 from .qgen_service import (
     GeneratedHintSet,
     _get_user_by_id,

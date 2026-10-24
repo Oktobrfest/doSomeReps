@@ -15,6 +15,7 @@ spec:
       labels:
         app: reps-prod
     spec:
+      automountServiceAccountToken: false
       dnsPolicy: ClusterFirst
       dnsConfig:
         options:
@@ -40,8 +41,7 @@ spec:
 
       containers:
         - name: reps
-        #  NEED TO UPDATE TO USE TAGS so you dont pull each time!
-          image: docker.io/oktobrfest/reps:latest
+          image: docker.io/oktobrfest/reps@sha256:e50717b6269a462fc83f325787409b256c7e3f3ccd13316e2afb09bb34720152
           imagePullPolicy: Always
           # imagePullPolicy: IfNotPresent
 
@@ -92,6 +92,14 @@ spec:
           ports:
             - containerPort: 5554
               name: http
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5554
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
 
           resources:
             requests:
