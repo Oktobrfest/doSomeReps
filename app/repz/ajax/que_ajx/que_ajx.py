@@ -9,6 +9,7 @@ from ...bluehelpers import (exclude, create_brand_new_quizq, remove_underscore,
                             get_user, time, unexclude, WITH_CONTENT)
 from ..ajax_response import AjaxResponse
 from repz.services.question_service import que_listing
+from repz.services.quiz_service import invalidate_quiz_queue_cache
 
 from sqlalchemy import select
 
@@ -160,6 +161,8 @@ def save_to_que():
     if msg == '':
         msg = 'Nothing Saved.'
         response.msg_category = 'warning'
+    else:
+        invalidate_quiz_queue_cache(UID)
 
     response.msg = msg
     response.status = 'ok'
@@ -177,6 +180,7 @@ def unexclude_q():
     unexclude_result = unexclude(question_id, UID)
 
     if 'success' in unexclude_result:
+        invalidate_quiz_queue_cache(UID)
         return jsonify({"status": "ok", "msg": unexclude_result['success']})
 
     return jsonify({"status": "error", "msg": unexclude_result['failure']}), 400

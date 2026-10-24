@@ -34,16 +34,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Python dependencies
 COPY requirements.txt .
-RUN pip install setuptools && \
-    if [ "$(uname -m)" = "aarch64" ]; then \
-    pip install --extra-index-url https://www.piwheels.org/simple -r requirements.txt; \
+RUN if [ "$NODE_ENV" != "prod" ]; then pip install setuptools; fi && \
+    if [ "$NODE_ENV" != "prod" ] && [ "$(uname -m)" = "aarch64" ]; then \
+        pip install --extra-index-url https://www.piwheels.org/simple -r requirements.txt; \
     else pip install -r requirements.txt; \
     fi
 
 # Node.js dependencies and build
 WORKDIR /frontend
 COPY frontend/package*.json ./
-RUN npm install
+RUN if [ "$NODE_ENV" = "prod" ]; then npm ci; else npm install; fi
 
 # Copy frontend source files for Vite build
 COPY frontend/ ./
@@ -66,12 +66,7 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 # Install only required runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
-    g++ \
-    unixodbc-dev \
-    gnupg \
-    nodejs \
-    npm \
-    build-essential \
+    libgomp1 \
     libstdc++6 \
     ffmpeg \
     curl \
@@ -99,6 +94,13 @@ RUN pip install --no-cache-dir "hatchet-sdk==1.42.1"
 
 # ===== development =====
 FROM base-runtime AS development
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    g++ unixodbc-dev gnupg nodejs npm build-essential \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt requirements-dev.txt /tmp/requirements/
+RUN pip install -r /tmp/requirements/requirements-dev.txt
 
 COPY app/entrypoint.sh /app/entrypoint.sh
 

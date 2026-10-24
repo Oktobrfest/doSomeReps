@@ -6,7 +6,7 @@ from os import environ
 
 import flask
 import flask_login
-from flask import Flask, g, flash
+from flask import Flask, g
 from flask_login import LoginManager, current_user
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
@@ -130,9 +130,11 @@ def init_app():
 
         @login_manager.unauthorized_handler
         def unauthorized():
-            """Redirect unauthorized users to Login page."""
-            flash('You must be logged in to view that page.')
+            """Redirect unauthorized users to Login page.
 
+            No flash: login never renders one of our pages, so the message
+            would only surface after signing in, when it is already stale.
+            """
             return flask.redirect(flask.url_for('auth.login', user=current_user))
 
         @app.teardown_appcontext

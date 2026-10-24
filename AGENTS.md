@@ -29,6 +29,7 @@ Audio tiles are a separate scale (`--rep-tile-*`), intentionally not `--rep-btn-
 5. Components compose base + modifiers and add zero geometry.
 6. Component CSS sets flow only (display/gap/flex), never control size.
 7. No @media or @container rules that change button size.
+8. DO NOT EVER CREATE ANY README, INSTRUCTION FILES, OR ANY FILES YOU WERE NOT EXPLICITELY ASKED TO CREATE AS PART OF YOUR REQUEST. DO NOT TAKE IT UPON YOURSELF TO ADD ANYTHING WHATSOEVER TO THE REPOSITORY, CODE, OR LOCAL ENVIRONMENT WITHOUT EXPLICIT INSTRUCTIONS TO DO SO. ADDING A 'readme.md', 'findings', 'notes' or anything else that wasn't asked for is absolutely unacceptable for any reason!
 
 ### Never
 - Never introduce a hex, rgb, or rgba literal in any file outside `global.css` `:root`.

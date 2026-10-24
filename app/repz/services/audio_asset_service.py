@@ -9,7 +9,7 @@ from repz.ai.prompts import GENERATE_TTS_AUDIO_TEXT
 from repz.database import session
 from repz.models import audio
 from repz.aws_s3 import S3
-from repz.ai.litellm_client import completion_for_user, resolve_user_ai_config
+from repz.ai.client import completion_for_user, resolve_user_ai_config
 
 # Rewriting a question into TTS-friendly prose is an LLM call, so it runs on
 # the "text" modality - not "tts", which is the voice synthesis step.
@@ -226,7 +226,7 @@ Avoid difficult rarely used words and jargon.
             temperature=0.1,
         )
 
-        content = response["choices"][0]["message"]["content"]
+        content = response.choices[0].message.content
 
         if content is None:
             raise ValueError(f"AI returned no TTS text for {part} in {language}")
@@ -245,6 +245,7 @@ Avoid difficult rarely used words and jargon.
         user,
         parts=("question", "answer"),
         language: str = "en_US",
+        generate: bool = True,
     ) -> dict:
         """
         Audio generation is idempotent and separate from quiz progression.
@@ -297,6 +298,9 @@ Avoid difficult rarely used words and jargon.
                 if existing_url is not None:
                     logging.info(f"Found existing audio for {part} in {lang}: {existing_url}")
                     assets_by_language[lang][part] = existing_url
+                    continue
+
+                if not generate:
                     continue
 
                 tts_text = self._resolve_tts_text_for_part(

@@ -1,5 +1,4 @@
-"""User profile page - lets a logged-in user save their AI provider
-credentials (used by LiteLLM)."""
+"""User profile page for language preferences and AI provider credentials."""
 
 from flask import flash, redirect, render_template, url_for, request
 from flask_login import current_user, login_required

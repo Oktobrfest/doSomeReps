@@ -40,8 +40,14 @@ OTHER_CATEGORIES_DUE_MESSAGE = (
 )
 
 
+def _no_store_json(payload: dict):
+    response = jsonify(payload)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 def _exhausted(message: str):
-    return jsonify({"items": [], "queueExhausted": True, "message": message})
+    return _no_store_json({"items": [], "queueExhausted": True, "message": message})
 
 
 def _exhausted_with_suggestions(selected_categories, user_id: int):
@@ -109,7 +115,7 @@ def quiz_queue():
         # Everything still in the queue was excluded by the caller.
         return _exhausted_with_suggestions(selected_categories, user_id)
 
-    return jsonify({"items": items, "queueExhausted": False, "message": ""})
+    return _no_store_json({"items": items, "queueExhausted": False, "message": ""})
 
 
 @home.route("/quiz/audio-assets", methods=["GET"], endpoint="quiz_audio_assets")
@@ -181,7 +187,7 @@ def quiz_action():
         except ValueError:
             return jsonify({"ok": False, "error": f"Invalid verdict: {verdict_raw!r}"}), 400
 
-        submit_quiz_answer(
+        applied = submit_quiz_answer(
             user_id=current_user.id,
             quizq_id=quizq_id,
             verdict=verdict,
@@ -189,7 +195,7 @@ def quiz_action():
             que_list=que_list,
             que_cache_key=que_cache_key,
         )
-        if verdict.is_correct:
+        if applied and verdict.is_correct:
             continue_guide(current_user.id, quizq_id)
 
         return jsonify({
@@ -197,6 +203,7 @@ def quiz_action():
             "action": "submit",
             "quizqId": quizq_id,
             "verdict": verdict.value,
+            "alreadyAnswered": not applied,
         })
 
     return jsonify({"ok": False, "error": f"Invalid action: {action!r}"}), 400

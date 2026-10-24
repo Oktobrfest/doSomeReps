@@ -11,13 +11,13 @@ from sqlalchemy import select, delete
 from repz.routes import ai
 from ..database import session
 from ..models import users, UserAIProvider, UserAIIntegration
-from .litellm_client import (
+from .client import (
     completion_for_user,
-    resolve_user_ai_config,
     AIConfigError,
-    price_label,
+    provider_base_url,
 )
 from .profile_forms import PREDEFINED_OPTIONS
+from .pricing import price_label
 
 
 @ai.route("/integration", methods=["GET"])
@@ -74,12 +74,8 @@ def get_ai_config():
             if not m or m in prices or m.lower() in prices:
                 continue
 
-            if "/" in m:
-                vendor, model_name = m.split("/", 1)
-                price = price_label(model_name, vendor)
-            else:
-                prov = integ.provider_relation.provider if integ.provider_relation else None
-                price = price_label(m, prov)
+            prov = integ.provider_relation.provider if integ.provider_relation else None
+            price = price_label(m, prov)
 
             prices[m] = price
             prices[m.lower()] = price
@@ -114,6 +110,11 @@ def save_ai_provider():
 
         if not provider_name:
             return jsonify({"success": False, "error": "Provider name is required"}), 400
+
+        try:
+            provider_base_url(provider_name, api_base)
+        except AIConfigError as exc:
+            return jsonify({"success": False, "error": str(exc)}), 400
 
         # Check if provider already exists for the user
         prov_obj = next((p for p in current_user.ai_providers if p.provider == provider_name), None)
@@ -180,6 +181,9 @@ def save_ai_integration():
 
         if not modality:
             return jsonify({"success": False, "error": "Modality is required"}), 400
+
+        if provider_id and not any(p.id == provider_id for p in current_user.ai_providers):
+            return jsonify({"success": False, "error": "Provider not found"}), 404
 
         # Check if configuration already exists for this modality
         integ_obj = next((i for i in current_user.ai_integrations if i.modality == modality), None)
@@ -253,19 +257,12 @@ def test_ai_completion():
         ]
 
         resp = completion_for_user(user_obj, messages=messages, modality=modality, temperature=0.7)
-        choices = getattr(resp, "choices", [])
-        content = choices[0]["message"]["content"] if choices else ""
-
-        # Report the model the provider echoed back, falling back to the one
-        # this modality is configured with.
-        model_used = getattr(
-            resp, "model", resolve_user_ai_config(user_obj, modality).model
-        )
+        content = resp.choices[0].message.content or ""
 
         return jsonify({
             "success": True,
             "response": content,
-            "model_used": model_used
+            "model_used": resp.model
         })
     except AIConfigError as e:
         return jsonify({"success": False, "error": str(e)}), 400

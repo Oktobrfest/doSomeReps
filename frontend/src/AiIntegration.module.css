@@ -274,10 +274,6 @@
   font-family: var(--rep-font-family-mono);
 }
 
-.formControlLowercase {
-  text-transform: lowercase;
-}
-
 .formCheck {
   display: flex;
   align-items: center;

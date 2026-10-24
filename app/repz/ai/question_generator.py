@@ -33,7 +33,7 @@ from repz.routes import ai
 from ..bluehelpers import get_session, set_session
 from ..database import session as db_session
 from ..models import question
-from .litellm_client import AIConfigError, completion_for_user
+from .client import AIConfigError, completion_for_user
 from .qgen_service import ExtendedAnswer, _parse_extended_answer
 
 

@@ -17,6 +17,7 @@ from repz.bluehelpers import create_brand_new_quizq, get_rating, remove_undersco
 from repz.database import session
 from repz.home.form_helpers import PIC_PART_BY_TYPE, save_pictures
 from repz.models import category, question, users
+from repz.services.quiz_service import invalidate_quiz_queue_cache
 
 # Mirrors the column widths on `question`. The editors enforce the same limits
 # client-side, so a breach here means a stale or forged request.
@@ -188,6 +189,7 @@ def create_question(
 
     if draft.auto_que:
         create_brand_new_quizq([new_question.question_id], created_by)
+        invalidate_quiz_queue_cache(created_by)
 
     return new_question
 

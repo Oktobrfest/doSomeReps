@@ -29,8 +29,6 @@ export default function AiIntegration() {
 
   // Provider Form State
   const [providerName, setProviderName] = useState<string>("");
-  const [customProviderName, setCustomProviderName] = useState<string>("");
-  const [providerApiBase, setProviderApiBase] = useState<string>("");
   const [providerApiKey, setProviderApiKey] = useState<string>("");
 
   // Integration Form State
@@ -90,15 +88,6 @@ export default function AiIntegration() {
     const pName = e.target.value;
     setProviderName(pName);
     
-    // Auto populate fields if provider already has config
-    if (config) {
-      const existing = config.providers.find(p => p.provider === pName);
-      if (existing) {
-        setProviderApiBase(existing.apiBase || "");
-      } else {
-        setProviderApiBase("");
-      }
-    }
     setProviderApiKey("");
   };
 
@@ -129,8 +118,7 @@ export default function AiIntegration() {
 
   const handleSaveProvider = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalProvider = providerName === "custom" ? customProviderName.trim() : providerName;
-    if (!finalProvider) {
+    if (!providerName) {
       setError("Please specify a provider.");
       return;
     }
@@ -141,16 +129,14 @@ export default function AiIntegration() {
 
     try {
       const message = await saveProvider({
-        provider: finalProvider,
-        apiBase: providerApiBase,
+        provider: providerName,
+        apiBase: "",
         apiKey: providerApiKey,
       });
 
       setSuccessMsg(message || "Provider credentials saved successfully!");
       setProviderApiKey("");
       setProviderName("");
-      setCustomProviderName("");
-      setProviderApiBase("");
       await fetchConfig();
     } catch (err: any) {
       setError(err.message || "An error occurred.");
@@ -410,32 +396,7 @@ export default function AiIntegration() {
                     {Object.keys(config.predefinedOptions).map(p => (
                       <option key={p} value={p}>{p.toUpperCase()}</option>
                     ))}
-                    <option value="custom">Other / Custom</option>
                   </select>
-                </div>
-
-                {providerName === "custom" && (
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Custom Provider ID</label>
-                    <input
-                      type="text"
-                      className={`${styles.formControl} ${styles.formControlLowercase}`}
-                      placeholder="e.g. together_ai"
-                      value={customProviderName}
-                      onChange={(e) => setCustomProviderName(e.target.value)}
-                    />
-                  </div>
-                )}
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Custom API Base URL (Optional)</label>
-                  <input
-                    type="text"
-                    className={styles.formControl}
-                    placeholder="Only for Ollama, Local, or Private Proxies"
-                    value={providerApiBase}
-                    onChange={(e) => setProviderApiBase(e.target.value)}
-                  />
                 </div>
 
                 <div className={styles.formGroup}>

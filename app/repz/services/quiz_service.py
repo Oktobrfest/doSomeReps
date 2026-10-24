@@ -3,7 +3,7 @@ import random
 from enum import StrEnum
 from typing import Any
 
-from flask import flash, url_for
+from flask import url_for
 from flask_login import current_user
 from sqlalchemy import Date, cast, select, update
 from sqlalchemy.sql import func
@@ -250,7 +250,7 @@ def invalidate_quiz_queue_cache(user_id: int) -> None:
     prompted the invalidation.
     """
     try:
-        selected_categories = get_session("quiz_category_names")
+        selected_categories = get_selected_categories("quiz")
         if not selected_categories or selected_categories == "Not set":
             return
 
@@ -299,8 +299,12 @@ def submit_quiz_answer(
     provided_answer: str | None,
     que_list: list[dict[str, Any]],
     que_cache_key: str,
-):
-    """Record a Correct / Wrong / Slightly Wrong verdict and re-level the question."""
+) -> bool:
+    """Record a Correct / Wrong / Slightly Wrong verdict and re-level the question.
+
+    Returns True when the open rep was recorded, or False when `quizq_id` had
+    already been answered (e.g. from a stale client queue).
+    """
     time_now = func.now()
 
     qry = (
@@ -343,8 +347,13 @@ def submit_quiz_answer(
                     f"in the list to remove it."
                 )
 
-        flash("This question was already submitted!", category="warning")
-        return
+        return False
+
+    if not que_list:
+        selected_categories = get_selected_categories("quiz")
+        if selected_categories and selected_categories != "Not set":
+            selected_cats = [remove_underscore(x) for x in selected_categories]
+            que_list[:] = get_quizes(selected_cats, user_id)
 
     update_stmt = (
         update(quizq)
@@ -362,7 +371,7 @@ def submit_quiz_answer(
 
         update_stmt = update_stmt.values(correct=True)
 
-        if que_list is not None:
+        if que_list:
             for i in range(len(que_list) - 1, -1, -1):
                 if str(que_list[i].get("quizq_id")) == str(quizq_id):
                     logging.info(f"Successfully popped quizq_id {quizq_id} from list index {i}")
@@ -386,10 +395,10 @@ def submit_quiz_answer(
         else:
             new_lvl = 1
 
-        if len(que_list) > 0:
+        if que_list:
             que_list[:] = [
                 q for q in que_list
-                if q["quizq_id"] != quizq_id
+                if str(q.get("quizq_id")) != str(quizq_id)
             ]
             cache.set(que_cache_key, que_list, timeout=600)
 
@@ -404,6 +413,7 @@ def submit_quiz_answer(
 
     session.execute(update_stmt)
     session.commit()
+    return True
 
 
 def pick_next_questions(
@@ -435,10 +445,7 @@ def pick_next_questions(
         if str(q.get("quizq_id")) not in exclude_set
     ]
 
-    if len(candidates) <= count:
-        return candidates
-
-    return random.sample(candidates, count)
+    return random.sample(candidates, min(count, len(candidates)))
 
 
 def get_quiz_queue(
@@ -471,27 +478,26 @@ def build_quiz_items(
     audio_service=None,
 ) -> list[dict[str, Any]]:
     """
-    Build fully-populated SPA quiz items ({question, audioAssets}) for the next
+    Build SPA quiz items ({question, audioAssets}) for the next
     `count` questions in the queue.
 
-    Text-to-speech is only run when an `audio_service` is supplied, so readers
-    who have audio switched off never pay for audio generation.  Generation
-    failures are logged and do not block the item from being returned.
+    Never waits on text-to-speech: items carry only audio that already exists,
+    and questions whose audio is ready are served first.  The SPA fetches any
+    audio still missing once a question is on screen.
     """
-    questions = pick_next_questions(que_list, count, exclude_quizq_ids)
-    items: list[dict[str, Any]] = []
+    items = [
+        {"question": q, "audioAssets": build_audio_assets(q, user, audio_service, generate=False)}
+        for q in pick_next_questions(que_list, len(que_list), exclude_quizq_ids)
+    ]
+    items = sorted(items, key=lambda item: not item["audioAssets"].get("question"))[:count]
 
-    for q in questions:
+    for q in (item["question"] for item in items):
         q["flag"] = _get_question_flag(user_id=user.id, question_id=q["question_id"])
-        items.append({
-            "question": q,
-            "audioAssets": build_audio_assets(q, user, audio_service),
-        })
 
     return items
 
 
-def build_audio_assets(q: dict[str, Any], user, audio_service) -> dict:
+def build_audio_assets(q: dict[str, Any], user, audio_service, generate: bool = True) -> dict:
     """Ensure and describe the audio assets for one question, or {} without a service."""
     if audio_service is None:
         return {}
@@ -501,6 +507,7 @@ def build_audio_assets(q: dict[str, Any], user, audio_service) -> dict:
             q=q,
             user=user,
             parts=("question", "answer", "hint"),
+            generate=generate,
         )
     except Exception as e:
         logging.error(f"❌ Failed to generate audio assets for quizq {q.get('quizq_id')}: {e}")

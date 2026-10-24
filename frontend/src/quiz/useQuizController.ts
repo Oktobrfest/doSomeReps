@@ -436,6 +436,7 @@ export function useQuizController({
 
       const response = await fetch(`/quiz/queue?${params.toString()}`, {
         credentials: 'same-origin',
+        cache: 'no-store',
         signal,
       });
 
@@ -461,6 +462,7 @@ export function useQuizController({
       const result = (await response.json().catch(() => ({}))) as {
         ok?: boolean;
         error?: string;
+        alreadyAnswered?: boolean;
       };
 
       if (!response.ok || !result.ok) {
@@ -559,6 +561,18 @@ export function useQuizController({
     return cancelQueueRequest;
   }, [cancelQueueRequest, refreshQueue]);
 
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      stopAllAudio();
+      commitItems(NO_ITEMS);
+      void refreshQueue();
+    };
+
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, [commitItems, refreshQueue, stopAllAudio]);
+
   const submitCurrentQuestion = useCallback(
     async (
       action:
@@ -603,12 +617,16 @@ export function useQuizController({
             quizqId: submittedQuizqId,
           });
         } else {
-          await postQuizAction({
+          const result = await postQuizAction({
             action: 'submit',
             quizqId: submittedQuizqId,
             verdict: verdictToServerValue(action.verdict),
             providedAnswer: providedAnswer || null,
           });
+          if (result.alreadyAnswered) {
+            stopAllAudio();
+            commitItems(NO_ITEMS);
+          }
         }
 
         submitted = true;
@@ -769,7 +787,7 @@ export function useQuizController({
     const quizqId = item?.question?.quizq_id;
     const assets = getAudioAssets(item);
     const needsHintAudio = Boolean(item?.question?.hint) && !assets.hint?.length;
-    if (!quizqId || (assets.question?.length && !needsHintAudio)) return;
+    if (!quizqId || (assets.question?.length && assets.answer?.length && !needsHintAudio)) return;
 
     let cancelled = false;
 
@@ -787,9 +805,7 @@ export function useQuizController({
           latestItems.map((entry, index) =>
             index === 0 ? {
               ...entry,
-              audioAssets: assets.question?.length
-                ? { ...entry.audioAssets, hint: data.audioAssets.hint }
-                : data.audioAssets,
+              audioAssets: { ...data.audioAssets, ...entry.audioAssets },
             } : entry,
           ),
         );

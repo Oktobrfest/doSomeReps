@@ -141,5 +141,4 @@ def dev_login_as(user_id):
 def dev_logout():
     """Convenience logout that doesn't touch any OIDC end-session endpoints."""
     logout_user()
-    flash("DEV: logged out.", category="success")
     return redirect(url_for("dev_auth.dev_login_index"))
