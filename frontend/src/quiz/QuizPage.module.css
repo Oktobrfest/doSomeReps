@@ -96,9 +96,17 @@
 }
 
 .answerSection {
+  box-sizing: border-box;
   margin-top: var(--rep-quiz-gap);
   margin-bottom: 10px;
-  scroll-margin-top: 90px;
+  scroll-margin-top: 0;
+}
+
+/* Guarantees immediate full-viewport scroll depth below the top of the answer
+   on frame 1 (including when the mobile URL bar collapses to 100vh/100lvh),
+   so even a one-line answer can always scroll flush to the top of the page. */
+.answerSectionFullViewport {
+  min-height: 100vh;
 }
 
 .answerSection:focus:not(:focus-visible) {

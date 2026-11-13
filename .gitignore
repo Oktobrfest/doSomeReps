@@ -109,6 +109,7 @@ coll_usage_scripts.txt
 temp
 .SCRATCHFILE
 .rules
+skills/
 
 # Piper TTS voice models
 piper_voices/

@@ -299,6 +299,7 @@ function QuizBody({
 }: QuizBodyProps) {
   const currentQuestion = quiz.currentQuestion!; // guarded by the shell
   const answerRef = useRef<HTMLDivElement>(null);
+  const actionsSectionRef = useRef<HTMLDivElement>(null);
   const [hintOpen, setHintOpen] = useState(false);
   const [hintSeen, setHintSeen] = useState(false);
   const [answerOpen, setAnswerOpen] = useState(true);
@@ -310,15 +311,78 @@ function QuizBody({
     setHintOpen(false);
     setHintSeen(false);
     setAnswerOpen(true);
-    setUserRating(currentQuestion.user_rated);
-  }, [currentQuestion.quizq_id, currentQuestion.user_rated]);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [currentQuestion.quizq_id]);
 
   useEffect(() => {
-    if (quiz.answerRevealed && answerRef.current) {
-      setAnswerOpen(true);
-      answerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      answerRef.current.focus({ preventScroll: true });
+    setUserRating(currentQuestion.user_rated);
+  }, [currentQuestion.user_rated]);
+
+  useEffect(() => {
+    if (!quiz.answerRevealed || !answerRef.current) return;
+
+    setAnswerOpen(true);
+    const el = answerRef.current;
+
+    // Clear the fixed voice-listening banner when it is mounted at top: 0;
+    // otherwise align flush with the very top edge of the viewport (0px).
+    const getTopClearance = (): number => {
+      const banner = document.querySelector<HTMLElement>('[class*="listeningBanner"]');
+      if (!banner) return 0;
+      const rect = banner.getBoundingClientRect();
+      return rect.height > 0 ? Math.ceil(rect.bottom) : 0;
+    };
+
+    const scrollAnswerToTop = () => {
+      const rect = el.getBoundingClientRect();
+      const targetTop = Math.max(0, window.scrollY + rect.top - getTopClearance());
+      window.scrollTo({ top: targetTop, behavior: 'smooth' });
+    };
+
+    let focusCleanedUp = false;
+    const focusAnswer = () => {
+      if (focusCleanedUp) return;
+      focusCleanedUp = true;
+      window.removeEventListener('scrollend', focusAnswer);
+      window.clearTimeout(fallbackTimer);
+      el.focus({ preventScroll: true });
+    };
+
+    window.addEventListener('scrollend', focusAnswer, { once: true });
+    const fallbackTimer = window.setTimeout(focusAnswer, 700);
+
+    const frameId = requestAnimationFrame(() => {
+      scrollAnswerToTop();
+    });
+
+    // If answer images mount above the answer section and decode asynchronously,
+    // re-align the scroll position when their dimensions settle.
+    const aboveSection = actionsSectionRef.current;
+    let resizeObserver: ResizeObserver | null = null;
+    if (aboveSection && typeof ResizeObserver !== 'undefined') {
+      let lastHeight = aboveSection.getBoundingClientRect().height;
+      resizeObserver = new ResizeObserver(() => {
+        const nextHeight = aboveSection.getBoundingClientRect().height;
+        if (Math.abs(nextHeight - lastHeight) > 1) {
+          lastHeight = nextHeight;
+          scrollAnswerToTop();
+        }
+      });
+      resizeObserver.observe(aboveSection);
     }
+
+    const observerTimer = window.setTimeout(() => {
+      resizeObserver?.disconnect();
+    }, 1000);
+
+    return () => {
+      focusCleanedUp = true;
+      cancelAnimationFrame(frameId);
+      window.removeEventListener('scrollend', focusAnswer);
+      window.clearTimeout(fallbackTimer);
+      window.clearTimeout(observerTimer);
+      resizeObserver?.disconnect();
+    };
   }, [quiz.answerRevealed]);
 
   const closeDialog = useCallback(() => setDialog(null), []);
@@ -469,7 +533,7 @@ function QuizBody({
           <p className={styles.errorText} role="alert">{quiz.error}</p>
         )}
 
-        <div className={styles.actionsSection}>
+        <div ref={actionsSectionRef} className={styles.actionsSection}>
           {questionImages.length > 0 && (
             <ImageCarousel
               images={questionImages}
@@ -568,7 +632,15 @@ function QuizBody({
           )}
 
           {quiz.answerRevealed && (
-            <div ref={answerRef} tabIndex={-1} className={styles.answerSection}>
+            <div
+              ref={answerRef}
+              tabIndex={-1}
+              className={
+                askAiActive
+                  ? styles.answerSection
+                  : `${styles.answerSection} ${styles.answerSectionFullViewport}`
+              }
+            >
               <QuestionReadingPart
                 part="answer"
                 text={currentQuestion.answer}
