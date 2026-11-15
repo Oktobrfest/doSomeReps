@@ -121,6 +121,7 @@ piper_voices/
 app/repz/static/models/kws/sherpa-*.js
 
 /vendor/
+skills/
 
 # KWS test files (Ignored)
 app/repz/static/models/kws/test_wavs/
