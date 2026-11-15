@@ -105,18 +105,34 @@ export function AddContentPage() {
           />
         </div>
 
-        <div className={sharedStyles.splitLayout}>
+        <div
+          className={`${sharedStyles.splitLayout}${
+            previewOpen ? "" : ` ${sharedStyles.splitLayoutNoPreview}`
+          }`}
+        >
           <div className={sharedStyles.formPane}>
             <QuestionFields value={draft} onChange={setDraft} categoriesExpanded />
           </div>
 
-          {previewOpen && (
-            <QuestionPreview
-              draft={draft}
-              onHide={() => setPreviewOpen(false)}
-              className={sharedStyles.previewPane}
-            />
-          )}
+          <div className={sharedStyles.previewColumn}>
+            {previewOpen && (
+              <div className={sharedStyles.previewTrack}>
+                <QuestionPreview
+                  draft={draft}
+                  onHide={() => setPreviewOpen(false)}
+                  className={sharedStyles.previewPane}
+                />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue} ${sharedStyles.bottomSaveBtn}`}
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Save Question"}
+            </button>
+          </div>
         </div>
       </form>
 

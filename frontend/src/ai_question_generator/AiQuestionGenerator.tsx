@@ -81,28 +81,28 @@ function GeneratedCard({
       </div>
 
       <div
-        className={`${styles.questionBody}${
-          previewOpen ? "" : ` ${styles.questionBodyNoPreview}`
+        className={`${sharedStyles.splitLayout}${
+          previewOpen ? "" : ` ${sharedStyles.splitLayoutNoPreview}`
         }`}
       >
         <div className={sharedStyles.formPane}>
           <QuestionFields value={draft} onChange={onChange} />
         </div>
 
-        <div className={styles.previewColumn}>
+        <div className={sharedStyles.previewColumn}>
           {previewOpen && (
-            <div className={styles.previewTrack}>
+            <div className={sharedStyles.previewTrack}>
               <QuestionPreview
                 draft={draft}
                 onHide={() => setPreviewOpen(false)}
-                className={styles.previewPane}
+                className={sharedStyles.previewPane}
               />
             </div>
           )}
 
           <button
             type="button"
-            className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue} ${styles.bottomSaveBtn}`}
+            className={`${sharedStyles.actionButton} ${sharedStyles.btnBlue} ${sharedStyles.bottomSaveBtn}`}
             onClick={onSave}
             disabled={busy}
           >

@@ -490,33 +490,85 @@
   flex: 1 1 var(--rep-btn-cluster-basis);
 }
 
+/* The form column dictates the question's height; the right column holds the
+   preview above the bottom-right Save button without adding height. */
 .splitLayout {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
   gap: 20px;
   width: 100%;
-  align-items: flex-start;
+  align-items: stretch;
+}
+
+.splitLayoutNoPreview > :first-child {
+  grid-column: 1 / -1;
+  grid-row: 1;
 }
 
 .formPane {
-  flex: 1 1 0%;
   min-width: 0;
 }
 
+.previewColumn {
+  grid-column: 2;
+  grid-row: 1;
+  contain: size;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: var(--rep-btn-row-gap);
+}
+
+.splitLayoutNoPreview .previewColumn {
+  contain: none;
+  height: auto;
+  align-self: end;
+}
+
+.previewTrack {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
 .previewPane {
-  width: 400px;
-  min-width: 320px;
   position: sticky;
   top: 20px;
+  max-height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.bottomSaveBtn {
+  align-self: stretch;
+  margin-top: auto;
 }
 
 @media (max-width: 991px) {
   .splitLayout {
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .splitLayoutNoPreview > :first-child {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .previewColumn {
+    grid-column: auto;
+    grid-row: auto;
+    contain: none;
+    height: auto;
+  }
+
+  .previewTrack {
+    flex: 0 0 auto;
   }
 
   .previewPane {
-    width: 100%;
-    min-width: 0;
     position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 }
